@@ -1,7 +1,8 @@
 import React from 'react';
+import logoUrl from '../asset/MovieMonk Logo.png';
 
 export const Logo: React.FC<{ className?: string }> = ({ className }) => (
-    <img src="/Asset/MovieMonk.png" alt="MovieMonk Logo" className={className} />
+    <img src={logoUrl} alt="MovieMonk Logo" className={className} />
 );
 
 export const SendIcon: React.FC<{ className?: string }> = ({ className }) => (

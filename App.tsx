@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import ChatInterface from './components/ChatInterface';
 import MovieDisplay from './components/MovieDisplay';
 import ErrorBanner from './components/ErrorBanner';
@@ -12,7 +12,7 @@ const App: React.FC = () => {
   ]);
   const [movieData, setMovieData] = useState<MovieData | null>(null);
   const [sources, setSources] = useState<GroundingSource[] | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSendMessage = async (message: string, complexity: QueryComplexity) => {
@@ -49,36 +49,7 @@ const App: React.FC = () => {
     setIsLoading(false);
   };
 
-  const fetchInitialData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    const result = await fetchMovieData("Interstellar (2014)", QueryComplexity.SIMPLE);
-    
-    if (result && result.movieData) {
-        setMovieData(result.movieData);
-        setSources(result.sources);
-        setMessages(prev => [
-            ...prev,
-            { id: 'initial-model', role: 'model', content: `Here's a look at "${result.movieData.title}" to get you started.`}
-        ]);
-    } else {
-        const content = result?.error || "I couldn't load the initial example data. Feel free to start with your own search!";
-        setError(content);
-        setMessages(prev => [
-            ...prev,
-            { id: 'initial-error', role: 'system', content: content}
-        ]);
-        setSources(null);
-    }
-    
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // No initial preload – show dashboard until user searches
 
   return (
     <div className="h-screen w-screen bg-brand-bg flex flex-col p-4">

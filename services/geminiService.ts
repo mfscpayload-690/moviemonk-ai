@@ -2,6 +2,7 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ChatMessage, MovieData, QueryComplexity, FetchResult, GroundingSource } from '../types';
 import { INITIAL_PROMPT } from '../constants';
+import { enrichWithTMDB } from './tmdbService';
 
 const API_KEY = process.env.API_KEY;
 if (!API_KEY) {
@@ -66,9 +67,18 @@ export async function fetchMovieData(query: string, complexity: QueryComplexity,
             return { movieData: null, sources: null, error: errorMessage };
         }
         
-        const movieData = parseJsonResponse(jsonText);
+        let movieData = parseJsonResponse(jsonText);
         if (!movieData) {
             return { movieData: null, sources: null, error: "Failed to parse the AI's response. The data might be in an unexpected format." };
+        }
+
+        // Enrich missing images via TMDB if needed
+        try {
+            if (!movieData.poster_url || !movieData.backdrop_url || !movieData.extra_images || movieData.extra_images.length === 0) {
+                movieData = await enrichWithTMDB(movieData);
+            }
+        } catch (e) {
+            console.warn('Image enrichment skipped due to error:', e);
         }
 
         const sources = (response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingSource[]) || null;
