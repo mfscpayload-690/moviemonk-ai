@@ -79,6 +79,12 @@ async function fetchImages(mediaType: 'movie'|'tv', id: number): Promise<{ poste
   }
 }
 
+function isLikelyImageUrl(u: string | undefined | null): boolean {
+  if (!u) return false;
+  if (!/^https?:\/\//i.test(u)) return false;
+  return /\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(u);
+}
+
 export async function enrichWithTMDB(data: MovieData): Promise<MovieData> {
   try {
     const search = await searchTitle(data.title, data.year, data.type);
@@ -86,11 +92,13 @@ export async function enrichWithTMDB(data: MovieData): Promise<MovieData> {
 
     const imgs = await fetchImages(search.mediaType, search.id);
 
-    const poster_url = data.poster_url || imgs.poster || '';
-    const backdrop_url = data.backdrop_url || imgs.backdrop || '';
-    const extra_images = (data.extra_images && data.extra_images.length > 0)
-      ? data.extra_images
-      : imgs.gallery;
+    // Always prefer TMDB images. Only fall back to AI if TMDB has nothing.
+    const poster_url = imgs.poster || (isLikelyImageUrl(data.poster_url) ? data.poster_url : '');
+    const backdrop_url = imgs.backdrop || (isLikelyImageUrl(data.backdrop_url) ? data.backdrop_url : '');
+
+    const extra_images: string[] = imgs.gallery.length > 0
+      ? imgs.gallery
+      : (Array.isArray(data.extra_images) ? data.extra_images.filter(isLikelyImageUrl) : []);
 
     return { ...data, poster_url, backdrop_url, extra_images };
   } catch (e) {
