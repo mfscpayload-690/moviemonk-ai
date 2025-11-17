@@ -5,10 +5,12 @@ import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
 
 const API_KEY = process.env.GEMINI_API_KEY;
+console.log('API_KEY loaded:', API_KEY ? 'YES (length: ' + API_KEY.length + ')' : 'NO');
 if (!API_KEY) {
     throw new Error("GEMINI_API_KEY environment variable not set");
 }
 const ai = new GoogleGenAI({ apiKey: API_KEY });
+console.log('GoogleGenAI initialized successfully');
 
 const parseJsonResponse = (text: string): MovieData | null => {
     try {
@@ -43,6 +45,8 @@ export async function fetchMovieData(query: string, complexity: QueryComplexity,
     }
 
     try {
+        console.log('Calling Gemini API with model:', modelName);
+        console.log('Query:', query);
         const response = await ai.models.generateContent({
             model: modelName,
             contents: fullPrompt,
@@ -52,8 +56,10 @@ export async function fetchMovieData(query: string, complexity: QueryComplexity,
                 ...(thinkingBudget && { thinkingConfig: { thinkingBudget } })
             },
         });
+        console.log('Gemini API response received:', response);
 
         const jsonText = response.text;
+        console.log('Response text:', jsonText);
         
         if (!jsonText) {
             const finishReason = response.candidates?.[0]?.finishReason;
