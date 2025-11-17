@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { ChatMessage, MovieData, QueryComplexity, FetchResult, GroundingSource } from '../types';
 import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
@@ -43,7 +43,7 @@ export async function fetchMovieData(query: string, complexity: QueryComplexity,
     }
 
     try {
-        const response: GenerateContentResponse = await ai.models.generateContent({
+        const response = await ai.models.generateContent({
             model: modelName,
             contents: fullPrompt,
             config: {
