@@ -192,22 +192,3 @@ Contributions are welcome! Please read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
-
-## 🙏 Acknowledgments
-
-- [Google Gemini](https://deepmind.google/technologies/gemini/) for powerful AI capabilities
-- [The Movie Database (TMDB)](https://www.themoviedb.org/) for comprehensive movie data
-- [Vite](https://vitejs.dev/) for blazing-fast build tooling
-- [React](https://react.dev/) and [Tailwind CSS](https://tailwindcss.com/) for modern UI development
-
----
-
-## 📞 Contact
-
-**Project Link**: [https://github.com/mfscpayload-690/moviemonk-ai](https://github.com/mfscpayload-690/moviemonk-ai)
-
-**Live Demo**: [https://mfscpayload-690.github.io/moviemonk-ai/](https://mfscpayload-690.github.io/moviemonk-ai/)
-
----
-
-**Built with ❤️ by the MovieMonk team**
