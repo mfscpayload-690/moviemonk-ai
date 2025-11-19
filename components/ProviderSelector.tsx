@@ -1,10 +1,11 @@
 import React from 'react';
 
-export type AIProvider = 'gemini' | 'deepseek';
+export type AIProvider = 'gemini' | 'deepseek' | 'openrouter';
 
 export interface ProviderStatus {
   gemini: 'available' | 'unavailable' | 'checking';
   deepseek: 'available' | 'unavailable' | 'checking';
+  openrouter?: 'available' | 'unavailable' | 'checking';
 }
 
 interface ProviderSelectorProps {
@@ -20,7 +21,8 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 }) => {
   const providers: { id: AIProvider; name: string; icon: string }[] = [
     { id: 'gemini', name: 'Gemini', icon: '✨' },
-    { id: 'deepseek', name: 'DeepSeek', icon: '🔮' }
+    { id: 'deepseek', name: 'DeepSeek', icon: '🔮' },
+    { id: 'openrouter', name: 'OpenRouter', icon: '🌐' }
   ];
 
   const getStatusColor = (status: 'available' | 'unavailable' | 'checking') => {

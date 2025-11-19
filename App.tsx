@@ -4,7 +4,7 @@ import MovieDisplay from './components/MovieDisplay';
 import ErrorBanner from './components/ErrorBanner';
 import ProviderSelector, { AIProvider, ProviderStatus } from './components/ProviderSelector';
 import { ChatMessage, MovieData, QueryComplexity, GroundingSource } from './types';
-import { fetchMovieData, checkProviderAvailability } from './services/aiService';
+import { fetchMovieData, checkProviderAvailability, testProviderAvailability } from './services/aiService';
 import { Logo } from './components/icons';
 
 const App: React.FC = () => {
@@ -18,8 +18,11 @@ const App: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('gemini');
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
     gemini: 'checking',
-    deepseek: 'checking'
+    deepseek: 'checking',
+    openrouter: 'checking'
   });
+  // Add openrouter to status
+  providerStatus['openrouter' as keyof ProviderStatus] = 'checking';
 
   const handleSendMessage = async (message: string, complexity: QueryComplexity) => {
     setIsLoading(true);
@@ -60,9 +63,28 @@ const App: React.FC = () => {
 
   // Check provider availability periodically
   const updateProviderStatus = () => {
-    setProviderStatus({
-      gemini: checkProviderAvailability('gemini'),
-      deepseek: checkProviderAvailability('deepseek')
+    // Show 'checking' while we run network checks
+    setProviderStatus({ gemini: 'checking', deepseek: 'checking', openrouter: 'checking' });
+
+    // Run provider availability tests in parallel
+    Promise.all([
+      testProviderAvailability?.('gemini'),
+      testProviderAvailability?.('deepseek'),
+      testProviderAvailability?.('openrouter')
+    ]).then(([g, d, o]) => {
+      setProviderStatus({
+        gemini: g ? 'available' : 'unavailable',
+        deepseek: d ? 'available' : 'unavailable',
+        openrouter: o ? 'available' : 'unavailable'
+      });
+    }).catch((e) => {
+      console.warn('Provider health check error', e);
+      // If something broke, just default back to availability based on lastErrors
+      setProviderStatus({
+        gemini: checkProviderAvailability('gemini'),
+        deepseek: checkProviderAvailability('deepseek'),
+        openrouter: checkProviderAvailability('openrouter')
+      });
     });
   };
 

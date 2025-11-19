@@ -1,13 +1,15 @@
 import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { fetchMovieData as fetchFromGemini } from './geminiService';
 import { fetchMovieData as fetchFromDeepSeek } from './deepseekService';
+import { fetchMovieData as fetchFromOpenRouter } from './openrouterService';
 
-export type AIProvider = 'gemini' | 'deepseek';
+export type AIProvider = 'gemini' | 'deepseek' | 'openrouter';
 
 // Track last error times for availability checking
 const lastErrors: Record<AIProvider, number | null> = {
   gemini: null,
-  deepseek: null
+  deepseek: null,
+  openrouter: null
 };
 
 const ERROR_COOLDOWN = 30000; // 30 seconds
@@ -43,8 +45,26 @@ export async function fetchMovieData(
     
     if (provider === 'gemini') {
       result = await fetchFromGemini(query, complexity, chatHistory);
-    } else {
+    } else if (provider === 'deepseek') {
       result = await fetchFromDeepSeek(query, complexity, chatHistory);
+    } else {
+      result = await fetchFromOpenRouter(query, complexity, chatHistory);
+      // If OpenRouter failed, fallback to DeepSeek (if available) then Gemini.
+      if (!result.movieData) {
+        // track error
+        lastErrors[provider] = Date.now();
+        // try DeepSeek
+        const deep = await fetchFromDeepSeek(query, complexity, chatHistory);
+        if (deep.movieData) {
+          return { movieData: deep.movieData, sources: deep.sources, error: `OpenRouter failed — fallback to DeepSeek: ${result.error || 'unknown'}` };
+        }
+        // try Gemini
+        const gem = await fetchFromGemini(query, complexity, chatHistory);
+        if (gem.movieData) {
+          return { movieData: gem.movieData, sources: gem.sources, error: `OpenRouter & DeepSeek failed — fallback to Gemini: ${result.error || 'unknown'}` };
+        }
+        // all failed, return original OpenRouter error
+      }
     }
     
     // If successful, clear error tracking
@@ -73,12 +93,16 @@ export async function fetchMovieData(
  */
 export async function testProviderAvailability(provider: AIProvider): Promise<boolean> {
   try {
-    const result = await fetchMovieData(
-      'test', 
-      QueryComplexity.SIMPLE, 
-      provider
-    );
-    return !!result.movieData || !result.error;
+    // Call the provider directly so this test does not trigger fallback logic
+    switch (provider) {
+      case 'gemini':
+        return !!(await fetchFromGemini('ping', QueryComplexity.SIMPLE, []))?.movieData;
+      case 'deepseek':
+        return !!(await fetchFromDeepSeek('ping', QueryComplexity.SIMPLE, []))?.movieData;
+      case 'openrouter':
+        return !!(await fetchFromOpenRouter('ping', QueryComplexity.SIMPLE, []))?.movieData;
+    }
+    return false;
   } catch {
     return false;
   }
