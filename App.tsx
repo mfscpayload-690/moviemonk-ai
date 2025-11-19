@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import MovieDisplay from './components/MovieDisplay';
 import ErrorBanner from './components/ErrorBanner';
+import ProviderSelector, { AIProvider, ProviderStatus } from './components/ProviderSelector';
 import { ChatMessage, MovieData, QueryComplexity, GroundingSource } from './types';
-import { fetchMovieData } from './services/geminiService';
+import { fetchMovieData, checkProviderAvailability } from './services/aiService';
 import { Logo } from './components/icons';
 
 const App: React.FC = () => {
@@ -14,6 +15,11 @@ const App: React.FC = () => {
   const [sources, setSources] = useState<GroundingSource[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('gemini');
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
+    gemini: 'checking',
+    deepseek: 'checking'
+  });
 
   const handleSendMessage = async (message: string, complexity: QueryComplexity) => {
     setIsLoading(true);
@@ -23,7 +29,10 @@ const App: React.FC = () => {
 
     const chatHistoryForAPI = messages.filter(m => m.role !== 'system');
     
-    const result = await fetchMovieData(message, complexity, chatHistoryForAPI);
+    const result = await fetchMovieData(message, complexity, selectedProvider, chatHistoryForAPI);
+    
+    // Update provider status after request
+    updateProviderStatus();
 
     if (result && result.movieData) {
       setMovieData(result.movieData);
@@ -49,6 +58,23 @@ const App: React.FC = () => {
     setIsLoading(false);
   };
 
+  // Check provider availability periodically
+  const updateProviderStatus = () => {
+    setProviderStatus({
+      gemini: checkProviderAvailability('gemini'),
+      deepseek: checkProviderAvailability('deepseek')
+    });
+  };
+
+  useEffect(() => {
+    // Initial check
+    updateProviderStatus();
+    
+    // Check every 10 seconds
+    const interval = setInterval(updateProviderStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   // No initial preload – show dashboard until user searches
 
   return (
@@ -64,7 +90,12 @@ const App: React.FC = () => {
                     <ErrorBanner message={error} onClose={() => setError(null)} />
                 </div>
             )}
-            <div className="lg:col-span-1 h-full min-h-0">
+            <div className="lg:col-span-1 h-full min-h-0 flex flex-col gap-3">
+                <ProviderSelector 
+                  selectedProvider={selectedProvider}
+                  onProviderChange={setSelectedProvider}
+                  providerStatus={providerStatus}
+                />
                 <ChatInterface onSendMessage={handleSendMessage} messages={messages} isLoading={isLoading} />
             </div>
             <div className="lg:col-span-2 h-full min-h-0 bg-brand-surface rounded-lg shadow-lg">

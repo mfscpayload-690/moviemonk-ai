@@ -12,7 +12,10 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        // Gemini disabled; keep for backward compatibility if needed
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ''),
+        // DeepSeek provider
+        'process.env.DEEPSEEK_API_KEY': JSON.stringify(env.DEEPSEEK_API_KEY || ''),
         'process.env.TMDB_API_KEY': JSON.stringify(env.TMDB_API_KEY || ''),
         'process.env.TMDB_READ_TOKEN': JSON.stringify(env.TMDB_READ_TOKEN || '')
       },
