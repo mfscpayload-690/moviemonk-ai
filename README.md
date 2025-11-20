@@ -2,7 +2,7 @@
 
 AI-powered movie and series search engine with plot summaries, cast info, spoiler-safe explanations, and real-time "where to watch" links. Built with **Google Gemini AI**, **TMDB API**, and a modern web stack.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://mfscpayload-690.github.io/moviemonk-ai/)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ![MovieMonk Banner](asset/MovieMonk%20Logo.png)
@@ -25,7 +25,7 @@ AI-powered movie and series search engine with plot summaries, cast info, spoile
 
 ## 🚀 Live Demo
 
-Visit the live app: **[https://mfscpayload-690.github.io/moviemonk-ai/](https://mfscpayload-690.github.io/moviemonk-ai/)**
+Visit the live app: **[https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app](https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app)**
 
 ---
 
