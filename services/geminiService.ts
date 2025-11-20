@@ -47,6 +47,11 @@ const parseJsonResponse = (text: string): MovieData | null => {
 };
 
 export async function fetchMovieData(query: string, complexity: QueryComplexity, chatHistory?: ChatMessage[]): Promise<FetchResult> {
+    // Skip empty or ping queries
+    if (!query || query.trim().length < 3 || query.toLowerCase() === 'ping') {
+        return { movieData: null, sources: [], provider: 'gemini' };
+    }
+
     let modelName: string;
     let thinkingBudget: number | undefined;
 

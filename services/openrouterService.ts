@@ -23,6 +23,11 @@ export async function fetchMovieData(
   complexity: QueryComplexity,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
+  // Skip empty or ping queries
+  if (!query || query.trim().length < 3 || query.toLowerCase() === 'ping') {
+    return { movieData: null, sources: null, provider: 'openrouter' };
+  }
+
   const model = complexity === QueryComplexity.COMPLEX ? 'deepseek/deepseek-reasoner' : 'deepseek/deepseek-chat';
 
   let userPrompt = `${INITIAL_PROMPT}\n\nUser query: "${query}"`;

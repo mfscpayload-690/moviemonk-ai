@@ -20,6 +20,11 @@ export async function fetchMovieData(
   complexity: QueryComplexity,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
+  // Skip empty or ping queries
+  if (!query || query.trim().length < 3 || query.toLowerCase() === 'ping') {
+    return { movieData: null, sources: null, provider: 'deepseek' };
+  }
+
   if (!API_KEY) {
     return { movieData: null, sources: null, error: 'DEEPSEEK_API_KEY is not set' };
   }

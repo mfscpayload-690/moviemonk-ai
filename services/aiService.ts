@@ -143,21 +143,9 @@ export async function fetchMovieData(
 }
 
 /**
- * Test provider availability with a lightweight check
+ * Test provider availability with a lightweight check (removed - providers are always assumed available)
  */
 export async function testProviderAvailability(provider: AIProvider): Promise<boolean> {
-  try {
-    // Call the provider directly so this test does not trigger fallback logic
-    switch (provider) {
-      case 'gemini':
-        return !!(await fetchFromGemini('ping', QueryComplexity.SIMPLE, []))?.movieData;
-      case 'deepseek':
-        return !!(await fetchFromDeepSeek('ping', QueryComplexity.SIMPLE, []))?.movieData;
-      case 'openrouter':
-        return !!(await fetchFromOpenRouter('ping', QueryComplexity.SIMPLE, []))?.movieData;
-    }
-    return false;
-  } catch {
-    return false;
-  }
+  // Always return true - let actual usage determine availability
+  return true;
 }

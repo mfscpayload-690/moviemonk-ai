@@ -18,12 +18,10 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('gemini');
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
-    gemini: 'checking',
-    deepseek: 'checking',
-    openrouter: 'checking'
+    gemini: 'available',
+    deepseek: 'available',
+    openrouter: 'available'
   });
-  // Add openrouter to status
-  providerStatus['openrouter' as keyof ProviderStatus] = 'checking';
 
   const handleSendMessage = async (message: string, complexity: QueryComplexity) => {
     setIsLoading(true);
@@ -42,8 +40,8 @@ const App: React.FC = () => {
     const result = await fetchMovieData(message, complexity, selectedProvider, chatHistoryForAPI);
     
     setLoadingProgress('');
-    // Update provider status after request
-    updateProviderStatus();
+    // Update provider status based on result
+    updateProviderStatus(selectedProvider, !!result.movieData);
 
     if (result && result.movieData) {
       setMovieData(result.movieData);
@@ -69,41 +67,13 @@ const App: React.FC = () => {
     setIsLoading(false);
   };
 
-  // Check provider availability periodically
-  const updateProviderStatus = () => {
-    // Show 'checking' while we run network checks
-    setProviderStatus({ gemini: 'checking', deepseek: 'checking', openrouter: 'checking' });
-
-    // Run provider availability tests in parallel
-    Promise.all([
-      testProviderAvailability?.('gemini'),
-      testProviderAvailability?.('deepseek'),
-      testProviderAvailability?.('openrouter')
-    ]).then(([g, d, o]) => {
-      setProviderStatus({
-        gemini: g ? 'available' : 'unavailable',
-        deepseek: d ? 'available' : 'unavailable',
-        openrouter: o ? 'available' : 'unavailable'
-      });
-    }).catch((e) => {
-      console.warn('Provider health check error', e);
-      // If something broke, just default back to availability based on lastErrors
-      setProviderStatus({
-        gemini: checkProviderAvailability('gemini'),
-        deepseek: checkProviderAvailability('deepseek'),
-        openrouter: checkProviderAvailability('openrouter')
-      });
-    });
+  // Update provider status based on actual request results
+  const updateProviderStatus = (provider: AIProvider, success: boolean) => {
+    setProviderStatus(prev => ({
+      ...prev,
+      [provider]: success ? 'available' : 'unavailable'
+    }));
   };
-
-  useEffect(() => {
-    // Initial check
-    updateProviderStatus();
-    
-    // Check every 10 seconds
-    const interval = setInterval(updateProviderStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   // No initial preload – show dashboard until user searches
 
