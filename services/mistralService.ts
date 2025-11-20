@@ -40,10 +40,11 @@ export async function fetchMovieData(
     return { movieData: null, sources: null, error: 'MISTRAL_API_KEY is not set' };
   }
 
-  // Model selection: mistral-large-latest (complex), mistral-small-latest (simple)
+  // Model selection: Use FREE open-weight models for free tier
+  // Free models: open-mistral-7b, open-mixtral-8x7b, open-mixtral-8x22b
   const model = complexity === QueryComplexity.COMPLEX 
-    ? 'mistral-large-latest'  // Best reasoning
-    : 'mistral-small-latest';  // Fast and efficient
+    ? 'open-mixtral-8x22b'   // Free, best reasoning (22B params)
+    : 'open-mixtral-8x7b';   // Free, fast and efficient (8x7B)
 
   let userPrompt = `${INITIAL_PROMPT}\n\nUser query: "${query}"`;
   if (chatHistory && chatHistory.length) {
