@@ -16,10 +16,10 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingProgress, setLoadingProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('gemini');
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('groq');
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
-    gemini: 'available',
-    deepseek: 'available',
+    groq: 'available',
+    mistral: 'available',
     openrouter: 'available'
   });
 

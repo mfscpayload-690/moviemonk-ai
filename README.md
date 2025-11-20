@@ -33,13 +33,13 @@ Visit the live app: **[https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app](h
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS
 - **Build Tool**: Vite 6
-- **AI Providers**: 
-  - Google Gemini 2.5 (Flash & Pro) with Google Search grounding
-  - DeepSeek Chat & Reasoner
-  - OpenRouter (via serverless proxy)
+- **AI Providers** (100% FREE):
+  - 🆓 **Groq** (Llama 3.3 70B) - Fastest inference, unlimited free tier
+  - 🆓 **Mistral AI** (Mistral Large/Small) - 2M tokens/month free
+  - 🆓 **OpenRouter** - Emergency fallback (via serverless proxy)
 - **Data**: The Movie Database (TMDB) API
-- **Backend**: Vercel Serverless Functions (for OpenRouter proxy)
-- **Deployment**: GitHub Pages + Vercel
+- **Backend**: Vercel Serverless Functions
+- **Deployment**: Vercel
 - **Package Manager**: npm
 
 ---
@@ -49,11 +49,11 @@ Visit the live app: **[https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app](h
 - **Node.js** 18+ (LTS recommended)
 - **npm** 9+
 - **Git**
-- **Vercel Account** (for OpenRouter proxy deployment)
-- API Keys:
-  - [Google Gemini API Key](https://aistudio.google.com/app/apikey)
-  - [DeepSeek API Key](https://platform.deepseek.com/)
-  - [OpenRouter API Key](https://openrouter.ai/keys)
+- **Vercel Account** (for deployment)
+- **100% FREE API Keys**:
+  - [Groq API Key](https://console.groq.com) - Unlimited free tier ⚡
+  - [Mistral API Key](https://console.mistral.ai) - 2M tokens/month free 🌟
+  - [OpenRouter API Key](https://openrouter.ai/keys) - Emergency fallback
   - [TMDB API Key](https://www.themoviedb.org/settings/api) (v3 API Key or v4 Read Access Token)
 
 ---
@@ -75,8 +75,8 @@ npm install
 Create a `.env.local` file in the root directory:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+MISTRAL_API_KEY=your_mistral_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 TMDB_READ_TOKEN=your_tmdb_v4_read_token_here
 TMDB_API_KEY=your_tmdb_v3_api_key_here

@@ -1,11 +1,11 @@
 import React from 'react';
 
-export type AIProvider = 'gemini' | 'deepseek' | 'openrouter';
+export type AIProvider = 'groq' | 'mistral' | 'openrouter';
 
 export interface ProviderStatus {
-  gemini: 'available' | 'unavailable' | 'checking';
-  deepseek: 'available' | 'unavailable' | 'checking';
-  openrouter?: 'available' | 'unavailable' | 'checking';
+  groq: 'available' | 'unavailable' | 'checking';
+  mistral: 'available' | 'unavailable' | 'checking';
+  openrouter: 'available' | 'unavailable' | 'checking';
 }
 
 interface ProviderSelectorProps {
@@ -19,10 +19,10 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   onProviderChange,
   providerStatus
 }) => {
-  const providers: { id: AIProvider; name: string; icon: string }[] = [
-    { id: 'gemini', name: 'Gemini', icon: '✨' },
-    { id: 'deepseek', name: 'DeepSeek', icon: '🔮' },
-    { id: 'openrouter', name: 'OpenRouter', icon: '🌐' }
+  const providers: { id: AIProvider; name: string; icon: string; description: string }[] = [
+    { id: 'groq', name: 'Groq', icon: '⚡', description: 'Fastest (Llama 3.3)' },
+    { id: 'mistral', name: 'Mistral', icon: '🌟', description: 'Most Accurate' },
+    { id: 'openrouter', name: 'OpenRouter', icon: '🌐', description: 'Fallback' }
   ];
 
   const getStatusColor = (status: 'available' | 'unavailable' | 'checking') => {
@@ -76,9 +76,12 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                 ${isSelected && !isUnavailable ? 'ring-2 ring-brand-accent/50' : ''}
               `}
             >
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-lg">{provider.icon}</span>
-                <span>{provider.name}</span>
+              <div className="flex flex-col items-center justify-center gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{provider.icon}</span>
+                  <span>{provider.name}</span>
+                </div>
+                <span className="text-xs opacity-70">{provider.description}</span>
               </div>
               
               {/* Status indicator */}

@@ -1,16 +1,16 @@
 import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
-import { fetchMovieData as fetchFromGemini } from './geminiService';
-import { fetchMovieData as fetchFromDeepSeek } from './deepseekService';
+import { fetchMovieData as fetchFromGroq } from './groqService';
+import { fetchMovieData as fetchFromMistral } from './mistralService';
 import { fetchMovieData as fetchFromOpenRouter } from './openrouterService';
 import { getCachedResponse, cacheResponse, clearOldCacheEntries } from './cacheService';
 import { getFromIndexedDB, saveToIndexedDB, clearOldIndexedDBEntries } from './indexedDBService';
 
-export type AIProvider = 'gemini' | 'deepseek' | 'openrouter';
+export type AIProvider = 'groq' | 'mistral' | 'openrouter';
 
 // Track last error times for availability checking
 const lastErrors: Record<AIProvider, number | null> = {
-  gemini: null,
-  deepseek: null,
+  groq: null,
+  mistral: null,
   openrouter: null
 };
 
@@ -85,25 +85,25 @@ export async function fetchMovieData(
   try {
     let result: FetchResult;
     
-    if (provider === 'gemini') {
-      result = await fetchFromGemini(query, complexity, chatHistory);
-    } else if (provider === 'deepseek') {
-      result = await fetchFromDeepSeek(query, complexity, chatHistory);
+    if (provider === 'groq') {
+      result = await fetchFromGroq(query, complexity, chatHistory);
+    } else if (provider === 'mistral') {
+      result = await fetchFromMistral(query, complexity, chatHistory);
     } else {
       result = await fetchFromOpenRouter(query, complexity, chatHistory);
-      // If OpenRouter failed, fallback to DeepSeek (if available) then Gemini.
+      // If OpenRouter failed, fallback to Mistral (if available) then Groq.
       if (!result.movieData) {
         // track error
         lastErrors[provider] = Date.now();
-        // try DeepSeek
-        const deep = await fetchFromDeepSeek(query, complexity, chatHistory);
-        if (deep.movieData) {
-          return { movieData: deep.movieData, sources: deep.sources, error: `OpenRouter failed — fallback to DeepSeek: ${result.error || 'unknown'}` };
+        // try Mistral
+        const mistral = await fetchFromMistral(query, complexity, chatHistory);
+        if (mistral.movieData) {
+          return { movieData: mistral.movieData, sources: mistral.sources, error: `OpenRouter failed — fallback to Mistral: ${result.error || 'unknown'}` };
         }
-        // try Gemini
-        const gem = await fetchFromGemini(query, complexity, chatHistory);
-        if (gem.movieData) {
-          return { movieData: gem.movieData, sources: gem.sources, error: `OpenRouter & DeepSeek failed — fallback to Gemini: ${result.error || 'unknown'}` };
+        // try Groq
+        const groq = await fetchFromGroq(query, complexity, chatHistory);
+        if (groq.movieData) {
+          return { movieData: groq.movieData, sources: groq.sources, error: `OpenRouter & Mistral failed — fallback to Groq: ${result.error || 'unknown'}` };
         }
         // all failed, return original OpenRouter error
       }
