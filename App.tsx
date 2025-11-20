@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [movieData, setMovieData] = useState<MovieData | null>(null);
   const [sources, setSources] = useState<GroundingSource[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [loadingProgress, setLoadingProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('gemini');
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
@@ -26,14 +27,21 @@ const App: React.FC = () => {
 
   const handleSendMessage = async (message: string, complexity: QueryComplexity) => {
     setIsLoading(true);
+    setLoadingProgress('Checking cache...');
     setError(null);
     const userMessage: ChatMessage = { id: Date.now().toString(), role: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
 
     const chatHistoryForAPI = messages.filter(m => m.role !== 'system');
     
+    // Update progress indicators
+    setTimeout(() => setLoadingProgress('Contacting AI...'), 500);
+    setTimeout(() => setLoadingProgress('Generating response...'), 2000);
+    setTimeout(() => setLoadingProgress('Enriching data...'), 5000);
+    
     const result = await fetchMovieData(message, complexity, selectedProvider, chatHistoryForAPI);
     
+    setLoadingProgress('');
     // Update provider status after request
     updateProviderStatus();
 
@@ -118,7 +126,7 @@ const App: React.FC = () => {
                   onProviderChange={setSelectedProvider}
                   providerStatus={providerStatus}
                 />
-                <ChatInterface onSendMessage={handleSendMessage} messages={messages} isLoading={isLoading} />
+                <ChatInterface onSendMessage={handleSendMessage} messages={messages} isLoading={isLoading} loadingProgress={loadingProgress} />
             </div>
             <div className="lg:col-span-2 h-full min-h-0 bg-brand-surface rounded-lg shadow-lg">
                 <MovieDisplay movie={movieData} isLoading={isLoading} sources={sources} />

@@ -12,11 +12,36 @@ const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const parseJsonResponse = (text: string): MovieData | null => {
     try {
-        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        // Strategy 1: Clean and parse directly
+        let cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanedText) as MovieData;
     } catch (error) {
-        console.error("Failed to parse JSON response:", error);
-        console.error("Raw text:", text);
+        console.warn("Direct parse failed, trying extraction...");
+        
+        try {
+            // Strategy 2: Extract JSON from surrounding text using regex
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const extracted = jsonMatch[0];
+                return JSON.parse(extracted) as MovieData;
+            }
+        } catch (e) {
+            console.warn("Regex extraction failed");
+        }
+        
+        try {
+            // Strategy 3: Find first { and last }, extract between them
+            const firstBrace = text.indexOf('{');
+            const lastBrace = text.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                const extracted = text.substring(firstBrace, lastBrace + 1);
+                return JSON.parse(extracted) as MovieData;
+            }
+        } catch (e) {
+            console.warn("Brace extraction failed");
+        }
+        
+        console.error("All parsing strategies failed. Raw text:", text);
         return null;
     }
 };
@@ -43,6 +68,9 @@ export async function fetchMovieData(query: string, complexity: QueryComplexity,
     }
 
     try {
+        // Start TMDB enrichment promise early (parallel processing)
+        let tmdbEnrichmentPromise: Promise<MovieData | null> | null = null;
+        
         const response = await ai.models.generateContent({
             model: modelName,
             contents: fullPrompt,
@@ -72,16 +100,28 @@ export async function fetchMovieData(query: string, complexity: QueryComplexity,
             return { movieData: null, sources: null, error: "Failed to parse the AI's response. The data might be in an unexpected format." };
         }
 
-        // Enrich missing images via TMDB if needed
-        try {
-            if (!movieData.poster_url || !movieData.backdrop_url || !movieData.extra_images || movieData.extra_images.length === 0) {
-                movieData = await enrichWithTMDB(movieData);
-            }
-        } catch (e) {
-            console.warn('Image enrichment skipped due to error:', e);
+        // Check if TMDB enrichment is needed and start it ASAP
+        const needsEnrichment = !movieData.poster_url || !movieData.backdrop_url || !movieData.extra_images || movieData.extra_images.length === 0;
+        
+        if (needsEnrichment) {
+            // Start enrichment immediately (don't await yet)
+            tmdbEnrichmentPromise = enrichWithTMDB(movieData);
         }
 
+        // Get sources while TMDB enrichment runs
         const sources = (response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingSource[]) || null;
+
+        // Now await TMDB enrichment if it was started
+        if (tmdbEnrichmentPromise) {
+            try {
+                const enriched = await tmdbEnrichmentPromise;
+                if (enriched) {
+                    movieData = enriched;
+                }
+            } catch (e) {
+                console.warn('Image enrichment skipped due to error:', e);
+            }
+        }
 
         return { movieData, sources };
     } catch (error) {

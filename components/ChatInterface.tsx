@@ -7,9 +7,10 @@ interface ChatInterfaceProps {
   onSendMessage: (message: string, complexity: QueryComplexity) => void;
   messages: ChatMessage[];
   isLoading: boolean;
+  loadingProgress?: string;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, isLoading }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, isLoading, loadingProgress }) => {
   const [input, setInput] = useState('');
   const [complexity, setComplexity] = useState<QueryComplexity>(QueryComplexity.SIMPLE);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,11 +54,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, 
           ))}
           {isLoading && (
              <div className="flex items-start justify-start">
-               <div className="px-4 py-2 rounded-2xl max-w-xs lg:max-w-md bg-brand-surface text-brand-text-light rounded-bl-none border border-white/10">
-                 <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                    <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+               <div className="px-4 py-3 rounded-2xl max-w-xs lg:max-w-md bg-brand-surface text-brand-text-light rounded-bl-none border border-white/10">
+                 <div className="flex flex-col space-y-2">
+                   <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                   </div>
+                   {loadingProgress && (
+                     <p className="text-xs text-brand-text-dark">{loadingProgress}</p>
+                   )}
                  </div>
                </div>
             </div>

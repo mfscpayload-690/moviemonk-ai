@@ -2,6 +2,8 @@ import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { fetchMovieData as fetchFromGemini } from './geminiService';
 import { fetchMovieData as fetchFromDeepSeek } from './deepseekService';
 import { fetchMovieData as fetchFromOpenRouter } from './openrouterService';
+import { getCachedResponse, cacheResponse, clearOldCacheEntries } from './cacheService';
+import { getFromIndexedDB, saveToIndexedDB, clearOldIndexedDBEntries } from './indexedDBService';
 
 export type AIProvider = 'gemini' | 'deepseek' | 'openrouter';
 
@@ -32,7 +34,11 @@ export function checkProviderAvailability(provider: AIProvider): 'available' | '
 }
 
 /**
- * Unified fetch function that routes to the selected provider
+ * Unified fetch function with multi-tier caching:
+ * 1. IndexedDB (fastest, 30 days)
+ * 2. localStorage (fast, 24 hours)  
+ * 3. Vercel KV (medium, 7 days) - coming soon
+ * 4. AI APIs (slowest)
  */
 export async function fetchMovieData(
   query: string,
@@ -40,6 +46,42 @@ export async function fetchMovieData(
   provider: AIProvider,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
+  // Only cache simple queries without chat history (fresh searches)
+  const shouldCache = complexity === QueryComplexity.SIMPLE && (!chatHistory || chatHistory.length === 0);
+  
+  // Check IndexedDB first (instant, per-user, 30 days)
+  if (shouldCache) {
+    const indexedDBResult = await getFromIndexedDB(query, provider);
+    if (indexedDBResult) {
+      return {
+        ...indexedDBResult,
+        error: undefined
+      };
+    }
+  }
+  
+  // Check localStorage second (instant, per-user, 24 hours)
+  if (shouldCache) {
+    const cached = getCachedResponse(query, provider);
+    if (cached) {
+      // Also save to IndexedDB for longer persistence
+      saveToIndexedDB(query, provider, cached.movieData, cached.sources);
+      return {
+        ...cached,
+        error: undefined
+      };
+    }
+  }
+  
+  // TODO: Check Vercel KV third (fast, global, 7 days)
+  // Will implement once Vercel KV is set up
+  
+  // Clear old cache entries periodically (every 10th request)
+  if (Math.random() < 0.1) {
+    clearOldCacheEntries();
+    clearOldIndexedDBEntries();
+  }
+  
   try {
     let result: FetchResult;
     
@@ -67,9 +109,21 @@ export async function fetchMovieData(
       }
     }
     
-    // If successful, clear error tracking
+    // If successful, clear error tracking and cache the result
     if (result.movieData) {
       lastErrors[provider] = null;
+      
+      // Cache successful responses in multiple tiers
+      if (shouldCache) {
+        // Save to localStorage (24 hours)
+        cacheResponse(query, provider, result.movieData, result.sources);
+        
+        // Save to IndexedDB (30 days)
+        saveToIndexedDB(query, provider, result.movieData, result.sources);
+        
+        // TODO: Save to Vercel KV (7 days, global)
+        // Will implement once Vercel KV is configured
+      }
     } else if (result.error) {
       // Track error for availability checking
       lastErrors[provider] = Date.now();
