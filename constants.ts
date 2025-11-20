@@ -1,4 +1,4 @@
-// Gemini-specific schema types removed; keeping a plain JSON-like schema for prompt guidance only.
+// Schema guidance for AI providers (Groq, Mistral, OpenRouter)
 export const MOVIE_DATA_SCHEMA = {
   type: 'object',
   properties: {

@@ -105,7 +105,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, 
                         <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${complexity === QueryComplexity.COMPLEX ? 'translate-x-full bg-brand-secondary' : ''}`}></div>
                     </div>
                     <span className={`font-medium transition-colors ${complexity === QueryComplexity.COMPLEX ? 'text-brand-secondary' : 'text-brand-text-dark'}`}>
-                        Complex Query (Gemini Pro)
+                        Complex Query (Deep Analysis)
                     </span>
                 </label>
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">

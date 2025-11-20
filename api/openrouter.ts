@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'X-Title': 'MovieMonk AI'
       },
       body: JSON.stringify({
-        model: model || 'deepseek/deepseek-chat',
+        model: model || 'meta-llama/llama-3.1-8b-instruct',
         messages,
         max_tokens: max_tokens || 4000,
         temperature: temperature || 0.7,
