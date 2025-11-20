@@ -28,7 +28,10 @@ export async function fetchMovieData(
     return { movieData: null, sources: null, provider: 'openrouter' };
   }
 
-  const model = complexity === QueryComplexity.COMPLEX ? 'deepseek/deepseek-reasoner' : 'deepseek/deepseek-chat';
+  // Model selection: Use Meta Llama models via OpenRouter
+  const model = complexity === QueryComplexity.COMPLEX 
+    ? 'meta-llama/llama-3.1-70b-instruct'  // Best for complex reasoning
+    : 'meta-llama/llama-3.1-8b-instruct';  // Fast for simple queries
 
   let userPrompt = `${INITIAL_PROMPT}\n\nUser query: "${query}"`;
   if (chatHistory && chatHistory.length) {

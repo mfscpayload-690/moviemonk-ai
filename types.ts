@@ -68,5 +68,5 @@ export interface FetchResult {
   movieData: MovieData | null;
   sources: GroundingSource[] | null;
   error?: string;
-  provider?: 'groq' | 'mistral' | 'openrouter' | 'gemini' | 'deepseek';
+  provider?: 'groq' | 'mistral' | 'openrouter';
 }

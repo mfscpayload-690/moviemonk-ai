@@ -1,6 +1,6 @@
 # MovieMonk 🎬
 
-AI-powered movie and series search engine with plot summaries, cast info, spoiler-safe explanations, and real-time "where to watch" links. Built with **Google Gemini AI**, **TMDB API**, and a modern web stack.
+AI-powered movie and series search engine with plot summaries, cast info, spoiler-safe explanations, and real-time "where to watch" links. Built with **Groq (Llama 3.3)**, **Mistral AI**, **TMDB API**, and a modern web stack.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -17,8 +17,8 @@ AI-powered movie and series search engine with plot summaries, cast info, spoile
 - 📖 **Smart Summaries**: Spoiler-free synopses + detailed spoiler breakdowns
 - 🔍 **Where to Watch**: Real-time streaming/rental/purchase links
 - ⚡ **Two Query Modes**: 
-  - Simple (Gemini Flash) for quick lookups
-  - Complex (Gemini Pro) for deep analysis
+  - Simple (Groq/Mistral Fast) for quick lookups
+  - Complex (Groq/Mistral Large) for deep analysis
 - 🎨 **Modern UI**: Dark theme with smooth animations and responsive design
 
 ---
@@ -142,7 +142,7 @@ This project includes a GitHub Actions workflow for automatic deployment:
 1. **Push your code** to the `main` branch
 2. **Add secrets** in your GitHub repo:
    - Go to `Settings` → `Secrets and variables` → `Actions`
-   - Add: `GEMINI_API_KEY`, `TMDB_READ_TOKEN`, `TMDB_API_KEY`
+   - Add: `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`, `TMDB_READ_TOKEN`, `TMDB_API_KEY`
 3. **Enable GitHub Pages**:
    - Go to `Settings` → `Pages`
    - Source: **GitHub Actions**
@@ -164,7 +164,7 @@ For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.m
 - [Architecture Overview](docs/ARCHITECTURE.md) - System design, data flows, and integration points
 - [Deployment Guide](docs/DEPLOYMENT.md) - Step-by-step deployment instructions
 - [Development Guide](docs/DEVELOPMENT.md) - Local setup, workflows, and contribution guidelines
-- [API Integration](docs/API.md) - Gemini & TMDB API usage patterns
+- [API Integration](docs/API.md) - Groq, Mistral & TMDB API usage patterns
 
 ---
 
@@ -182,7 +182,8 @@ moviemonk-ai/
 │   ├── ErrorBanner.tsx         # Error notifications
 │   └── icons.tsx               # SVG icon components
 ├── services/
-│   ├── geminiService.ts        # Google Gemini AI integration
+│   ├── groqService.ts          # Groq AI integration (Llama 3.3)
+│   ├── mistralService.ts       # Mistral AI integration
 │   └── tmdbService.ts          # TMDB API integration
 ├── docs/                       # Documentation
 ├── App.tsx                     # Main application component

@@ -1,5 +1,5 @@
 {
   "name": "MovieMonk",
-  "description": "An AI-powered movie and series search engine. MovieMonk provides verified details, real-time where-to-watch links, cast and crew information, and AI-generated summaries with both spoiler-safe and spoiler-full explanations. Users can ask anything — plot breakdowns, character arcs, ending clarifications, franchise info — and get fast, grounded responses using Gemini 2.5 Pro. Perfect for entertainment lovers wanting deeper insights into their favorite titles.",
+  "description": "An AI-powered movie and series search engine. MovieMonk provides verified details, real-time where-to-watch links, cast and crew information, and AI-generated summaries with both spoiler-safe and spoiler-full explanations. Users can ask anything — plot breakdowns, character arcs, ending clarifications, franchise info — and get fast, grounded responses using Groq (Llama 3.3) and Mistral AI. Perfect for entertainment lovers wanting deeper insights into their favorite titles.",
   "requestFramePermissions": []
 }
