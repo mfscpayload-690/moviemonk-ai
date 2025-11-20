@@ -33,9 +33,13 @@ Visit the live app: **[https://mfscpayload-690.github.io/moviemonk-ai/](https://
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS
 - **Build Tool**: Vite 6
-- **AI**: Google Gemini 2.5 (Flash & Pro) with Google Search grounding
+- **AI Providers**: 
+  - Google Gemini 2.5 (Flash & Pro) with Google Search grounding
+  - DeepSeek Chat & Reasoner
+  - OpenRouter (via serverless proxy)
 - **Data**: The Movie Database (TMDB) API
-- **Deployment**: GitHub Pages via GitHub Actions
+- **Backend**: Vercel Serverless Functions (for OpenRouter proxy)
+- **Deployment**: GitHub Pages + Vercel
 - **Package Manager**: npm
 
 ---
@@ -45,8 +49,11 @@ Visit the live app: **[https://mfscpayload-690.github.io/moviemonk-ai/](https://
 - **Node.js** 18+ (LTS recommended)
 - **npm** 9+
 - **Git**
+- **Vercel Account** (for OpenRouter proxy deployment)
 - API Keys:
   - [Google Gemini API Key](https://aistudio.google.com/app/apikey)
+  - [DeepSeek API Key](https://platform.deepseek.com/)
+  - [OpenRouter API Key](https://openrouter.ai/keys)
   - [TMDB API Key](https://www.themoviedb.org/settings/api) (v3 API Key or v4 Read Access Token)
 
 ---
@@ -69,13 +76,42 @@ Create a `.env.local` file in the root directory:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 TMDB_READ_TOKEN=your_tmdb_v4_read_token_here
 TMDB_API_KEY=your_tmdb_v3_api_key_here
 ```
 
-**Note**: You need at least `GEMINI_API_KEY` and one TMDB credential (`TMDB_READ_TOKEN` is preferred).
+**Note**: You need at least one AI provider API key and one TMDB credential.
 
-### 4. Run the development server
+### 4. Deploy the OpenRouter Proxy (Required for OpenRouter)
+
+OpenRouter requires a serverless backend to bypass CORS restrictions:
+
+```bash
+# Install Vercel CLI globally
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Add OpenRouter API key as environment variable
+vercel env add OPENROUTER_API_KEY
+
+# Deploy to Vercel
+vercel --prod
+```
+
+The proxy will be available at `https://your-project.vercel.app/api/openrouter`.
+
+**For local testing with Vercel dev:**
+```bash
+vercel dev
+```
+
+See `api/README.md` for detailed proxy setup instructions.
+
+### 5. Run the development server
 ```bash
 npm run dev
 ```

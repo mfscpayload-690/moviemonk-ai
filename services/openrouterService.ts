@@ -2,8 +2,10 @@ import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
 
-const API_KEY = process.env.OPENROUTER_API_KEY;
-const API_URL = 'https://api.openrouter.ai/v1/chat/completions';
+// Use serverless proxy endpoint instead of direct API call
+const PROXY_URL = import.meta.env.DEV 
+  ? 'http://localhost:3000/api/openrouter'  // Local dev (if running Vercel dev)
+  : '/api/openrouter';  // Production (Vercel deployment)
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {
@@ -21,10 +23,6 @@ export async function fetchMovieData(
   complexity: QueryComplexity,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
-  if (!API_KEY) {
-    return { movieData: null, sources: null, error: 'OPENROUTER_API_KEY is not set' };
-  }
-
   const model = complexity === QueryComplexity.COMPLEX ? 'deepseek/deepseek-reasoner' : 'deepseek/deepseek-chat';
 
   let userPrompt = `${INITIAL_PROMPT}\n\nUser query: "${query}"`;
@@ -42,11 +40,11 @@ export async function fetchMovieData(
   };
 
   try {
-    const res = await fetch(API_URL, {
+    // Call our serverless proxy instead of OpenRouter directly
+    const res = await fetch(PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
@@ -67,7 +65,7 @@ export async function fetchMovieData(
       if (res.status === 401) {
         return { movieData: null, sources: null, error: 'OpenRouter API key invalid. Check OPENROUTER_API_KEY' };
       }
-      return { movieData: null, sources: null, error: `OpenRouter error ${res.status}: ${txt || res.statusText}` };
+      return { movieData: null, sources: null, error: `OpenRouter proxy error ${res.status}: ${txt || res.statusText}` };
     }
 
     const json = await res.json();
@@ -87,15 +85,8 @@ export async function fetchMovieData(
 
     return { movieData: parsed, sources: null };
   } catch (e: any) {
-    // Failed to fetch often means a network/CORS issue when running from the browser.
+    // Network errors
     const message = e?.message || '';
-    if (message.includes('Failed to fetch') || message.toLowerCase().includes('network')) {
-      return {
-        movieData: null,
-        sources: null,
-        error: 'OpenRouter request failed: Network/CORS error. Browser requests may be blocked — use a serverless proxy or move this key to a backend.'
-      };
-    }
-    return { movieData: null, sources: null, error: `OpenRouter request failed: ${message || 'unknown'}` };
+    return { movieData: null, sources: null, error: `OpenRouter proxy request failed: ${message || 'unknown'}` };
   }
 }
