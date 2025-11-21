@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app',
+        'HTTP-Referer': 'https://moviemonk-ai.vercel.app',
         'X-Title': 'MovieMonk AI'
       },
       body: JSON.stringify({

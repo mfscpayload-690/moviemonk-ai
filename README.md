@@ -2,7 +2,7 @@
 
 AI-powered movie and series search engine with plot summaries, cast info, spoiler-safe explanations, and real-time "where to watch" links. Built with **Groq (Llama 3.3)**, **Mistral AI**, **TMDB API**, and a modern web stack.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-ai.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ![MovieMonk Banner](asset/MovieMonk%20Logo.png)
@@ -25,7 +25,7 @@ AI-powered movie and series search engine with plot summaries, cast info, spoile
 
 ## 🚀 Live Demo
 
-Visit the live app: **[https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app](https://moviemonk-sgtv3jh28-mfscpayload-690.vercel.app)**
+Visit the live app: **[https://moviemonk-ai.vercel.app](https://moviemonk-ai.vercel.app)**
 
 ---
 
@@ -135,27 +135,26 @@ npm run preview
 
 ## 🚢 Deployment
 
-### GitHub Pages (Automated)
+### Vercel (Recommended)
 
-This project includes a GitHub Actions workflow for automatic deployment:
+The repository is already configured for Vercel. Deploy from your local machine or CI:
 
-1. **Push your code** to the `main` branch
-2. **Add secrets** in your GitHub repo:
-   - Go to `Settings` → `Secrets and variables` → `Actions`
-   - Add: `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`, `TMDB_READ_TOKEN`, `TMDB_API_KEY`
-3. **Enable GitHub Pages**:
-   - Go to `Settings` → `Pages`
-   - Source: **GitHub Actions**
-4. The workflow automatically builds and deploys on every push to `main`
+```bash
+vercel login
+vercel env pull .env.local   # optional: sync env vars locally
+vercel env add GROQ_API_KEY
+vercel env add MISTRAL_API_KEY
+vercel env add OPENROUTER_API_KEY
+vercel env add TMDB_API_KEY
+vercel env add TMDB_READ_TOKEN
+vercel --prod
+```
 
-**Live URL**: `https://<your-username>.github.io/moviemonk-ai/`
+- The canonical production URL is **https://moviemonk-ai.vercel.app**.
+- Each `vercel --prod` also creates a unique preview URL (e.g., `moviemonk-xxxxx.vercel.app`). Share only the canonical domain to avoid stale builds.
+- Optional: add a custom domain in the Vercel dashboard so the alias always points to the latest deployment.
 
-For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
-
-### Other Platforms
-
-- **Railway**: Auto-detects Node.js, add env vars in dashboard
-- **Vercel/Netlify**: Connect GitHub repo, set build command to `npm run build`
+For alternate hosts (Netlify, Railway, etc.), run `npm run build` and serve the `dist/` folder, ensuring the same environment variables are provided.
 
 ---
 
@@ -173,8 +172,7 @@ For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.m
 ```
 moviemonk-ai/
 ├── .github/
-│   └── workflows/
-│       └── deploy.yml          # GitHub Actions deployment workflow
+│   └── copilot-instructions.md # Guidance for AI assistants (no CI workflow)
 ├── asset/                      # Static assets (logo, images)
 ├── components/                 # React components
 │   ├── ChatInterface.tsx       # User input and conversation UI
