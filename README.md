@@ -1,6 +1,6 @@
 # MovieMonk 🎬
 
-AI-powered movie and series search engine with plot summaries, cast info, spoiler-safe explanations, and real-time "where to watch" links. Built with **Groq (Llama 3.3)**, **Mistral AI**, **TMDB API**, and a modern web stack.
+**100% Accurate** AI-powered movie and series search engine with **TMDB & IMDB factual data**, AI-enhanced plot summaries, cast info, spoiler-safe explanations, and real-time "where to watch" links.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-ai.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -11,15 +11,83 @@ AI-powered movie and series search engine with plot summaries, cast info, spoile
 
 ## ✨ Features
 
-- 🤖 **AI-Powered Search**: Ask anything about movies, shows, actors, directors, or songs
-- 🎭 **Comprehensive Information**: Cast, crew, ratings (IMDb, Rotten Tomatoes), genres, year
-- 🎥 **Media Rich**: Official trailers, posters, backdrops, and gallery images from TMDB
-- 📖 **Smart Summaries**: Spoiler-free synopses + detailed spoiler breakdowns
-- 🔍 **Where to Watch**: Real-time streaming/rental/purchase links
-- ⚡ **Two Query Modes**: 
-  - Simple (Groq/Mistral Fast) for quick lookups
-  - Complex (Groq/Mistral Large) for deep analysis
-- 🎨 **Modern UI**: Dark theme with smooth animations and responsive design
+### 🎯 **Hybrid Accuracy Architecture**
+- **TMDB First**: 100% accurate factual data (cast, crew, ratings, release dates) from The Movie Database
+- **IMDB Ratings**: Real IMDB scores via OMDB API integration
+- **Web Search Fallback**: Perplexity AI for recent releases not yet in TMDB
+- **AI Enhancement**: Creative summaries, trivia, and spoiler breakdowns from Groq/Mistral/OpenRouter
+
+### 🤖 **Smart Query Processing**
+- Auto-detects season/episode numbers ("You season 5" → Season 5 of "You")
+- Extracts years automatically ("Interstellar 2014")
+- Intelligent complexity detection (recent releases use complex models)
+- Multi-turn conversation support
+
+### 📊 **Comprehensive Information**
+- Cast & Crew (verified from TMDB)
+- IMDB & Rotten Tomatoes ratings (real-time)
+- Genres, release dates, runtime
+- Official trailers, posters, backdrops, gallery
+- Streaming availability (subscription/rent/buy)
+
+### 📖 **Content Layers**
+- **Summary Short**: Spoiler-free 150-char hook
+- **Summary Medium**: Spoiler-free 400-char overview
+- **Full Plot (Spoilers)**: AI-generated detailed breakdown
+- **Suspense Breaker**: One-sentence twist reveal
+- **AI Trivia**: Quotes, themes, similar recommendations
+
+---
+
+## 🏗️ Architecture Overview
+
+```
+User Query
+    ↓
+Query Parser (extract title, year, season)
+    ↓
+Auto-detect Complexity
+    ↓
+Cache Check (IndexedDB 7d, localStorage 6h)
+    ↓
+╔═══════════════════════════════════════╗
+║  PRIMARY: TMDB API                    ║
+║  ✓ 100% factual data                  ║
+║  ✓ Cast, crew, ratings, images        ║
+║  ✓ IMDB ID → OMDB for ratings         ║
+╚═══════════════════════════════════════╝
+    ↓ (if found)
+    ↓
+╔═══════════════════════════════════════╗
+║  AI ENHANCEMENT                       ║
+║  ✓ Creative summaries                 ║
+║  ✓ Spoiler breakdowns                 ║
+║  ✓ Trivia & recommendations           ║
+╚═══════════════════════════════════════╝
+    ↓
+Merge: TMDB Facts + AI Creative Content
+    ↓
+Return to User
+
+    ↓ (if NOT found in TMDB)
+    ↓
+╔═══════════════════════════════════════╗
+║  FALLBACK: Perplexity Web Search      ║
+║  ✓ Real-time web data                 ║
+║  ✓ Recent releases                    ║
+║  ✓ Obscure titles                     ║
+╚═══════════════════════════════════════╝
+    ↓ (if found)
+    ↓
+AI Enhancement → Return to User
+
+    ↓ (if still NOT found)
+    ↓
+╔═══════════════════════════════════════╗
+║  LAST RESORT: Pure AI                 ║
+║  ⚠️ May contain inaccuracies           ║
+╚═══════════════════════════════════════╝
+```
 
 ---
 
@@ -34,11 +102,15 @@ Visit the live app: **[https://moviemonk-ai.vercel.app](https://moviemonk-ai.ver
 - **Frontend**: React 19, TypeScript, Tailwind CSS
 - **Build Tool**: Vite 6
 - **AI Providers** (100% FREE):
-  - 🆓 **Groq** (Llama 3.3 70B) - Fastest inference, unlimited free tier
-  - 🆓 **Mistral AI** (Mistral Large/Small) - 2M tokens/month free
-  - 🆓 **OpenRouter** - Emergency fallback (via serverless proxy)
-- **Data**: The Movie Database (TMDB) API
+  - 🆓 **Groq** (Llama 3.3 70B / 3.1 8B) - Unlimited free tier, fastest inference
+  - 🆓 **Mistral AI** (Mixtral 8x22B / 8x7B) - 2M tokens/month free
+  - 🆓 **OpenRouter** (Meta Llama 3.1) - Emergency fallback
+  - 🔍 **Perplexity AI** (Sonar Online) - Web search fallback for recent releases
+- **Data Sources**:
+  - 📊 **TMDB API** - Primary factual data (cast, crew, images, streaming)
+  - ⭐ **OMDB API** - IMDB ratings integration
 - **Backend**: Vercel Serverless Functions
+- **Caching**: IndexedDB (7 days) + localStorage (6 hours)
 - **Deployment**: Vercel
 - **Package Manager**: npm
 
@@ -50,11 +122,14 @@ Visit the live app: **[https://moviemonk-ai.vercel.app](https://moviemonk-ai.ver
 - **npm** 9+
 - **Git**
 - **Vercel Account** (for deployment)
-- **100% FREE API Keys**:
-  - [Groq API Key](https://console.groq.com) - Unlimited free tier ⚡
-  - [Mistral API Key](https://console.mistral.ai) - 2M tokens/month free 🌟
+- **Required API Keys** (ALL FREE):
+  - [Groq API Key](https://console.groq.com) - Unlimited free tier ⚡ **REQUIRED**
+  - [TMDB API Key](https://www.themoviedb.org/settings/api) - Free tier (v3 + v4) **REQUIRED**
+  - [OMDB API Key](http://www.omdbapi.com/apikey.aspx) - 1000 req/day free **REQUIRED**
+- **Optional But Recommended**:
+  - [Mistral API Key](https://console.mistral.ai) - 2M tokens/month free
   - [OpenRouter API Key](https://openrouter.ai/keys) - Emergency fallback
-  - [TMDB API Key](https://www.themoviedb.org/settings/api) (v3 API Key or v4 Read Access Token)
+  - [Perplexity API Key](https://www.perplexity.ai/settings/api) - For recent releases
 
 ---
 
@@ -72,33 +147,125 @@ npm install
 ```
 
 ### 3. Configure environment variables
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the root directory (see `.env.local.example`):
 
 ```env
+# Required
 GROQ_API_KEY=your_groq_api_key_here
+TMDB_API_KEY=your_tmdb_v3_api_key_here
+TMDB_READ_TOKEN=your_tmdb_v4_read_token_here
+OMDB_API_KEY=your_omdb_api_key_here
+
+# Optional but recommended
 MISTRAL_API_KEY=your_mistral_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
-TMDB_READ_TOKEN=your_tmdb_v4_read_token_here
-TMDB_API_KEY=your_tmdb_v3_api_key_here
+PERPLEXITY_API_KEY=your_perplexity_api_key_here
 ```
 
-**Note**: You need at least one AI provider API key and one TMDB credential.
+**Note**: Minimum required keys are GROQ_API_KEY, TMDB_API_KEY, TMDB_READ_TOKEN, and OMDB_API_KEY.
 
-### 4. Deploy the OpenRouter Proxy (Required for OpenRouter)
-
-OpenRouter requires a serverless backend to bypass CORS restrictions:
-
+### 4. Development server
 ```bash
-# Install Vercel CLI globally
+npm run dev
+```
+Visit [http://localhost:3000](http://localhost:3000)
+
+### 5. Production build
+```bash
+npm run build
+npm run preview
+```
+
+---
+
+## 🌐 Deployment to Vercel
+
+### One-Click Deploy
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/mfscpayload-690/moviemonk-ai)
+
+### Manual Deployment
+
+1. **Install Vercel CLI**
+```bash
 npm i -g vercel
+```
 
-# Login to Vercel
+2. **Login to Vercel**
+```bash
 vercel login
+```
 
-# Add OpenRouter API key as environment variable
+3. **Add Environment Variables**
+```bash
+vercel env add GROQ_API_KEY
+vercel env add TMDB_API_KEY
+vercel env add TMDB_READ_TOKEN
+vercel env add OMDB_API_KEY
+vercel env add MISTRAL_API_KEY
 vercel env add OPENROUTER_API_KEY
+vercel env add PERPLEXITY_API_KEY
+```
 
-# Deploy to Vercel
+4. **Deploy to Production**
+```bash
+vercel --prod
+```
+
+Your app will be live at `https://your-project.vercel.app`
+
+**Canonical Domain**: [https://moviemonk-ai.vercel.app](https://moviemonk-ai.vercel.app)
+
+---
+
+## 🎯 How It Works
+
+### Query Processing
+1. **Parse**: Extract title, year, season, episode from natural language
+   - "You season 5" → `{title: "You", season: 5, type: "show"}`
+   - "Interstellar 2014" → `{title: "Interstellar", year: 2014}`
+
+2. **Auto-Complexity**: Detect if query needs complex model
+   - Recent years (2024-2025) → Complex
+   - Season/episode queries → Complex
+   - Keywords like "detailed plot" → Complex
+
+3. **Cache Check**: IndexedDB (7 days) → localStorage (6 hours)
+
+### Data Flow
+1. **TMDB Search** (PRIMARY)
+   - Search title + year in TMDB database
+   - Fetch cast, crew, genres, release dates
+   - Get IMDB ID from external_ids endpoint
+   - Fetch IMDB ratings from OMDB API
+   - Get streaming providers (where to watch)
+   - Fetch images, trailers, gallery
+
+2. **AI Enhancement** (if TMDB found)
+   - Send factual context to AI (Groq/Mistral/OpenRouter)
+   - AI generates ONLY creative content:
+     - `summary_short`: 150-char spoiler-free hook
+     - `summary_medium`: 400-char spoiler-free overview
+     - `summary_long_spoilers`: Full detailed plot
+     - `suspense_breaker`: One-sentence twist
+     - `ai_notes`: Trivia, quotes, recommendations
+   - Merge: TMDB facts + AI creative = Final result
+
+3. **Perplexity Fallback** (if TMDB not found)
+   - Search web using Perplexity Sonar Online model
+   - Extract factual data from current web sources
+   - AI enhance creative content
+   - Return web data + AI summaries
+
+4. **Pure AI Last Resort** (if both fail)
+   - Full AI generation (legacy mode)
+   - ⚠️ May contain inaccuracies for obscure titles
+
+### Cache Strategy
+- **IndexedDB**: 7 days (reduced from 30 for accuracy)
+- **localStorage**: 6 hours (reduced from 24 for fresh data)
+- Cache key: `{provider}_{normalized_query}`
+
+---
 vercel --prod
 ```
 

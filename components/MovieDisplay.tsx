@@ -130,7 +130,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
 
   const embedUrl = movie ? getYouTubeEmbedUrl(movie.trailer_url) : null;
   
-  const displayedCast = movie ? (showAllCast ? movie.cast : movie.cast.slice(0, 8)) : [];
+  // Ensure ratings is always an array (handle legacy cached data)
+  const safeRatings = movie && Array.isArray(movie.ratings) ? movie.ratings : [];
+  const safeCast = movie && Array.isArray(movie.cast) ? movie.cast : [];
+  const safeGenres = movie && Array.isArray(movie.genres) ? movie.genres : [];
+  const safeWhereToWatch = movie && Array.isArray(movie.where_to_watch) ? movie.where_to_watch : [];
+  const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
+  
+  const displayedCast = showAllCast ? safeCast : safeCast.slice(0, 8);
 
 
   useEffect(() => {
@@ -183,12 +190,12 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
                         <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight">{movie.title}</h1>
                         <p className="mt-2 text-md md:text-lg text-brand-text-dark font-medium">{movie.year} &bull; {movie.type.charAt(0).toUpperCase() + movie.type.slice(1)}</p>
                         <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
-                        {movie.genres.map(genre => (
+                        {safeGenres.map(genre => (
                             <span key={genre} className="px-3 py-1 bg-white/10 text-brand-text-light text-xs font-semibold rounded-full backdrop-blur-sm">{genre}</span>
                         ))}
                         </div>
                         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center justify-center md:justify-start">
-                            {(movie.ratings || []).map(rating => (
+                            {safeRatings.map(rating => (
                                 <div key={rating.source} className="flex items-center gap-2 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                                     {rating.source.toLowerCase().includes('rotten') && (
                                         <RottenTomatoesIcon className="w-7 h-7 text-red-500" />
@@ -264,13 +271,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
             </div>
-            {movie.cast.length > 8 && (
+            {safeCast.length > 8 && (
                 <div className="mt-4 text-center">
                     <button
                         onClick={() => setShowAllCast(!showAllCast)}
                         className="px-4 py-2 text-sm font-semibold text-brand-primary bg-brand-primary/10 rounded-full hover:bg-brand-primary/20 transition-colors"
                     >
-                        {showAllCast ? 'Show Less' : `Show ${movie.cast.length - 8} More`}
+                        {showAllCast ? 'Show Less' : `Show ${safeCast.length - 8} More`}
                     </button>
                 </div>
             )}
@@ -289,14 +296,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
         <div className="lg:col-span-1 space-y-8">
           <Section title="Where to Watch">
              <div className="space-y-3">
-               {movie.where_to_watch.length > 0 ? movie.where_to_watch.map(option => <WatchCard key={option.platform} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
+               {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
              </div>
           </Section>
           
            <Section title="Gallery">
-             {movie.extra_images && movie.extra_images.length > 0 ? (
+             {safeExtraImages.length > 0 ? (
                  <div className="grid grid-cols-2 gap-2">
-                    {movie.extra_images.slice(0, 4).map((img, i) => (
+                    {safeExtraImages.slice(0, 4).map((img, i) => (
                         <a href={img} target="_blank" rel="noopener noreferrer" key={i}>
                             <ImageWithFallback src={img} alt={`Scene ${i+1}`} className="rounded-lg object-cover w-full h-full aspect-video hover:scale-105 transition-transform duration-300"/>
                         </a>

@@ -33,18 +33,25 @@ export async function fetchMovieData(
     ? 'meta-llama/llama-3.1-70b-instruct'  // Best for complex reasoning
     : 'meta-llama/llama-3.1-8b-instruct';  // Fast for simple queries
 
-  let userPrompt = `${INITIAL_PROMPT}\n\nUser query: "${query}"`;
-  if (chatHistory && chatHistory.length) {
-    userPrompt += '\n\nConversation so far: ' + chatHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+  // Build proper multi-turn message array
+  const messages: Array<{role: string; content: string}> = [
+    { role: 'system', content: INITIAL_PROMPT }
+  ];
+  
+  // Add chat history if present
+  if (chatHistory && chatHistory.length > 0) {
+    chatHistory.forEach(msg => {
+      messages.push({ role: msg.role, content: msg.content });
+    });
   }
+  
+  // Add current query
+  messages.push({ role: 'user', content: query });
 
   const payload = {
     model,
-    messages: [
-      { role: 'system', content: 'You are MovieMonk. Return a single JSON object matching the schema, JSON only.' },
-      { role: 'user', content: userPrompt }
-    ],
-    temperature: 0.0
+    messages,
+    temperature: 0.2 // Standardized for accuracy
   };
 
   try {

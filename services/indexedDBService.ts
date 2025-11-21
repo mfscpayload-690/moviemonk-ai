@@ -66,9 +66,9 @@ export async function getFromIndexedDB(
           return;
         }
 
-        // Check if cache is still valid (30 days)
+        // Check if cache is still valid (7 days - reduced from 30 for accuracy)
         const age = Date.now() - cached.timestamp;
-        const MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+        const MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 
         if (age > MAX_AGE) {
           // Cache expired, delete it
@@ -151,7 +151,7 @@ export async function deleteFromIndexedDB(query: string, provider: string): Prom
 }
 
 /**
- * Clear all old entries (older than 30 days)
+ * Clear all old entries (older than 7 days)
  */
 export async function clearOldIndexedDBEntries(): Promise<void> {
   try {
@@ -160,7 +160,7 @@ export async function clearOldIndexedDBEntries(): Promise<void> {
     const store = transaction.objectStore(STORE_NAME);
     const index = store.index('timestamp');
 
-    const MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+    const MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
     const cutoff = Date.now() - MAX_AGE;
 
     return new Promise((resolve, reject) => {

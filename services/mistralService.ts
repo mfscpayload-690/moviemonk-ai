@@ -46,11 +46,20 @@ export async function fetchMovieData(
     ? 'open-mixtral-8x22b'   // Free, best reasoning (22B params)
     : 'open-mixtral-8x7b';   // Free, fast and efficient (8x7B)
 
-  let userPrompt = `${INITIAL_PROMPT}\n\nUser query: "${query}"`;
-  if (chatHistory && chatHistory.length) {
-    const hist = chatHistory.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
-    userPrompt = `${INITIAL_PROMPT}\n\nConversation history:\n${hist}\n\nNew query: "${query}"`;
+  // Build proper multi-turn message array
+  const messages: Array<{role: string; content: string}> = [
+    { role: 'system', content: INITIAL_PROMPT }
+  ];
+  
+  // Add chat history if present
+  if (chatHistory && chatHistory.length > 0) {
+    chatHistory.forEach(msg => {
+      messages.push({ role: msg.role, content: msg.content });
+    });
   }
+  
+  // Add current query
+  messages.push({ role: 'user', content: query });
 
   try {
     const response = await fetch(API_URL, {
@@ -61,8 +70,8 @@ export async function fetchMovieData(
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'user', content: userPrompt }],
-        temperature: 0.3,
+        messages,
+        temperature: 0.2, // Standardized for accuracy
         max_tokens: 4000,
         response_format: { type: 'json_object' }
       })

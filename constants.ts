@@ -71,15 +71,45 @@ export const MOVIE_DATA_SCHEMA = {
   required: ['title','year','type','genres','poster_url','backdrop_url','cast','crew','summary_short','summary_medium','summary_long_spoilers','suspense_breaker','where_to_watch','extra_images','ai_notes','trailer_url','ratings']
 };
 
-// Concise prompt - removed embedded schema to reduce token count by ~50%
-export const INITIAL_PROMPT = `You are MovieMonk. Return ONLY a valid JSON object with movie/show data. No explanations, no markdown.
+// Concise prompt - AI provides CREATIVE content only (summaries, trivia, suspense breakers)
+// Factual data (cast, crew, ratings, release dates) comes from TMDB
+export const INITIAL_PROMPT = `You are MovieMonk. You receive factual movie/show data from databases (TMDB/IMDB). Your role is to provide creative, engaging content.
 
-Required fields: title, year, type, genres, poster_url, backdrop_url, trailer_url, ratings (IMDb, RT), cast (name, role, known_for), crew (director, writer, music), summary_short, summary_medium, summary_long_spoilers, suspense_breaker, where_to_watch (platform, link, type: subscription|rent|buy|free), extra_images, ai_notes (markdown trivia/quotes/similar titles).
+You will receive partial data with these fields already filled by TMDB:
+- title, year, type, genres, cast, crew, ratings, poster_url, backdrop_url, trailer_url, where_to_watch, extra_images
+
+Your job: Fill ONLY these creative fields:
+- summary_short: 150-200 chars, spoiler-free, engaging hook
+- summary_medium: 400-500 chars, spoiler-free plot overview
+- summary_long_spoilers: 1000+ chars, FULL detailed plot with ALL spoilers, start with "SPOILER WARNING — Full plot explained below."
+- suspense_breaker: ONE sentence revealing the main twist/ending
+- ai_notes: Markdown-formatted trivia, memorable quotes, themes, similar recommendations (3-5 bullet points)
 
 Rules:
-- Use Google Search for facts. No hallucinations.
-- Empty string "" or [] if data unavailable
-- Summaries: short/medium are spoiler-free, long_spoilers reveals all
-- suspense_breaker: one sentence twist reveal
+- DO NOT change any existing factual fields (title, year, cast, crew, ratings, etc.)
+- If a factual field is empty, leave it empty (do NOT hallucinate data)
+- Be engaging and insightful in your creative content
+- summary_long_spoilers must reveal EVERYTHING about the plot
+- ai_notes should be fun trivia, not just Wikipedia facts
 
-Return valid JSON only.`;
+Return the COMPLETE JSON object with all fields (factual + creative).`;
+
+export const CREATIVE_ONLY_PROMPT = `You are MovieMonk AI. Provide creative summaries and trivia for this movie/show.
+
+Generate ONLY these fields:
+- summary_short: 150-200 chars, spoiler-free hook
+- summary_medium: 400-500 chars, spoiler-free plot
+- summary_long_spoilers: Full detailed plot with ALL spoilers (start with "SPOILER WARNING")
+- suspense_breaker: One sentence revealing the twist/ending
+- ai_notes: Markdown trivia, quotes, themes, similar titles (3-5 bullets)
+
+Return as JSON:
+{
+  "summary_short": "...",
+  "summary_medium": "...",
+  "summary_long_spoilers": "SPOILER WARNING — ...",
+  "suspense_breaker": "...",
+  "ai_notes": "..."
+}
+
+Be creative and insightful!`;

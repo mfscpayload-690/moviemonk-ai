@@ -9,7 +9,7 @@ interface CachedResponse {
 }
 
 const CACHE_KEY_PREFIX = 'moviemonk_cache_';
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours (reduced from 24h to prevent stale data)
 
 /**
  * Generate a cache key from query

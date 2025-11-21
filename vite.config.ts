@@ -16,7 +16,9 @@ export default defineConfig(({ mode }) => {
         'process.env.MISTRAL_API_KEY': JSON.stringify(env.MISTRAL_API_KEY || ''),
         'process.env.OPENROUTER_API_KEY': JSON.stringify(env.OPENROUTER_API_KEY || ''),
         'process.env.TMDB_API_KEY': JSON.stringify(env.TMDB_API_KEY || ''),
-        'process.env.TMDB_READ_TOKEN': JSON.stringify(env.TMDB_READ_TOKEN || '')
+        'process.env.TMDB_READ_TOKEN': JSON.stringify(env.TMDB_READ_TOKEN || ''),
+        'process.env.PERPLEXITY_API_KEY': JSON.stringify(env.PERPLEXITY_API_KEY || ''),
+        'process.env.OMDB_API_KEY': JSON.stringify(env.OMDB_API_KEY || '')
       },
       resolve: {
         alias: {
