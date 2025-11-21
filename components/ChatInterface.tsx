@@ -10,10 +10,23 @@ interface ChatInterfaceProps {
   loadingProgress?: string;
 }
 
+const PRESET_MOVIES = [
+  { title: 'Interstellar', emoji: '🚀' },
+  { title: 'The Dark Knight', emoji: '🦇' },
+  { title: 'Inception', emoji: '💭' },
+  { title: 'Parasite', emoji: '🏠' },
+  { title: 'Oppenheimer', emoji: '💥' },
+  { title: 'Breaking Bad', emoji: '🧪' },
+  { title: 'Stranger Things', emoji: '👾' },
+  { title: 'The Last of Us', emoji: '🍄' },
+];
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, isLoading, loadingProgress }) => {
   const [input, setInput] = useState('');
   const [complexity, setComplexity] = useState<QueryComplexity>(QueryComplexity.SIMPLE);
+  const [showPresets, setShowPresets] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,7 +39,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, 
     if (input.trim() && !isLoading) {
       onSendMessage(input, complexity);
       setInput('');
+      setShowPresets(false);
     }
+  };
+
+  const handlePresetClick = (title: string) => {
+    setInput(title);
+    setShowPresets(false);
+    inputRef.current?.focus();
   };
 
   return (
@@ -72,12 +92,42 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, 
         </div>
       </div>
       <div className="border-t border-white/10 p-4">
+        {/* Preset Suggestions */}
+        {messages.length === 0 && (
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-brand-text-dark font-medium">Popular Searches</span>
+              <button
+                onClick={() => setShowPresets(!showPresets)}
+                className="text-xs text-brand-primary hover:text-brand-secondary transition-colors"
+              >
+                {showPresets ? 'Hide' : 'Show all'}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(showPresets ? PRESET_MOVIES : PRESET_MOVIES.slice(0, 4)).map((preset) => (
+                <button
+                  key={preset.title}
+                  onClick={() => handlePresetClick(preset.title)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-brand-primary/20 border border-white/10 hover:border-brand-primary/50 rounded-full text-xs font-medium text-brand-text-light transition-all duration-200 hover:scale-105"
+                  disabled={isLoading}
+                >
+                  <span>{preset.emoji}</span>
+                  <span>{preset.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex flex-col space-y-3">
            <div className="relative">
              <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onFocus={() => messages.length === 0 && setShowPresets(true)}
               placeholder="Ask about a movie, actor, director..."
               className="w-full bg-gray-800/50 border border-white/20 rounded-xl py-3 pl-4 pr-14 text-brand-text-light focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all duration-300 placeholder:text-brand-text-dark"
               disabled={isLoading}

@@ -4,7 +4,7 @@ import MovieDisplay from './components/MovieDisplay';
 import ErrorBanner from './components/ErrorBanner';
 import ProviderSelector, { AIProvider, ProviderStatus } from './components/ProviderSelector';
 import { ChatMessage, MovieData, QueryComplexity, GroundingSource } from './types';
-import { fetchMovieData, checkProviderAvailability, testProviderAvailability } from './services/aiService';
+import { fetchMovieData, checkProviderAvailability, testProviderAvailability, fetchFullPlotDetails } from './services/aiService';
 import { Logo } from './components/icons';
 
 const App: React.FC = () => {
@@ -99,7 +99,13 @@ const App: React.FC = () => {
                 <ChatInterface onSendMessage={handleSendMessage} messages={messages} isLoading={isLoading} loadingProgress={loadingProgress} />
             </div>
             <div className="lg:col-span-2 h-full min-h-0 bg-brand-surface rounded-lg shadow-lg">
-                <MovieDisplay movie={movieData} isLoading={isLoading} sources={sources} />
+                <MovieDisplay 
+                  movie={movieData} 
+                  isLoading={isLoading} 
+                  sources={sources}
+                  selectedProvider={selectedProvider}
+                  onFetchFullPlot={fetchFullPlotDetails}
+                />
             </div>
         </div>
     </div>

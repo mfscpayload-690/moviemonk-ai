@@ -284,6 +284,54 @@ async function fallbackToAI(
 }
 
 /**
+ * Fetch detailed plot/spoilers on demand (lazy loading)
+ */
+export async function fetchFullPlotDetails(
+  title: string,
+  year: string,
+  type: string,
+  provider: AIProvider
+): Promise<string> {
+  try {
+    const prompt = `Provide a comprehensive, detailed plot summary with FULL SPOILERS for "${title}" (${year}, ${type}). 
+
+Include:
+- Complete plot breakdown from beginning to end
+- All major plot twists and reveals
+- Character arcs and development
+- Ending explanation
+- Any post-credit scenes or epilogues
+
+Format: Start with "SPOILER WARNING — Full plot explained below." then provide 3-5 detailed paragraphs.`;
+
+    let result: FetchResult;
+    
+    if (provider === 'groq') {
+      result = await fetchFromGroq(prompt, QueryComplexity.COMPLEX);
+    } else if (provider === 'mistral') {
+      result = await fetchFromMistral(prompt, QueryComplexity.COMPLEX);
+    } else {
+      result = await fetchFromOpenRouter(prompt, QueryComplexity.COMPLEX);
+    }
+    
+    if (result.movieData && result.movieData.summary_long_spoilers) {
+      return result.movieData.summary_long_spoilers;
+    }
+    
+    // Fallback if AI doesn't provide summary_long_spoilers field
+    if (result.movieData && result.movieData.summary_medium) {
+      return `SPOILER WARNING — Full plot explained below.\n\n${result.movieData.summary_medium}\n\nNote: Full spoiler details could not be generated at this time.`;
+    }
+    
+    return "Unable to fetch full plot details at this time. Please try again.";
+    
+  } catch (error) {
+    console.error('Full plot fetch error:', error);
+    return "Error loading full plot details. Please try again later.";
+  }
+}
+
+/**
  * Test provider availability with a lightweight check (removed - providers are always assumed available)
  */
 export async function testProviderAvailability(provider: AIProvider): Promise<boolean> {

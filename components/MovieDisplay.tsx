@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon } from './icons';
+import type { AIProvider } from '../services/aiService';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
     isLoading: boolean;
     sources: GroundingSource[] | null;
+    selectedProvider: AIProvider;
+    onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
 }
 
 const getYouTubeEmbedUrl = (url: string): string | null => {
@@ -116,11 +119,14 @@ const LoadingSkeleton = () => (
     </div>
 );
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }) => {
+const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot }) => {
   const [showFullPlot, setShowFullPlot] = useState(false);
   const [showSuspenseBreaker, setShowSuspenseBreaker] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [showAllCast, setShowAllCast] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isLoadingFullPlot, setIsLoadingFullPlot] = useState(false);
+  const [fullPlotContent, setFullPlotContent] = useState<string>('');
   const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -249,19 +255,38 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
                 <div className="flex justify-between items-center">
                     <span className="font-semibold text-brand-accent">Full Plot Details (Spoilers)</span>
                     <button 
-                        onClick={() => setShowFullPlot(!showFullPlot)} 
+                        onClick={async () => {
+                          if (!showFullPlot && !fullPlotContent && movie) {
+                            setIsLoadingFullPlot(true);
+                            try {
+                              const plot = await onFetchFullPlot(movie.title, movie.year, movie.type, selectedProvider);
+                              setFullPlotContent(plot);
+                            } catch (error) {
+                              setFullPlotContent("Failed to load full plot details. Please try again.");
+                            }
+                            setIsLoadingFullPlot(false);
+                          }
+                          setShowFullPlot(!showFullPlot);
+                        }} 
                         aria-label={showFullPlot ? 'Hide full plot' : 'Show full plot'}
                         aria-expanded={showFullPlot}
                         aria-controls="spoiler-content"
                         className="p-2 rounded-full hover:bg-brand-primary/20 focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all duration-200"
+                        disabled={isLoadingFullPlot}
                     >
-                        {showFullPlot ? <EyeSlashIcon /> : <EyeIcon />}
+                        {isLoadingFullPlot ? (
+                          <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                        ) : showFullPlot ? (
+                          <EyeSlashIcon />
+                        ) : (
+                          <EyeIcon />
+                        )}
                     </button>
                 </div>
-                {showFullPlot && (
+                {showFullPlot && fullPlotContent && (
                     <div id="spoiler-content" className="mt-3 pt-3 border-t border-brand-primary/20 animate-fade-in">
-                        <p className="text-sm font-bold text-red-400 mb-2">{movie.summary_long_spoilers.startsWith("SPOILER WARNING") ? movie.summary_long_spoilers.split("—")[0] : "SPOILER WARNING"}</p>
-                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">{movie.summary_long_spoilers.replace(/^SPOILER WARNING — Full plot explained below\.\n*/, '')}</p>
+                        <p className="text-sm font-bold text-red-400 mb-2">{fullPlotContent.startsWith("SPOILER WARNING") ? fullPlotContent.split("—")[0] : "SPOILER WARNING"}</p>
+                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">{fullPlotContent.replace(/^SPOILER WARNING — Full plot explained below\.\n*/, '')}</p>
                     </div>
                 )}
             </div>
@@ -304,9 +329,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
              {safeExtraImages.length > 0 ? (
                  <div className="grid grid-cols-2 gap-2">
                     {safeExtraImages.slice(0, 4).map((img, i) => (
-                        <a href={img} target="_blank" rel="noopener noreferrer" key={i}>
-                            <ImageWithFallback src={img} alt={`Scene ${i+1}`} className="rounded-lg object-cover w-full h-full aspect-video hover:scale-105 transition-transform duration-300"/>
-                        </a>
+                        <button 
+                          key={i}
+                          onClick={() => setSelectedImage(img)}
+                          className="focus:outline-none focus:ring-2 focus:ring-brand-primary rounded-lg"
+                        >
+                            <ImageWithFallback src={img} alt={`Scene ${i+1}`} className="rounded-lg object-cover w-full h-full aspect-video hover:scale-105 transition-transform duration-300 cursor-pointer"/>
+                        </button>
                     ))}
                  </div>
              ) : (
@@ -348,6 +377,34 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
                   <button 
                     onClick={() => setIsTrailerOpen(false)}
                     aria-label="Close trailer"
+                    className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
+                  >
+                      <XMarkIcon className="w-6 h-6" />
+                  </button>
+              </div>
+          </div>,
+          modalRoot
+      )}
+
+      {selectedImage && modalRoot && ReactDOM.createPortal(
+          <div 
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
+            onClick={() => setSelectedImage(null)}
+            aria-modal="true"
+            role="dialog"
+          >
+              <div 
+                className="relative max-w-6xl max-h-[90vh] bg-black rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                  <img
+                      src={selectedImage}
+                      alt="Gallery image"
+                      className="max-w-full max-h-[90vh] rounded-lg object-contain"
+                  />
+                  <button 
+                    onClick={() => setSelectedImage(null)}
+                    aria-label="Close image"
                     className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
                   >
                       <XMarkIcon className="w-6 h-6" />
