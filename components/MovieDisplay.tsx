@@ -241,22 +241,25 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         </div>
                 )}
         {/* Hero Section with Poster Card */}
-        <div className="relative w-full h-[60vh] md:h-[70vh] mb-8 animate-fade-in overflow-hidden">
+        <div className="relative w-full h-[60vh] md:h-[70vh] mb-8 overflow-hidden">
+            {/* Backdrop Image Layer */}
             {movie.backdrop_url && (
                 <img 
                     src={movie.backdrop_url} 
                     alt={`${movie.title} backdrop`} 
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover z-0"
                     loading="eager"
                 />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/50 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-bg/70 via-brand-bg/30 to-transparent"></div>
+            {/* Gradient Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/50 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-bg/70 via-brand-bg/30 to-transparent z-10"></div>
             
-            <div className="relative h-full flex items-end p-6 md:p-12 max-w-screen-xl mx-auto">
+            {/* Content Layer - Above gradients */}
+            <div className="relative h-full flex items-end p-6 md:p-12 max-w-screen-xl mx-auto z-20">
                 <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
                     {/* Poster Card */}
-                    <div className="flex-shrink-0 opacity-0 animate-fade-in" style={{animationDelay:'0.05s'}}>
+                    <div className="flex-shrink-0 animate-fade-in" style={{animationDelay:'0.05s', animationFillMode: 'forwards'}}>
                         <ImageWithFallback 
                             src={movie.poster_url} 
                             alt={`${movie.title} poster`} 
@@ -266,18 +269,18 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     
                     {/* Title and Info Card */}
                     <div className="flex-1 text-left pb-4">
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl opacity-0 animate-fade-in" style={{animationDelay:'0.15s'}}>{movie.title}</h1>
-                        <p className="mt-3 text-lg md:text-xl text-brand-text-light font-semibold opacity-0 animate-slide-up" style={{animationDelay:'0.25s'}}>
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl animate-fade-in" style={{animationDelay:'0.15s', animationFillMode: 'forwards'}}>{movie.title}</h1>
+                        <p className="mt-3 text-lg md:text-xl text-brand-text-light font-semibold animate-slide-up" style={{animationDelay:'0.25s', animationFillMode: 'forwards'}}>
                             {movie.year} &bull; {movie.type.charAt(0).toUpperCase() + movie.type.slice(1)}
                         </p>
                         
-                        <div className="mt-4 flex flex-wrap gap-2 opacity-0 animate-slide-up" style={{animationDelay:'0.35s'}}>
+                        <div className="mt-4 flex flex-wrap gap-2 animate-slide-up" style={{animationDelay:'0.35s', animationFillMode: 'forwards'}}>
                             {safeGenres.map(genre => (
                                 <span key={genre} className="px-3 py-1.5 bg-white/20 text-white text-sm font-bold rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">{genre}</span>
                             ))}
                         </div>
                         
-                        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center opacity-0 animate-slide-up" style={{animationDelay:'0.45s'}}>
+                        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center animate-slide-up" style={{animationDelay:'0.45s', animationFillMode: 'forwards'}}>
                             {safeRatings.map(rating => (
                                 <div key={rating.source} className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg border border-white/20">
                                     {rating.source.toLowerCase().includes('rotten') && (
@@ -295,7 +298,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         </div>
                         
                         {embedUrl && (
-                            <div className="mt-8 opacity-0 animate-slide-up" style={{animationDelay:'0.55s'}}>
+                            <div className="mt-8 animate-slide-up" style={{animationDelay:'0.55s', animationFillMode: 'forwards'}}>
                                 <button
                                     onClick={() => setIsTrailerOpen(true)}
                                     className="inline-flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-bold text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
