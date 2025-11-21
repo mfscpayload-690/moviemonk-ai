@@ -188,7 +188,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources }
                         ))}
                         </div>
                         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center justify-center md:justify-start">
-                            {movie.ratings?.map(rating => (
+                            {(movie.ratings || []).map(rating => (
                                 <div key={rating.source} className="flex items-center gap-2 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                                     {rating.source.toLowerCase().includes('rotten') && (
                                         <RottenTomatoesIcon className="w-7 h-7 text-red-500" />
