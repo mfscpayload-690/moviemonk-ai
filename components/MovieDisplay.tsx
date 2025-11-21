@@ -240,44 +240,65 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 </p>
                         </div>
                 )}
-        {/* Hero Section */}
-        <div className="relative w-full h-[50vh] md:h-[60vh] animate-fade-in">
-            <img src={movie.backdrop_url || ''} alt={`${movie.title} backdrop`} className="absolute inset-0 w-full h-full object-cover filter blur-sm scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/80 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-bg via-transparent to-transparent opacity-50"></div>
+        {/* Hero Section with Poster Card */}
+        <div className="relative w-full h-[60vh] md:h-[70vh] mb-8 animate-fade-in overflow-hidden">
+            {movie.backdrop_url && (
+                <img 
+                    src={movie.backdrop_url} 
+                    alt={`${movie.title} backdrop`} 
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="eager"
+                />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/50 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-bg/70 via-brand-bg/30 to-transparent"></div>
             
-            <div className="relative h-full flex items-center justify-center md:justify-start p-4 md:p-12">
-                <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 max-w-screen-xl mx-auto">
-                    <ImageWithFallback src={movie.poster_url} alt={`${movie.title} poster`} className="w-40 md:w-52 lg:w-60 rounded-xl shadow-2xl border border-white/10 aspect-[2/3] object-cover opacity-0 animate-fade-in" style={{animationDelay:'0.05s'}} />
-                    <div className="text-center md:text-left">
-                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight opacity-0 animate-fade-in" style={{animationDelay:'0.15s'}}>{movie.title}</h1>
-                        <p className="mt-2 text-md md:text-lg text-brand-text-dark font-medium opacity-0 animate-slide-up" style={{animationDelay:'0.25s'}}>{movie.year} &bull; {movie.type.charAt(0).toUpperCase() + movie.type.slice(1)}</p>
-                        <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start opacity-0 animate-slide-up" style={{animationDelay:'0.35s'}}>
-                        {safeGenres.map(genre => (
-                            <span key={genre} className="px-3 py-1 bg-white/10 text-brand-text-light text-xs font-semibold rounded-full backdrop-blur-sm hover:bg-white/20 transition-colors">{genre}</span>
-                        ))}
+            <div className="relative h-full flex items-end p-6 md:p-12 max-w-screen-xl mx-auto">
+                <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
+                    {/* Poster Card */}
+                    <div className="flex-shrink-0 opacity-0 animate-fade-in" style={{animationDelay:'0.05s'}}>
+                        <ImageWithFallback 
+                            src={movie.poster_url} 
+                            alt={`${movie.title} poster`} 
+                            className="w-48 md:w-56 lg:w-64 rounded-xl shadow-2xl border-4 border-white/20 aspect-[2/3] object-cover transform hover:scale-105 transition-transform duration-300" 
+                        />
+                    </div>
+                    
+                    {/* Title and Info Card */}
+                    <div className="flex-1 text-left pb-4">
+                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl opacity-0 animate-fade-in" style={{animationDelay:'0.15s'}}>{movie.title}</h1>
+                        <p className="mt-3 text-lg md:text-xl text-brand-text-light font-semibold opacity-0 animate-slide-up" style={{animationDelay:'0.25s'}}>
+                            {movie.year} &bull; {movie.type.charAt(0).toUpperCase() + movie.type.slice(1)}
+                        </p>
+                        
+                        <div className="mt-4 flex flex-wrap gap-2 opacity-0 animate-slide-up" style={{animationDelay:'0.35s'}}>
+                            {safeGenres.map(genre => (
+                                <span key={genre} className="px-3 py-1.5 bg-white/20 text-white text-sm font-bold rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">{genre}</span>
+                            ))}
                         </div>
-                        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center justify-center md:justify-start opacity-0 animate-slide-up" style={{animationDelay:'0.45s'}}>
+                        
+                        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center opacity-0 animate-slide-up" style={{animationDelay:'0.45s'}}>
                             {safeRatings.map(rating => (
-                                <div key={rating.source} className="flex items-center gap-2">
+                                <div key={rating.source} className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg border border-white/20">
                                     {rating.source.toLowerCase().includes('rotten') && (
-                                        <RottenTomatoesIcon className="w-7 h-7 text-red-500 animate-pop" />
+                                        <RottenTomatoesIcon className="w-6 h-6 text-red-500" />
                                     )}
                                     {rating.source.toLowerCase().includes('imdb') && (
-                                        <StarIcon className="w-7 h-7 text-yellow-400 animate-pop" />
+                                        <StarIcon className="w-6 h-6 text-yellow-400" />
                                     )}
-                                    <div className="transform transition-transform hover:scale-105">
-                                        <p className="font-bold text-white text-lg leading-tight">{rating.score}</p>
-                                        <p className="text-xs text-brand-text-dark">{rating.source}</p>
+                                    <div>
+                                        <p className="font-bold text-white text-base leading-tight">{rating.score}</p>
+                                        <p className="text-xs text-gray-300">{rating.source}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
+                        
                         {embedUrl && (
-                            <div className="mt-6 opacity-0 animate-slide-up" style={{animationDelay:'0.55s'}}>
+                            <div className="mt-8 opacity-0 animate-slide-up" style={{animationDelay:'0.55s'}}>
                                 <button
                                     onClick={() => setIsTrailerOpen(true)}
-                                    className="inline-flex items-center gap-2 px-6 py-3 bg-brand-primary text-white font-semibold rounded-lg shadow-lg hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-secondary"
+                                    className="inline-flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-bold text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
                                 >
                                     <PlayIcon className="w-6 h-6" />
                                     <span>Play Trailer</span>
@@ -290,7 +311,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         </div>
 
       {/* Main Content */}
-      <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 -mt-16 md:-mt-20 relative z-10">
+      <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
         <div className="lg:col-span-2 space-y-8">
           <Section title="Synopsis">
             <p className="text-brand-text-dark leading-relaxed">{movie.summary_medium}</p>
