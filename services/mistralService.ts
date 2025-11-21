@@ -51,10 +51,12 @@ export async function fetchMovieData(
     { role: 'system', content: INITIAL_PROMPT }
   ];
   
-  // Add chat history if present
+  // Add chat history if present (map 'model' to 'assistant', skip 'system')
   if (chatHistory && chatHistory.length > 0) {
     chatHistory.forEach(msg => {
-      messages.push({ role: msg.role, content: msg.content });
+      if (msg.role === 'system') return; // Skip system messages from history
+      const apiRole = msg.role === 'model' ? 'assistant' : msg.role;
+      messages.push({ role: apiRole, content: msg.content });
     });
   }
   
