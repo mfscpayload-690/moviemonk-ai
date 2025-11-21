@@ -23,6 +23,27 @@ const App: React.FC = () => {
     openrouter: 'available'
   });
 
+  const classifyError = (raw: string | undefined, provider: AIProvider): string => {
+    if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
+    const lower = raw.toLowerCase();
+    if (lower.includes('timeout') || lower.includes('timed out')) {
+      return `Request to ${provider} timed out. Network was slow or provider overloaded. Retry or switch provider.`;
+    }
+    if (lower.includes('unauthorized') || lower.includes('auth') || lower.includes('api key')) {
+      return `Authorization failed for ${provider}. Check API key configuration in environment settings.`;
+    }
+    if (lower.includes('safety') || lower.includes('blocked')) {
+      return `Query blocked by safety filters (${provider}). Try rephrasing without explicit or sensitive content.`;
+    }
+    if (lower.includes('limit') || lower.includes('quota')) {
+      return `${provider} usage limit reached. Wait a moment or change provider.`;
+    }
+    if (lower.includes('json') || lower.includes('parse')) {
+      return `Response formatting issue from ${provider}. Model returned unexpected structure. Try a simpler phrasing.`;
+    }
+    return raw;
+  };
+
   const handleSendMessage = async (message: string, complexity: QueryComplexity) => {
     setIsLoading(true);
     setLoadingProgress('Checking cache...');
@@ -53,7 +74,8 @@ const App: React.FC = () => {
       };
       setMessages(prev => [...prev, modelResponse]);
     } else {
-      const content = result?.error || "Sorry, I couldn't fetch the data. The AI might be busy or the format was unexpected. Please try a different query.";
+      const classified = classifyError(result?.error, selectedProvider);
+      const content = classified;
       const errorMessage: ChatMessage = {
           id: Date.now().toString() + '-error',
           role: 'system',
@@ -75,6 +97,11 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleQuickSearch = (title: string) => {
+    // Always treat quick search as SIMPLE initial query
+    handleSendMessage(title, QueryComplexity.SIMPLE);
+  };
+
   // No initial preload – show dashboard until user searches
 
   return (
@@ -86,9 +113,9 @@ const App: React.FC = () => {
         
         <div className="relative flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden">
             {error && (
-                <div className="absolute top-0 left-0 right-0 z-20 p-2 lg:col-span-3">
-                    <ErrorBanner message={error} onClose={() => setError(null)} />
-                </div>
+              <div className="absolute top-0 left-0 right-0 z-20 p-2 lg:col-span-3">
+                <ErrorBanner message={error} onClose={() => setError(null)} />
+              </div>
             )}
             <div className="lg:col-span-1 h-full min-h-0 flex flex-col gap-3">
                 <ProviderSelector 
@@ -105,6 +132,7 @@ const App: React.FC = () => {
                   sources={sources}
                   selectedProvider={selectedProvider}
                   onFetchFullPlot={fetchFullPlotDetails}
+                  onQuickSearch={handleQuickSearch}
                 />
             </div>
         </div>

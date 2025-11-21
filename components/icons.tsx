@@ -102,3 +102,66 @@ export const XMarkIcon: React.FC<{ className?: string }> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
     </svg>
 );
+
+// New platform / UI icons
+export const NetflixIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M4 3h4.2l4.05 11.6V3H16v18h-4.05L7.9 9.4V21H4V3Z" />
+    </svg>
+);
+
+export const PrimeVideoIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M12.04 3c-5 0-9.04 4.06-9.04 9.06 0 5 4.04 9.06 9.04 9.06 5 0 9.04-4.06 9.04-9.06C21.08 7.06 17.04 3 12.04 3Zm3.21 10.33c-.51.76-1.43 1.28-2.29 1.28-1.53 0-2.78-1.25-2.78-2.79 0-1.55 1.25-2.8 2.78-2.8.86 0 1.78.52 2.29 1.28V6.77h1.42v8.56h-1.42v-1.99Zm-2.29-3.92c-.77 0-1.39.63-1.39 1.41 0 .77.62 1.39 1.39 1.39.77 0 1.39-.62 1.39-1.39 0-.78-.62-1.41-1.39-1.41ZM7.5 11.82c0-1.54 1.25-2.79 2.78-2.79.87 0 1.78.52 2.29 1.28l-1.2.77c-.22-.33-.63-.55-1.09-.55-.77 0-1.39.62-1.39 1.39 0 .77.62 1.39 1.39 1.39.46 0 .87-.22 1.09-.55l1.2.77c-.51.76-1.42 1.28-2.29 1.28-1.53 0-2.78-1.25-2.78-2.79Z" />
+        <path d="M5.5 16.75c3.73 3.05 9.26 3.08 13.02.03.27-.22.31-.62.09-.9-.22-.28-.62-.32-.9-.09-3.29 2.69-8.06 2.66-11.31-.02-.27-.22-.68-.18-.9.1-.23.28-.19.69.09.88Z" />
+    </svg>
+);
+
+export const HuluIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M3 8h2v5.2c0 1.92 1.05 3.04 2.86 3.04 1.82 0 2.86-1.12 2.86-3.04V8h-2v5.12c0 .9-.38 1.34-.86 1.34-.48 0-.86-.44-.86-1.34V8H3Zm9 0h2v8h-2V8Zm3.5 0h2v5.2c0 1.92 1.05 3.04 2.86 3.04.64 0 1.2-.16 1.64-.46V13.8c-.34.26-.72.4-1.14.4-.66 0-1.36-.38-1.36-1.42V8h-2v8H15.5Z" />
+    </svg>
+);
+
+export const MaxIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M4 8h2.2l1.8 4.6L9.8 8h2.2v8h-2v-3.7l-1.2 3h-1.2l-1.2-3V16H4V8Zm11.2 0c1.74 0 3.16 1.42 3.16 3.16V16h-2v-1.2c-.38.76-1.18 1.26-2.16 1.26-1.74 0-3.16-1.42-3.16-3.16 0-1.74 1.42-3.16 3.16-3.16.98 0 1.78.5 2.16 1.26V11.16c0-.64-.52-1.16-1.16-1.16-.54 0-.98.34-1.12.82h-2.02c.22-1.34 1.42-2.32 3.02-2.32ZM16.36 13c0-.74-.6-1.34-1.34-1.34-.74 0-1.34.6-1.34 1.34 0 .74.6 1.34 1.34 1.34.74 0 1.34-.6 1.34-1.34Z" />
+    </svg>
+);
+
+export const DisneyPlusIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M12 5.5c3.78 0 7.18 1.8 9.31 4.72.26.36.18.86-.18 1.12-.36.26-.86.18-1.12-.18C18.31 8.78 15.31 7.5 12 7.5c-5.24 0-9.57 3.85-9.98 8.73-.04.44-.42.77-.86.72-.44-.04-.76-.42-.72-.86C1 10.04 6.02 5.5 12 5.5Z" />
+        <path d="M7.5 13h1.7l1.3 3.4 1.3-3.4h1.7v5h-1.5v-2.3l-.9 2.3h-1.2l-.9-2.3V18H7.5v-5Zm9.25 0c1.23 0 2.25 1.02 2.25 2.25V18h-1.5v-.7c-.29.46-.82.75-1.38.75-1.23 0-2.25-1.02-2.25-2.25 0-1.23 1.02-2.25 2.25-2.25.56 0 1.09.29 1.38.75v-.75c0-.42-.34-.75-.75-.75-.35 0-.64.22-.73.53h-1.3c.17-.96 1.02-1.65 2.2-1.65Zm.75 2.25c0-.42-.34-.75-.75-.75-.41 0-.75.33-.75.75 0 .42.34.75.75.75.41 0 .75-.33.75-.75Z" />
+    </svg>
+);
+
+export const AppleTvIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M7 8h10v8H7V8Zm5-5c.83 0 1.5.67 1.5 1.5S12.83 6 12 6s-1.5-.67-1.5-1.5S11.17 3 12 3Zm0 18c-.83 0-1.5-.67-1.5-1.5S11.17 18 12 18s1.5.67 1.5 1.5S12.83 21 12 21Z" />
+    </svg>
+);
+
+export const UserCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm0 4a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Zm0 12c-2.21 0-4.15-1.2-5.2-3.02.06-1.66 3.47-2.58 5.2-2.58 1.73 0 5.14.92 5.2 2.58A5.985 5.985 0 0 1 12 18Z" />
+    </svg>
+);
+
+export const FilmReelIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M12 2C6.48 2 2 6.48 2 12c0 3.87 2.74 7.16 6.45 8.19-.07-.4-.11-.82-.11-1.24 0-1.4.45-2.78 1.31-3.89-2.09-.27-3.72-2.05-3.72-4.21 0-2.36 1.92-4.28 4.28-4.28.69 0 1.35.16 1.93.45.7-.89 1.76-1.45 2.93-1.45 2.07 0 3.75 1.68 3.75 3.75 0 .76-.23 1.47-.62 2.06.99.86 1.62 2.12 1.62 3.52 0 .98-.3 1.92-.85 2.7A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10Zm-1.25 7.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Zm4.5 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM12 5.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Zm0 9.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Z" />
+    </svg>
+);
+
+export const ArrowLeftIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12l7.5-7.5M21 12H3" />
+    </svg>
+);
+
+export const ArrowRightIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12l-7.5 7.5M3 12h18" />
+    </svg>
+);

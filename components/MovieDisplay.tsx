@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 import type { AIProvider } from '../services/aiService';
 
 interface MovieDisplayProps {
@@ -10,6 +10,7 @@ interface MovieDisplayProps {
     sources: GroundingSource[] | null;
     selectedProvider: AIProvider;
     onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
+    onQuickSearch: (title: string) => void;
 }
 
 const getYouTubeEmbedUrl = (url: string): string | null => {
@@ -100,26 +101,47 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
 
 
 const LoadingSkeleton = () => (
-    <div className="h-full w-full p-4 md:p-8 animate-pulse">
-      {/* Skeleton for Header */}
-      <div className="w-full h-[60vh] md:h-[70vh] mb-8 bg-brand-surface/50 rounded-lg"></div>
-      
-      {/* Skeleton for Body */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-              <div className="h-48 bg-brand-surface/50 rounded-lg"></div>
-              <div className="h-48 bg-brand-surface/50 rounded-lg"></div>
-          </div>
-          <div className="lg:col-span-1 space-y-8">
-              <div className="h-32 bg-brand-surface/50 rounded-lg"></div>
-              <div className="h-32 bg-brand-surface/50 rounded-lg"></div>
-              <div className="h-32 bg-brand-surface/50 rounded-lg"></div>
-          </div>
-      </div>
-    </div>
+        <div className="h-full w-full p-4 md:p-8">
+            <div className="relative w-full h-[50vh] md:h-[60vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20">
+                <div className="absolute inset-0 animate-pulse bg-brand-surface/30" />
+                <div className="absolute bottom-6 left-6 flex items-center gap-6">
+                    <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg bg-brand-surface/50 animate-pulse" />
+                    <div className="space-y-4">
+                        <div className="h-10 w-64 bg-brand-surface/50 rounded-md animate-pulse" />
+                        <div className="h-6 w-40 bg-brand-surface/40 rounded-md animate-pulse" />
+                        <div className="flex gap-2 mt-4">
+                            {Array.from({length:4}).map((_,i) => <div key={i} className="h-6 w-16 bg-brand-surface/40 rounded-full animate-pulse" />)}
+                        </div>
+                        <div className="h-10 w-40 bg-brand-surface/50 rounded-md mt-6 animate-pulse" />
+                    </div>
+                </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="h-40 bg-brand-surface/40 rounded-lg animate-pulse" />
+                    <div className="h-64 bg-brand-surface/40 rounded-lg animate-pulse" />
+                </div>
+                <div className="space-y-6">
+                    <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
+                    <div className="h-48 bg-brand-surface/40 rounded-lg animate-pulse" />
+                    <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
+                </div>
+            </div>
+        </div>
 );
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot }) => {
+const DISCOVER_TITLES = [
+    'Interstellar',
+    'Oppenheimer',
+    'The Dark Knight',
+    'Inception',
+    'Dune',
+    'Breaking Bad',
+    'Stranger Things',
+    'The Last of Us'
+];
+
+const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch }) => {
   const [showFullPlot, setShowFullPlot] = useState(false);
   const [showSuspenseBreaker, setShowSuspenseBreaker] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
@@ -146,43 +168,78 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
   const displayedCast = showAllCast ? safeCast : safeCast.slice(0, 8);
 
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsTrailerOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsTrailerOpen(false);
+                setSelectedImage(null);
+            }
+            if (selectedImage) {
+                if (event.key === 'ArrowRight') {
+                    const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const next = (idx + 1) % imgs.length; setSelectedImage(imgs[next]);
+                } else if (event.key === 'ArrowLeft') {
+                    const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const prev = (idx - 1 + imgs.length) % imgs.length; setSelectedImage(imgs[prev]);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedImage, safeExtraImages]);
 
 
   if (isLoading && !movie) {
     return <LoadingSkeleton />;
   }
   
-  if (!movie) {
-    return (
-      <div className="flex items-center justify-center h-full text-brand-text-dark animate-fade-in">
-        <div className="text-center p-8">
-            <Logo className="mx-auto h-24 w-24" />
-            <h2 className="mt-4 text-2xl font-bold text-brand-text-light">Welcome to MovieMonk</h2>
-            <p className="mt-2 text-lg">Search for a movie or series to begin your cinematic exploration.</p>
-        </div>
-      </div>
-    );
-  }
+    if (!movie) {
+        return (
+            <div className="h-full overflow-y-auto p-6 animate-fade-in">
+                <div className="max-w-5xl mx-auto">
+                    <div className="text-center mb-10">
+                        <Logo className="mx-auto h-24 w-24 animate-fade-in" />
+                        <h1 className="mt-6 text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-brand-primary to-brand-secondary text-transparent bg-clip-text animate-slide-up">Welcome to MovieMonk</h1>
+                        <p className="mt-4 text-lg md:text-xl text-brand-text-dark max-w-2xl mx-auto animate-fade-in" style={{animationDelay:'0.15s'}}>Your AI-powered guide to the world of cinema. Dive in instantly or ask anything.</p>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                        {DISCOVER_TITLES.map((title, idx) => (
+                            <button
+                                key={title}
+                                onClick={() => onQuickSearch(title)}
+                                className="group relative bg-brand-surface/60 border border-white/10 rounded-xl p-4 flex flex-col items-start justify-between hover:border-brand-primary/60 hover:bg-brand-surface/80 transition-all duration-300 overflow-hidden"
+                                style={{animationDelay: `${0.1 + idx*0.05}s`}}
+                            >
+                                <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-br from-brand-primary to-brand-secondary transition-opacity" />
+                                <span className="text-sm font-medium text-brand-text-dark uppercase tracking-wide">Featured</span>
+                                <h3 className="mt-2 text-lg font-bold text-brand-text-light line-clamp-2 group-hover:text-white transition-colors">{title}</h3>
+                                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-brand-primary group-hover:translate-x-1 transition-transform">
+                                    <PlayIcon className="w-4 h-4" /> Explore
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="mt-10 text-center">
+                        <p className="text-sm text-brand-text-dark">Tip: Type a title and toggle Complex Query for deeper analysis.</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
   return (
     <div className="h-full overflow-y-auto relative">
-        {isLoading && (
-            <div className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-fade-in">
-                <FilmIcon className="w-16 h-16 text-brand-primary animate-spin" />
-                <p className="mt-4 text-lg font-semibold text-brand-text-light">Fetching cinematic data...</p>
-            </div>
-        )}
+                {isLoading && (
+                        <div className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-fade-in">
+                                <div className="relative">
+                                    <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
+                                    <FilmIcon className="w-20 h-20 text-brand-primary animate-spin" />
+                                </div>
+                                <p className="mt-6 text-lg font-semibold text-brand-text-light flex items-center gap-2">
+                                    <span className="inline-flex w-2 h-2 bg-brand-secondary rounded-full animate-pulse" /> Loading cinematic data...
+                                </p>
+                        </div>
+                )}
         {/* Hero Section */}
         <div className="relative w-full h-[50vh] md:h-[60vh] animate-fade-in">
             <img src={movie.backdrop_url || ''} alt={`${movie.title} backdrop`} className="absolute inset-0 w-full h-full object-cover filter blur-sm scale-105" />
@@ -191,25 +248,25 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             
             <div className="relative h-full flex items-center justify-center md:justify-start p-4 md:p-12">
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 max-w-screen-xl mx-auto">
-                    <ImageWithFallback src={movie.poster_url} alt={`${movie.title} poster`} className="w-40 md:w-52 lg:w-60 rounded-lg shadow-2xl border-4 border-white/10 aspect-[2/3] object-cover animate-slide-up" />
-                    <div className="text-center md:text-left animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight">{movie.title}</h1>
-                        <p className="mt-2 text-md md:text-lg text-brand-text-dark font-medium">{movie.year} &bull; {movie.type.charAt(0).toUpperCase() + movie.type.slice(1)}</p>
-                        <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start">
+                    <ImageWithFallback src={movie.poster_url} alt={`${movie.title} poster`} className="w-40 md:w-52 lg:w-60 rounded-xl shadow-2xl border border-white/10 aspect-[2/3] object-cover opacity-0 animate-fade-in" style={{animationDelay:'0.05s'}} />
+                    <div className="text-center md:text-left">
+                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white tracking-tight opacity-0 animate-fade-in" style={{animationDelay:'0.15s'}}>{movie.title}</h1>
+                        <p className="mt-2 text-md md:text-lg text-brand-text-dark font-medium opacity-0 animate-slide-up" style={{animationDelay:'0.25s'}}>{movie.year} &bull; {movie.type.charAt(0).toUpperCase() + movie.type.slice(1)}</p>
+                        <div className="mt-4 flex flex-wrap gap-2 justify-center md:justify-start opacity-0 animate-slide-up" style={{animationDelay:'0.35s'}}>
                         {safeGenres.map(genre => (
-                            <span key={genre} className="px-3 py-1 bg-white/10 text-brand-text-light text-xs font-semibold rounded-full backdrop-blur-sm">{genre}</span>
+                            <span key={genre} className="px-3 py-1 bg-white/10 text-brand-text-light text-xs font-semibold rounded-full backdrop-blur-sm hover:bg-white/20 transition-colors">{genre}</span>
                         ))}
                         </div>
-                        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center justify-center md:justify-start">
+                        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center justify-center md:justify-start opacity-0 animate-slide-up" style={{animationDelay:'0.45s'}}>
                             {safeRatings.map(rating => (
-                                <div key={rating.source} className="flex items-center gap-2 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                                <div key={rating.source} className="flex items-center gap-2">
                                     {rating.source.toLowerCase().includes('rotten') && (
-                                        <RottenTomatoesIcon className="w-7 h-7 text-red-500" />
+                                        <RottenTomatoesIcon className="w-7 h-7 text-red-500 animate-pop" />
                                     )}
                                     {rating.source.toLowerCase().includes('imdb') && (
-                                        <StarIcon className="w-7 h-7 text-yellow-400" />
+                                        <StarIcon className="w-7 h-7 text-yellow-400 animate-pop" />
                                     )}
-                                    <div>
+                                    <div className="transform transition-transform hover:scale-105">
                                         <p className="font-bold text-white text-lg leading-tight">{rating.score}</p>
                                         <p className="text-xs text-brand-text-dark">{rating.source}</p>
                                     </div>
@@ -217,10 +274,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                             ))}
                         </div>
                         {embedUrl && (
-                            <div className="mt-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                            <div className="mt-6 opacity-0 animate-slide-up" style={{animationDelay:'0.55s'}}>
                                 <button
                                     onClick={() => setIsTrailerOpen(true)}
-                                    className="inline-flex items-center gap-2 px-6 py-3 bg-brand-primary text-white font-semibold rounded-lg shadow-lg hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105"
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-brand-primary text-white font-semibold rounded-lg shadow-lg hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-secondary"
                                 >
                                     <PlayIcon className="w-6 h-6" />
                                     <span>Play Trailer</span>
@@ -320,9 +377,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
         <div className="lg:col-span-1 space-y-8">
           <Section title="Where to Watch">
-             <div className="space-y-3">
-               {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
-             </div>
+                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                             {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform+option.type} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
+                         </div>
           </Section>
           
            <Section title="Gallery">
@@ -402,6 +459,31 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                       alt="Gallery image"
                       className="max-w-full max-h-[90vh] rounded-lg object-contain"
                   />
+                                    {safeExtraImages.length > 1 && (
+                                        <>
+                                            <button
+                                                onClick={() => {
+                                                    const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const prev = (idx - 1 + imgs.length) % imgs.length; setSelectedImage(imgs[prev]);
+                                                }}
+                                                aria-label="Previous image"
+                                                className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
+                                            >
+                                                <ArrowLeftIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const next = (idx + 1) % imgs.length; setSelectedImage(imgs[next]);
+                                                }}
+                                                aria-label="Next image"
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
+                                            >
+                                                <ArrowRightIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                            </button>
+                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white/80 bg-black/40 px-3 py-1 rounded-full border border-white/10">
+                                                {safeExtraImages.indexOf(selectedImage) + 1} / {safeExtraImages.length}
+                                            </div>
+                                        </>
+                                    )}
                   <button 
                     onClick={() => setSelectedImage(null)}
                     aria-label="Close image"
@@ -432,27 +514,59 @@ const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
 );
 
 const watchTypeIcons: Record<WatchOption['type'], React.FC<{ className?: string }>> = {
-    subscription: TvIcon,
-    rent: TicketIcon,
-    buy: DollarIcon,
-    free: TagIcon,
+        subscription: TvIcon,
+        rent: TicketIcon,
+        buy: DollarIcon,
+        free: TagIcon,
+};
+
+const platformLogos: Record<string, React.FC<{ className?: string }>> = {
+    netflix: NetflixIcon,
+    'prime video': PrimeVideoIcon,
+    amazon: PrimeVideoIcon,
+    hulu: HuluIcon,
+    max: MaxIcon,
+    'hbo max': MaxIcon,
+    'disney+': DisneyPlusIcon,
+    disney: DisneyPlusIcon,
+    'apple tv': AppleTvIcon,
+    'apple tv+': AppleTvIcon,
 };
 
 const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
-    const IconComponent = watchTypeIcons[option.type] || null;
-
+    const TypeIcon = watchTypeIcons[option.type] || TvIcon;
+    const key = option.platform.toLowerCase().trim();
+    const Logo = platformLogos[key];
     return (
-        <a href={option.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between bg-white/5 p-4 rounded-lg hover:bg-brand-primary/20 transition-colors group">
-            <div>
-                <p className="font-semibold text-brand-text-light">{option.platform}</p>
-                <div className="flex items-center space-x-1.5 mt-1">
-                    {IconComponent && <IconComponent className="w-4 h-4 text-brand-text-dark group-hover:text-brand-text-light transition-colors" />}
-                    <p className="text-xs text-brand-text-dark capitalize group-hover:text-brand-text-light transition-colors">{option.type}</p>
+        <a
+            href={option.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group rounded-xl border border-white/10 bg-brand-surface/60 p-4 flex flex-col gap-3 hover:shadow-lg hover:border-brand-primary/50 transition relative overflow-hidden"
+            aria-label={`Open ${option.platform} (${option.type})`}
+        >
+            <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent)]" />
+            <div className="flex items-start gap-3">
+                <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-brand-surface/80 ring-1 ring-white/10 group-hover:ring-brand-primary/50 transition">
+                        <TypeIcon className="w-5 h-5 text-brand-text-light" />
+                    </div>
+                    {Logo && (
+                        <div className="p-2 rounded-lg bg-brand-surface/80 ring-1 ring-white/10 group-hover:ring-brand-secondary/50 transition">
+                            <Logo className="w-5 h-5" />
+                        </div>
+                    )}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-brand-text-light truncate" title={option.platform}>{option.platform}</p>
+                    <p className="text-xs text-brand-text-dark capitalize">{option.type}</p>
                 </div>
             </div>
-            <span className="px-4 py-2 text-xs font-bold rounded-md bg-brand-primary text-white transform transition-transform group-hover:scale-105">
-                Watch Now
-            </span>
+            <div className="flex justify-end">
+                <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-brand-primary/90 text-white transform transition-transform group-hover:scale-105 shadow-md">
+                    <PlayIcon className="w-4 h-4" /> Go
+                </span>
+            </div>
         </a>
     );
 };
