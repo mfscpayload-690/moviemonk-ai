@@ -1,104 +1,126 @@
 # Development Guide
 
-Guide for local development, code conventions, and contributing to MovieMonk.
+How to work on MovieMonk locally.
 
 ---
 
-## Getting Started
+## Setup
 
-### Prerequisites
-
-- Node.js 18+ (LTS recommended)
-- npm 9+
-- Git
-- Code editor (VS Code recommended)
-
-### Initial Setup
+### 1. Clone and Install
 
 ```bash
-# Clone repository
 git clone https://github.com/mfscpayload-690/moviemonk-ai.git
 cd moviemonk-ai
-
-# Install dependencies
 npm install
-
-# Copy environment template
-cp .env.example .env.local
-
-# Add your API keys to .env.local
-# GEMINI_API_KEY=...
-# TMDB_READ_TOKEN=...
-# TMDB_API_KEY=...
 ```
 
-### Development Server
+### 2. Add API Keys
+
+Create `.env.local` and add your keys:
+
+```env
+GROQ_API_KEY=your_key
+TMDB_API_KEY=your_key
+TMDB_READ_TOKEN=your_token
+OMDB_API_KEY=your_key
+```
+
+### 3. Start Dev Server
 
 ```bash
 npm run dev
 ```
 
-App runs on [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000)
 
-**Hot Module Replacement (HMR):**
-- Edit files → browser auto-reloads
-- State preserved during reload
-- Fast feedback loop
+Changes auto-reload in the browser.
 
 ---
 
-## Project Structure Explained
+## Project Structure
 
-```
-moviemonk-ai/
-├── .github/
-│   ├── workflows/
-│   │   └── deploy.yml              # CI/CD workflow
-│   └── copilot-instructions.md     # AI assistant guidelines
-├── asset/
-│   └── MovieMonk Logo.png          # Project logo
-├── components/
-│   ├── ChatInterface.tsx           # User input & conversation
-│   ├── MovieDisplay.tsx            # Result display & UI
-│   ├── ErrorBanner.tsx             # Error notifications
-│   └── icons.tsx                   # SVG icon components
-├── services/
-│   ├── geminiService.ts            # Gemini AI integration
-│   └── tmdbService.ts              # TMDB API integration
-├── docs/                           # Documentation
-│   ├── ARCHITECTURE.md
-│   ├── DEPLOYMENT.md
-│   ├── DEVELOPMENT.md (this file)
-│   └── API.md
-├── App.tsx                         # Main app component
-├── constants.ts                    # Prompts & config
-├── types.ts                        # TypeScript types
-├── index.tsx                       # Entry point
-├── index.html                      # HTML template
-├── vite.config.ts                  # Vite configuration
-├── tsconfig.json                   # TypeScript config
-├── package.json                    # Dependencies
-└── README.md                       # Project overview
-```
+- `components/` - React UI components
+- `services/` - API integrations (AI, TMDB, caching)
+- `App.tsx` - Main app logic
+- `constants.ts` - AI prompts and settings
+- `types.ts` - TypeScript types
 
 ---
 
-## Code Conventions
+## Making Changes
 
-### TypeScript
+### Adding a Feature
 
-- **Strict mode enabled** in `tsconfig.json`
-- Use explicit types (avoid `any`)
-- Interfaces for data models (`types.ts`)
-- Function return types required
+1. Create a new branch: `git checkout -b my-feature`
+2. Make your changes
+3. Test locally: `npm run dev`
+4. Build: `npm run build` (check for errors)
+5. Commit: `git commit -m "Add my feature"`
+6. Push: `git push origin my-feature`
+7. Open a Pull Request on GitHub
 
-**Example:**
-```typescript
-async function fetchMovieData(
-  query: string,
-  complexity: QueryComplexity,
-  chatHistory?: ChatMessage[]
-): Promise<FetchResult> {
+### Fixing a Bug
+
+Same as above, but branch name like `fix-something`
+
+---
+
+## Code Style
+
+- Use TypeScript (not plain JavaScript)
+- Use Tailwind classes for styling
+- Keep components small and focused
+- Add comments for complex logic
+
+---
+
+## Testing
+
+```bash
+npm run build
+```
+
+This checks for TypeScript errors. If it builds successfully, you're good!
+
+---
+
+## Debugging
+
+### Check Browser Console
+
+Press F12 in browser to see errors and logs.
+
+### Check API Responses
+
+Look for `console.log` messages in terminal and browser.
+
+### Common Issues
+
+**"Invalid API key"**
+- Check `.env.local` file
+- Make sure keys are correct
+
+**Build errors**
+- Run `npm install` again
+- Check TypeScript errors in terminal
+
+---
+
+## Contributing
+
+1. Fork the repo
+2. Create your feature branch
+3. Make changes
+4. Test thoroughly
+5. Submit pull request
+
+Keep pull requests small and focused on one thing.
+
+---
+
+## Need Help?
+
+Open an issue on GitHub or check the main [README](../README.md).
   // Implementation
 }
 ```

@@ -1,83 +1,76 @@
 # Deployment Guide
 
-Complete guide for deploying MovieMonk to various platforms.
+How to deploy MovieMonk to production.
 
 ---
 
-## GitHub Pages (Recommended)
+## Deploy to Vercel (Easiest)
 
-### Prerequisites
-- GitHub account
-- Repository with code pushed
-- API keys (Gemini, TMDB)
+### 1. Install Vercel CLI
 
-### Step-by-Step Deployment
-
-#### 1. Push Code to GitHub
 ```bash
-git add .
-git commit -m "Initial commit"
-git push origin main
+npm i -g vercel
 ```
 
-#### 2. Add API Secrets
-1. Go to your repo: `https://github.com/YOUR_USERNAME/moviemonk-ai`
-2. Click **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add these three secrets:
+### 2. Login
 
-| Secret Name | Value |
-|------------|-------|
-| `GEMINI_API_KEY` | Your Google Gemini API key |
-| `TMDB_READ_TOKEN` | Your TMDB v4 Read Access Token |
-| `TMDB_API_KEY` | Your TMDB v3 API Key |
-
-#### 3. Enable GitHub Pages
-1. In **Settings**, go to **Pages**
-2. Under **Source**, select: **GitHub Actions**
-3. Click **Save**
-
-#### 4. Update Base Path (if needed)
-The `vite.config.ts` should already have:
-```typescript
-base: process.env.GITHUB_ACTIONS ? '/moviemonk-ai/' : '/',
-```
-
-**Replace `/moviemonk-ai/`** with your actual repository name if different.
-
-#### 5. Trigger Deployment
 ```bash
-# Make any change (or trigger workflow manually)
-git commit --allow-empty -m "Trigger deployment"
-git push origin main
+vercel login
 ```
 
-#### 6. Monitor Deployment
-1. Go to **Actions** tab on GitHub
-2. Watch "Deploy to GitHub Pages" workflow
-3. Wait for green checkmark ✅ (~2-3 minutes)
+### 3. Add Your API Keys
 
-#### 7. Access Your Site
-Your app will be live at:
-```
-https://YOUR_USERNAME.github.io/moviemonk-ai/
+```bash
+vercel env add GROQ_API_KEY
+vercel env add TMDB_API_KEY
+vercel env add TMDB_READ_TOKEN
+vercel env add OMDB_API_KEY
 ```
 
-### Troubleshooting GitHub Pages
+Paste each key when prompted.
 
-**Issue: Workflow doesn't appear**
-- Ensure `.github/workflows/deploy.yml` is pushed
-- Refresh the Actions tab after 10-20 seconds
+### 4. Deploy
 
-**Issue: Build fails with "API key not valid"**
-- Double-check secret names (must be exact)
-- Verify no extra spaces in secret values
-- Re-add secrets if needed
+```bash
+vercel --prod
+```
 
-**Issue: Site loads but images/CSS missing**
-- Verify `base` in `vite.config.ts` matches repo name
-- Check browser console for 404 errors
-- Ensure path starts and ends with `/`
+Your app will be live at `https://your-project.vercel.app`
+
+---
+
+## Update After Changes
+
+```bash
+npm run build  # Test locally first
+vercel --prod  # Deploy to production
+```
+
+---
+
+## Custom Domain (Optional)
+
+1. Go to your Vercel dashboard
+2. Click on your project
+3. Go to Settings → Domains
+4. Add your custom domain
+5. Update your DNS records as shown
+
+---
+
+## Troubleshooting
+
+**Build fails**
+- Check `npm run build` works locally
+- Verify all API keys are added
+
+**Site loads but doesn't work**
+- Check browser console for errors
+- Verify environment variables in Vercel dashboard
+
+---
+
+Need help? Check [Vercel Docs](https://vercel.com/docs) or the main [README](../README.md).
 
 **Issue: Blank page after deployment**
 - Check browser console for errors

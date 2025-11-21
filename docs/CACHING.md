@@ -1,8 +1,89 @@
-# Server-Side Caching with Vercel KV
+# Caching Strategy
 
-## What is Vercel KV?
+How MovieMonk keeps things fast.
 
-**Vercel KV** is a serverless Redis database that runs on Vercel's edge network. It's designed for:
+---
+
+## Why Cache?
+
+Every search without caching:
+- Calls AI API (slow + costs money)
+- Calls TMDB API (slower)
+- User waits 5-10 seconds
+
+With caching:
+- Popular movies load instantly
+- Saves API costs
+- Better user experience
+
+---
+
+## How It Works
+
+```
+User searches → Check cache → Found? Return instantly!
+                           ↓
+                      Not found? Call APIs
+                           ↓
+                   Save to cache for later
+```
+
+---
+
+## Cache Layers
+
+### 1. Browser Cache (localStorage)
+- **Speed**: Instant
+- **Duration**: 6 hours
+- **Scope**: Just your browser
+
+### 2. IndexedDB (Optional)
+- **Speed**: Instant
+- **Duration**: 7 days
+- **Scope**: Just your browser, more storage
+
+### 3. Server Cache (Optional - Vercel KV)
+- **Speed**: Very fast (< 100ms)
+- **Duration**: 7 days
+- **Scope**: Everyone shares it
+
+---
+
+## What Gets Cached
+
+✅ Complete movie/show data
+✅ AI summaries
+✅ TMDB images and cast
+✅ Popular titles
+
+❌ Partial responses
+❌ Error messages
+❌ Follow-up conversations
+
+---
+
+## Performance
+
+**Without cache**: 5-10 seconds per search
+
+**With cache**: < 100ms for popular titles
+
+---
+
+## For Developers
+
+If you want server-side caching:
+
+1. Create a Vercel KV database
+2. Add `@vercel/kv` package
+3. Store results by search query
+4. Set expiration to 7 days
+
+That's optional though - the browser cache works fine for most use cases!
+
+---
+
+Need more details? Check the code in `services/cacheService.ts`
 - ⚡ Ultra-fast data access (sub-millisecond latency)
 - 🌍 Global distribution (data stored close to users worldwide)
 - 🔄 Simple key-value storage (like a giant dictionary/hashmap)

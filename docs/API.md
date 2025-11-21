@@ -1,6 +1,104 @@
-# API Integration Guide
+# API Guide
 
-Detailed documentation for Gemini AI and TMDB API integrations.
+How MovieMonk uses AI and movie data APIs.
+
+---
+
+## AI Providers
+
+We use free AI APIs to generate summaries:
+
+- **Groq** (primary) - Fast and free
+- **Mistral** (backup) - Also free
+- **OpenRouter** (fallback) - Last resort
+
+### Getting API Keys
+
+1. **Groq**: Sign up at [console.groq.com](https://console.groq.com)
+2. **TMDB**: Get key at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
+3. **OMDB**: Get key at [omdbapi.com/apikey.aspx](http://www.omdbapi.com/apikey.aspx)
+
+### Query Modes
+
+- **Simple Mode**: Quick responses, basic AI model
+- **Complex Mode**: Detailed analysis, smarter AI model
+
+---
+
+## TMDB API
+
+We use TMDB for accurate movie data (cast, crew, images, ratings).
+
+### Authentication
+
+Add these to your `.env.local`:
+
+```env
+TMDB_API_KEY=your_key_here
+TMDB_READ_TOKEN=your_token_here
+```
+
+### What We Get From TMDB
+
+- Movie/show posters and backdrops
+- Cast and crew info
+- IMDB ratings (via external ID)
+- Gallery images
+- Streaming availability
+
+### Image URLs
+
+TMDB provides images like this:
+```
+https://image.tmdb.org/t/p/w500/path-to-image.jpg
+```
+
+Sizes: `w300`, `w500`, `w780`, `original`
+
+---
+
+## How It All Works Together
+
+1. **You search** for a movie
+2. **TMDB finds** the movie data
+3. **AI writes** summaries and trivia
+4. **We merge** TMDB facts + AI creativity
+5. **You see** the complete result
+
+---
+
+## Error Handling
+
+Common issues and fixes:
+
+**"Invalid API key"**
+- Check your `.env.local` file
+- Make sure keys are correct
+
+**"Too many requests"**
+- Wait a moment and try again
+- We cache results to avoid this
+
+**"No results found"**
+- Try different search terms
+- Check spelling
+- Try just the movie title without year
+
+---
+
+## Rate Limits
+
+- **Groq**: 15 requests/minute (free tier)
+- **TMDB**: 40 requests/10 seconds
+- **OMDB**: 1000 requests/day
+
+We cache responses to stay within limits.
+
+---
+
+## Need Help?
+
+Check the main [README](../README.md) or open an issue on GitHub.
 
 ---
 
