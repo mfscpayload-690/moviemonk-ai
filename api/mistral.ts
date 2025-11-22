@@ -1,7 +1,13 @@
 /**
  * Secure Mistral API proxy - keeps API key server-side
  */
+export const config = { runtime: 'nodejs' };
+
 export default async function handler(req: any, res: any) {
+  const provider = 'mistral';
+  const sendError = (status: number, code: string, message: string, details?: any) => {
+    return res.status(status).json({ error: { provider, code, message, details } });
+  };
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -12,19 +18,19 @@ export default async function handler(req: any, res: any) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendError(405, 'method_not_allowed', 'Only POST supported');
   }
 
   const { messages, model, max_tokens, temperature, response_format } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'Invalid request: messages array required' });
+    return sendError(400, 'invalid_body', 'messages array required');
   }
 
   const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 
   if (!MISTRAL_API_KEY) {
-    return res.status(500).json({ error: 'Mistral API key not configured' });
+    return sendError(400, 'missing_api_key', 'Mistral API key not configured');
   }
 
   try {
@@ -46,11 +52,7 @@ export default async function handler(req: any, res: any) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Mistral API error:', response.status, errorText);
-      
-      return res.status(response.status).json({
-        error: `Mistral API error: ${response.status}`,
-        details: errorText
-      });
+      return sendError(response.status, 'upstream_error', `Mistral API error ${response.status}`, errorText);
     }
 
     const data = await response.json();
@@ -58,9 +60,6 @@ export default async function handler(req: any, res: any) {
 
   } catch (error: any) {
     console.error('Mistral proxy error:', error);
-    return res.status(500).json({
-      error: 'Mistral proxy request failed',
-      details: error.message
-    });
+    return sendError(500, 'proxy_error', 'Mistral proxy request failed', error.message);
   }
 }

@@ -1,7 +1,13 @@
 /**
  * Secure OMDB API proxy - keeps API key server-side
  */
+export const config = { runtime: 'nodejs' };
+
 export default async function handler(req: any, res: any) {
+  const provider = 'omdb';
+  const sendError = (status: number, code: string, message: string, details?: any) => {
+    return res.status(status).json({ error: { provider, code, message, details } });
+  };
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -12,19 +18,19 @@ export default async function handler(req: any, res: any) {
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendError(405, 'method_not_allowed', 'Only GET supported');
   }
 
   const { i: imdbId } = req.query;
 
   if (!imdbId || typeof imdbId !== 'string') {
-    return res.status(400).json({ error: 'Missing IMDB ID parameter (i)' });
+    return sendError(400, 'missing_imdb_id', 'Missing IMDB ID parameter (i)');
   }
 
   const OMDB_API_KEY = process.env.OMDB_API_KEY;
 
   if (!OMDB_API_KEY) {
-    return res.status(500).json({ error: 'OMDB API key not configured' });
+    return sendError(400, 'missing_api_key', 'OMDB API key not configured');
   }
 
   try {
@@ -35,29 +41,20 @@ export default async function handler(req: any, res: any) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OMDB API error:', response.status, errorText);
-      return res.status(response.status).json({
-        error: `OMDB API error: ${response.status}`,
-        details: errorText
-      });
+      return sendError(response.status, 'upstream_error', `OMDB API error ${response.status}`, errorText);
     }
 
     const data = await response.json();
     
     // OMDB returns Response: "False" on error
     if (data.Response === 'False') {
-      return res.status(404).json({
-        error: 'OMDB not found',
-        details: data.Error || 'Unknown error'
-      });
+      return sendError(404, 'not_found', 'OMDB not found', data.Error || 'Unknown error');
     }
 
     return res.status(200).json(data);
 
   } catch (error: any) {
     console.error('OMDB proxy error:', error);
-    return res.status(500).json({
-      error: 'OMDB proxy request failed',
-      details: error.message
-    });
+    return sendError(500, 'proxy_error', 'OMDB proxy request failed', error.message);
   }
 }

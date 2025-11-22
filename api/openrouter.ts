@@ -2,7 +2,13 @@
  * Serverless proxy for OpenRouter API
  * This avoids CORS issues and keeps the API key secure on the backend
  */
+export const config = { runtime: 'nodejs' };
+
 export default async function handler(req: any, res: any) {
+  const provider = 'openrouter';
+  const sendError = (status: number, code: string, message: string, details?: any) => {
+    return res.status(status).json({ error: { provider, code, message, details } });
+  };
   // Enable CORS for your frontend
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -15,19 +21,19 @@ export default async function handler(req: any, res: any) {
 
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendError(405, 'method_not_allowed', 'Only POST supported');
   }
 
   const { messages, model, max_tokens, temperature } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'Invalid request: messages array required' });
+    return sendError(400, 'invalid_body', 'messages array required');
   }
 
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
   if (!OPENROUTER_API_KEY) {
-    return res.status(500).json({ error: 'OpenRouter API key not configured' });
+    return sendError(400, 'missing_api_key', 'OpenRouter API key not configured');
   }
 
   try {
@@ -51,11 +57,7 @@ export default async function handler(req: any, res: any) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('OpenRouter API error:', response.status, errorText);
-      
-      return res.status(response.status).json({
-        error: `OpenRouter API error: ${response.status}`,
-        details: errorText
-      });
+      return sendError(response.status, 'upstream_error', `OpenRouter API error ${response.status}`, errorText);
     }
 
     const data = await response.json();
@@ -63,9 +65,6 @@ export default async function handler(req: any, res: any) {
 
   } catch (error: any) {
     console.error('Proxy error:', error);
-    return res.status(500).json({
-      error: 'Proxy request failed',
-      details: error.message
-    });
+    return sendError(500, 'proxy_error', 'Proxy request failed', error.message);
   }
 }

@@ -1,7 +1,13 @@
 /**
  * Secure TMDB API proxy - keeps API key server-side
  */
+export const config = { runtime: 'nodejs' };
+
 export default async function handler(req: any, res: any) {
+  const provider = 'tmdb';
+  const sendError = (status: number, code: string, message: string, details?: any) => {
+    return res.status(status).json({ error: { provider, code, message, details } });
+  };
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -12,20 +18,20 @@ export default async function handler(req: any, res: any) {
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendError(405, 'method_not_allowed', 'Only GET supported');
   }
 
   const { endpoint } = req.query;
 
   if (!endpoint || typeof endpoint !== 'string') {
-    return res.status(400).json({ error: 'Missing endpoint parameter' });
+    return sendError(400, 'missing_endpoint', 'Missing endpoint parameter');
   }
 
   const TMDB_API_KEY = process.env.TMDB_API_KEY;
   const TMDB_READ_TOKEN = process.env.TMDB_READ_TOKEN;
 
   if (!TMDB_API_KEY && !TMDB_READ_TOKEN) {
-    return res.status(500).json({ error: 'TMDB credentials not configured' });
+    return sendError(400, 'missing_api_key', 'TMDB credentials not configured');
   }
 
   try {
@@ -54,10 +60,7 @@ export default async function handler(req: any, res: any) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('TMDB API error:', response.status, errorText);
-      return res.status(response.status).json({
-        error: `TMDB API error: ${response.status}`,
-        details: errorText
-      });
+      return sendError(response.status, 'upstream_error', `TMDB API error ${response.status}`, errorText);
     }
 
     const data = await response.json();
@@ -65,9 +68,6 @@ export default async function handler(req: any, res: any) {
 
   } catch (error: any) {
     console.error('TMDB proxy error:', error);
-    return res.status(500).json({
-      error: 'TMDB proxy request failed',
-      details: error.message
-    });
+    return sendError(500, 'proxy_error', 'TMDB proxy request failed', error.message);
   }
 }
