@@ -3,23 +3,16 @@ import { ParsedQuery } from './queryParser';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
-const OMDB_BASE = 'https://www.omdbapi.com';
 
-function getAuthHeaders(): HeadersInit | undefined {
-  const v4 = process.env.TMDB_READ_TOKEN;
-  if (v4) {
-    return { Authorization: `Bearer ${v4}` };
-  }
-  return undefined;
-}
+// Use proxy for TMDB calls (API key stays server-side)
+const TMDB_PROXY = import.meta.env.DEV
+  ? 'http://localhost:3000/api/tmdb'
+  : '/api/tmdb';
 
-function withApiKey(url: string): string {
-  const key = process.env.TMDB_API_KEY;
-  if (!key) return url; // might rely on v4 header
-  const u = new URL(url);
-  u.searchParams.set('api_key', key);
-  return u.toString();
-}
+// Use proxy for OMDB calls (API key stays server-side)
+const OMDB_PROXY = import.meta.env.DEV
+  ? 'http://localhost:3000/api/omdb'
+  : '/api/omdb';
 
 function buildImageUrl(path: string | null | undefined, size: 'w500'|'w780'|'original' = 'original'): string {
   if (!path) return '';
@@ -27,12 +20,18 @@ function buildImageUrl(path: string | null | undefined, size: 'w500'|'w780'|'ori
 }
 
 async function tmdbFetch(path: string, params: Record<string, string | number | undefined> = {}): Promise<any> {
-  const url = new URL(`${TMDB_BASE}${path}`);
+  // Build query string for proxy
+  const queryParams = new URLSearchParams();
+  queryParams.set('endpoint', path.replace(/^\//, '')); // Remove leading slash
+  
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
+    if (v !== undefined && v !== null && v !== '') {
+      queryParams.set(k, String(v));
+    }
   });
-  const finalUrl = getAuthHeaders() ? url.toString() : withApiKey(url.toString());
-  const res = await fetch(finalUrl, { headers: getAuthHeaders() });
+  
+  const url = `${TMDB_PROXY}?${queryParams.toString()}`;
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`TMDB ${path} failed: ${res.status}`);
   return res.json();
 }
@@ -145,17 +144,18 @@ async function getIMDBId(mediaType: 'movie'|'tv', id: number): Promise<string | 
 }
 
 /**
- * Fetch ratings from OMDB API using IMDB ID
+ * Fetch ratings from OMDB API using IMDB ID (via secure proxy)
  */
 async function fetchOMDBRatings(imdbId: string): Promise<Rating[]> {
   try {
-    const apiKey = process.env.OMDB_API_KEY;
-    if (!apiKey) {
-      console.warn('OMDB_API_KEY not configured');
+    const url = `${OMDB_PROXY}?i=${encodeURIComponent(imdbId)}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.warn(`OMDB proxy error: ${response.status}`);
       return [];
     }
     
-    const response = await fetch(`${OMDB_BASE}/?i=${imdbId}&apikey=${apiKey}`);
     const data = await response.json();
     
     if (data.Response === 'False') {

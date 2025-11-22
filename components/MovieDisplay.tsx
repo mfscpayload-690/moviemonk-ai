@@ -169,7 +169,27 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
   const safeRatings = movie && Array.isArray(movie.ratings) ? movie.ratings : [];
   const safeCast = movie && Array.isArray(movie.cast) ? movie.cast : [];
   const safeGenres = movie && Array.isArray(movie.genres) ? movie.genres : [];
-  const safeWhereToWatch = movie && Array.isArray(movie.where_to_watch) ? movie.where_to_watch : [];
+  
+  // Normalize where_to_watch: handle both proper objects and malformed string arrays
+  const safeWhereToWatch = movie && Array.isArray(movie.where_to_watch) 
+    ? movie.where_to_watch.map((option: any) => {
+        // If it's a string, convert to proper WatchOption
+        if (typeof option === 'string') {
+          return {
+            platform: option,
+            link: '#',
+            type: 'subscription' as const
+          };
+        }
+        // If object but missing fields, add defaults
+        return {
+          platform: option.platform || 'Unknown',
+          link: option.link || '#',
+          type: option.type || 'subscription'
+        };
+      })
+    : [];
+  
   const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
   
   const displayedCast = showAllCast ? safeCast : safeCast.slice(0, 8);

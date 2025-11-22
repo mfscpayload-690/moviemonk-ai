@@ -2,8 +2,10 @@ import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
 
-const API_KEY = process.env.GROQ_API_KEY;
-const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// Use proxy for Groq calls (API key stays server-side)
+const GROQ_PROXY = import.meta.env.DEV
+  ? 'http://localhost:3000/api/groq'
+  : '/api/groq';
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {
@@ -63,10 +65,6 @@ export async function fetchMovieData(
     return { movieData: null, sources: null, provider: 'groq' };
   }
 
-  if (!API_KEY) {
-    return { movieData: null, sources: null, error: 'GROQ_API_KEY is not set' };
-  }
-
   // Model selection based on complexity
   // Updated models: llama-3.3-70b-versatile, llama-3.1-8b-instant, mixtral-8x7b-32768
   const model = complexity === QueryComplexity.COMPLEX 
@@ -91,10 +89,9 @@ export async function fetchMovieData(
   messages.push({ role: 'user', content: query });
 
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(GROQ_PROXY, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({

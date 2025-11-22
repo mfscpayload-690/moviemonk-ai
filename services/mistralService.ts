@@ -2,8 +2,10 @@ import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
 
-const API_KEY = process.env.MISTRAL_API_KEY;
-const API_URL = 'https://api.mistral.ai/v1/chat/completions';
+// Use proxy for Mistral calls (API key stays server-side)
+const MISTRAL_PROXY = import.meta.env.DEV
+  ? 'http://localhost:3000/api/mistral'
+  : '/api/mistral';
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {
@@ -36,10 +38,6 @@ export async function fetchMovieData(
     return { movieData: null, sources: null, provider: 'mistral' };
   }
 
-  if (!API_KEY) {
-    return { movieData: null, sources: null, error: 'MISTRAL_API_KEY is not set' };
-  }
-
   // Model selection: Use FREE open-weight models for free tier
   // Free models: open-mistral-7b, open-mixtral-8x7b, open-mixtral-8x22b
   const model = complexity === QueryComplexity.COMPLEX 
@@ -64,10 +62,9 @@ export async function fetchMovieData(
   messages.push({ role: 'user', content: query });
 
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(MISTRAL_PROXY, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({

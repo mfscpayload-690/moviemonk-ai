@@ -14,7 +14,43 @@ const parseJsonResponse = (text: string): MovieData | null => {
   } catch (e) {
     console.error('OpenRouter parse JSON failed:', e);
     console.error('Raw text:', text);
-    return null;
+    
+    // Attempt to repair truncated JSON
+    try {
+      const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      
+      // If truncated mid-string, try closing the string and object
+      let repaired = cleanedText;
+      
+      // Count unclosed quotes
+      const quoteCount = (repaired.match(/"/g) || []).length;
+      if (quoteCount % 2 !== 0) {
+        // Odd number of quotes - add closing quote
+        repaired += '"';
+      }
+      
+      // Count unclosed braces/brackets
+      const openBraces = (repaired.match(/{/g) || []).length;
+      const closeBraces = (repaired.match(/}/g) || []).length;
+      const openBrackets = (repaired.match(/\[/g) || []).length;
+      const closeBrackets = (repaired.match(/\]/g) || []).length;
+      
+      // Close arrays first, then objects
+      for (let i = 0; i < (openBrackets - closeBrackets); i++) {
+        repaired += ']';
+      }
+      for (let i = 0; i < (openBraces - closeBraces); i++) {
+        repaired += '}';
+      }
+      
+      console.warn('Attempting to parse repaired JSON...');
+      const parsed = JSON.parse(repaired) as MovieData;
+      console.log('✅ JSON repair successful!');
+      return parsed;
+    } catch (repairError) {
+      console.error('JSON repair also failed:', repairError);
+      return null;
+    }
   }
 };
 
