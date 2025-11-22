@@ -4,15 +4,9 @@
   "framework": "vite",
   "functions": {
     "api/**/*.ts": {
-      "runtime": "@vercel/node@2.15.10"
+      "runtime": "nodejs20.x"
     }
   },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    }
-  ],
   "installCommand": "npm install",
   "devCommand": "npm run dev"
 }
