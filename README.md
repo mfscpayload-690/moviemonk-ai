@@ -5,7 +5,8 @@ Search for any movie or TV show and get accurate info with AI-powered summaries.
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-ai.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-![MovieMonk Banner](asset/MovieMonk%20Logo.png)
+<img width="1726" height="996" alt="image" src="https://github.com/user-attachments/assets/cdb11c56-63fa-4720-9946-2e85b7f9d0c5" />
+
 
 ---
 
