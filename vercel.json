@@ -4,7 +4,7 @@
   "framework": "vite",
   "functions": {
     "api/**/*.ts": {
-      "runtime": "@vercel/node@2.15.10"
+      "runtime": "nodejs22.x"
     }
   },
   "installCommand": "npm install",
