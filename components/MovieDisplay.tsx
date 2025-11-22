@@ -156,6 +156,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     setModalRoot(document.getElementById('modal-root'));
   }, []);
 
+    // Reset spoiler state when movie changes & prefill if already present
+    useEffect(() => {
+        setShowFullPlot(false);
+        setIsLoadingFullPlot(false);
+        setFullPlotContent(movie?.summary_long_spoilers || '');
+    }, [movie]);
+
   const embedUrl = movie ? getYouTubeEmbedUrl(movie.trailer_url) : null;
   
   // Ensure ratings is always an array (handle legacy cached data)
@@ -333,43 +340,48 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             </div>
             
             <div className="mt-6">
-                <div className="flex justify-between items-center">
-                    <span className="font-semibold text-brand-accent">Full Plot Details (Spoilers)</span>
-                    <button 
-                        onClick={async () => {
-                          if (!showFullPlot && !fullPlotContent && movie) {
-                            setIsLoadingFullPlot(true);
-                            try {
-                              const plot = await onFetchFullPlot(movie.title, movie.year, movie.type, selectedProvider);
-                              setFullPlotContent(plot);
-                            } catch (error) {
-                              setFullPlotContent("Failed to load full plot details. Please try again.");
-                            }
-                            setIsLoadingFullPlot(false);
-                          }
-                          setShowFullPlot(!showFullPlot);
-                        }} 
-                        aria-label={showFullPlot ? 'Hide full plot' : 'Show full plot'}
-                        aria-expanded={showFullPlot}
-                        aria-controls="spoiler-content"
-                        className="p-2 rounded-full hover:bg-brand-primary/20 focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all duration-200"
-                        disabled={isLoadingFullPlot}
-                    >
-                        {isLoadingFullPlot ? (
-                          <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
-                        ) : showFullPlot ? (
-                          <EyeSlashIcon />
-                        ) : (
-                          <EyeIcon />
-                        )}
-                    </button>
-                </div>
-                {showFullPlot && fullPlotContent && (
-                    <div id="spoiler-content" className="mt-3 pt-3 border-t border-brand-primary/20 animate-fade-in">
-                        <p className="text-sm font-bold text-red-400 mb-2">{fullPlotContent.startsWith("SPOILER WARNING") ? fullPlotContent.split("—")[0] : "SPOILER WARNING"}</p>
-                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">{fullPlotContent.replace(/^SPOILER WARNING — Full plot explained below\.\n*/, '')}</p>
-                    </div>
-                )}
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={async () => {
+                                            if (!fullPlotContent && movie) {
+                                                setIsLoadingFullPlot(true);
+                                                try {
+                                                    const plot = await onFetchFullPlot(movie.title, movie.year, movie.type, selectedProvider);
+                                                    setFullPlotContent(plot);
+                                                    setShowFullPlot(true);
+                                                } catch (error) {
+                                                    setFullPlotContent("Failed to load full plot details. Please try again.");
+                                                    setShowFullPlot(true);
+                                                }
+                                                setIsLoadingFullPlot(false);
+                                                return;
+                                            }
+                                            setShowFullPlot(p => !p);
+                                        }}
+                                        disabled={isLoadingFullPlot}
+                                        aria-controls="spoiler-content"
+                                        aria-expanded={showFullPlot}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors"
+                                    >
+                                        {isLoadingFullPlot ? (
+                                            <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                                        ) : showFullPlot ? (
+                                            <EyeSlashIcon className="w-5 h-5" />
+                                        ) : (
+                                            <EyeIcon className="w-5 h-5" />
+                                        )}
+                                        {fullPlotContent ? (showFullPlot ? 'Hide Spoiler Plot' : 'Show Spoiler Plot') : 'Load Full Plot (Spoilers)'}
+                                    </button>
+                                    {showFullPlot && fullPlotContent && (
+                                        <div id="spoiler-content" className="pt-3 border-t border-brand-primary/20 animate-fade-in">
+                                            <p className="text-sm font-bold text-red-400 mb-2">{fullPlotContent.startsWith('SPOILER WARNING') ? fullPlotContent.split('—')[0] : 'SPOILER WARNING'}</p>
+                                            <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">{fullPlotContent.replace(/^SPOILER WARNING — Full plot explained below\.\n*/, '')}</p>
+                                        </div>
+                                    )}
+                                    {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
+                                        <p className="text-sm text-brand-text-dark italic">No spoiler plot available yet.</p>
+                                    )}
+                                </div>
             </div>
           </Section>
           
