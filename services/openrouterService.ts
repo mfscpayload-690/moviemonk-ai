@@ -5,7 +5,7 @@ import { enrichWithTMDB } from './tmdbService';
 // Use serverless proxy endpoint instead of direct API call
 const PROXY_URL = import.meta.env.DEV 
   ? 'http://localhost:3000/api/openrouter'  // Local dev (if running Vercel dev)
-  : '/api/openrouter';  // Production (Vercel deployment)
+  : `${window.location.origin}/api/openrouter`;  // Production (Vercel deployment)
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {

@@ -7,12 +7,12 @@ const IMG_BASE = 'https://image.tmdb.org/t/p';
 // Use proxy for TMDB calls (API key stays server-side)
 const TMDB_PROXY = import.meta.env.DEV
   ? 'http://localhost:3000/api/tmdb'
-  : '/api/tmdb';
+  : `${window.location.origin}/api/tmdb`;
 
 // Use proxy for OMDB calls (API key stays server-side)
 const OMDB_PROXY = import.meta.env.DEV
   ? 'http://localhost:3000/api/omdb'
-  : '/api/omdb';
+  : `${window.location.origin}/api/omdb`;
 
 function buildImageUrl(path: string | null | undefined, size: 'w500'|'w780'|'original' = 'original'): string {
   if (!path) return '';

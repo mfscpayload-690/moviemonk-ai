@@ -2,8 +2,6 @@
  * Serverless proxy for OpenRouter API
  * This avoids CORS issues and keeps the API key secure on the backend
  */
-export const config = { runtime: 'nodejs' };
-
 export default async function handler(req: any, res: any) {
   const provider = 'openrouter';
   const sendError = (status: number, code: string, message: string, details?: any) => {

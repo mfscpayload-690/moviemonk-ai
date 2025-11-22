@@ -5,7 +5,7 @@ import { enrichWithTMDB } from './tmdbService';
 // Use proxy for Groq calls (API key stays server-side)
 const GROQ_PROXY = import.meta.env.DEV
   ? 'http://localhost:3000/api/groq'
-  : '/api/groq';
+  : `${window.location.origin}/api/groq`;
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {

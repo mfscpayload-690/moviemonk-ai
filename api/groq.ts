@@ -1,8 +1,6 @@
 /**
  * Secure Groq API proxy - keeps API key server-side
  */
-export const config = { runtime: 'nodejs' };
-
 export default async function handler(req: any, res: any) {
   const provider = 'groq';
   const sendError = (status: number, code: string, message: string, details?: any) => {
