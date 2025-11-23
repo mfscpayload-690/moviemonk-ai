@@ -19,10 +19,16 @@ npm install
 Create `.env.local` and add your keys:
 
 ```env
+# Required
 GROQ_API_KEY=your_key
 TMDB_API_KEY=your_key
 TMDB_READ_TOKEN=your_token
 OMDB_API_KEY=your_key
+
+# Optional but recommended
+MISTRAL_API_KEY=your_key
+OPENROUTER_API_KEY=your_key
+PERPLEXITY_API_KEY=your_key
 ```
 
 ### 3. Start Dev Server
@@ -222,7 +228,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, 
 ```bash
 npm run dev
 # Try various queries: simple, complex, edge cases
-# Check console logs for Gemini responses
+# Check console logs for AI provider responses
+# Verify all providers return consistent format
 ```
 
 ### Changing Data Schema
@@ -283,21 +290,42 @@ async function fetchSimilarMovies(mediaType: 'movie'|'tv', id: number): Promise<
 }
 ```
 
+### Modifying AI Service Behavior
+
+**Location**: `services/aiService.ts`, `services/groqService.ts`, `services/mistralService.ts`
+
+**Provider fallback chain:**
+1. Groq (primary)
+2. Mistral (backup)
+3. OpenRouter (fallback)
+
+**Testing provider changes:**
+```bash
+npm run dev
+# Try various queries in different complexity modes
+# Check browser console for which provider was used
+# Verify fallback works by temporarily disabling providers
+```
+
 ---
 
 ## Debugging
 
 ### Browser DevTools
 
+**Browser DevTools:**
+
 **Console logs:**
-- Gemini service logs raw responses
+- AI services log provider selection and errors
 - TMDB service logs search/image errors
 - Check for parsing failures
+- Monitor which AI provider is being used
 
 **Network tab:**
-- Monitor API calls
+- Monitor API calls to `/api/*` endpoints
 - Check request/response payloads
 - Verify 200 status codes
+- Watch for rate limiting errors
 
 **React DevTools:**
 - Install extension: [React DevTools](https://react.dev/learn/react-developer-tools)
@@ -309,21 +337,29 @@ async function fetchSimilarMovies(mediaType: 'movie'|'tv', id: number): Promise<
 **Issue: "API key not valid"**
 - Check `.env.local` has correct key
 - Restart dev server after env changes: `Ctrl+C` then `npm run dev`
+- Verify no extra spaces or newlines in keys
 
 **Issue: Images not loading**
-- Verify TMDB credentials
+- Verify TMDB credentials (prefer Read Access Token)
 - Check console for 401 errors
-- Ensure `enrichWithTMDB` is called
+- Ensure `enrichWithTMDB` is called in data flow
 
 **Issue: JSON parsing fails**
-- Log raw `response.text` in `geminiService.ts`
-- Check if Gemini returned markdown fences
+- Log raw response in AI service files
+- Check if AI returned unexpected format
 - Verify schema matches `types.ts`
 
 **Issue: Slow queries**
 - Use Simple mode for testing
-- Complex mode has longer thinking time
+- Complex mode has longer processing time
 - Check network throttling in DevTools
+- Verify caching is working
+
+**Issue: AI provider failures**
+- Check provider status pages
+- Verify all API keys are valid
+- System should automatically fallback to next provider
+- Check console logs for fallback messages
 
 ---
 
@@ -369,19 +405,31 @@ npm run preview
 
 **Development** (`.env.local`):
 ```env
-GEMINI_API_KEY=your_key
+# AI Providers
+GROQ_API_KEY=your_key
+MISTRAL_API_KEY=your_key
+OPENROUTER_API_KEY=your_key
+
+# Movie Data APIs
 TMDB_READ_TOKEN=your_token
 TMDB_API_KEY=your_key
+OMDB_API_KEY=your_key
+
+# Optional
+PERPLEXITY_API_KEY=your_key
 ```
 
-**Production** (GitHub Secrets / Platform dashboards):
-- Add same variables
-- Injected at build time via `vite.config.ts`
+**Production** (Vercel Environment Variables):
+- Add same variables in Vercel dashboard
+- Go to Project Settings → Environment Variables
+- Keys are injected at runtime via serverless functions
 
 **Accessing in code:**
 ```typescript
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey = process.env.GROQ_API_KEY;
 ```
+
+**Security note:** With the current architecture, API keys for AI providers are accessed via Vercel serverless functions (`/api/*`), keeping them secure and never exposed to the browser.
 
 ---
 
@@ -496,7 +544,9 @@ taskkill /PID <PID> /F
 - [React Documentation](https://react.dev/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [Tailwind CSS Docs](https://tailwindcss.com/docs)
-- [Gemini API Docs](https://ai.google.dev/gemini-api/docs)
+- [Groq API Docs](https://console.groq.com/docs)
+- [Mistral AI Docs](https://docs.mistral.ai)
+- [OpenRouter Docs](https://openrouter.ai/docs)
 - [TMDB API Docs](https://developer.themoviedb.org/docs)
 
 ---
