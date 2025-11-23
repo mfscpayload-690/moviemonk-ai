@@ -7,7 +7,7 @@ How MovieMonk keeps things fast.
 ## Why Cache?
 
 Every search without caching:
-- Calls AI API (slow + costs money)
+- Calls AI API (Groq/Mistral/OpenRouter) - costs money + takes 3-10 seconds
 - Calls TMDB API (slower)
 - User waits 5-10 seconds
 
@@ -97,9 +97,9 @@ Think of it as a super-fast storage locker that exists "in the cloud" where you 
 
 ### Problem:
 Every time someone searches "Interstellar", your app:
-1. Calls Gemini API (costs money + takes 5-10 seconds)
+1. Calls AI API (Groq/Mistral/OpenRouter) - costs money + takes 3-10 seconds
 2. Calls TMDB API (takes 1-2 seconds)
-3. User waits ~7-12 seconds total
+3. User waits ~5-12 seconds total
 
 If 1000 people search "Interstellar" today, you make 1000 API calls!
 
@@ -244,8 +244,8 @@ export default async function handler(req, res) {
     return res.json({ data: cached, cached: true });
   }
   
-  // Not in cache, call AI
-  const result = await callGeminiAPI(query);
+  // Not in cache, call AI (Groq → Mistral → OpenRouter fallback)
+  const result = await callAIService(query);
   
   // Save to cache for 7 days
   await kv.set(cacheKey, result, { ex: 60 * 60 * 24 * 7 });
@@ -376,8 +376,10 @@ vercel cron add "0 0 * * 0" "npm run prefetch"
   - Uncached: 7-12 seconds (2% of searches)
 
 **Cost Savings:**
-- **Before**: $0.002 per search × 10,000 searches = $20/month
+- **Before**: $0.002 per search × 10,000 searches = $20/month (estimated)
 - **After**: $0.002 × 200 searches = $0.40/month (98% cache hit rate!)
+
+Note: Costs vary by AI provider. Groq offers generous free tier, Mistral has 2M free tokens/month, OpenRouter is pay-per-use.
 
 ---
 

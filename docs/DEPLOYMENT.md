@@ -90,14 +90,26 @@ Need help? Check [Vercel Docs](https://vercel.com/docs) or the main [README](../
    - Build Command: `npm run build`
    - Start Command: `npm run preview`
 5. **Add Environment Variables**:
-   - `GEMINI_API_KEY`
+   - `GROQ_API_KEY`
+   - `MISTRAL_API_KEY`
+   - `OPENROUTER_API_KEY`
    - `TMDB_READ_TOKEN`
    - `TMDB_API_KEY`
+   - `OMDB_API_KEY`
+   - `PERPLEXITY_API_KEY` (optional)
 6. **Deploy**: Railway auto-deploys
 
 ### Railway Configuration
 
 Railway auto-detects Node.js projects. No additional configuration needed.
+
+**Environment Variables to Add:**
+- `GROQ_API_KEY`
+- `MISTRAL_API_KEY` (optional but recommended)
+- `OPENROUTER_API_KEY` (optional but recommended)
+- `TMDB_READ_TOKEN`
+- `TMDB_API_KEY`
+- `OMDB_API_KEY`
 
 **Custom Domain (Optional):**
 - Go to project settings
@@ -118,7 +130,9 @@ Railway auto-detects Node.js projects. No additional configuration needed.
    - Build Command: `npm run build`
    - Output Directory: `dist`
 5. **Environment Variables**:
-   - Add `GEMINI_API_KEY`, `TMDB_READ_TOKEN`, `TMDB_API_KEY`
+   - Add `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`
+   - Add `TMDB_READ_TOKEN`, `TMDB_API_KEY`, `OMDB_API_KEY`
+   - Add `PERPLEXITY_API_KEY` (optional)
 6. **Deploy**
 
 ### Vercel CLI (Alternative)
@@ -144,7 +158,9 @@ Follow prompts and add environment variables when asked.
    - Build Command: `npm run build`
    - Publish Directory: `dist`
 5. **Environment Variables**:
-   - Add `GEMINI_API_KEY`, `TMDB_READ_TOKEN`, `TMDB_API_KEY`
+   - Add `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`
+   - Add `TMDB_READ_TOKEN`, `TMDB_API_KEY`, `OMDB_API_KEY`
+   - Add `PERPLEXITY_API_KEY` (optional)
 6. **Deploy**
 
 ### Netlify CLI (Alternative)
@@ -212,11 +228,15 @@ server {
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GEMINI_API_KEY` | **Yes** | Google Gemini API key for AI queries |
-| `TMDB_READ_TOKEN` | Recommended | TMDB v4 Read Access Token (preferred) |
-| `TMDB_API_KEY` | Optional | TMDB v3 API Key (fallback) |
+| `GROQ_API_KEY` | **Yes** | Groq API key for AI queries (primary provider) |
+| `MISTRAL_API_KEY` | Recommended | Mistral API key (backup provider) |
+| `OPENROUTER_API_KEY` | Recommended | OpenRouter API key (fallback provider) |
+| `TMDB_API_KEY` | **Yes** | TMDB v3 API Key for movie data |
+| `TMDB_READ_TOKEN` | Recommended | TMDB v4 Read Access Token (preferred over v3) |
+| `OMDB_API_KEY` | **Yes** | OMDB API key for IMDB ratings |
+| `PERPLEXITY_API_KEY` | Optional | Perplexity API for web search (recent releases) |
 
-**Note**: You need at least one TMDB credential (`TMDB_READ_TOKEN` is preferred).
+**Note**: You need at least Groq, TMDB, and OMDB credentials to run the app. Mistral and OpenRouter provide backup/fallback functionality.
 
 ---
 

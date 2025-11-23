@@ -8,20 +8,22 @@ How MovieMonk uses AI and movie data APIs.
 
 We use free AI APIs to generate summaries:
 
-- **Groq** (primary) - Fast and free
-- **Mistral** (backup) - Also free
-- **OpenRouter** (fallback) - Last resort
+- **Groq** (primary) - Fast and free, uses llama-3.3-70b-versatile model
+- **Mistral** (backup) - Also free, uses mistral-large-latest model
+- **OpenRouter** (fallback) - Last resort for when other providers are unavailable
 
 ### Getting API Keys
 
 1. **Groq**: Sign up at [console.groq.com](https://console.groq.com)
-2. **TMDB**: Get key at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
-3. **OMDB**: Get key at [omdbapi.com/apikey.aspx](http://www.omdbapi.com/apikey.aspx)
+2. **Mistral**: Sign up at [console.mistral.ai](https://console.mistral.ai)
+3. **OpenRouter**: Sign up at [openrouter.ai/keys](https://openrouter.ai/keys)
+4. **TMDB**: Get key at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
+5. **OMDB**: Get key at [omdbapi.com/apikey.aspx](http://www.omdbapi.com/apikey.aspx)
 
 ### Query Modes
 
-- **Simple Mode**: Quick responses, basic AI model
-- **Complex Mode**: Detailed analysis, smarter AI model
+- **Simple Mode**: Quick responses, faster AI processing
+- **Complex Mode**: Detailed analysis with extended thinking time
 
 ---
 
@@ -42,9 +44,10 @@ TMDB_READ_TOKEN=your_token_here
 
 - Movie/show posters and backdrops
 - Cast and crew info
-- IMDB ratings (via external ID)
+- IMDB ratings (via OMDB integration)
 - Gallery images
 - Streaming availability
+- Release dates and runtime
 
 ### Image URLs
 
@@ -60,10 +63,10 @@ Sizes: `w300`, `w500`, `w780`, `original`
 ## How It All Works Together
 
 1. **You search** for a movie
-2. **TMDB finds** the movie data
-3. **AI writes** summaries and trivia
-4. **We merge** TMDB facts + AI creativity
-5. **You see** the complete result
+2. **TMDB finds** the movie data (cast, ratings, images)
+3. **AI writes** summaries and trivia using Groq/Mistral/OpenRouter
+4. **We merge** TMDB facts + AI-generated content
+5. **You see** the complete result with accurate data and engaging summaries
 
 ---
 
@@ -74,25 +77,30 @@ Common issues and fixes:
 **"Invalid API key"**
 - Check your `.env.local` file
 - Make sure keys are correct
+- Verify you've set all required keys (Groq, TMDB, OMDB)
 
 **"Too many requests"**
 - Wait a moment and try again
 - We cache results to avoid this
+- System automatically falls back to alternate AI providers
 
 **"No results found"**
 - Try different search terms
 - Check spelling
 - Try just the movie title without year
+- For recent releases, ensure Perplexity API key is configured
 
 ---
 
 ## Rate Limits
 
-- **Groq**: 15 requests/minute (free tier)
+- **Groq**: 30 requests/minute (free tier), unlimited daily
+- **Mistral**: 2M tokens/month (free tier)
+- **OpenRouter**: Varies by model, used as fallback
 - **TMDB**: 40 requests/10 seconds
-- **OMDB**: 1000 requests/day
+- **OMDB**: 1000 requests/day (free tier)
 
-We cache responses to stay within limits.
+We cache responses to stay within limits and improve performance.
 
 ---
 
@@ -102,257 +110,90 @@ Check the main [README](../README.md) or open an issue on GitHub.
 
 ---
 
-## Table of Contents
+## AI Service Architecture
 
-- [Gemini AI API](#gemini-ai-api)
-  - [Authentication](#authentication)
-  - [Model Selection](#model-selection)
-  - [Prompt Engineering](#prompt-engineering)
-  - [Response Handling](#response-handling)
-  - [Error Handling](#error-handling)
-  - [Example Requests](#example-requests)
-- [TMDB API](#tmdb-api)
-  - [Authentication](#authentication-1)
-  - [Endpoints](#endpoints)
-  - [Image URLs](#image-urls)
-  - [Search & Enrichment](#search--enrichment)
-  - [Error Handling](#error-handling-1)
-  - [Example Requests](#example-requests-1)
-- [Integration Patterns](#integration-patterns)
-- [Rate Limits & Best Practices](#rate-limits--best-practices)
+MovieMonk uses a robust multi-provider AI architecture with automatic fallback:
 
----
+### Provider Priority
 
-## Gemini AI API
+1. **Groq (Primary)** - `groqService.ts`
+   - Model: `llama-3.3-70b-versatile`
+   - Fast inference, free tier with generous limits
+   - 30 requests/minute
 
-### Authentication
+2. **Mistral (Backup)** - `mistralService.ts`
+   - Model: `mistral-large-latest`
+   - 2M tokens/month free tier
+   - Activated when Groq is unavailable
 
-**API Key Setup:**
+3. **OpenRouter (Fallback)** - `openrouterService.ts`
+   - Multiple models available
+   - Used as last resort
+   - Proxied through Vercel serverless function
 
+### How AI Integration Works
+
+**1. Query Processing:**
 ```typescript
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+// User query is sent to AI service with complexity mode
+const result = await aiService.fetchMovieData(query, complexity);
 ```
 
-**Get your key:**
-- Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-- Create new API key
-- Add to `.env.local`: `GEMINI_API_KEY=your_key_here`
-
----
-
-### Model Selection
-
-MovieMonk uses two models based on query complexity:
-
-| Mode | Model | Use Case | Thinking Budget |
-|------|-------|----------|----------------|
-| **Simple** | `gemini-2.5-flash` | Fast, straightforward queries | None |
-| **Complex** | `gemini-2.5-pro` | Detailed analysis, plot summaries | 10,000 tokens |
-
-**Implementation:**
-
+**2. AI Provider Selection:**
 ```typescript
-export enum QueryComplexity {
-  SIMPLE = 'simple',
-  COMPLEX = 'complex'
-}
-
-function getModel(complexity: QueryComplexity) {
-  if (complexity === QueryComplexity.COMPLEX) {
-    return genAI.getGenerativeModel({
-      model: "gemini-2.5-pro",
-      generationConfig: {
-        responseModality: "TEXT",
-        responseMimeType: "application/json",
-        responseSchema: MOVIE_DATA_SCHEMA,
-        thinkingConfig: { thinkingBudget: 10000 }
-      }
-    });
-  } else {
-    return genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        responseModality: "TEXT",
-        responseMimeType: "application/json",
-        responseSchema: MOVIE_DATA_SCHEMA
-      }
-    });
+// Services/aiService.ts automatically tries providers in order:
+try {
+  return await groqService.fetchMovieData(query, complexity);
+} catch (error) {
+  try {
+    return await mistralService.fetchMovieData(query, complexity);
+  } catch (error) {
+    return await openrouterService.fetchMovieData(query, complexity);
   }
 }
 ```
 
----
-
-### Prompt Engineering
-
-**System Instruction:**
-
-Located in `constants.ts` → `INITIAL_PROMPT`. This is the "constitution" for the AI:
-
-```typescript
-export const INITIAL_PROMPT = `You are a movie and TV series expert assistant. Always return STRICTLY a single, valid JSON object conforming exactly to the schema provided.
-
-CRITICAL RULES:
-1. Always return a SINGLE JSON object (not an array, not multiple objects).
-2. If a field cannot be verified, use "" for strings or [] for arrays (do NOT omit the field).
-3. Use the Google Search tool to find the most accurate, up-to-date information.
-4. Verify all facts before including them in your response.
-...
-`;
-```
-
-**Key Sections:**
-- **Role definition**: Movie/TV expert
-- **Output format**: JSON only, schema compliance
-- **Tool usage**: Google Search for grounding
-- **Field handling**: Empty vs null rules
-- **Examples**: Show expected structure
-
-**Modification tips:**
-- Be explicit about edge cases
-- Provide examples for complex fields
-- Mention tools by name if you want them used
-- Test with edge cases after changes
-
----
-
-### Response Handling
-
-**1. Basic Response:**
-
-```typescript
-const result = await model.generateContent({
-  contents: [{ role: "user", parts: [{ text: query }] }],
-  tools: [{ googleSearch: {} }]
-});
-
-const response = result.response;
-const text = response.text();
-```
-
-**2. Response Object Structure:**
-
+**3. Response Format:**
+All AI providers return structured JSON with movie data:
 ```typescript
 {
-  candidates: [{
-    content: { parts: [{ text: "JSON string" }] },
-    finishReason: "STOP" | "SAFETY" | "MAX_TOKENS" | ...,
-    groundingMetadata: {
-      groundingChunks: [{ web: { uri: "...", title: "..." } }],
-      webSearchQueries: ["query1", "query2"]
-    }
-  }]
+  title: string;
+  year: number;
+  plot: string;
+  genres: string[];
+  cast: Array<{name: string, character: string}>;
+  // ... additional fields
 }
-```
-
-**3. Parsing JSON:**
-
-MovieMonk strips markdown fences before parsing:
-
-```typescript
-function parseJsonResponse(text: string): MovieData {
-  // Remove markdown code fences
-  const cleanedText = text
-    .replace(/```json\s*/g, '')
-    .replace(/```\s*/g, '')
-    .trim();
-
-  const parsed = JSON.parse(cleanedText);
-  return parsed as MovieData;
-}
-```
-
-**4. Grounding Sources:**
-
-Extract web sources from `groundingMetadata`:
-
-```typescript
-const sources: DataSource[] = 
-  response.candidates[0].groundingMetadata?.groundingChunks
-    ?.filter(chunk => chunk.web)
-    .map(chunk => ({
-      title: chunk.web.title,
-      url: chunk.web.uri
-    })) || [];
 ```
 
 ---
 
-### Error Handling
+## Authentication & Setup
 
-**Common Error Scenarios:**
+### Required Environment Variables
 
-1. **Invalid API Key:**
-   ```typescript
-   catch (error) {
-     if (error.message.includes('API_KEY_INVALID')) {
-       throw new Error('Invalid Gemini API key. Check your .env.local');
-     }
-   }
-   ```
+```env
+# AI Providers
+GROQ_API_KEY=your_groq_key
+MISTRAL_API_KEY=your_mistral_key
+OPENROUTER_API_KEY=your_openrouter_key
 
-2. **Safety Filters:**
-   ```typescript
-   if (response.candidates[0].finishReason === 'SAFETY') {
-     throw new Error('Content filtered by safety settings');
-   }
-   ```
+# Movie Data
+TMDB_API_KEY=your_tmdb_key
+TMDB_READ_TOKEN=your_tmdb_token
+OMDB_API_KEY=your_omdb_key
 
-3. **Token Limit:**
-   ```typescript
-   if (response.candidates[0].finishReason === 'MAX_TOKENS') {
-     console.warn('Response truncated - increase token limit');
-   }
-   ```
-
-4. **JSON Parsing:**
-   ```typescript
-   try {
-     return JSON.parse(cleanedText);
-   } catch (e) {
-     console.error('JSON parse failed. Raw response:', text);
-     throw new Error('Invalid JSON from Gemini');
-   }
-   ```
-
----
-
-### Example Requests
-
-**Simple Query (Flash model):**
-
-```typescript
-const query = "Tell me about Inception (2010)";
-const complexity = QueryComplexity.SIMPLE;
-
-const result = await fetchMovieData(query, complexity);
-// Returns MovieData with basic fields filled
+# Optional
+PERPLEXITY_API_KEY=your_perplexity_key
 ```
 
-**Complex Query (Pro model with thinking):**
+### Getting API Keys
 
-```typescript
-const query = "Give me a detailed plot breakdown of Interstellar with scientific accuracy notes";
-const complexity = QueryComplexity.COMPLEX;
-
-const result = await fetchMovieData(query, complexity);
-// Returns MovieData with extensive plot analysis
-```
-
-**With Chat History:**
-
-```typescript
-const chatHistory: ChatMessage[] = [
-  { role: 'user', content: 'Find action movies from 2023' },
-  { role: 'assistant', content: 'Here are some...' }
-];
-
-const query = "Which one has the best reviews?";
-const result = await fetchMovieData(query, QueryComplexity.SIMPLE, chatHistory);
-// Uses conversation context for relevance
-```
+- **Groq**: [console.groq.com](https://console.groq.com)
+- **Mistral**: [console.mistral.ai](https://console.mistral.ai)
+- **OpenRouter**: [openrouter.ai/keys](https://openrouter.ai/keys)
+- **TMDB**: [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
+- **OMDB**: [omdbapi.com/apikey.aspx](http://www.omdbapi.com/apikey.aspx)
 
 ---
 
@@ -628,66 +469,78 @@ curl -X GET "https://api.themoviedb.org/3/movie/27205/images" \
 
 ## Integration Patterns
 
-### Gemini + TMDB Flow
+### AI + TMDB Data Flow
 
-**1. User sends query** → ChatInterface
-**2. Gemini processes** → Returns MovieData (text fields filled)
-**3. TMDB enriches** → Adds reliable images
-**4. Display result** → MovieDisplay renders
+**Complete request flow:**
 
-**Code flow:**
+1. **User sends query** → ChatInterface component
+2. **AI service processes** → Tries Groq → Falls back to Mistral → Falls back to OpenRouter
+3. **TMDB enrichment** → Adds accurate images, cast, ratings
+4. **OMDB integration** → Fetches IMDB ratings
+5. **Cache storage** → Saves to localStorage and IndexedDB
+6. **Display result** → MovieDisplay renders complete data
+
+**Implementation example:**
 
 ```typescript
 async function fetchMovieData(query: string, complexity: QueryComplexity) {
-  // Step 1: Get data from Gemini
-  const geminiResult = await model.generateContent({...});
-  const movieData = parseJsonResponse(geminiResult.response.text());
+  // Step 1: Check cache first
+  const cached = await cacheService.get(query);
+  if (cached) return cached;
 
-  // Step 2: Enrich with TMDB images
-  const enrichedData = await enrichWithTMDB(movieData);
-
-  // Step 3: Return complete data
-  return {
-    data: enrichedData,
-    sources: extractSources(geminiResult.response)
-  };
+  // Step 2: Get AI-generated content (with fallback)
+  const aiResult = await aiService.fetchMovieData(query, complexity);
+  
+  // Step 3: Enrich with TMDB data
+  const enrichedData = await tmdbService.enrichWithTMDB(aiResult.data);
+  
+  // Step 4: Add IMDB ratings via OMDB
+  const withRatings = await omdbService.addRatings(enrichedData);
+  
+  // Step 5: Cache the result
+  await cacheService.set(query, withRatings);
+  
+  return withRatings;
 }
 ```
 
-### When to Use Which API
+### When to Use Which Service
 
-| Data Type | Source | Reason |
-|-----------|--------|--------|
-| Plot, themes, trivia | **Gemini** | Natural language understanding, context |
-| Images (poster, backdrop) | **TMDB** | Reliable, high-quality, consistent URLs |
-| Ratings | **Gemini** | Aggregates from multiple sources |
-| Where to watch | **Gemini** | Real-time Google Search grounding |
-| Cast | **Gemini or TMDB** | Both work; Gemini for character names |
-| Gallery | **TMDB** | Bulk high-res images |
+| Data Type | Primary Source | Fallback | Reason |
+|-----------|---------------|----------|--------|
+| Plot, themes, trivia | **Groq/Mistral** | OpenRouter | Fast, free, natural language |
+| Images (poster, backdrop) | **TMDB** | AI placeholder | Reliable, high-quality URLs |
+| IMDB ratings | **OMDB** | None | Official IMDB data |
+| Cast & crew | **TMDB** | AI data | 100% accurate from database |
+| Where to watch | **AI providers** | Perplexity | Real-time info |
+| Gallery images | **TMDB** | None | High-resolution gallery |
 
 ---
 
 ## Rate Limits & Best Practices
 
-### Gemini API
+### AI Provider Limits
 
-**Limits:**
-- Free tier: 15 requests/minute, 1,500/day
-- Paid: Higher limits based on plan
+**Groq:**
+- **Limits**: 30 requests/minute, unlimited daily (free tier)
+- **Best practices**:
+  - Primary provider due to speed and generous limits
+  - Cache responses aggressively
+  - Use for both simple and complex queries
 
-**Best practices:**
-- Cache responses for repeat queries
-- Use Simple mode when possible (faster, cheaper)
-- Implement exponential backoff for retries
-- Monitor usage in [AI Studio](https://aistudio.google.com/)
+**Mistral:**
+- **Limits**: 2M tokens/month (free tier)
+- **Best practices**:
+  - Backup provider when Groq unavailable
+  - Monitor token usage
+  - Good for detailed responses
 
-**Optimization:**
-```typescript
-// Debounce search input
-const debouncedSearch = debounce((query: string) => {
-  fetchMovieData(query, complexity);
-}, 500);
-```
+**OpenRouter:**
+- **Limits**: Varies by model, pay-per-use
+- **Best practices**:
+  - Use only as last resort
+  - Consider cost implications
+  - Proxied through Vercel serverless function for security
 
 ### TMDB API
 
@@ -696,10 +549,10 @@ const debouncedSearch = debounce((query: string) => {
 - No daily cap
 
 **Best practices:**
-- Cache search results (localStorage)
+- Cache search results (localStorage + IndexedDB)
 - Batch image requests
 - Use appropriate image sizes (not always `original`)
-- Prefer v4 auth (Read Access Token)
+- Prefer v4 Read Access Token over v3 API key
 
 **Caching example:**
 ```typescript
@@ -710,67 +563,187 @@ if (cached) {
 }
 
 const result = await searchMovieOrShow(title, year);
-localStorage.setItem(cacheKey, JSON.stringify(result));
+localStorage.setItem(cacheKey, JSON.stringify(result), { 
+  expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+});
+```
+
+### Optimization Strategies
+
+**Client-side optimizations:**
+```typescript
+// Debounce search input
+const debouncedSearch = debounce((query: string) => {
+  fetchMovieData(query, complexity);
+}, 500);
+
+// Lazy load images
+<img loading="lazy" src={posterUrl} />
+
+// Use React.memo for expensive components
+const MovieCard = React.memo(({ movie }) => {
+  // Expensive rendering logic
+});
 ```
 
 ---
 
-## Security Notes
+## Security & Best Practices
+
+### API Key Protection
 
 **Environment Variables:**
-- Never commit `.env.local` to Git
-- Use GitHub Secrets for deployment
-- Rotate keys if exposed
+- Never commit `.env.local` to Git (already in `.gitignore`)
+- Use GitHub Secrets or Vercel Environment Variables for deployment
+- Rotate keys immediately if exposed
 
-**API Key Exposure:**
-- Client-side apps expose keys (expected)
-- Consider backend proxy for production
-- Monitor usage for abuse
+**Vercel Serverless Functions:**
+- All API keys stored server-side only
+- OpenRouter API proxied through `/api/openrouter` to hide key
+- Keys never exposed to client-side code
+- CORS protection on serverless endpoints
 
-**CORS:**
-- TMDB allows cross-origin requests
-- Gemini SDK handles CORS internally
+**Key Security Checklist:**
+```bash
+# ✅ Good: Server-side environment variables
+GROQ_API_KEY=sk-...
+MISTRAL_API_KEY=...
+
+# ❌ Bad: Client-side exposed variables (don't use VITE_ prefix for keys)
+# VITE_GROQ_API_KEY=sk-...
+```
+
+**Monitoring:**
+- Monitor API usage in provider dashboards
+- Set up usage alerts
+- Review logs for unusual patterns
+- Implement rate limiting on your endpoints
+
+---
+
+## TMDB API Reference
+
+### Endpoints Used
+
+**Base URL:** `https://api.themoviedb.org/3`
+
+| Endpoint | Purpose | Parameters |
+|----------|---------|------------|
+| `/search/movie` | Search movies | `query`, `year` (optional) |
+| `/search/tv` | Search TV shows | `query`, `first_air_date_year` (optional) |
+| `/search/multi` | Search all media | `query` |
+| `/movie/{id}` | Movie details | Movie ID |
+| `/tv/{id}` | TV show details | Show ID |
+| `/movie/{id}/images` | Movie images | Movie ID |
+| `/tv/{id}/images` | TV show images | Show ID |
+| `/movie/{id}/external_ids` | Get external IDs (IMDB) | Movie ID |
+
+### Image URLs
+
+**Format:** `https://image.tmdb.org/t/p/{size}{file_path}`
+
+**Available sizes:**
+- **Poster**: `w92`, `w154`, `w185`, `w342`, `w500`, `w780`, `original`
+- **Backdrop**: `w300`, `w780`, `w1280`, `original`
+- **Logo**: `w45`, `w92`, `w154`, `w185`, `w300`, `w500`, `original`
+
+**Implementation:**
+```typescript
+function buildImageUrl(path: string, size: string = 'w500'): string {
+  if (!path || !path.startsWith('/')) return '';
+  return `https://image.tmdb.org/t/p/${size}${path}`;
+}
+```
+
+---
+
+## Troubleshooting
+
+### AI Service Issues
+
+**Issue: "API key not valid" or "Unauthorized"**
+- Verify API keys in `.env.local`
+- Check for extra spaces or newlines in keys
+- Restart dev server after updating environment variables
+- For Vercel deployment, check environment variables in dashboard
+
+**Issue: All AI providers failing**
+- Check API key validity for all providers
+- Verify internet connectivity
+- Check provider status pages:
+  - Groq: [status.groq.com](https://status.groq.com)
+  - Mistral: [status.mistral.ai](https://status.mistral.ai)
+  - OpenRouter: [status.openrouter.ai](https://status.openrouter.ai)
+
+**Issue: Slow responses**
+- Use Simple mode for faster processing
+- Check network throttling in DevTools
+- Verify caching is working (check localStorage)
+- Consider proximity to provider servers
+
+### TMDB Issues
+
+**Issue: Images not loading**
+- Verify TMDB credentials (prefer Read Access Token)
+- Check console for 401/404 errors
+- Ensure `enrichWithTMDB` is being called
+- Validate image URLs start with `https://image.tmdb.org/`
+
+**Issue: Search returns no results**
+- Try without year filter
+- Check for typos in title
+- Use multi-search endpoint as fallback
+- Verify movie exists in TMDB database
+
+### General Debugging
+
+**Browser Console:**
+- Check for error messages
+- Look for failed network requests (F12 → Network tab)
+- Verify API responses are valid JSON
+
+**Service Logs:**
+- AI services log errors to console
+- TMDB service warns on image fetch failures
+- Cache service logs hits/misses in development
+
+---
+
+## Resources & Documentation
+
+### AI Providers
+- [Groq Documentation](https://console.groq.com/docs)
+- [Mistral AI Docs](https://docs.mistral.ai)
+- [OpenRouter API Docs](https://openrouter.ai/docs)
+
+### Movie Data APIs
+- [TMDB API Documentation](https://developer.themoviedb.org/docs)
+- [TMDB API Reference](https://developer.themoviedb.org/reference/intro/getting-started)
+- [OMDB API Documentation](http://www.omdbapi.com/)
+
+### Development Tools
+- [Vite Documentation](https://vitejs.dev/)
+- [React Documentation](https://react.dev/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Tailwind CSS Docs](https://tailwindcss.com/docs)
+
+### Deployment
+- [Vercel Documentation](https://vercel.com/docs)
+- [Vercel Serverless Functions](https://vercel.com/docs/functions)
+- [Environment Variables Guide](https://vercel.com/docs/environment-variables)
 
 ---
 
 ## Future Enhancements
 
 **Potential additions:**
-- Backend proxy for API keys
-- Redis caching layer
-- GraphQL wrapper over both APIs
-- Webhook for TMDB updates
-- Batch Gemini requests for lists
+- WebSocket support for real-time updates
+- GraphQL API wrapper
+- Additional AI providers (Anthropic Claude, etc.)
+- Redis caching layer for production
+- Webhook integration for TMDB updates
+- Batch processing for multiple queries
+- User authentication and personalization
+- Recommendation engine based on viewing history
 
 ---
-
-## Resources
-
-- [Gemini API Docs](https://ai.google.dev/gemini-api/docs)
-- [TMDB API Docs](https://developer.themoviedb.org/docs)
-- [TMDB API Reference](https://developer.themoviedb.org/reference/intro/getting-started)
-- [Google AI Studio](https://aistudio.google.com/)
-
----
-
-## Troubleshooting
-
-**Issue: Gemini returns empty response**
-- Check `finishReason` in logs
-- Verify API key is valid
-- Ensure prompt isn't triggering safety filters
-
-**Issue: TMDB images not loading**
-- Verify Read Access Token (not API Key)
-- Check image URL format: `https://image.tmdb.org/t/p/w500/path.jpg`
-- Ensure file_path starts with `/`
-
-**Issue: Parsing errors**
-- Log raw response text
-- Check for markdown fences
-- Validate JSON schema in constants.ts matches types.ts
-
-**Issue: Slow responses**
-- Use Simple mode (Flash model)
-- Reduce thinking budget
-- Check network throttling in DevTools
