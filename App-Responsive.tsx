@@ -145,48 +145,57 @@ const App: React.FC = () => {
           />
         </div>
 
-        {/* MOBILE: Bottom Chat Panel (ChatGPT-style) */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 transition-all duration-300">
-          {/* Drag Handle / Toggle */}
-          <button
-            onClick={() => setIsMobileChatExpanded(!isMobileChatExpanded)}
-            className="w-full bg-brand-surface/90 backdrop-blur-sm border-t border-white/10 px-4 py-2 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-2">
-              <Logo className="w-6 h-6" />
-              <span className="text-sm font-semibold text-brand-text-light">
-                {isMobileChatExpanded ? 'Close Chat' : 'Open Chat'}
-              </span>
-            </div>
-            <svg 
-              className={`w-5 h-5 text-brand-text-dark transition-transform ${isMobileChatExpanded ? 'rotate-180' : ''}`}
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* Collapsible Chat Content */}
-          <div 
-            className={`bg-brand-surface/95 backdrop-blur-md border-t border-white/10 transition-all duration-300 overflow-hidden ${
-              isMobileChatExpanded ? 'max-h-[70vh]' : 'max-h-0'
-            }`}
-          >
-            <div className="h-[calc(70vh-80px)] overflow-hidden">
-              <ChatInterface
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                isLoading={isLoading}
-                loadingProgress={loadingProgress}
-                selectedProvider={selectedProvider}
-                onProviderChange={setSelectedProvider}
-                providerStatus={providerStatus}
-              />
-            </div>
-          </div>
+        {/* MOBILE: Floating AI Button */}
+        <div className="md:hidden fixed bottom-6 right-6 z-50">
+           {!isMobileChatExpanded && (
+             <button
+               onClick={() => setIsMobileChatExpanded(true)}
+               className="w-14 h-14 rounded-full bg-brand-primary shadow-lg shadow-brand-primary/40 flex items-center justify-center animate-bounce hover:scale-110 transition-transform border border-white/20"
+               aria-label="Open AI Chat"
+             >
+               <Logo className="w-8 h-8 text-white" />
+             </button>
+           )}
         </div>
+
+        {/* MOBILE: Expanded Chat Overlay */}
+        {isMobileChatExpanded && (
+          <div className="md:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-end justify-center sm:items-center">
+             {/* Click backdrop to close */}
+             <div className="absolute inset-0" onClick={() => setIsMobileChatExpanded(false)} />
+             
+             <div className="relative w-full h-[85vh] bg-brand-surface border-t border-white/10 rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+                {/* Header with Close Button */}
+                <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-brand-surface/50 backdrop-blur-md">
+                   <div className="flex items-center gap-2">
+                      <Logo className="w-6 h-6" />
+                      <span className="font-semibold text-brand-text-light">MovieMonk AI</span>
+                   </div>
+                   <button 
+                     onClick={() => setIsMobileChatExpanded(false)}
+                     className="p-2 rounded-full hover:bg-white/10 text-brand-text-dark hover:text-white transition"
+                   >
+                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                     </svg>
+                   </button>
+                </div>
+                
+                {/* Chat Interface Container */}
+                <div className="flex-1 overflow-hidden p-2 bg-brand-bg/50">
+                   <ChatInterface
+                      messages={messages}
+                      onSendMessage={handleSendMessage}
+                      isLoading={isLoading}
+                      loadingProgress={loadingProgress}
+                      selectedProvider={selectedProvider}
+                      onProviderChange={setSelectedProvider}
+                      providerStatus={providerStatus}
+                   />
+                </div>
+             </div>
+          </div>
+        )}
       </div>
     </div>
   );
