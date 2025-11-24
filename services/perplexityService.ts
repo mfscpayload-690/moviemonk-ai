@@ -61,8 +61,8 @@ Return ONLY valid JSON with this structure:
       },
       body: JSON.stringify({
         model: complexity === 'COMPLEX' 
-          ? 'llama-3.1-sonar-huge-128k-online' 
-          : 'llama-3.1-sonar-large-128k-online',
+          ? 'sonar-pro' 
+          : 'sonar',
         messages: [
           {
             role: 'system',
@@ -194,7 +194,7 @@ If not found, return: {"error": "not_found"}`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online', // Online model with web access
+        model: 'sonar', // Online model with web access
         messages: [
           {
             role: 'system',
