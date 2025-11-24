@@ -556,15 +556,15 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 };
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="bg-brand-surface/70 backdrop-blur-md border border-white/10 p-6 rounded-xl shadow-lg animate-slide-up">
-        <h2 className="text-xl font-bold mb-4 text-brand-text-light border-b border-white/10 pb-3">{title}</h2>
+    <div className="bg-brand-surface/70 backdrop-blur-md border border-white/10 p-3 md:p-6 rounded-xl shadow-lg animate-slide-up">
+        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-brand-text-light border-b border-white/10 pb-2 md:pb-3">{title}</h2>
         {children}
     </div>
 );
 
 const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
-    <div className="bg-white/5 p-3 rounded-lg text-center transform hover:-translate-y-1 transition-transform duration-300 border border-transparent hover:border-brand-primary">
-        <p className="font-bold text-sm text-brand-text-light truncate">{member.name}</p>
+    <div className="bg-white/5 p-2 md:p-3 rounded-lg text-center transform hover:-translate-y-1 transition-transform duration-300 border border-transparent hover:border-brand-primary">
+        <p className="font-bold text-xs md:text-sm text-brand-text-light truncate">{member.name}</p>
         <p className="text-xs text-brand-primary truncate">{member.role}</p>
     </div>
 );
@@ -598,29 +598,29 @@ const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
             href={option.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group rounded-xl border border-white/10 bg-brand-surface/60 p-4 flex flex-col gap-3 hover:shadow-lg hover:border-brand-primary/50 transition relative overflow-hidden"
+            className="group rounded-xl border border-white/10 bg-brand-surface/60 p-3 md:p-4 flex flex-col gap-2 md:gap-3 hover:shadow-lg hover:border-brand-primary/50 transition relative overflow-hidden"
             aria-label={`Open ${option.platform} (${option.type})`}
         >
             <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent)]" />
-            <div className="flex items-start gap-3">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-brand-surface/80 ring-1 ring-white/10 group-hover:ring-brand-primary/50 transition">
-                        <TypeIcon className="w-5 h-5 text-brand-text-light" />
+            <div className="flex items-start gap-2 md:gap-3">
+                <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className="p-1.5 md:p-2 rounded-lg bg-brand-surface/80 ring-1 ring-white/10 group-hover:ring-brand-primary/50 transition">
+                        <TypeIcon className="w-4 h-4 md:w-5 md:h-5 text-brand-text-light" />
                     </div>
                     {Logo && (
-                        <div className="p-2 rounded-lg bg-brand-surface/80 ring-1 ring-white/10 group-hover:ring-brand-secondary/50 transition">
-                            <Logo className="w-5 h-5" />
+                        <div className="p-1.5 md:p-2 rounded-lg bg-brand-surface/80 ring-1 ring-white/10 group-hover:ring-brand-secondary/50 transition">
+                            <Logo className="w-4 h-4 md:w-5 md:h-5" />
                         </div>
                     )}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-brand-text-light truncate" title={option.platform}>{option.platform}</p>
+                    <p className="text-xs md:text-sm font-semibold text-brand-text-light truncate" title={option.platform}>{option.platform}</p>
                     <p className="text-xs text-brand-text-dark capitalize">{option.type}</p>
                 </div>
             </div>
             <div className="flex justify-end">
-                <span className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg bg-brand-primary/90 text-white transform transition-transform group-hover:scale-105 shadow-md">
-                    <PlayIcon className="w-4 h-4" /> Go
+                <span className="inline-flex items-center gap-1 px-2.5 py-1.5 md:px-3 md:py-2 text-xs font-bold rounded-lg bg-brand-primary/90 text-white transform transition-transform group-hover:scale-105 shadow-md">
+                    <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> Go
                 </span>
             </div>
         </a>
@@ -629,12 +629,12 @@ const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
 
 
 const SourceCard: React.FC<{ source: WebSource }> = ({ source }) => (
-    <a href={source.uri} target="_blank" rel="noopener noreferrer" className="flex items-start space-x-3 bg-white/5 p-3 rounded-lg hover:bg-brand-primary/20 transition-colors group">
-        <div className="flex-shrink-0 bg-brand-primary/20 p-2 rounded-md mt-1">
-            <LinkIcon className="w-4 h-4 text-brand-primary group-hover:text-white transition-colors" />
+    <a href={source.uri} target="_blank" rel="noopener noreferrer" className="flex items-start space-x-2 md:space-x-3 bg-white/5 p-2 md:p-3 rounded-lg hover:bg-brand-primary/20 transition-colors group">
+        <div className="flex-shrink-0 bg-brand-primary/20 p-1.5 md:p-2 rounded-md mt-1">
+            <LinkIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-brand-primary group-hover:text-white transition-colors" />
         </div>
         <div>
-            <p className="font-semibold text-sm text-brand-text-light line-clamp-2 leading-tight">{source.title}</p>
+            <p className="font-semibold text-xs md:text-sm text-brand-text-light line-clamp-2 leading-tight">{source.title}</p>
             <p className="text-xs text-brand-text-dark truncate">{source.uri}</p>
         </div>
     </a>

@@ -48,11 +48,11 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 p-3 bg-brand-surface/50 rounded-lg border border-brand-primary/20">
+    <div className="flex flex-col gap-1.5 md:gap-2 p-2 md:p-3 bg-brand-surface/50 rounded-lg border border-brand-primary/20">
       <label className="text-xs font-semibold text-brand-text-dark uppercase tracking-wide">
         AI Provider
       </label>
-      <div className="flex gap-2">
+      <div className="flex gap-1.5 md:gap-2">
         {providers.map((provider) => {
           const isSelected = selectedProvider === provider.id;
           const status = providerStatus[provider.id];
@@ -64,7 +64,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               onClick={() => onProviderChange(provider.id)}
               disabled={isUnavailable}
               className={`
-                flex-1 relative px-4 py-3 rounded-lg font-medium text-sm
+                flex-1 relative px-2 py-2 md:px-4 md:py-3 rounded-lg font-medium text-xs md:text-sm
                 transition-all duration-200 
                 ${
                   isSelected
@@ -76,18 +76,18 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                 ${isSelected && !isUnavailable ? 'ring-2 ring-brand-accent/50' : ''}
               `}
             >
-              <div className="flex flex-col items-center justify-center gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{provider.icon}</span>
-                  <span>{provider.name}</span>
+              <div className="flex flex-col items-center justify-center gap-0.5 md:gap-1">
+                <div className="flex items-center gap-1 md:gap-2">
+                  <span className="text-base md:text-lg">{provider.icon}</span>
+                  <span className="hidden sm:inline">{provider.name}</span>
                 </div>
-                <span className="text-xs opacity-70">{provider.description}</span>
+                <span className="text-xs opacity-70 hidden md:block">{provider.description}</span>
               </div>
               
               {/* Status indicator */}
-              <div className="absolute -top-1 -right-1 flex items-center gap-1 px-2 py-0.5 bg-brand-bg rounded-full text-xs">
-                <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
-                <span className={status === 'unavailable' ? 'text-red-400' : 'text-brand-text-dark'}>
+              <div className="absolute -top-1 -right-1 flex items-center gap-1 px-1.5 md:px-2 py-0.5 bg-brand-bg rounded-full text-xs">
+                <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${getStatusColor(status)}`} />
+                <span className={`hidden sm:inline ${status === 'unavailable' ? 'text-red-400' : 'text-brand-text-dark'}`}>
                   {getStatusText(status)}
                 </span>
               </div>
