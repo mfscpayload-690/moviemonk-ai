@@ -2,6 +2,7 @@ import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { fetchMovieData as fetchFromGroq } from './groqService';
 import { fetchMovieData as fetchFromMistral } from './mistralService';
 import { fetchMovieData as fetchFromOpenRouter } from './openrouterService';
+import { fetchMovieData as fetchFromPerplexity } from './perplexityService';
 import { getCachedResponse, cacheResponse, clearOldCacheEntries } from './cacheService';
 import { getFromIndexedDB, saveToIndexedDB, clearOldIndexedDBEntries } from './indexedDBService';
 import { parseQuery, shouldUseComplexModel } from './queryParser';
@@ -9,12 +10,13 @@ import { getFromTMDB } from './tmdbService';
 import { searchWithPerplexity } from './perplexityService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
 
-export type AIProvider = 'groq' | 'mistral' | 'openrouter';
+export type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
 
 // Track last error times for availability checking
 const lastErrors: Record<AIProvider, number | null> = {
   groq: null,
   mistral: null,
+  perplexity: null,
   openrouter: null
 };
 
@@ -200,6 +202,8 @@ Provide engaging creative content (summaries, spoilers, trivia) for this title.`
       aiResult = await fetchFromGroq(creativePrompt, complexity, chatHistory);
     } else if (provider === 'mistral') {
       aiResult = await fetchFromMistral(creativePrompt, complexity, chatHistory);
+    } else if (provider === 'perplexity') {
+      aiResult = await fetchFromPerplexity(creativePrompt, complexity, chatHistory);
     } else {
       aiResult = await fetchFromOpenRouter(creativePrompt, complexity, chatHistory);
     }
@@ -255,6 +259,8 @@ async function fallbackToAI(
     result = await fetchFromGroq(query, complexity, chatHistory);
   } else if (provider === 'mistral') {
     result = await fetchFromMistral(query, complexity, chatHistory);
+  } else if (provider === 'perplexity') {
+    result = await fetchFromPerplexity(query, complexity, chatHistory);
   } else {
     result = await fetchFromOpenRouter(query, complexity, chatHistory);
     

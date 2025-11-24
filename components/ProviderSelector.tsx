@@ -1,10 +1,11 @@
 import React from 'react';
 
-export type AIProvider = 'groq' | 'mistral' | 'openrouter';
+export type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
 
 export interface ProviderStatus {
   groq: 'available' | 'unavailable' | 'checking';
   mistral: 'available' | 'unavailable' | 'checking';
+  perplexity: 'available' | 'unavailable' | 'checking';
   openrouter: 'available' | 'unavailable' | 'checking';
 }
 
@@ -22,6 +23,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   const providers: { id: AIProvider; name: string; icon: string; description: string }[] = [
     { id: 'groq', name: 'Groq', icon: '⚡', description: 'Fastest (Llama 3.3)' },
     { id: 'mistral', name: 'Mistral', icon: '🌟', description: 'Most Accurate' },
+    { id: 'perplexity', name: 'Perplexity', icon: '🔍', description: 'Web Search' },
     { id: 'openrouter', name: 'OpenRouter', icon: '🌐', description: 'Fallback' }
   ];
 

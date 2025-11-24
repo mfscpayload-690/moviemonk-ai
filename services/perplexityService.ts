@@ -4,10 +4,140 @@
  * Uses Perplexity's online model for real-time information
  */
 
-import { MovieData } from '../types';
+import { MovieData, ChatMessage, QueryComplexity, FetchResult } from '../types';
 import { ParsedQuery, formatForAIPrompt } from './queryParser';
 
 const PERPLEXITY_API = 'https://api.perplexity.ai/chat/completions';
+
+/**
+ * Fetch movie data using Perplexity (matches interface of other services)
+ */
+export async function fetchMovieData(
+  query: string,
+  complexity: QueryComplexity,
+  chatHistory?: ChatMessage[]
+): Promise<FetchResult> {
+  try {
+    const apiKey = process.env.PERPLEXITY_API_KEY;
+    if (!apiKey) {
+      return {
+        movieData: null,
+        sources: null,
+        error: 'PERPLEXITY_API_KEY not configured'
+      };
+    }
+
+    console.log(`🔍 Perplexity: Fetching data for "${query}"`);
+
+    // Build comprehensive prompt
+    const prompt = `Search the web and provide comprehensive information about: ${query}
+
+Return ONLY valid JSON with this structure:
+{
+  "title": "string",
+  "year": "string",
+  "type": "movie or show",
+  "genres": ["string"],
+  "poster_url": "string",
+  "backdrop_url": "string",
+  "trailer_url": "string (YouTube)",
+  "ratings": [{"source": "IMDb|Rotten Tomatoes|Metacritic", "score": "string"}],
+  "cast": [{"name": "string", "role": "string", "known_for": "string"}],
+  "crew": {"director": "string", "writer": "string", "music": "string"},
+  "summary_short": "200 chars, NO spoilers",
+  "summary_medium": "500 chars, NO spoilers",
+  "summary_long_spoilers": "Full plot with spoilers",
+  "suspense_breaker": "One-line spoiler warning",
+  "where_to_watch": [{"platform": "string", "link": "string", "type": "subscription|rent|buy|free"}],
+  "ai_notes": "Interesting trivia or notes",
+  "extra_images": []
+}`;
+
+    const response = await fetch(PERPLEXITY_API, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: complexity === 'COMPLEX' 
+          ? 'llama-3.1-sonar-huge-128k-online' 
+          : 'llama-3.1-sonar-large-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a movie database expert with web access. Provide accurate, factual information. Return ONLY valid JSON.'
+          },
+          ...(chatHistory || []).map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          })),
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: complexity === 'COMPLEX' ? 8000 : 4000,
+        return_citations: true,
+        return_images: false
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Perplexity API error ${response.status}:`, errorText);
+      return {
+        movieData: null,
+        sources: null,
+        error: `Perplexity API error: ${response.status}`
+      };
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      return {
+        movieData: null,
+        sources: null,
+        error: 'Perplexity returned empty response'
+      };
+    }
+
+    const movieData = parsePerplexityResponse(content);
+    
+    if (!movieData || movieData.error) {
+      return {
+        movieData: null,
+        sources: null,
+        error: 'Movie not found or parsing failed'
+      };
+    }
+
+    console.log(`✅ Perplexity: Successfully fetched "${movieData.title}"`);
+
+    // Extract sources from citations
+    const sources = data.citations?.map((cite: any) => ({
+      uri: cite.url,
+      title: cite.title || cite.url
+    })) || null;
+
+    return {
+      movieData,
+      sources,
+      provider: 'perplexity'
+    };
+
+  } catch (error: any) {
+    console.error('❌ Perplexity error:', error);
+    return {
+      movieData: null,
+      sources: null,
+      error: error?.message || 'Unknown Perplexity error'
+    };
+  }
+}
 
 /**
  * Search web using Perplexity for movie/show information

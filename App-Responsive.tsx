@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [providerStatus, setProviderStatus] = useState<ProviderStatus>({
     groq: 'available',
     mistral: 'available',
+    perplexity: 'available',
     openrouter: 'available'
   });
   const [isMobileChatExpanded, setIsMobileChatExpanded] = useState<boolean>(false);
