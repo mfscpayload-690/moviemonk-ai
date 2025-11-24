@@ -103,19 +103,11 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen bg-brand-bg flex flex-col overflow-hidden">
-      {/* Desktop & Mobile Header */}
-      <header className="flex-shrink-0 flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-b border-white/10">
+      {/* Header */}
+      <header className="flex-shrink-0 flex items-center justify-between px-3 md:px-6 py-2.5 md:py-4 border-b border-white/10">
         <div className="flex items-center gap-2 md:gap-3">
           <Logo className="w-8 h-8 md:w-10 md:h-10" />
-          <h1 className="text-xl md:text-2xl font-bold text-brand-text-light">MovieMonk</h1>
-        </div>
-        {/* Desktop AI Provider Selector (hidden on mobile) */}
-        <div className="hidden md:block">
-          <ProviderSelector 
-            selectedProvider={selectedProvider}
-            onProviderChange={setSelectedProvider}
-            providerStatus={providerStatus}
-          />
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-brand-text-light">MovieMonk</h1>
         </div>
       </header>
 
@@ -135,6 +127,9 @@ const App: React.FC = () => {
             messages={messages} 
             isLoading={isLoading} 
             loadingProgress={loadingProgress}
+            selectedProvider={selectedProvider}
+            onProviderChange={setSelectedProvider}
+            providerStatus={providerStatus}
           />
         </div>
 
@@ -179,25 +174,16 @@ const App: React.FC = () => {
               isMobileChatExpanded ? 'max-h-[70vh]' : 'max-h-0'
             }`}
           >
-            <div className="h-[70vh] flex flex-col">
-              {/* Mobile Provider Selector (compact) */}
-              <div className="flex-shrink-0 p-3 border-b border-white/10">
-                <ProviderSelector 
-                  selectedProvider={selectedProvider}
-                  onProviderChange={setSelectedProvider}
-                  providerStatus={providerStatus}
-                />
-              </div>
-              
-              {/* Chat Interface */}
-              <div className="flex-1 min-h-0">
-                <ChatInterface 
-                  onSendMessage={handleSendMessage} 
-                  messages={messages} 
-                  isLoading={isLoading} 
-                  loadingProgress={loadingProgress}
-                />
-              </div>
+            <div className="h-[calc(70vh-80px)] overflow-hidden">
+              <ChatInterface
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                loadingProgress={loadingProgress}
+                selectedProvider={selectedProvider}
+                onProviderChange={setSelectedProvider}
+                providerStatus={providerStatus}
+              />
             </div>
           </div>
         </div>

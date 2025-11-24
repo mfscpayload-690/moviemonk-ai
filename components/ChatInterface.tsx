@@ -1,13 +1,16 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, QueryComplexity } from '../types';
-import { SendIcon, SparklesIcon, InfoIcon, UserCircleIcon, Logo, FilmReelIcon } from './icons';
+import { SendIcon, SparklesIcon, InfoIcon, UserCircleIcon, Logo, FilmReelIcon, TrendingIcon } from './icons';
+import ProviderSelector, { AIProvider, ProviderStatus } from './ProviderSelector';
 
 interface ChatInterfaceProps {
   onSendMessage: (message: string, complexity: QueryComplexity) => void;
   messages: ChatMessage[];
   isLoading: boolean;
   loadingProgress?: string;
+  selectedProvider: AIProvider;
+  onProviderChange: (provider: AIProvider) => void;
+  providerStatus: ProviderStatus;
 }
 
 const PRESET_MOVIES = [
@@ -21,7 +24,15 @@ const PRESET_MOVIES = [
   { title: 'The Last of Us', emoji: '🍄' },
 ];
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, isLoading, loadingProgress }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+  onSendMessage, 
+  messages, 
+  isLoading, 
+  loadingProgress,
+  selectedProvider,
+  onProviderChange,
+  providerStatus 
+}) => {
   const [input, setInput] = useState('');
   const [complexity, setComplexity] = useState<QueryComplexity>(QueryComplexity.SIMPLE);
   const [showPresets, setShowPresets] = useState(false);
@@ -109,20 +120,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, 
         </div>
       </div>
       <div className="border-t border-white/10 p-4">
-        {/* Persistent Preset Suggestions Toggle */}
+        {/* Trending Searches Toggle */}
         <div className="mb-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-brand-text-dark font-medium">Popular Searches</span>
-            <button
-              onClick={() => setShowPresets(!showPresets)}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/5 hover:bg-brand-primary/30 border border-white/10 hover:border-brand-primary/50 text-brand-text-light transition"
-              type="button"
-            >
-              {showPresets ? 'Hide Presets' : 'Show Presets'}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowPresets(!showPresets)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-brand-primary/30 border border-white/10 hover:border-brand-primary/50 text-brand-text-light transition"
+            type="button"
+          >
+            <TrendingIcon className="w-4 h-4" />
+            <span>{showPresets ? 'Hide' : 'Trending Searches'}</span>
+          </button>
           {showPresets && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {PRESET_MOVIES.map((preset) => (
                 <button
                   key={preset.title}
@@ -139,6 +148,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, 
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col space-y-3">
+           {/* AI Provider Selector - Compact Inline */}
+           <div className="flex items-center justify-between">
+             <span className="text-xs text-brand-text-dark font-medium">AI Model</span>
+             <ProviderSelector
+               selectedProvider={selectedProvider}
+               onProviderChange={onProviderChange}
+               providerStatus={providerStatus}
+             />
+           </div>
+           
            <div className="relative">
              <input
               ref={inputRef}
