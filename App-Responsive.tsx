@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
 import MovieDisplay from './components/MovieDisplay';
+import PersonDisplay from './components/PersonDisplay';
 import ErrorBanner from './components/ErrorBanner';
 import ProviderSelector, { AIProvider, ProviderStatus } from './components/ProviderSelector';
+import AmbiguousModal from './components/AmbiguousModal';
 import { ChatMessage, MovieData, QueryComplexity, GroundingSource } from './types';
 import { fetchMovieData, checkProviderAvailability, testProviderAvailability, fetchFullPlotDetails } from './services/aiService';
 import { Logo } from './components/icons';
@@ -12,6 +14,8 @@ const App: React.FC = () => {
       { id: 'system-1', role: 'system', content: 'Ready to explore! Ask about any movie or show.' }
   ]);
   const [movieData, setMovieData] = useState<MovieData | null>(null);
+  const [personData, setPersonData] = useState<any | null>(null);
+  const [ambiguous, setAmbiguous] = useState<{ id: number; name: string; type: 'movie' | 'person'; score: number }[] | null>(null);
   const [sources, setSources] = useState<GroundingSource[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingProgress, setLoadingProgress] = useState<string>('');
@@ -24,6 +28,7 @@ const App: React.FC = () => {
     openrouter: 'available'
   });
   const [isMobileChatExpanded, setIsMobileChatExpanded] = useState<boolean>(false);
+  const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
 
   const classifyError = (raw: string | undefined, provider: AIProvider): string => {
     if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
@@ -61,12 +66,34 @@ const App: React.FC = () => {
     setTimeout(() => setLoadingProgress('Generating response...'), 2000);
     setTimeout(() => setLoadingProgress('Enriching data...'), 5000);
     
+    // First: resolve entity (movie/person/ambiguous)
+    try {
+      const resolved = await fetch(`/api/resolveEntity?q=${encodeURIComponent(message)}`).then(r => r.json());
+      if (resolved?.type === 'person' && resolved?.chosen?.id) {
+        setLoadingProgress('Fetching person details...');
+        const data = await fetch(`/api/person/${resolved.chosen.id}`).then(r => r.json());
+        setPersonData(data);
+        setMovieData(null);
+        setSources(data?.sources || null);
+        setIsLoading(false);
+        return;
+      }
+      if (resolved?.type === 'ambiguous') {
+        setAmbiguous(resolved.candidates || []);
+        setIsLoading(false);
+        return;
+      }
+    } catch (e) {
+      console.warn('resolveEntity failed, continuing with movie flow');
+    }
+
     const result = await fetchMovieData(message, complexity, selectedProvider, chatHistoryForAPI);
     
     setLoadingProgress('');
     updateProviderStatus(selectedProvider, !!result.movieData);
 
     if (result && result.movieData) {
+      setPersonData(null);
       setMovieData(result.movieData);
       setSources(result.sources);
       const modelResponse: ChatMessage = { 
@@ -101,7 +128,31 @@ const App: React.FC = () => {
     handleSendMessage(title, QueryComplexity.SIMPLE);
   };
 
+  const handleBriefMe = async (name: string) => {
+    try {
+      setIsLoading(true);
+      setLoadingProgress('Summarizing…');
+      const res = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: name, mode: 'detailed' })
+      });
+      const json = await res.json();
+      if (json?.ok) {
+        setSummaryModal({ title: name, short: json?.summary?.summary_short, long: json?.summary?.summary_long });
+      } else {
+        setError(json?.error || 'Failed to summarize');
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Failed to summarize');
+    } finally {
+      setIsLoading(false);
+      setLoadingProgress('');
+    }
+  };
+
   return (
+    <>
     <div className="h-screen w-screen bg-brand-bg flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex-shrink-0 flex items-center justify-between px-3 md:px-6 py-2.5 md:py-4 border-b border-white/10">
@@ -135,14 +186,23 @@ const App: React.FC = () => {
 
         {/* Movie Display (full width on mobile, right side on desktop) */}
         <div className="flex-1 min-h-0 md:w-2/3 lg:w-3/4 pb-20 md:pb-0">
-          <MovieDisplay 
-            movie={movieData} 
-            isLoading={isLoading} 
-            sources={sources}
-            selectedProvider={selectedProvider}
-            onFetchFullPlot={fetchFullPlotDetails}
-            onQuickSearch={handleQuickSearch}
-          />
+          {personData ? (
+            <PersonDisplay 
+              data={personData}
+              isLoading={isLoading}
+              onQuickSearch={handleQuickSearch}
+              onBriefMe={handleBriefMe}
+            />
+          ) : (
+            <MovieDisplay 
+              movie={movieData} 
+              isLoading={isLoading} 
+              sources={sources}
+              selectedProvider={selectedProvider}
+              onFetchFullPlot={fetchFullPlotDetails}
+              onQuickSearch={handleQuickSearch}
+            />
+          )}
         </div>
 
         {/* MOBILE: Floating AI Button */}
@@ -198,6 +258,44 @@ const App: React.FC = () => {
         )}
       </div>
     </div>
+    {/* Ambiguous Selector Modal */}
+    {ambiguous && (
+      <AmbiguousModal
+        candidates={ambiguous}
+        onSelect={async (c) => {
+          setAmbiguous(null);
+          if (c.type === 'person') {
+            setIsLoading(true);
+            const data = await fetch(`/api/person/${c.id}`).then(r => r.json());
+            setPersonData(data);
+            setMovieData(null);
+            setSources(data?.sources || null);
+            setIsLoading(false);
+          } else {
+            handleSendMessage(c.name, QueryComplexity.SIMPLE);
+          }
+        }}
+        onClose={() => setAmbiguous(null)}
+      />
+    )}
+    {/* Summary Modal */}
+    {summaryModal && (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-xl shadow-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">Brief: {summaryModal.title}</h3>
+            <button onClick={() => setSummaryModal(null)} className="p-2 rounded hover:bg-white/10">✕</button>
+          </div>
+          {summaryModal.short && (
+            <div className="mb-3 text-sm text-brand-text-light">{summaryModal.short}</div>
+          )}
+          {summaryModal.long && (
+            <div className="text-sm whitespace-pre-wrap text-brand-text-light">{summaryModal.long}</div>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

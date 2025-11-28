@@ -22,6 +22,54 @@ const lastErrors: Record<AIProvider, number | null> = {
 
 const ERROR_COOLDOWN = 30000; // 30 seconds
 
+// Timeout helper for provider calls
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise
+      .then((val) => { clearTimeout(id); resolve(val); })
+      .catch((err) => { clearTimeout(id); reject(err); });
+  });
+}
+
+// Try providers in order within a total time budget
+async function tryProvidersInOrder(
+  prompt: string,
+  complexity: QueryComplexity,
+  chatHistory: ChatMessage[] | undefined,
+  order: AIProvider[] = ['groq', 'mistral', 'openrouter'],
+  totalBudgetMs = 10000
+): Promise<FetchResult> {
+  const start = Date.now();
+  for (const prov of order) {
+    const elapsed = Date.now() - start;
+    const remaining = totalBudgetMs - elapsed;
+    if (remaining <= 500) {
+      return { movieData: null, sources: null, error: 'Timeout: no provider responded in time' };
+    }
+
+    try {
+      let call: Promise<FetchResult>;
+      if (prov === 'groq') call = fetchFromGroq(prompt, complexity, chatHistory);
+      else if (prov === 'mistral') call = fetchFromMistral(prompt, complexity, chatHistory);
+      else if (prov === 'openrouter') call = fetchFromOpenRouter(prompt, complexity, chatHistory);
+      else call = Promise.resolve({ movieData: null, sources: null, error: `Unsupported provider ${prov}` });
+
+      const result = await withTimeout(call, Math.max(1000, remaining), `${prov} summarization`);
+      if (result.movieData) {
+        // success
+        return { ...result, provider: prov };
+      }
+      // If provider returned error, continue to next
+    } catch (e: any) {
+      // Continue to next provider on timeout/network errors
+      lastErrors[prov] = Date.now();
+      continue;
+    }
+  }
+  return { movieData: null, sources: null, error: 'All providers failed during summarization' };
+}
+
 /**
  * Check if a provider is likely available based on recent errors
  */
@@ -195,18 +243,16 @@ Type: ${factualData.type}
 Genres: ${factualData.genres.join(', ')}
 
 Provide engaging creative content (summaries, spoilers, trivia) for this title.`;
+    // Try preferred provider first; if it fails or returns empty, fall back Groq → Mistral → OpenRouter within 10s total
+    let aiResult: FetchResult | null = null;
+    const preferredOrder: AIProvider[] = ['groq', 'mistral', 'openrouter'];
 
-    let aiResult: FetchResult;
-    
-    if (provider === 'groq') {
-      aiResult = await fetchFromGroq(creativePrompt, complexity, chatHistory);
-    } else if (provider === 'mistral') {
-      aiResult = await fetchFromMistral(creativePrompt, complexity, chatHistory);
-    } else if (provider === 'perplexity') {
-      aiResult = await fetchFromPerplexity(creativePrompt, complexity, chatHistory);
-    } else {
-      aiResult = await fetchFromOpenRouter(creativePrompt, complexity, chatHistory);
-    }
+    // If user selected a specific provider, try it first inside the same 10s budget
+    const order = preferredOrder.includes(provider)
+      ? [provider, ...preferredOrder.filter((p) => p !== provider)]
+      : preferredOrder;
+
+    aiResult = await tryProvidersInOrder(creativePrompt, complexity, chatHistory, order, 10000);
     
     if (aiResult.movieData) {
       // Merge: Keep factual data from TMDB/Perplexity, add AI creative content
