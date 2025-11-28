@@ -65,6 +65,13 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #6a44ff;
       }
+
+      /* Smooth mobile scrolling for chat interface */
+      .chat-scroll {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: auto;
+      }
     </style>
   </head>
   <body class="bg-brand-bg text-brand-text-light font-sans">
