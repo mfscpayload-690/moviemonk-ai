@@ -255,8 +255,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         );
     }
 
-  return (
-    <div className="h-full overflow-y-auto relative">
+    return (
+        <div className="h-full overflow-y-auto relative pt-3 md:pt-0">
                 {isLoading && (
                         <div className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-fade-in">
                                 <div className="relative">
