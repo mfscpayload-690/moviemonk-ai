@@ -49,9 +49,9 @@ export interface ChatMessage {
 }
 
 export enum QueryComplexity {
-    SIMPLE = 'simple',
-    COMPLEX = 'complex',
-    FOLLOW_UP = 'follow-up'
+  SIMPLE = 'SIMPLE',
+  COMPLEX = 'COMPLEX',
+  FOLLOW_UP = 'FOLLOW_UP'
 }
 
 // Added types for grounding sources
@@ -64,9 +64,11 @@ export interface GroundingSource {
   web: WebSource;
 }
 
+export type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
+
 export interface FetchResult {
   movieData: MovieData | null;
   sources: GroundingSource[] | null;
   error?: string;
-  provider?: 'groq' | 'mistral' | 'openrouter';
+  provider?: AIProvider;
 }

@@ -60,7 +60,7 @@ Return ONLY valid JSON with this structure:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: complexity === 'COMPLEX' 
+        model: complexity === QueryComplexity.COMPLEX 
           ? 'sonar-pro' 
           : 'sonar',
         messages: [
@@ -78,7 +78,7 @@ Return ONLY valid JSON with this structure:
           }
         ],
         temperature: 0.2,
-        max_tokens: complexity === 'COMPLEX' ? 8000 : 4000,
+        max_tokens: complexity === QueryComplexity.COMPLEX ? 8000 : 4000,
         return_citations: true,
         return_images: false
       })
@@ -226,23 +226,23 @@ If not found, return: {"error": "not_found"}`;
       return null;
     }
 
-    // Parse JSON response
-    const parsed = parsePerplexityResponse(content);
+    // Parse JSON response (avoid shadowing function parameter "parsed")
+    const parsedResponse = parsePerplexityResponse(content);
     
-    if (!parsed || parsed.error === 'not_found') {
-      console.log(`❌ Perplexity: "${parsed.title}" not found on web`);
+    if (!parsedResponse || parsedResponse.error === 'not_found') {
+      console.log(`❌ Perplexity: "${parsedResponse?.title || parsed.title}" not found on web`);
       return null;
     }
 
-    console.log(`✅ Perplexity: Found data for "${parsed.title}"`);
+    console.log(`✅ Perplexity: Found data for "${parsedResponse.title}"`);
     
     // Fill in missing fields with empty values
     return {
-      ...parsed,
+      ...parsedResponse,
       summary_long_spoilers: '', // AI will provide
       suspense_breaker: '', // AI will provide
       ai_notes: '', // AI will provide
-      extra_images: parsed.extra_images || []
+      extra_images: parsedResponse.extra_images || []
     };
 
   } catch (error) {
@@ -255,6 +255,7 @@ If not found, return: {"error": "not_found"}`;
  * Parse Perplexity JSON response
  */
 function parsePerplexityResponse(content: string): any {
+  let parsed: any = null;
   try {
     // Remove markdown fences if present
     let cleaned = content.trim();
@@ -267,10 +268,11 @@ function parsePerplexityResponse(content: string): any {
     // Try to extract JSON object
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      parsed = JSON.parse(jsonMatch[0]);
+      return parsed;
     }
-
-    return JSON.parse(cleaned);
+    parsed = JSON.parse(cleaned);
+    return parsed;
   } catch (e) {
     console.error('Failed to parse Perplexity response:', e);
     console.error('Raw content:', content);

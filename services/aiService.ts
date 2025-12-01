@@ -1,4 +1,4 @@
-import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
+import { ChatMessage, MovieData, QueryComplexity, FetchResult, AIProvider } from '../types';
 import { fetchMovieData as fetchFromGroq } from './groqService';
 import { fetchMovieData as fetchFromMistral } from './mistralService';
 import { fetchMovieData as fetchFromOpenRouter } from './openrouterService';
@@ -10,7 +10,7 @@ import { getFromTMDB } from './tmdbService';
 import { searchWithPerplexity } from './perplexityService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
 
-export type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
+// AIProvider is declared in types.ts
 
 // Track last error times for availability checking
 const lastErrors: Record<AIProvider, number | null> = {
