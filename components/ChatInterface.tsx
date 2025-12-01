@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { track } from '@vercel/analytics/react';
 import { QueryComplexity } from '../types';
 import { SendIcon, SparklesIcon, InfoIcon, Logo, FilmReelIcon, TrendingIcon } from './icons';
 import ProviderSelector, { AIProvider, ProviderStatus } from './ProviderSelector';
@@ -40,6 +41,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
+      // Track search with complexity and query length
+      track('search_submitted', {
+        complexity: complexity.toLowerCase(),
+        query_length: input.trim().length,
+        provider: selectedProvider
+      });
       onSendMessage(input, complexity);
       setInput('');
       setShowPresets(false);
@@ -47,6 +54,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handlePresetClick = (title: string) => {
+    // Track preset usage
+    track('preset_clicked', { preset: title });
     setInput(title);
     setShowPresets(false);
     inputRef.current?.focus();
@@ -170,7 +179,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 className="relative cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
-                  setComplexity(complexity === QueryComplexity.SIMPLE ? QueryComplexity.COMPLEX : QueryComplexity.SIMPLE);
+                  const newComplexity = complexity === QueryComplexity.SIMPLE ? QueryComplexity.COMPLEX : QueryComplexity.SIMPLE;
+                  // Track complexity toggle
+                  track('complexity_toggle', {
+                    from: complexity.toLowerCase(),
+                    to: newComplexity.toLowerCase()
+                  });
+                  setComplexity(newComplexity);
                 }}
               >
                 <input
@@ -178,7 +193,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   type="checkbox"
                   className="sr-only"
                   checked={complexity === QueryComplexity.COMPLEX}
-                  onChange={(e) => setComplexity(e.target.checked ? QueryComplexity.COMPLEX : QueryComplexity.SIMPLE)}
+                  onChange={(e) => {
+                    const newComplexity = e.target.checked ? QueryComplexity.COMPLEX : QueryComplexity.SIMPLE;
+                    track('complexity_toggle', {
+                      from: complexity.toLowerCase(),
+                      to: newComplexity.toLowerCase()
+                    });
+                    setComplexity(newComplexity);
+                  }}
                 />
                 <div className={`block w-12 h-7 rounded-full transition-all duration-300 shadow-lg ${
                   complexity === QueryComplexity.COMPLEX ? 'bg-brand-secondary shadow-brand-secondary/30' : 'bg-gray-600 shadow-black/30'

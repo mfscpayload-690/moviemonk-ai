@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 import type { AIProvider } from '../types';
@@ -327,7 +328,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         {embedUrl && (
                             <div className="mt-8 animate-slide-up" style={{animationDelay:'0.55s', animationFillMode: 'forwards'}}>
                                 <button
-                                    onClick={() => setIsTrailerOpen(true)}
+                                    onClick={() => {
+                                      track('trailer_opened', {
+                                        title: movie.title,
+                                        year: movie.year,
+                                        type: movie.type
+                                      });
+                                      setIsTrailerOpen(true);
+                                    }}
                                     className="inline-flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-bold text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
                                 >
                                     <PlayIcon className="w-6 h-6" />

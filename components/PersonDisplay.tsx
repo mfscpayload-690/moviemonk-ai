@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { track } from '@vercel/analytics/react';
 
 interface FilmItem {
   id: number;
@@ -72,7 +73,10 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
                 </>
               )}
               {onBriefMe && (
-                <button className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-brand-primary to-purple-500 text-white text-sm font-medium shadow hover:shadow-lg transition" onClick={() => onBriefMe(person.name)} aria-label="Brief Me">✨ Brief Me</button>
+                <button className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-brand-primary to-purple-500 text-white text-sm font-medium shadow hover:shadow-lg transition" onClick={() => {
+                  track('brief_me_clicked', { person_name: person.name });
+                  onBriefMe(person.name);
+                }} aria-label="Brief Me">✨ Brief Me</button>
               )}
             </div>
           )}

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { track } from '@vercel/analytics/react';
 
 export type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
 
@@ -42,6 +43,12 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
       // Find first available provider in preference order
       const available = providers.find(p => providerStatus[p.id] === 'available');
       if (available && available.id !== selectedProvider) {
+        // Track automatic provider failover
+        track('provider_change', {
+          from: selectedProvider,
+          to: available.id,
+          reason: 'auto_failover'
+        });
         onProviderChange(available.id);
       }
     }
@@ -102,6 +109,14 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   };
 
   const handleSelect = (providerId: AIProvider) => {
+    // Track provider changes
+    if (providerId !== selectedProvider) {
+      track('provider_change', {
+        from: selectedProvider,
+        to: providerId,
+        reason: 'manual_selection'
+      });
+    }
     onProviderChange(providerId);
     setIsOpen(false);
     setFocusedIndex(-1);
