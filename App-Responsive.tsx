@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MovieDisplay from './components/MovieDisplay';
 import PersonDisplay from './components/PersonDisplay';
 import ErrorBanner from './components/ErrorBanner';
@@ -7,6 +7,7 @@ import AmbiguousModal from './components/AmbiguousModal';
 import { ChatMessage, MovieData, QueryComplexity, GroundingSource } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { Logo } from './components/icons';
+import { track } from '@vercel/analytics/react';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -20,6 +21,86 @@ const App: React.FC = () => {
   const [loadingProgress, setLoadingProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
+  const [showCopyToast, setShowCopyToast] = useState(false);
+  const [currentQuery, setCurrentQuery] = useState<string>('');
+
+  // Load shared link on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedQuery = params.get('q');
+    const sharedType = params.get('type');
+    
+    if (sharedQuery) {
+      track('shared_link_opened', { query: sharedQuery, type: sharedType || 'unknown' });
+      setCurrentQuery(sharedQuery);
+      
+      // Auto-load the shared content
+      if (sharedType === 'person') {
+        const personId = params.get('id');
+        if (personId) {
+          loadPersonFromShare(parseInt(personId));
+        }
+      } else {
+        handleSendMessage(sharedQuery, QueryComplexity.SIMPLE, 'groq');
+      }
+    }
+  }, []);
+
+  const loadPersonFromShare = async (personId: number) => {
+    try {
+      setIsLoading(true);
+      const data = await fetch(`/api/person/${personId}`).then(r => r.json());
+      setPersonData(data);
+      setMovieData(null);
+      setSources(data?.sources || null);
+    } catch (e) {
+      setError('Failed to load shared person data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    let shareUrl = window.location.origin;
+    
+    if (movieData) {
+      shareUrl += `?q=${encodeURIComponent(movieData.title)}&type=movie&year=${movieData.year}`;
+    } else if (personData) {
+      shareUrl += `?q=${encodeURIComponent(personData.name)}&type=person&id=${personData.id}`;
+    } else if (currentQuery) {
+      shareUrl += `?q=${encodeURIComponent(currentQuery)}`;
+    } else {
+      return; // Nothing to share
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShowCopyToast(true);
+      setTimeout(() => setShowCopyToast(false), 3000);
+      
+      track('share_link_copied', {
+        type: movieData ? 'movie' : personData ? 'person' : 'query',
+        title: movieData?.title || personData?.name || currentQuery
+      });
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = shareUrl;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 3000);
+      } catch (e) {
+        alert(`Share this link: ${shareUrl}`);
+      }
+      document.body.removeChild(textarea);
+    }
+  };
 
   const classifyError = (raw: string | undefined, provider: 'groq' | 'mistral'): string => {
     if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
@@ -46,6 +127,7 @@ const App: React.FC = () => {
     setIsLoading(true);
     setLoadingProgress('Checking cache...');
     setError(null);
+    setCurrentQuery(message);
     
     const userMessage: ChatMessage = { id: Date.now().toString(), role: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
@@ -143,7 +225,31 @@ const App: React.FC = () => {
           <Logo className="w-8 h-8 md:w-10 md:h-10" />
           <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-brand-text-light">MovieMonk</h1>
         </div>
+        {(movieData || personData) && (
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary font-semibold text-sm transition-colors border border-brand-primary/30 hover:border-brand-primary/50"
+            aria-label="Share this result"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            <span className="hidden sm:inline">Share</span>
+          </button>
+        )}
       </header>
+
+      {/* Copy Toast Notification */}
+      {showCopyToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] animate-fade-in">
+          <div className="bg-brand-primary text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-brand-primary/50">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="font-semibold">Link copied to clipboard!</span>
+          </div>
+        </div>
+      )}
 
       {/* Error Banner */}
       {error && (
