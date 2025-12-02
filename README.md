@@ -5,8 +5,21 @@ Search for any movie or TV show and get accurate info with AI-powered summaries.
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-ai.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<img width="1726" height="996" alt="image" src="https://github.com/user-attachments/assets/cdb11c56-63fa-4720-9946-2e85b7f9d0c5" />
+---
 
+<img width="1680" height="949" alt="image" src="https://github.com/user-attachments/assets/bc7d9a1a-f5b6-45c0-a032-29e33c2dcc70" />
+
+---
+
+<img width="1810" height="2366" alt="screencapture-moviemonk-ai-vercel-app-2025-12-02-10_28_27" src="https://github.com/user-attachments/assets/7459b355-bd6a-4ee5-89ee-cdfc5e06f418" />
+
+---
+
+<img width="300" height="3802" alt="screencapture-moviemonk-ai-vercel-app-2025-12-02-10_32_39" src="https://github.com/user-attachments/assets/75792c14-5c48-486f-83e1-ad6b64c6ede1" />
+
+---
+
+<img width="250" height="4788" alt="screencapture-moviemonk-ai-vercel-app-2025-12-02-10_44_41" src="https://github.com/user-attachments/assets/8a14da29-7a49-4646-9066-342f6a692a82" />
 
 ---
 
