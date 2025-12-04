@@ -1,0 +1,2 @@
+name: "CodeQL Config"
+disable-default-queries: true
