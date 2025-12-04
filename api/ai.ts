@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
+import { searchPerplexity } from '../services/perplexityService';
 // Note: generateSummary is client-side code, cannot be imported in serverless functions
 // import { generateSummary } from '../services/ai';
 
@@ -337,11 +338,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let results = await searchTMDB(parsed.title, 6);
         console.log(`📺 TMDB returned ${results.length} results`);
 
-        // Fallback to DuckDuckGo if TMDB returns nothing
+        // Fallback to Perplexity if TMDB returns nothing
         if (results.length === 0) {
-          console.log('🔄 Falling back to DuckDuckGo...');
-          results = await searchDuckDuckGo(searchQuery, 6);
-          console.log(`🦆 DuckDuckGo returned ${results.length} results`);
+          console.log('🔄 Falling back to Perplexity...');
+          results = await searchPerplexity(searchQuery, 6);
+          console.log(`🤖 Perplexity returned ${results.length} results`);
         }
 
         results.sort((a, b) => {
