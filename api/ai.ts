@@ -265,6 +265,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = (req.query.action as string) || 'search';
 
   try {
+    console.log(`[API] ${req.method} /api/ai?action=${action}`);
     // ====== SEARCH ACTION ======
     if (action === 'search' && req.method === 'GET') {
       const q = (req.query.q as string) || '';
@@ -432,10 +433,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: `Unknown action: ${action}`
     });
   } catch (error: any) {
-    console.error(`Error in action '${action}':`, error);
+    console.error(`[API ERROR] action='${action}':`, error);
+    console.error(`Stack:`, error.stack);
     return res.status(500).json({
       ok: false,
-      error: error.message || 'Server error'
+      error: error.message || 'Server error',
+      action,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
