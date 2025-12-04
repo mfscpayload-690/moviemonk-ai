@@ -20,32 +20,21 @@ interface DynamicSearchIslandProps {
 }
 
 const STORAGE_KEY_ANALYSIS = 'moviemonk_analysis_mode';
-const STORAGE_KEY_PROVIDER = 'moviemonk_provider';
-type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
 
 const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isLoading }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [analysisMode, setAnalysisMode] = useState<'quick' | 'complex'>('quick');
-  const [provider, setProvider] = useState<AIProvider>('groq');
-  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
-  const [openUp, setOpenUp] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Load persisted preferences on mount
   useEffect(() => {
     const savedAnalysis = localStorage.getItem(STORAGE_KEY_ANALYSIS) as 'quick' | 'complex' | null;
     if (savedAnalysis && (savedAnalysis === 'quick' || savedAnalysis === 'complex')) {
       setAnalysisMode(savedAnalysis);
-    }
-    
-    const savedProvider = localStorage.getItem(STORAGE_KEY_PROVIDER) as AIProvider | null;
-    if (savedProvider && ['groq', 'mistral', 'perplexity', 'openrouter'].includes(savedProvider)) {
-      setProvider(savedProvider);
     }
   }, []);
 
@@ -55,31 +44,6 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isL
       searchInputRef.current.focus();
     }
   }, [isExpanded]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsProviderDropdownOpen(false);
-      }
-    };
-
-    if (isProviderDropdownOpen) {
-      // decide opening direction based on available space below trigger
-      const triggerEl = dropdownRef.current?.querySelector('.dropdown-trigger') as HTMLElement | null;
-      if (triggerEl) {
-        const rect = triggerEl.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
-        // approximate menu height (4 options * 52px + padding) ~ 240px; adjust if more providers later
-        const needed = 240;
-        setOpenUp(spaceBelow < needed);
-      } else {
-        setOpenUp(false);
-      }
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isProviderDropdownOpen]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -124,26 +88,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isL
     track('search_island_opened', { trigger: 'click' });
   };
 
-  const handleProviderChange = (newProvider: AIProvider) => {
-    setProvider(newProvider);
-    setIsProviderDropdownOpen(false);
-    localStorage.setItem(STORAGE_KEY_PROVIDER, newProvider);
-    track('provider_changed', { from: provider, to: newProvider, source: 'search_island' });
-  };
-
-  const getProviderDisplay = (p: AIProvider) => {
-    switch (p) {
-      case 'groq': return { icon: '⚡', name: 'Groq', label: 'Fast' };
-      case 'mistral': return { icon: '🌟', name: 'Mistral', label: 'Accurate' };
-      case 'perplexity': return { icon: '🔍', name: 'Perplexity', label: 'Research' };
-      case 'openrouter': return { icon: '🌐', name: 'OpenRouter', label: 'Flexible' };
-    }
-  };
-
   const handleCollapse = () => {
     setIsExpanded(false);
     setQuery('');
-    setIsProviderDropdownOpen(false);
     // Restore focus to trigger button
     if (triggerButtonRef.current) {
       triggerButtonRef.current.focus();
@@ -259,66 +206,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isL
             />
           </div>
 
-          {/* Controls: Provider + Analysis Mode */}
+          {/* Controls: Analysis Mode Only */}
           <div className="controls-row" style={{ marginTop: '1rem' }}>
-            {/* Custom Provider Selector */}
-            <div className="provider-select">
-              <div className="custom-dropdown" ref={dropdownRef}>
-                <button
-                  type="button"
-                  className="dropdown-trigger"
-                  onClick={() => setIsProviderDropdownOpen(!isProviderDropdownOpen)}
-                  disabled={isLoading}
-                  aria-label="Select AI Provider"
-                  aria-expanded={isProviderDropdownOpen}
-                >
-                  <span className="provider-icon">{getProviderDisplay(provider).icon}</span>
-                  <span className="provider-name">
-                    {getProviderDisplay(provider).name}
-                    <span className="provider-label">({getProviderDisplay(provider).label})</span>
-                  </span>
-                  <svg 
-                    className={`dropdown-arrow ${isProviderDropdownOpen ? 'open' : ''}`} 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2.5"
-                  >
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </button>
-                
-                {isProviderDropdownOpen && (
-                  <div className={`dropdown-menu ${openUp ? 'open-up' : ''}`}>
-                    {(['groq', 'mistral', 'perplexity', 'openrouter'] as AIProvider[]).map((p) => {
-                      const display = getProviderDisplay(p);
-                      return (
-                        <button
-                          key={p}
-                          type="button"
-                          className={`dropdown-option ${provider === p ? 'active' : ''}`}
-                          onClick={() => handleProviderChange(p)}
-                        >
-                          <span className="option-icon">{display.icon}</span>
-                          <span className="option-content">
-                            <span className="option-name">{display.name}</span>
-                            <span className="option-label">{display.label}</span>
-                          </span>
-                          {provider === p && (
-                            <svg className="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <path d="M20 6L9 17l-5-5" />
-                            </svg>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Analysis Mode Toggle */}
             <div className="analysis-toggle">
               <div

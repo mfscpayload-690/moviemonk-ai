@@ -106,6 +106,44 @@ function buildSearchQuery(parsed: ReturnType<typeof parseComplexQuery>): string 
   return searchQuery;
 }
 
+// Search using TMDB API - more reliable than DuckDuckGo scraping
+async function searchTMDB(title: string, limit = 6): Promise<SearchResult[]> {
+  try {
+    const TMDB_API_KEY = process.env.TMDB_API_KEY;
+    if (!TMDB_API_KEY) {
+      console.warn('⚠️ TMDB_API_KEY not set, using DuckDuckGo fallback');
+      return [];
+    }
+
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}&page=1`;
+    const response = await fetch(url);
+    const data: any = await response.json();
+
+    if (!data.results || !Array.isArray(data.results)) {
+      console.log('⚠️ No TMDB results');
+      return [];
+    }
+
+    return data.results.slice(0, limit).map((item: any) => {
+      const name = item.title || item.name || '';
+      const mediaType = item.media_type || 'movie';
+      const type: 'movie' | 'person' | 'review' = mediaType === 'person' ? 'person' : 'movie';
+      
+      return {
+        title: name,
+        snippet: item.overview || item.known_for_department || '',
+        url: `https://www.tmdb.org/${mediaType}/${item.id}`,
+        type,
+        confidence: item.popularity ? Math.min(item.popularity / 100, 1) : 0.7,
+        year: item.release_date ? item.release_date.substring(0, 4) : undefined
+      };
+    });
+  } catch (error) {
+    console.error('TMDB search error:', error);
+    return [];
+  }
+}
+
 // Scrape DuckDuckGo search results - PROVEN WORKING VERSION
 async function searchDuckDuckGo(query: string, limit = 6): Promise<SearchResult[]> {
   try {
@@ -295,8 +333,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('🔍 Parsed Query:', parsed);
         console.log('🔍 Search Query:', searchQuery);
 
-        const results = await searchDuckDuckGo(searchQuery);
-        console.log(`✅ DuckDuckGo returned ${results.length} results`);
+        // Try TMDB first (more reliable)
+        let results = await searchTMDB(parsed.title, 6);
+        console.log(`📺 TMDB returned ${results.length} results`);
+
+        // Fallback to DuckDuckGo if TMDB returns nothing
+        if (results.length === 0) {
+          console.log('🔄 Falling back to DuckDuckGo...');
+          results = await searchDuckDuckGo(searchQuery, 6);
+          console.log(`🦆 DuckDuckGo returned ${results.length} results`);
+        }
 
         results.sort((a, b) => {
           const aImdb = a.url.includes('imdb.com') ? 10 : 0;
