@@ -36,7 +36,8 @@ jobs:
       - name: Check for critical vulnerabilities
         run: |
           # Check for CRITICAL vulnerabilities only (not dev deps)
-          CRITICAL=$(npm audit --json --omit=dev 2>/dev/null | jq '.metadata.vulnerabilities.critical // 0')
+          AUDIT_OUTPUT=$(npm audit --json --omit=dev 2>/dev/null | grep -o '"critical":[0-9]*' | grep -o '[0-9]*')
+          CRITICAL=${AUDIT_OUTPUT:-0}
           if [ "$CRITICAL" -gt 0 ]; then
             echo "❌ CRITICAL vulnerabilities found: $CRITICAL"
             exit 1
