@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # Enable version updates for npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    allow:
+      - dependency-type: "all"
+    reviewers:
+      - "mfscpayload-690"
+    commit-message:
+      prefix: "build(deps):"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "/"
+    labels:
+      - "dependencies"
+      - "automated"
+    # Priority: critical and high severity
+    ignore:
+      - dependency-name: "moment"
+        versions: ["2.x"]
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "mfscpayload-690"
+    commit-message:
+      prefix: "ci(deps):"
+    labels:
+      - "ci"
+      - "automated"

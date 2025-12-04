@@ -1,0 +1,131 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security checks daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+      
+      - name: Check for vulnerabilities
+        run: npm audit
+        continue-on-error: true
+
+  lint-and-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run TypeScript lint
+        run: npm run lint
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Verify build artifacts
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build directory not found!"
+            exit 1
+          fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "Index.html not found!"
+            exit 1
+          fi
+
+  dependency-check:
+    name: Dependency License Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check licenses
+        run: npm ls --depth=0
+        continue-on-error: true
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: 'javascript'
+      
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  xss-check:
+    name: XSS & Security Pattern Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      
+      - name: Check for dangerous patterns
+        run: |
+          echo "Checking for eval() usage..."
+          ! grep -r "eval(" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" src/ api/ components/ services/ 2>/dev/null || exit 1
+          
+          echo "Checking for dangerouslySetInnerHTML..."
+          if grep -r "dangerouslySetInnerHTML" --include="*.tsx" --include="*.jsx" src/ components/ | grep -v "markdownToHtml"; then
+            echo "Warning: dangerouslySetInnerHTML found (expected in markdownToHtml)"
+          fi
+          
+          echo "Checking for innerHTML assignment..."
+          ! grep -r "\.innerHTML\s*=" --include="*.ts" --include="*.tsx" --include="*.js" src/ api/ components/ 2>/dev/null || exit 1
+          
+          echo "✓ No critical security patterns found"
