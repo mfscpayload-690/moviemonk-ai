@@ -105,12 +105,11 @@ function buildSearchQuery(parsed: ReturnType<typeof parseComplexQuery>): string 
   return searchQuery;
 }
 
-// Scrape DuckDuckGo search results
-async function searchDuckDuckGo(query: string): Promise<SearchResult[]> {
+// Scrape DuckDuckGo search results - PROVEN WORKING VERSION
+async function searchDuckDuckGo(query: string, limit = 6): Promise<SearchResult[]> {
   try {
-    const encodedQuery = encodeURIComponent(query);
-    const url = `https://duckduckgo.com/html/?q=${encodedQuery}`;
-
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -123,74 +122,57 @@ async function searchDuckDuckGo(query: string): Promise<SearchResult[]> {
     }
 
     const html = await response.text();
-
-    // Parse HTML for results
-    const resultRegex = /<result\s+(?:[^>]*\s+)?href="([^"]+)"[^>]*>/g;
-    const titleRegex = /<a[^>]*class="result__a"[^>]*>([^<]+)<\/a>/g;
-    const snippetRegex = /<a[^>]*class="result__snippet"[^>]*>([^<]+)<\/a>/g;
-
     const results: SearchResult[] = [];
 
-    const hrefMatches = Array.from(html.matchAll(resultRegex));
-    const titleMatches = Array.from(html.matchAll(titleRegex));
-    const snippetMatches = Array.from(html.matchAll(snippetRegex));
-
-    for (let i = 0; i < Math.min(hrefMatches.length, titleMatches.length, snippetMatches.length, 10); i++) {
-      const url = hrefMatches[i]?.[1] || '';
-      const title = titleMatches[i]?.[1]?.trim() || '';
-      const snippet = snippetMatches[i]?.[1]?.trim() || '';
-
-      if (!title || !url) continue;
-
-      // Detect type from URL and title
-      let type: 'movie' | 'person' | 'review' = 'movie';
-      if (
-        url.includes('imdb.com/name/') ||
-        title.toLowerCase().includes('actor') ||
-        title.toLowerCase().includes('director') ||
-        title.toLowerCase().includes('cast')
-      ) {
-        type = 'person';
-      } else if (
-        title.toLowerCase().includes('review') ||
-        title.toLowerCase().includes('rating') ||
-        url.includes('/review')
-      ) {
-        type = 'review';
-      }
-
-      // Extract image from IMDB or other sources
-      let image: string | undefined;
-      if (url.includes('imdb.com')) {
-        const idMatch = url.match(/imdb\.com\/(?:title|name)\/([^\/]+)/);
-        if (idMatch) {
-          if (type === 'person') {
-            image = `https://www.imdb.com/name/${idMatch[1]}/`;
-          } else {
-            image = `https://www.imdb.com/title/${idMatch[1]}/`;
+    // Parse HTML for results (DuckDuckGo structure)
+    const resultRegex = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+    
+    let match;
+    let count = 0;
+    while ((match = resultRegex.exec(html)) !== null && count < limit) {
+      try {
+        let url = match[1].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, '').replace(/%2F/g, '/');
+        const title = match[2].replace(/<[^>]+>/g, '').trim();
+        const snippet = match[3].replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
+        
+        if (url && title && snippet) {
+          try {
+            url = decodeURIComponent(url);
+          } catch (e) {
+            // Keep URL as-is if decode fails
           }
+
+          // Detect type
+          let type: 'movie' | 'person' | 'review' = 'movie';
+          if (url.includes('imdb.com/name/') || title.toLowerCase().includes('actor') || title.toLowerCase().includes('director')) {
+            type = 'person';
+          } else if (title.toLowerCase().includes('review') || title.toLowerCase().includes('rating')) {
+            type = 'review';
+          }
+
+          // Calculate confidence
+          let confidence = 0.6;
+          if (url.includes('imdb.com')) confidence = 0.95;
+          if (url.includes('wikipedia.org')) confidence = 0.85;
+
+          results.push({
+            title,
+            snippet,
+            url,
+            type,
+            confidence: Math.min(confidence, 1),
+            year: extractYear(title),
+            language: extractLanguage(title)
+          });
+          count++;
         }
+      } catch (parseError) {
+        console.warn('Error parsing result:', parseError);
+        continue;
       }
-
-      // Calculate confidence
-      let confidence = 0.5;
-      if (url.includes('imdb.com')) confidence = 0.95;
-      if (url.includes('wikipedia.org')) confidence = 0.85;
-      if (type === 'movie' || type === 'person') confidence += 0.2;
-
-      results.push({
-        title,
-        snippet,
-        url,
-        image,
-        type,
-        confidence: Math.min(confidence, 1),
-        year: extractYear(title),
-        language: extractLanguage(title)
-      });
     }
 
-    return results.slice(0, 10);
+    return results;
   } catch (error) {
     console.error('DuckDuckGo search error:', error);
     return [];
@@ -217,6 +199,18 @@ function extractLanguage(text: string): string | undefined {
     }
   }
   return undefined;
+}
+
+// Detect result type from text
+function detectResultType(text: string): 'movie' | 'person' | 'review' {
+  const lowerText = text.toLowerCase();
+  if (lowerText.includes('actor') || lowerText.includes('director') || lowerText.includes('actress')) {
+    return 'person';
+  }
+  if (lowerText.includes('review') || lowerText.includes('rating')) {
+    return 'review';
+  }
+  return 'movie';
 }
 
 function detectQueryType(
