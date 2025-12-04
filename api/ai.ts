@@ -279,42 +279,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const cacheKey = withCacheKey('duckduckgo_search', { q: q.trim().toLowerCase() });
-      const cached = await getCache(cacheKey);
-      if (cached) {
-        return res.status(200).json({ ...cached, cached: true });
-      }
-
-      const parsed = parseComplexQuery(q);
-      const searchQuery = buildSearchQuery(parsed);
-
-      console.log('🔍 Parsed Query:', parsed);
-      console.log('🔍 Search Query:', searchQuery);
-
-      const results = await searchDuckDuckGo(searchQuery);
-
-      results.sort((a, b) => {
-        const aImdb = a.url.includes('imdb.com') ? 10 : 0;
-        const bImdb = b.url.includes('imdb.com') ? 10 : 0;
-        return (b.confidence + bImdb) - (a.confidence + aImdb);
-      });
-
-      const response = {
-        ok: true,
-        query: q,
-        total: results.length,
-        results: results.slice(0, 6),
-        parsedQuery: {
-          title: parsed.title,
-          year: parsed.year,
-          language: parsed.language,
-          genre: parsed.genre
+      try {
+        const cacheKey = withCacheKey('duckduckgo_search', { q: q.trim().toLowerCase() });
+        const cached = await getCache(cacheKey);
+        if (cached) {
+          console.log('✅ Returning cached search results');
+          return res.status(200).json({ ...cached, cached: true });
         }
-      };
 
-      await setCache(cacheKey, response, 6 * 60 * 60);
+        const parsed = parseComplexQuery(q);
+        const searchQuery = buildSearchQuery(parsed);
 
-      return res.status(200).json(response);
+        console.log('🔍 Parsed Query:', parsed);
+        console.log('🔍 Search Query:', searchQuery);
+
+        const results = await searchDuckDuckGo(searchQuery);
+        console.log(`✅ DuckDuckGo returned ${results.length} results`);
+
+        results.sort((a, b) => {
+          const aImdb = a.url.includes('imdb.com') ? 10 : 0;
+          const bImdb = b.url.includes('imdb.com') ? 10 : 0;
+          return (b.confidence + bImdb) - (a.confidence + aImdb);
+        });
+
+        const response = {
+          ok: true,
+          query: q,
+          total: results.length,
+          results: results.slice(0, 6),
+          parsedQuery: {
+            title: parsed.title,
+            year: parsed.year,
+            language: parsed.language,
+            genre: parsed.genre
+          }
+        };
+
+        await setCache(cacheKey, response, 6 * 60 * 60);
+
+        return res.status(200).json(response);
+      } catch (searchError: any) {
+        console.error('❌ Search error:', searchError);
+        return res.status(500).json({
+          ok: false,
+          query: q,
+          total: 0,
+          results: [],
+          error: searchError.message || 'Search failed'
+        });
+      }
     }
 
     // ====== SELECT MODEL ACTION ======
