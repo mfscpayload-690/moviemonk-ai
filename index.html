@@ -9,72 +9,70 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              'brand-bg': '#121212',
-              'brand-surface': '#1e1e1e',
-              'brand-primary': '#6a44ff',
-              'brand-secondary': '#a855f7',
-              'brand-accent': '#f472b6',
-              'brand-text-light': '#e5e7eb',
-              'brand-text-dark': '#9ca3af',
-            },
-            animation: {
-              'fade-in': 'fadeIn 0.5s ease-in-out',
-              'slide-up': 'slideUp 0.5s ease-in-out',
-              'spin': 'spin 1s linear infinite',
-            },
-            keyframes: {
-              fadeIn: {
-                '0%': { opacity: 0 },
-                '100%': { opacity: 1 },
-              },
-              slideUp: {
-                '0%': { transform: 'translateY(20px)', opacity: 0 },
-                '100%': { transform: 'translateY(0)', opacity: 1 },
-              },
-              spin: {
-                'from': { transform: 'rotate(0deg)' },
-                'to': { transform: 'rotate(360deg)' },
-              },
-            }
-          }
-        }
-      }
-    </script>
+    <link rel="stylesheet" href="/styles/index.css" />
     <style>
-      /* Custom Scrollbar for a cleaner look */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: rgba(30, 30, 30, 0.5);
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #4a4a4a;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #6a44ff;
+      :root {
+        --brand-bg: #121212;
+        --brand-surface: #1e1e1e;
+        --brand-primary: #6a44ff;
+        --brand-secondary: #a855f7;
+        --brand-accent: #f472b6;
+        --brand-text-light: #e5e7eb;
+        --brand-text-dark: #9ca3af;
       }
 
-      /* Smooth mobile scrolling for chat interface */
-      .chat-scroll {
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-        touch-action: auto;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: var(--brand-bg);
+        color: var(--brand-text-light);
+        font-family: 'Inter', sans-serif;
+        line-height: 1.6;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 0 10px rgba(106, 68, 255, 0.3); }
+        50% { box-shadow: 0 0 20px rgba(106, 68, 255, 0.6); }
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(106, 68, 255, 0.5);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(106, 68, 255, 0.8);
       }
     </style>
   </head>
-  <body class="bg-brand-bg text-brand-text-light font-sans">
+  <body>
     <div id="root"></div>
     <div id="modal-root"></div>
     <script type="module" src="/index.tsx"></script>

@@ -1,0 +1,82 @@
+/* Main application styles with Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(106, 68, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(106, 68, 255, 0.6);
+  }
+}
+
+/* Smooth scrollbar for modern browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(106, 68, 255, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(106, 68, 255, 0.8);
+}
+
+/* Responsive utilities */
+@layer components {
+  .glass-effect {
+    @apply bg-brand-surface/40 backdrop-blur-md border border-white/10;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-primary to-brand-secondary text-transparent bg-clip-text;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-semibold hover:shadow-lg hover:shadow-brand-primary/50 transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:border-brand-primary/60 hover:bg-brand-surface/80 transition-all duration-300;
+  }
+}
