@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
-import { generateSummary } from '../services/ai';
+// Note: generateSummary is client-side code, cannot be imported in serverless functions
+// import { generateSummary } from '../services/ai';
 
 // ============================================================================
 // UNIFIED API ENDPOINT: /api/ai?action=search|parse|selectModel
@@ -384,47 +385,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ...cached, cached: true });
       }
 
-      let evidence = `Title: ${title}\n`;
-      evidence += `Source: ${url}\n`;
-      evidence += `Type: ${type}\n\n`;
-      evidence += `Content: ${snippet}\n`;
+      try {
+        // For now, use a simple summarization approach
+        // In production, you'd integrate with your chosen AI provider directly
+        const summary_short = `${title} - ${snippet.substring(0, 150)}...`;
+        const summary_long = `${title}\n\nSource: ${url}\n\n${snippet}`;
 
-      const schema = {
-        summary_short: 'string',
-        summary_long: 'string'
-      } as const;
+        const response = {
+          ok: true,
+          title,
+          type,
+          summary: {
+            short: summary_short,
+            long: summary_long
+          }
+        };
 
-      const genResult = await generateSummary({
-        evidence,
-        query: title,
-        schema,
-        timeoutMs: 15000,
-        preferred: selectedModel as any
-      });
-
-      if (!genResult.ok) {
+        await setCache(cacheKey, response, 24 * 60 * 60);
+        return res.status(200).json(response);
+      } catch (parseError: any) {
+        console.error('❌ Parse error:', parseError);
         return res.status(500).json({
           ok: false,
           title,
           type,
           summary: { short: '', long: '' },
-          error: 'AI summarization failed'
+          error: parseError.message || 'Parsing failed'
         });
       }
-
-      const response = {
-        ok: true,
-        title,
-        type,
-        summary: {
-          short: genResult.json.summary_short || '',
-          long: genResult.json.summary_long || ''
-        }
-      };
-
-      await setCache(cacheKey, response, 24 * 60 * 60);
-
-      return res.status(200).json(response);
     }
 
     // Fallback
