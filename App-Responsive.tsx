@@ -133,8 +133,8 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      // STEP 1: Search using DuckDuckGo (search-first approach)
-      console.log('📡 Fetching search results from DuckDuckGo...');
+      // STEP 1: Search using TMDB (primary) and Perplexity (fallback)
+      console.log('📡 Fetching search results from TMDB/Perplexity...');
       const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(message)}`);
       const searchData = await searchRes.json();
 
