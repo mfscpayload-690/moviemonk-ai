@@ -125,62 +125,113 @@ const App: React.FC = () => {
 
   const handleSendMessage = async (message: string, complexity: QueryComplexity, provider: 'groq' | 'mistral') => {
     setIsLoading(true);
-    setLoadingProgress('Checking cache...');
+    setLoadingProgress('🔍 Searching...');
     setError(null);
     setCurrentQuery(message);
     
     const userMessage: ChatMessage = { id: Date.now().toString(), role: 'user', content: message };
     setMessages(prev => [...prev, userMessage]);
 
-    const chatHistoryForAPI = messages.filter(m => m.role !== 'system');
-    
-    setTimeout(() => setLoadingProgress('Contacting AI...'), 500);
-    setTimeout(() => setLoadingProgress('Generating response...'), 2000);
-    setTimeout(() => setLoadingProgress('Enriching data...'), 5000);
-    
-    // First: resolve entity (movie/person/ambiguous)
     try {
-      const resolved = await fetch(`/api/resolveEntity?q=${encodeURIComponent(message)}`).then(r => r.json());
-      if (resolved?.type === 'person' && resolved?.chosen?.id) {
-        setLoadingProgress('Fetching person details...');
-        const data = await fetch(`/api/person/${resolved.chosen.id}`).then(r => r.json());
-        setPersonData(data);
+      // STEP 1: Search using DuckDuckGo (search-first approach)
+      console.log('📡 Fetching search results from DuckDuckGo...');
+      const searchRes = await fetch(`/api/search?q=${encodeURIComponent(message)}`);
+      const searchData = await searchRes.json();
+
+      if (!searchData.ok || searchData.total === 0) {
+        throw new Error('No search results found');
+      }
+
+      setLoadingProgress(`Found ${searchData.total} results...`);
+
+      // STEP 2: If multiple results, show disambiguation modal
+      if (searchData.results.length > 1) {
+        console.log('📋 Multiple results found, showing disambiguation modal');
+        setAmbiguous(
+          searchData.results.map((r: any, i: number) => ({
+            id: i,
+            name: r.title,
+            type: r.type,
+            score: r.confidence,
+            url: r.url,
+            snippet: r.snippet,
+            image: r.image
+          }))
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // STEP 3: If single result, proceed to model selection and parsing
+      const selectedResult = searchData.results[0];
+      console.log('✅ Single clear match found:', selectedResult.title);
+      
+      // Select best model for this query type
+      setLoadingProgress('🤖 Selecting best AI model...');
+      const modelRes = await fetch(
+        `/api/selectModel?type=${selectedResult.type}&title=${encodeURIComponent(selectedResult.title)}`
+      );
+      const modelData = await modelRes.json();
+      const selectedModel = modelData.selectedModel || provider;
+
+      console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
+
+      // Parse result with AI
+      setLoadingProgress('⚙️ Processing with AI...');
+      const parseRes = await fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: selectedResult.url,
+          title: selectedResult.title,
+          snippet: selectedResult.snippet,
+          type: selectedResult.type,
+          selectedModel
+        })
+      });
+
+      const parseData = await parseRes.json();
+      setLoadingProgress('');
+
+      if (!parseData.ok) {
+        throw new Error(parseData.error || 'Parsing failed');
+      }
+
+      // Display result based on type
+      if (selectedResult.type === 'person') {
+        setPersonData({
+          name: parseData.title,
+          biography: parseData.summary.long,
+          sources: [{ title: selectedResult.title, url: selectedResult.url }]
+        });
         setMovieData(null);
-        setSources(data?.sources || null);
-        setIsLoading(false);
-        return;
+      } else {
+        setMovieData({
+          title: parseData.title,
+          summary_short: parseData.summary.short,
+          summary_long: parseData.summary.long,
+          sources: [{ title: selectedResult.title, url: selectedResult.url }]
+        } as any);
+        setPersonData(null);
       }
-      if (resolved?.type === 'ambiguous') {
-        setAmbiguous(resolved.candidates || []);
-        setIsLoading(false);
-        return;
-      }
-    } catch (e) {
-      console.warn('resolveEntity failed, continuing with movie flow');
-    }
 
-    const result = await fetchMovieData(message, complexity, provider, chatHistoryForAPI);
-    
-    setLoadingProgress('');
+      setSources([{ title: selectedResult.title, url: selectedResult.url }]);
 
-    if (result && result.movieData) {
-      setPersonData(null);
-      setMovieData(result.movieData);
-      setSources(result.sources);
       const modelResponse: ChatMessage = { 
-          id: Date.now().toString() + '-model', 
-          role: 'model', 
-          content: `Here is the information for "${result.movieData.title}". ${result.movieData.summary_short}` 
+        id: Date.now().toString() + '-model', 
+        role: 'model', 
+        content: `✅ Found "${parseData.title}" (${selectedResult.type}). ${parseData.summary.short}` 
       };
       setMessages(prev => [...prev, modelResponse]);
-    } else {
-      const classified = classifyError(result?.error, provider);
+    } catch (err: any) {
+      setLoadingProgress('');
+      const errorMsg = err.message || 'Search and parse failed';
       const errorMessage: ChatMessage = {
-          id: Date.now().toString() + '-error',
-          role: 'system',
-          content: classified
+        id: Date.now().toString() + '-error',
+        role: 'system',
+        content: `❌ Error: ${errorMsg}. Try rephrasing your query.`
       };
-      setError(classified);
+      setError(errorMsg);
       setMessages(prev => [...prev, errorMessage]);
       setSources(null);
     }
@@ -214,6 +265,85 @@ const App: React.FC = () => {
       setIsLoading(false);
       setLoadingProgress('');
     }
+  };
+
+  // Handle selection from disambiguation modal
+  const handleSelectResult = async (selectedAmbiguous: any) => {
+    setAmbiguous(null);
+    setIsLoading(true);
+    setLoadingProgress('🤖 Selecting best AI model...');
+    setError(null);
+
+    try {
+      // Select best model for this query type
+      const modelRes = await fetch(
+        `/api/selectModel?type=${selectedAmbiguous.type}&title=${encodeURIComponent(selectedAmbiguous.name)}`
+      );
+      const modelData = await modelRes.json();
+      const selectedModel = modelData.selectedModel || 'groq';
+
+      console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
+
+      // Parse result with AI
+      setLoadingProgress('⚙️ Processing with AI...');
+      const parseRes = await fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: selectedAmbiguous.url,
+          title: selectedAmbiguous.name,
+          snippet: selectedAmbiguous.snippet,
+          type: selectedAmbiguous.type,
+          selectedModel
+        })
+      });
+
+      const parseData = await parseRes.json();
+      setLoadingProgress('');
+
+      if (!parseData.ok) {
+        throw new Error(parseData.error || 'Parsing failed');
+      }
+
+      // Display result based on type
+      if (selectedAmbiguous.type === 'person') {
+        setPersonData({
+          name: parseData.title,
+          biography: parseData.summary.long,
+          sources: [{ title: selectedAmbiguous.name, url: selectedAmbiguous.url }]
+        });
+        setMovieData(null);
+      } else {
+        setMovieData({
+          title: parseData.title,
+          summary_short: parseData.summary.short,
+          summary_long: parseData.summary.long,
+          sources: [{ title: selectedAmbiguous.name, url: selectedAmbiguous.url }]
+        } as any);
+        setPersonData(null);
+      }
+
+      setSources([{ title: selectedAmbiguous.name, url: selectedAmbiguous.url }]);
+
+      const modelResponse: ChatMessage = { 
+        id: Date.now().toString() + '-model', 
+        role: 'model', 
+        content: `✅ Selected "${parseData.title}" (${selectedAmbiguous.type}). ${parseData.summary.short}` 
+      };
+      setMessages(prev => [...prev, modelResponse]);
+    } catch (err: any) {
+      setLoadingProgress('');
+      const errorMsg = err.message || 'Processing failed';
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString() + '-error',
+        role: 'system',
+        content: `❌ Error: ${errorMsg}. Try another result.`
+      };
+      setError(errorMsg);
+      setMessages(prev => [...prev, errorMessage]);
+    }
+
+    setIsLoading(false);
   };
 
   return (

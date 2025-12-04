@@ -3,8 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 export interface Candidate {
   id: number;
   name: string;
-  type: 'movie' | 'person';
+  type: 'movie' | 'person' | 'review';
   score: number;
+  url?: string;
+  snippet?: string;
+  image?: string;
+  year?: string;
+  language?: string;
 }
 
 interface AmbiguousModalProps {
@@ -13,24 +18,28 @@ interface AmbiguousModalProps {
   onClose: () => void;
 }
 
-const typeIcon = (type: 'movie' | 'person') => (type === 'person' ? '👤' : '🎬');
-
 const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, onClose }) => {
   const [focused, setFocused] = useState(0);
+  const [filterType, setFilterType] = useState<'all' | 'movie' | 'person' | 'review'>('all');
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Keyboard nav
+  // Filter candidates based on selected type
+  const filtered = filterType === 'all' 
+    ? candidates 
+    : candidates.filter(c => c.type === filterType);
+
+  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setFocused((f) => (f + 1) % candidates.length);
+        setFocused((f) => (f + 1) % filtered.length);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setFocused((f) => (f - 1 + candidates.length) % candidates.length);
+        setFocused((f) => (f - 1 + filtered.length) % filtered.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        onSelect(candidates[focused]);
+        onSelect(filtered[focused]);
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
@@ -38,7 +47,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [candidates, focused, onSelect, onClose]);
+  }, [filtered, focused, onSelect, onClose]);
 
   // Scroll into view
   useEffect(() => {
@@ -48,36 +57,147 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
     }
   }, [focused]);
 
+  const typeIcon: Record<string, string> = {
+    movie: '🎬',
+    person: '👤',
+    review: '⭐'
+  };
+
+  const typeColor: Record<string, string> = {
+    movie: 'bg-pink-500/20 text-pink-300',
+    person: 'bg-violet-500/20 text-violet-300',
+    review: 'bg-yellow-500/20 text-yellow-300'
+  };
+
+  const typeCount = {
+    all: candidates.length,
+    movie: candidates.filter(c => c.type === 'movie').length,
+    person: candidates.filter(c => c.type === 'person').length,
+    review: candidates.filter(c => c.type === 'review').length
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="amb-title">
-      <div className="w-full max-w-lg bg-brand-surface border border-white/10 rounded-xl shadow-2xl p-4 animate-fade-in">
-        <div className="flex items-center justify-between mb-3">
-          <h3 id="amb-title" className="text-lg font-semibold">Which one did you mean?</h3>
-          <button onClick={onClose} className="p-2 rounded hover:bg-white/10 transition" aria-label="Close">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-fade-in max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
+          <div>
+            <h2 className="text-2xl font-bold text-brand-text-light">Search Results</h2>
+            <p className="text-sm text-brand-text-dark mt-1">Found {filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="p-2 rounded-lg hover:bg-white/10 transition" 
+            aria-label="Close"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
-        <p className="text-xs text-brand-text-dark mb-2">Use ↑ ↓ to navigate, Enter to select, Esc to close.</p>
-        <div ref={listRef} className="space-y-2 max-h-[60vh] overflow-y-auto">
-          {candidates.map((c, i) => (
+
+        {/* Filter Tabs */}
+        <div className="px-6 py-3 border-b border-white/5 bg-black/10 flex gap-2 flex-shrink-0 overflow-x-auto">
+          {['all', 'movie', 'person', 'review'].map((type) => (
             <button
-              key={`${c.type}-${c.id}`}
-              data-idx={i}
-              onClick={() => onSelect(c)}
-              className={`w-full text-left px-3 py-2 rounded-lg border transition flex items-center gap-3 ${focused === i ? 'border-brand-primary bg-brand-primary/10' : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'}`}
-              aria-selected={focused === i}
+              key={type}
+              onClick={() => {
+                setFilterType(type as any);
+                setFocused(0);
+              }}
+              className={`px-4 py-2 rounded-full font-semibold text-sm transition whitespace-nowrap ${
+                filterType === type
+                  ? 'bg-brand-primary text-white border border-brand-primary'
+                  : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
+              }`}
             >
-              <span className="text-xl" role="img" aria-label={c.type}>{typeIcon(c.type)}</span>
-              <div className="flex-1">
-                <div className="font-medium">{c.name}</div>
-                <div className="flex items-center gap-2 text-xs text-brand-text-dark">
-                  <span className={`px-1.5 py-0.5 rounded ${c.type === 'person' ? 'bg-violet-500/20 text-violet-300' : 'bg-pink-500/20 text-pink-300'}`}>{c.type.toUpperCase()}</span>
-                  <span>score {Math.round(c.score * 100)}%</span>
-                </div>
-              </div>
-              <span className="text-xs px-2 py-1 rounded bg-white/10">Select</span>
+              {typeIcon[type as string] || '✨'} {type.charAt(0).toUpperCase() + type.slice(1)} ({typeCount[type as keyof typeof typeCount]})
             </button>
           ))}
+        </div>
+
+        {/* Results List */}
+        <div ref={listRef} className="overflow-y-auto flex-1">
+          <div className="divide-y divide-white/5">
+            {filtered.length === 0 ? (
+              <div className="px-6 py-8 text-center">
+                <p className="text-brand-text-dark">No results for this filter</p>
+              </div>
+            ) : (
+              filtered.map((c, i) => (
+                <button
+                  key={`${c.type}-${c.id}`}
+                  data-idx={i}
+                  onClick={() => onSelect(c)}
+                  className={`w-full text-left px-6 py-4 transition flex gap-4 items-start hover:bg-white/5 border-l-4 ${
+                    focused === i 
+                      ? 'border-l-brand-primary bg-brand-primary/10' 
+                      : 'border-l-transparent hover:border-l-brand-primary/50'
+                  }`}
+                  aria-selected={focused === i}
+                >
+                  {/* Thumbnail */}
+                  <div className="flex-shrink-0 w-20 h-28 rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
+                    {c.image ? (
+                      <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl">{typeIcon[c.type]}</span>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Title */}
+                    <div className="flex items-start gap-2 mb-2">
+                      <h3 className="font-semibold text-lg text-brand-text-light leading-tight">{c.name}</h3>
+                      {c.year && (
+                        <span className="text-xs px-2 py-1 rounded bg-white/10 text-brand-text-dark flex-shrink-0 mt-0.5">
+                          {c.year}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Type & Language Badge */}
+                    <div className="flex gap-2 mb-3 flex-wrap">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${typeColor[c.type]}`}>
+                        {c.type.toUpperCase()}
+                      </span>
+                      {c.language && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300">
+                          {c.language}
+                        </span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300">
+                        {Math.round(c.score * 100)}% Match
+                      </span>
+                    </div>
+
+                    {/* Snippet */}
+                    {c.snippet && (
+                      <p className="text-sm text-brand-text-dark line-clamp-2 mb-2">{c.snippet}</p>
+                    )}
+
+                    {/* URL */}
+                    {c.url && (
+                      <p className="text-xs text-brand-primary/70 truncate">{c.url}</p>
+                    )}
+                  </div>
+
+                  {/* Select Button */}
+                  <div className="flex-shrink-0">
+                    <div className="px-3 py-2 rounded-lg bg-brand-primary/20 text-brand-primary font-semibold text-xs border border-brand-primary/30 hover:border-brand-primary/50 hover:bg-brand-primary/30 transition">
+                      Select
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0">
+          💡 Tip: Use ↑ ↓ arrow keys to navigate, Enter to select, Esc to close
         </div>
       </div>
     </div>
