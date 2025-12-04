@@ -223,32 +223,32 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
   
     if (!movie) {
         return (
-            <div className="h-full overflow-y-auto p-6 animate-fade-in">
+            <div className="h-full overflow-y-auto px-3 py-4 md:p-6 animate-fade-in">
                 <div className="max-w-5xl mx-auto">
-                    <div className="text-center mb-10">
-                        <Logo className="mx-auto h-24 w-24 animate-fade-in" />
-                        <h1 className="mt-6 text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-brand-primary to-brand-secondary text-transparent bg-clip-text animate-slide-up">Welcome to MovieMonk</h1>
-                        <p className="mt-4 text-lg md:text-xl text-brand-text-dark max-w-2xl mx-auto animate-fade-in" style={{animationDelay:'0.15s'}}>Your AI-powered guide to the world of cinema. Dive in instantly or ask anything.</p>
+                    <div className="text-center mb-6 md:mb-10">
+                        <Logo className="mx-auto h-16 w-16 md:h-24 md:w-24 animate-fade-in" />
+                        <h1 className="mt-3 md:mt-6 text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-brand-primary to-brand-secondary text-transparent bg-clip-text animate-slide-up">Welcome to MovieMonk</h1>
+                        <p className="mt-2 md:mt-4 text-sm md:text-lg lg:text-xl text-brand-text-dark max-w-2xl mx-auto animate-fade-in px-2" style={{animationDelay:'0.15s'}}>Your AI-powered guide to the world of cinema. Dive in instantly or ask anything.</p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-4 lg:gap-6">
                         {DISCOVER_TITLES.map((title, idx) => (
                             <button
                                 key={title}
                                 onClick={() => onQuickSearch(title)}
-                                className="group relative bg-brand-surface/60 border border-white/10 rounded-xl p-4 flex flex-col items-start justify-between hover:border-brand-primary/60 hover:bg-brand-surface/80 transition-all duration-300 overflow-hidden"
+                                className="group relative bg-brand-surface/60 border border-white/10 rounded-lg md:rounded-xl p-2.5 md:p-4 flex flex-col items-start justify-between hover:border-brand-primary/60 hover:bg-brand-surface/80 transition-all duration-300 overflow-hidden min-h-[110px] md:min-h-[140px]"
                                 style={{animationDelay: `${0.1 + idx*0.05}s`}}
                             >
                                 <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-br from-brand-primary to-brand-secondary transition-opacity" />
-                                <span className="text-sm font-medium text-brand-text-dark uppercase tracking-wide">Featured</span>
-                                <h3 className="mt-2 text-lg font-bold text-brand-text-light line-clamp-2 group-hover:text-white transition-colors">{title}</h3>
-                                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-brand-primary group-hover:translate-x-1 transition-transform">
-                                    <PlayIcon className="w-4 h-4" /> Explore
+                                <span className="text-[10px] md:text-sm font-medium text-brand-text-dark uppercase tracking-wide">Featured</span>
+                                <h3 className="mt-1 md:mt-2 text-sm md:text-lg font-bold text-brand-text-light line-clamp-2 group-hover:text-white transition-colors leading-tight">{title}</h3>
+                                <span className="mt-2 md:mt-4 inline-flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs font-semibold text-brand-primary group-hover:translate-x-1 transition-transform">
+                                    <PlayIcon className="w-3 h-3 md:w-4 md:h-4" /> Explore
                                 </span>
                             </button>
                         ))}
                     </div>
-                    <div className="mt-10 text-center">
-                        <p className="text-sm text-brand-text-dark">Tip: Type a title and toggle Complex Query for deeper analysis.</p>
+                    <div className="mt-6 md:mt-10 text-center px-2">
+                        <p className="text-xs md:text-sm text-brand-text-dark">Tip: Type a title and toggle Complex Query for deeper analysis.</p>
                     </div>
                 </div>
             </div>
