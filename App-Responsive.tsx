@@ -135,7 +135,7 @@ const App: React.FC = () => {
     try {
       // STEP 1: Search using DuckDuckGo (search-first approach)
       console.log('📡 Fetching search results from DuckDuckGo...');
-      const searchRes = await fetch(`/api/search?q=${encodeURIComponent(message)}`);
+      const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(message)}`);
       const searchData = await searchRes.json();
 
       if (!searchData.ok || searchData.total === 0) {
@@ -169,7 +169,7 @@ const App: React.FC = () => {
       // Select best model for this query type
       setLoadingProgress('🤖 Selecting best AI model...');
       const modelRes = await fetch(
-        `/api/selectModel?type=${selectedResult.type}&title=${encodeURIComponent(selectedResult.title)}`
+        `/api/ai?action=selectModel&type=${selectedResult.type}&title=${encodeURIComponent(selectedResult.title)}`
       );
       const modelData = await modelRes.json();
       const selectedModel = modelData.selectedModel || provider;
@@ -178,7 +178,7 @@ const App: React.FC = () => {
 
       // Parse result with AI
       setLoadingProgress('⚙️ Processing with AI...');
-      const parseRes = await fetch('/api/parse', {
+      const parseRes = await fetch('/api/ai?action=parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -277,7 +277,7 @@ const App: React.FC = () => {
     try {
       // Select best model for this query type
       const modelRes = await fetch(
-        `/api/selectModel?type=${selectedAmbiguous.type}&title=${encodeURIComponent(selectedAmbiguous.name)}`
+        `/api/ai?action=selectModel&type=${selectedAmbiguous.type}&title=${encodeURIComponent(selectedAmbiguous.name)}`
       );
       const modelData = await modelRes.json();
       const selectedModel = modelData.selectedModel || 'groq';
@@ -286,7 +286,7 @@ const App: React.FC = () => {
 
       // Parse result with AI
       setLoadingProgress('⚙️ Processing with AI...');
-      const parseRes = await fetch('/api/parse', {
+      const parseRes = await fetch('/api/ai?action=parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
