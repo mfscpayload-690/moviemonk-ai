@@ -21,9 +21,9 @@ export async function getCache<T = any>(key: string): Promise<T | null> {
   const raw = await r.get(key);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as T;
+    return JSON.parse(String(raw)) as T;
   } catch {
-    return raw as unknown as T;
+    return String(raw) as unknown as T;
   }
 }
 
