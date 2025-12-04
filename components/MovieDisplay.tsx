@@ -299,7 +299,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     <div className="flex-1 text-left pb-4">
                         <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl animate-fade-in" style={{animationDelay:'0.15s', animationFillMode: 'forwards'}}>{movie.title}</h1>
                         <p className="mt-3 text-lg md:text-xl text-brand-text-light font-semibold animate-slide-up" style={{animationDelay:'0.25s', animationFillMode: 'forwards'}}>
-                            {movie.year} &bull; {movie.type.charAt(0).toUpperCase() + movie.type.slice(1)}
+                            {movie.year} &bull; {typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : ''}
                         </p>
                         
                         <div className="mt-4 flex flex-wrap gap-2 animate-slide-up" style={{animationDelay:'0.35s', animationFillMode: 'forwards'}}>

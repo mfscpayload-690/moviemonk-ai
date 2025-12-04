@@ -111,7 +111,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                   : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
               }`}
             >
-              {typeIcon[type as string] || '✨'} {type.charAt(0).toUpperCase() + type.slice(1)} ({typeCount[type as keyof typeof typeCount]})
+              {typeIcon[type as string] || '\u2728'} {typeof type === 'string' && type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : ''} ({typeCount[type as keyof typeof typeCount]})
             </button>
           ))}
         </div>
