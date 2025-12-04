@@ -44,9 +44,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const base = buildBaseUrl(req);
+    
+    // Detect regional Indian cinema keywords for enhanced search
+    const regionalKeywords = ['malayalam', 'tamil', 'telugu', 'kannada', 'hindi', 'bengali', 'marathi', 'gujarati', 'punjabi', 'bollywood', 'kollywood', 'tollywood', 'mollywood', 'sandalwood'];
+    const isRegionalQuery = regionalKeywords.some(kw => q.toLowerCase().includes(kw));
+    
     // Resolve entity using our resolver endpoint
     const resolvedRes = await fetch(`${base}/api/resolveEntity?q=${encodeURIComponent(q)}`);
     const resolved = await resolvedRes.json();
+    
+    // If TMDB has low confidence or regional query, enhance with web search
+    let webContext = '';
+    if (isRegionalQuery || !resolved?.chosen?.id) {
+      try {
+        const webRes = await fetch(`${base}/api/websearch?q=${encodeURIComponent(q + ' movie actor director')}&sources=wikipedia,imdb`);
+        const webData = await webRes.json();
+        if (webData.ok && webData.total > 0) {
+          // Build context from web results
+          const snippets = Object.values(webData.results || {})
+            .flat()
+            .slice(0, 5)
+            .map((r: any) => `${r.title}: ${r.snippet}`)
+            .join('\n\n');
+          webContext = `\n\nAdditional Web Context:\n${snippets}`;
+        }
+      } catch (webErr) {
+        console.warn('Web search failed:', webErr);
+      }
+    }
 
     if (resolved?.type === 'person' && resolved?.chosen?.id) {
       const personRes = await fetch(`${base}/api/person/${resolved.chosen.id}`);
@@ -58,12 +83,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         summary.summary_short = bio ? (bio.length > 280 ? bio.slice(0, 277) + '…' : bio) : `Brief about ${personPayload?.person?.name || 'this person'}.`;
         summary.summary_long = bio || '';
       } else {
-        // Build evidence from biography + top filmography
+        // Build evidence from biography + top filmography + web context
         const bio = (personPayload?.person?.biography || '').slice(0, 1200);
         const films = (personPayload?.filmography || []).slice(0, 8)
           .map((f: any) => `${f.year || '—'} • ${f.title}${f.role ? ` (${f.role}${f.character ? ` as ${f.character}` : ''})` : ''}`)
           .join('\n');
-        const evidence = `Biography:\n${bio}\n\nSelected Filmography:\n${films}`;
+        const evidence = `Biography:\n${bio}\n\nSelected Filmography:\n${films}${webContext}`;
 
         const schema = { summary_short: 'string', summary_long: 'string' } as const;
         const gen = await generateSummary({ evidence, query: q, schema, timeoutMs: 10000 });
@@ -120,7 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         summary.summary_long = short;
       } else {
         const castLines = cast.slice(0,8).map((c) => `${c.name} as ${c.role || ''}`.trim()).join('\n');
-        const evidence = `Title: ${data.movie.title} (${year})\nGenres: ${genres.join(', ')}\n\nOverview:\n${data.movie.overview}\n\nKey Cast:\n${castLines}\n\nCrew:\nDirector: ${crew.director}\nWriter: ${crew.writer}\nMusic: ${crew.music}`;
+        const evidence = `Title: ${data.movie.title} (${year})\nGenres: ${genres.join(', ')}\n\nOverview:\n${data.movie.overview}\n\nKey Cast:\n${castLines}\n\nCrew:\nDirector: ${crew.director}\nWriter: ${crew.writer}\nMusic: ${crew.music}${webContext}`;
         const schema = { summary_short: 'string', summary_long: 'string' } as const;
         const gen = await generateSummary({ evidence, query: `${data.movie.title} (${year})`, schema, timeoutMs: 10000 });
         if (gen.ok) summary = gen.json;

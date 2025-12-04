@@ -58,10 +58,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cached) return res.status(200).json({ ...cached, cached: true });
 
   try {
-    const [movieRes, personRes] = (await Promise.all([
-      tmdb('search/movie', { query: q, include_adult: 'false', language: 'en-US', page: 1 }),
-      tmdb('search/person', { query: q, include_adult: 'false', language: 'en-US', page: 1 }),
-    ])) as any[];
+    // Detect regional queries and search in original language too
+    const regionalMap: Record<string, string> = {
+      'malayalam': 'ml',
+      'tamil': 'ta',
+      'telugu': 'te',
+      'kannada': 'kn',
+      'hindi': 'hi',
+      'bengali': 'bn',
+      'marathi': 'mr'
+    };
+    
+    const qLower = q.toLowerCase();
+    const regionalLang = Object.keys(regionalMap).find(key => qLower.includes(key));
+    const languages = regionalLang ? ['en-US', regionalMap[regionalLang]] : ['en-US'];
+    
+    // Search in both English and regional language if applicable
+    const searches = languages.map(lang => Promise.all([
+      tmdb('search/movie', { query: q, include_adult: 'false', language: lang, page: 1 }),
+      tmdb('search/person', { query: q, include_adult: 'false', language: lang, page: 1 }),
+    ]));
+    
+    const allResults = await Promise.all(searches);
+    
+    // Merge results from all language searches
+    const movieRes = { results: allResults.flatMap(([movies]: any) => movies.results || []) };
+    const personRes = { results: allResults.flatMap(([_, people]: any) => people.results || []) };
 
     type Candidate = { id: number; name: string; type: 'movie' | 'person'; score: number; extra?: any };
     const candidates: Candidate[] = [];
