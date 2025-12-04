@@ -20,11 +20,16 @@ interface DynamicSearchIslandProps {
 }
 
 const STORAGE_KEY_ANALYSIS = 'moviemonk_analysis_mode';
+const STORAGE_KEY_PROVIDER = 'moviemonk_provider';
+type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
 
 const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isLoading }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [analysisMode, setAnalysisMode] = useState<'quick' | 'complex'>('quick');
+  const [provider, setProvider] = useState<AIProvider>('groq');
+  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
@@ -36,6 +41,11 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isL
     const savedAnalysis = localStorage.getItem(STORAGE_KEY_ANALYSIS) as 'quick' | 'complex' | null;
     if (savedAnalysis && (savedAnalysis === 'quick' || savedAnalysis === 'complex')) {
       setAnalysisMode(savedAnalysis);
+    }
+    
+    const savedProvider = localStorage.getItem(STORAGE_KEY_PROVIDER) as AIProvider | null;
+    if (savedProvider && ['groq', 'mistral', 'perplexity', 'openrouter'].includes(savedProvider)) {
+      setProvider(savedProvider);
     }
   }, []);
 
