@@ -1,36 +1,30 @@
 /**
  * DynamicSearchIsland Component
  * 
- * A floating search interface that replaces the traditional sidebar.
- * Features:
- * - Collapsed: Animated pill with subtle bob and shimmer
- * - Expanded: Full search panel with provider selection and analysis mode
+ * A floating search interface for MovieMonk queries.
+ * - Auto-selects best AI model based on query type
+ * - Supports SIMPLE/COMPLEX query modes for search scope
  * - Keyboard shortcuts: / or K to focus, Enter to search, Esc to collapse
- * - Accessibility: Full ARIA labels, focus management, reduced-motion support
- * - Persistence: Provider and analysis mode saved to localStorage
+ * - Accessibility: Full ARIA labels, focus management
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
-import { QueryComplexity, AIProvider } from '../types';
+import { QueryComplexity } from '../types';
 import { Logo, SearchIcon, SendIcon } from './icons';
 import '../styles/dynamic-search-island.css';
 
 interface DynamicSearchIslandProps {
-  onSearch: (query: string, complexity: QueryComplexity, provider: AIProvider) => void;
+  onSearch: (query: string, complexity: QueryComplexity) => void;
   isLoading?: boolean;
 }
 
-const STORAGE_KEY_PROVIDER = 'moviemonk_provider';
 const STORAGE_KEY_ANALYSIS = 'moviemonk_analysis_mode';
 
 const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isLoading }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [query, setQuery] = useState('');
-  const [provider, setProvider] = useState<AIProvider>('groq');
   const [analysisMode, setAnalysisMode] = useState<'quick' | 'complex'>('quick');
-  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
-  const [openUp, setOpenUp] = useState(false); // whether dropdown should render upward
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
@@ -39,12 +33,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isL
 
   // Load persisted preferences on mount
   useEffect(() => {
-    const savedProvider = localStorage.getItem(STORAGE_KEY_PROVIDER) as AIProvider | null;
     const savedAnalysis = localStorage.getItem(STORAGE_KEY_ANALYSIS) as 'quick' | 'complex' | null;
-    
-    if (savedProvider && ['groq', 'mistral', 'perplexity', 'openrouter'].includes(savedProvider)) {
-      setProvider(savedProvider);
-    }
     if (savedAnalysis && (savedAnalysis === 'quick' || savedAnalysis === 'complex')) {
       setAnalysisMode(savedAnalysis);
     }
@@ -167,11 +156,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, isL
     
     track('search_submitted_island', {
       query_length: query.trim().length,
-      provider,
       analysis_mode: analysisMode
     });
 
-    onSearch(query, complexity, provider);
+    onSearch(query, complexity);
     handleCollapse();
   };
 

@@ -2,15 +2,11 @@ import React, { useState, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
 import { QueryComplexity } from '../types';
 import { SendIcon, SparklesIcon, InfoIcon, Logo, FilmReelIcon, TrendingIcon } from './icons';
-import ProviderSelector, { AIProvider, ProviderStatus } from './ProviderSelector';
 
 interface ChatInterfaceProps {
   onSendMessage: (message: string, complexity: QueryComplexity) => void;
   isLoading: boolean;
   loadingProgress?: string;
-  selectedProvider: AIProvider;
-  onProviderChange: (provider: AIProvider) => void;
-  providerStatus: ProviderStatus;
 }
 
 const POPULAR_SEARCHES = [
@@ -27,10 +23,7 @@ const POPULAR_SEARCHES = [
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSendMessage,
   isLoading,
-  loadingProgress,
-  selectedProvider,
-  onProviderChange,
-  providerStatus
+  loadingProgress
 }) => {
   const [input, setInput] = useState('');
   const [complexity, setComplexity] = useState<QueryComplexity>(QueryComplexity.SIMPLE);
@@ -44,8 +37,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       // Track search with complexity and query length
       track('search_submitted', {
         complexity: complexity.toLowerCase(),
-        query_length: input.trim().length,
-        provider: selectedProvider
+        query_length: input.trim().length
       });
       onSendMessage(input, complexity);
       setInput('');
@@ -114,15 +106,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </form>
 
-          {/* Provider Selector - Below Search Bar */}
-          <div className="flex items-center justify-center gap-3 mt-4">
-            <span className="text-sm text-brand-text-dark font-medium">Provider:</span>
-            <ProviderSelector
-              selectedProvider={selectedProvider}
-              onProviderChange={onProviderChange}
-              providerStatus={providerStatus}
-            />
-          </div>
+          {/* Model auto-selects based on query type */}
 
           {/* Trending Searches - Clean Vertical Layout */}
           {showPresets && (
