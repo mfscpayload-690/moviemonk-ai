@@ -148,14 +148,15 @@ const App: React.FC = () => {
       if (searchData.results.length > 1) {
         console.log('📋 Multiple results found, showing disambiguation modal');
         setAmbiguous(
-          searchData.results.map((r: any, i: number) => ({
-            id: i,
-            name: r.title,
+          searchData.results.map((r: any) => ({
+            id: r.id,
+            title: r.title,
             type: r.type,
             score: r.confidence,
             url: r.url,
             snippet: r.snippet,
-            image: r.image
+            image: r.image,
+            year: r.year
           }))
         );
         setIsLoading(false);
