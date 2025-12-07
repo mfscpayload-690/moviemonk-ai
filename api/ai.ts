@@ -18,6 +18,7 @@ interface SearchResult {
   confidence: number;
   year?: string;
   language?: string;
+  media_type?: string;
 }
 
 // Parse complex queries like "RRR Telugu 2022", "Malayalum movie Ponniyin Selvan 1987"
@@ -139,7 +140,8 @@ async function searchTMDB(title: string, limit = 6): Promise<SearchResult[]> {
         type,
         confidence: item.popularity ? Math.min(item.popularity / 100, 1) : 0.7,
         year: item.release_date ? item.release_date.substring(0, 4) : undefined,
-        image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : (item.profile_path ? `https://image.tmdb.org/t/p/w500${item.profile_path}` : undefined)
+        image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : (item.profile_path ? `https://image.tmdb.org/t/p/w500${item.profile_path}` : undefined),
+        media_type: mediaType
       };
     });
   } catch (error) {
@@ -364,6 +366,95 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           results: [],
           error: searchError.message || 'Search failed'
         });
+      }
+    }
+
+    // ====== DETAILS ACTION ======
+    if (action === 'details' && req.method === 'GET') {
+      const id = req.query.id;
+      const mediaType = (req.query.media_type as string) || 'movie'; // 'movie' or 'tv'
+
+      if (!id) {
+        return res.status(400).json({ ok: false, error: 'Missing id' });
+      }
+
+      const cacheKey = `details_${mediaType}_${id}`;
+      const cached = await getCache(cacheKey);
+      if (cached) return res.status(200).json(cached);
+
+      try {
+        const TMDB_API_KEY = process.env.TMDB_API_KEY;
+        const append = 'credits,videos,recommendations,watch/providers,release_dates,content_ratings,external_ids';
+        const url = `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${TMDB_API_KEY}&append_to_response=${append}`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`TMDB error: ${response.status}`);
+        }
+        const data: any = await response.json();
+
+        // Process Crew
+        const crew = { director: 'Unknown', writer: 'Unknown', music: 'Unknown' };
+        if (data.credits?.crew) {
+          const directors = data.credits.crew.filter((c: any) => c.job === 'Director').map((c: any) => c.name);
+          const writers = data.credits.crew.filter((c: any) => ['Screenplay', 'Writer', 'Story'].includes(c.job)).map((c: any) => c.name);
+          const composers = data.credits.crew.filter((c: any) => ['Original Music Composer', 'Music'].includes(c.job)).map((c: any) => c.name);
+
+          if (directors.length) crew.director = directors.slice(0, 2).join(', ');
+          if (writers.length) crew.writer = writers.slice(0, 2).join(', ');
+          if (composers.length) crew.music = composers.slice(0, 2).join(', ');
+        }
+
+        // Process Cast
+        const cast = data.credits?.cast?.slice(0, 12).map((c: any) => ({
+          name: c.name,
+          role: c.character,
+          known_for: c.known_for_department
+        })) || [];
+
+        // Ratings
+        const ratings = [
+          { source: 'TMDB', score: `${Math.round(data.vote_average * 10)}%` }
+        ];
+
+        // Process Watch Providers
+        const watchProviders: any[] = [];
+        if (data['watch/providers']?.results?.IN) { // Default to India as per user request
+          const inProvider = data['watch/providers'].results.IN;
+          if (inProvider.flatrate) watchProviders.push(...inProvider.flatrate.map((p: any) => ({ platform: p.provider_name, type: 'subscription' })));
+          if (inProvider.rent) watchProviders.push(...inProvider.rent.map((p: any) => ({ platform: p.provider_name, type: 'rent' })));
+          if (inProvider.buy) watchProviders.push(...inProvider.buy.map((p: any) => ({ platform: p.provider_name, type: 'buy' })));
+        }
+
+        // Trailer
+        const trailer = data.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
+
+        const movieData = {
+          title: data.title || data.name,
+          year: (data.release_date || data.first_air_date || '').substring(0, 4),
+          type: mediaType === 'tv' ? 'show' : 'movie',
+          genres: data.genres?.map((g: any) => g.name) || [],
+          poster_url: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '',
+          backdrop_url: data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : '',
+          trailer_url: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : '',
+          ratings: ratings,
+          cast: cast,
+          crew: crew,
+          summary_short: data.overview,
+          summary_medium: data.overview,
+          summary_long_spoilers: '', // Populated later if requested
+          suspense_breaker: '',
+          where_to_watch: watchProviders,
+          extra_images: [],
+          ai_notes: '' // Could populate with AI later
+        };
+
+        await setCache(cacheKey, movieData, 24 * 60 * 60);
+        return res.status(200).json(movieData);
+
+      } catch (e: any) {
+        console.error('Details fetch error:', e);
+        return res.status(500).json({ ok: false, error: e.message });
       }
     }
 

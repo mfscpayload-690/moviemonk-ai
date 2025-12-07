@@ -156,7 +156,8 @@ const App: React.FC = () => {
             url: r.url,
             snippet: r.snippet,
             image: r.image,
-            year: r.year
+            year: r.year,
+            media_type: r.media_type
           }))
         );
         setIsLoading(false);
@@ -177,59 +178,85 @@ const App: React.FC = () => {
 
       console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
 
-      // Parse result with AI
-      setLoadingProgress('⚙️ Processing with AI...');
-      const parseRes = await fetch('/api/ai?action=parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: selectedResult.url,
-          title: selectedResult.title,
-          snippet: selectedResult.snippet,
-          type: selectedResult.type,
-          selectedModel
-        })
-      });
+      // Use the new Details endpoint for movies/results too, to ensure consistent high-quality data
+      setLoadingProgress('🔍 Fetching full details...');
 
-      const parseData = await parseRes.json();
-      setLoadingProgress('');
+      const detailsRes = await fetch(`/api/ai?action=details&id=${selectedResult.id}&media_type=${selectedResult.media_type || 'movie'}`);
+      const detailsData = await detailsRes.json();
 
-      if (!parseData.ok) {
-        throw new Error(parseData.error || 'Parsing failed');
-      }
+      // Check type and handle accordingly
 
-      // Display result based on type
+      // For person, we might need to handle slightly effectively if details API returns person struct
+      // But actually, api/ai.ts details endpoint handles movies well. 
+      // If type is person, we should ideally call api/person or ensure details handles person?
+      // Review api/ai.ts: It handles 'movie' or 'tv'. 
+      // If type is person, we need to be careful.
+      // Currently details logic in api/ai.ts (generic) handles 'movie' or 'tv'.
+      // Wait, for person, we might still rely on the old logic or need a person-specific detail fetch.
+      // Let's check api/ai.ts 'details' action capability. 
+      // ... It calls https://api.themoviedb.org/3/${mediaType}/${id}
+      // If mediaType is 'person', TMDB supports /person/{id}.
+      // So it SHOULD work if we pass media_type='person'.
+      // Let's verify if api/ai.ts handles person response structure (biography etc).
+      // Checking api/ai.ts... structure maps to 'movieData' (title, year, cast, etc). 
+      // Person structure is different (birthday, biography).
+      // So for PERSON, we should stick to the existing/working Person logic or separate it.
+
+      // Current app logic for Person (Step 237/213) uses: /api/person/${c.id} OR custom logic.
+      // Let's look at what handleSelectResult does? 
+      // It calls /api/ai?action=details... 
+      // Wait. handleSelectResult calls details... Does it handle Person?
+      // In Step 311, handleSelectResult calls setMovieData(detailsData).
+      // If it's a PERSON, setMovieData might be wrong?
+      // Let's look at handleSelectResult again.
+      // It sets setMovieData(detailsData). It sets setPersonData(null).
+      // So handleSelectResult assumes it's a MOVIE/SHOW.
+      // What if user selects a PERSON from ambiguous modal?
+      // Ambiguous modal has types.
+      // The user reported "Search for Chris Hemsworth resulted in Ambiguous Search Results".
+      // Selecting it loaded "Young Sheldon" data? No.
+      // Selecting Chris Hemsworth -> 'handleSelectResult'.
+      // It calls 'details'. 
+      // If media_type is person, TMDB returns Person object.
+      // 'movieData' mapping in api/ai.ts tries to map 'overview' to summary etc.
+      // Person object has 'biography'. 'overview' is undefined.
+      // So 'details' endpoint returns a partial/broken object for Person.
+      // And frontend sets it to 'MovieData'.
+      // This effectively breaks Person display if we use 'details' endpoint blindly.
+
+      // CORRECT LOGIC:
+      // If type is 'person', use the Person Fetch logic (which exists elsewhere? or needs to be here).
+
+
       if (selectedResult.type === 'person') {
-        setPersonData({
-          person: {
-            id: selectedResult.id || 0,
-            name: parseData.title,
-            biography: parseData.summary.long,
-            profile_url: selectedResult.image
-          },
-          filmography: [],
-          sources: [{ name: selectedResult.title, url: selectedResult.url }]
-        });
-        setMovieData(null);
+        // Use specific person endpoint or logic
+        const personRes = await fetch(`/api/person/${selectedResult.id}`);
+        if (personRes.ok) {
+          const personData = await personRes.json();
+          setPersonData(personData);
+          setMovieData(null);
+          setSources(personData.sources);
+        } else {
+          // Fallback or error
+          throw new Error('Failed to load person details');
+        }
       } else {
-        setMovieData({
-          title: parseData.title,
-          summary_short: parseData.summary.short,
-          summary_long: parseData.summary.long,
-          poster_url: selectedResult.image,
-          year: selectedResult.year,
-          type: selectedResult.type,
-          sources: [{ title: selectedResult.title, url: selectedResult.url }]
-        } as any);
-        setPersonData(null);
+        // It's a movie or show
+        if (detailsRes.ok && detailsData.title) {
+          setMovieData(detailsData);
+          setPersonData(null);
+          setSources([{ title: 'TMDB', url: `https://www.themoviedb.org/${selectedResult.media_type || 'movie'}/${selectedResult.id}` }]);
+        } else {
+          throw new Error(detailsData.error || 'Failed to load details');
+        }
       }
 
-      setSources([{ title: selectedResult.title, url: selectedResult.url }]);
+
 
       const modelResponse: ChatMessage = {
         id: Date.now().toString() + '-model',
         role: 'model',
-        content: `✅ Found "${parseData.title}" (${selectedResult.type}). ${parseData.summary.short}`
+        content: `✅ Loaded ${selectedResult.title}.`
       };
       setMessages(prev => [...prev, modelResponse]);
     } catch (err: any) {
@@ -293,59 +320,37 @@ const App: React.FC = () => {
 
       console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
 
-      // Parse result with AI
-      setLoadingProgress('⚙️ Processing with AI...');
-      const parseRes = await fetch('/api/ai?action=parse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: selectedAmbiguous.url,
-          title: selectedAmbiguous.title,
-          snippet: selectedAmbiguous.snippet,
-          type: selectedAmbiguous.type,
-          selectedModel
-        })
-      });
+      setLoadingProgress('🔍 Fetching full details...');
 
-      const parseData = await parseRes.json();
-      setLoadingProgress('');
-
-      if (!parseData.ok) {
-        throw new Error(parseData.error || 'Parsing failed');
-      }
-
-      // Display result based on type
       if (selectedAmbiguous.type === 'person') {
-        setPersonData({
-          person: {
-            id: selectedAmbiguous.id || 0,
-            name: parseData.title,
-            biography: parseData.summary.long,
-            profile_url: selectedAmbiguous.image
-          },
-          filmography: [],
-          sources: [{ name: selectedAmbiguous.title, url: selectedAmbiguous.url }]
-        });
-        setMovieData(null);
+        const personRes = await fetch(`/api/person/${selectedAmbiguous.id}`);
+        if (personRes.ok) {
+          const personData = await personRes.json();
+          setPersonData(personData);
+          setMovieData(null);
+          setSources(personData.sources);
+        } else {
+          throw new Error('Failed to load person details');
+        }
       } else {
-        setMovieData({
-          title: parseData.title,
-          summary_short: parseData.summary.short,
-          summary_long: parseData.summary.long,
-          poster_url: selectedAmbiguous.image,
-          year: selectedAmbiguous.year || '',
-          type: selectedAmbiguous.type,
-          sources: [{ title: selectedAmbiguous.title, url: selectedAmbiguous.url }]
-        } as any);
-        setPersonData(null);
-      }
+        // Use the new Details endpoint which gets Credits, Videos, etc.
+        const detailsRes = await fetch(`/api/ai?action=details&id=${selectedAmbiguous.id}&media_type=${selectedAmbiguous.media_type || 'movie'}`);
+        const detailsData = await detailsRes.json();
 
-      setSources([{ title: selectedAmbiguous.title, url: selectedAmbiguous.url }]);
+        if (detailsRes.ok && detailsData.title) {
+          setMovieData(detailsData);
+          setPersonData(null);
+          setSources([{ title: 'TMDB', url: `https://www.themoviedb.org/${selectedAmbiguous.media_type || 'movie'}/${selectedAmbiguous.id}` }]);
+        } else {
+          console.error('Details fetch failed:', detailsData);
+          throw new Error(detailsData.error || 'Failed to load details');
+        }
+      }
 
       const modelResponse: ChatMessage = {
         id: Date.now().toString() + '-model',
         role: 'model',
-        content: `✅ Selected "${parseData.title}" (${selectedAmbiguous.type}). ${parseData.summary.short}`
+        content: `✅ Loaded ${selectedAmbiguous.title}.`
       };
       setMessages(prev => [...prev, modelResponse]);
     } catch (err: any) {
@@ -387,23 +392,27 @@ const App: React.FC = () => {
         </header>
 
         {/* Copy Toast Notification */}
-        {showCopyToast && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] animate-fade-in">
-            <div className="bg-brand-primary text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-brand-primary/50">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="font-semibold">Link copied to clipboard!</span>
+        {
+          showCopyToast && (
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] animate-fade-in">
+              <div className="bg-brand-primary text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-brand-primary/50">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="font-semibold">Link copied to clipboard!</span>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* Error Banner */}
-        {error && (
-          <div className="flex-shrink-0 px-3 md:px-6 py-2">
-            <ErrorBanner message={error} onClose={() => setError(null)} />
-          </div>
-        )}
+        {
+          error && (
+            <div className="flex-shrink-0 px-3 md:px-6 py-2">
+              <ErrorBanner message={error} onClose={() => setError(null)} />
+            </div>
+          )
+        }
 
         {/* Main Content Area - Full width Featured UI */}
         <div className="main-content">
@@ -431,34 +440,39 @@ const App: React.FC = () => {
           onSearch={handleSendMessage}
           isLoading={isLoading}
         />
-      </div>
+      </div >
+
 
       {/* Ambiguous Selector Modal */}
-      {ambiguous && (
-        <AmbiguousModal
-          candidates={ambiguous}
-          onSelect={handleSelectResult}
-          onClose={() => setAmbiguous(null)}
-        />
-      )}
+      {
+        ambiguous && (
+          <AmbiguousModal
+            candidates={ambiguous}
+            onSelect={handleSelectResult}
+            onClose={() => setAmbiguous(null)}
+          />
+        )
+      }
 
       {/* Summary Modal */}
-      {summaryModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-xl shadow-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">Brief: {summaryModal.title}</h3>
-              <button onClick={() => setSummaryModal(null)} className="p-2 rounded hover:bg-white/10">✕</button>
+      {
+        summaryModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-xl shadow-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">Brief: {summaryModal.title}</h3>
+                <button onClick={() => setSummaryModal(null)} className="p-2 rounded hover:bg-white/10">✕</button>
+              </div>
+              {summaryModal.short && (
+                <div className="mb-3 text-sm text-brand-text-light">{summaryModal.short}</div>
+              )}
+              {summaryModal.long && (
+                <div className="text-sm whitespace-pre-wrap text-brand-text-light">{summaryModal.long}</div>
+              )}
             </div>
-            {summaryModal.short && (
-              <div className="mb-3 text-sm text-brand-text-light">{summaryModal.short}</div>
-            )}
-            {summaryModal.long && (
-              <div className="text-sm whitespace-pre-wrap text-brand-text-light">{summaryModal.long}</div>
-            )}
           </div>
-        </div>
-      )}
+        )
+      }
     </>
   );
 };

@@ -10,6 +10,7 @@ export interface Candidate {
   image?: string;
   year?: string;
   language?: string;
+  media_type?: string;
 }
 
 interface AmbiguousModalProps {
@@ -106,8 +107,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 setFocused(0);
               }}
               className={`px-4 py-2 rounded-full font-semibold text-sm transition whitespace-nowrap ${filterType === type
-                  ? 'bg-brand-primary text-white border border-brand-primary'
-                  : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
+                ? 'bg-brand-primary text-white border border-brand-primary'
+                : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
                 }`}
             >
               {typeIcon[type as string] || '\u2728'} {typeof type === 'string' && type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : ''} ({typeCount[type as keyof typeof typeCount]})
@@ -129,8 +130,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                   data-idx={i}
                   onClick={() => onSelect(c)}
                   className={`w-full text-left px-6 py-4 transition flex gap-4 items-start hover:bg-white/5 border-l-4 ${focused === i
-                      ? 'border-l-brand-primary bg-brand-primary/10'
-                      : 'border-l-transparent hover:border-l-brand-primary/50'
+                    ? 'border-l-brand-primary bg-brand-primary/10'
+                    : 'border-l-transparent hover:border-l-brand-primary/50'
                     }`}
                   aria-selected={focused === i}
                 >
