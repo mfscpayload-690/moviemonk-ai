@@ -1,6 +1,6 @@
 # MovieMonk 🎬
 
-Search for any movie or TV show and get accurate info with AI-powered summaries. Features cast details, ratings, trailers, and where to stream.
+MovieMonk is an AI-powered movie and TV show discovery platform that provides accurate summaries, real-time data, and comprehensive details about your favorite titles. By combining the power of TMDB, IMDB, and advanced AI models (Groq, Mistral, OpenRouter), MovieMonk delivers a rich, spoiler-free, and interactive experience.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-ai.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -23,173 +23,101 @@ Search for any movie or TV show and get accurate info with AI-powered summaries.
 
 ---
 
-## ✨ What You Get
+## Features
 
-- **Accurate Data**: Real cast, crew, and ratings from TMDB & IMDB
-- **AI Summaries**: Get spoiler-free overviews or full plot breakdowns
-- **Where to Watch**: See streaming options (Netflix, Prime, etc.)
-- **Trailers & Images**: Watch trailers and browse movie galleries
-- **Smart Search**: Just type naturally - "Inception", "Breaking Bad season 5", etc.
-- **Chat History**: Continue conversations about different movies
+MovieMonk stands out by integrating verified database information with generative AI context:
 
----
-
-## 🔍 How It Works
-
-1. **You search** for a movie or show
-2. **We check TMDB** for accurate cast, ratings, and images
-3. **AI writes** the summaries and trivia
-4. **You get** everything in one clean view
-
-For recent or obscure titles, we also search the web to find info.
+*   **Verified Data Sources**: Pulls cast, crew, ratings, and release info directly from TMDB and OMDB.
+*   **AI-Generated Summaries**: Utilizes cutting-edge LLMs (via Groq & Mistral) to generate custom plot summaries, trivia, and analysis.
+*   **Streaming Availability**: Instantly find where to watch movies/shows on platforms like Netflix, Prime Video, and others.
+*   **Search-First Architecture**: Features a robust search system powered by **Google Search (SerpApi)** to handle complex queries, regional titles (Malayalam, Tamil, Telugu, etc.), and disambiguation.
+*   **Cinematic UI**: A modern, responsive "Cyberpunk/Dark" aesthetic with glassmorphism effects and smooth animations.
+*   **Smart Disambiguation**: Handles ambiguous queries (e.g., "RRR") by presenting a Google-like result list before processing with AI.
 
 ---
 
-## 🚀 Live Demo
+## Architecture
 
-Visit the live app: **[https://moviemonk-ai.vercel.app](https://moviemonk-ai.vercel.app)**
+The application is built on a modern stack focusing on performance and type safety:
 
----
-
-## 🛠️ Built With
-
-- **React + TypeScript** - UI and type safety
-- **Tailwind CSS** - Styling
-- **Vite** - Fast builds
-- **AI**: Groq, Mistral, OpenRouter (all free APIs)
-- **Data**: TMDB & OMDB APIs (also free)
-- **Hosting**: Vercel
-
----
-
-## 📋 What You Need
-
-- **Node.js** 18 or newer
-- **Free API Keys** (sign up takes 2 minutes):
-  - [Groq](https://console.groq.com) - For AI summaries
-  - [TMDB](https://www.themoviedb.org/settings/api) - For movie data
-  - [OMDB](http://www.omdbapi.com/apikey.aspx) - For IMDB ratings
-- **Optional** (but nice to have):
-  - [Mistral](https://console.mistral.ai) - Backup AI provider
-  - [OpenRouter](https://openrouter.ai/keys) - Another backup
-  - [Perplexity](https://www.perplexity.ai/settings/api) - For new releases
+*   **Frontend**: React (Vite) + TypeScript
+*   **Styling**: Custom CSS variables with a semantic design system (no heavy frameworks)
+*   **Data Layer**:
+    *   **TMDB API**: Primary source for structured movie metadata.
+    *   **SerpApi (Google Search)**: Fallback/Enrichment layer for finding obscure or regional titles.
+    *   **Perplexity AI**: Tertiary fallback for deep web context.
+*   **AI Layer**:
+    *   **Groq**: High-speed inference for movie summaries (Llama 3).
+    *   **Mistral**: Specialized model for person/biography data.
+    *   **OpenRouter**: Fallback for complex reasoning tasks.
+*   **Infrastructure**: Vercel Serverless Functions
 
 ---
 
-## ⚙️ Installation & Setup
+## Setup & Installation
 
-### 1. Clone the repository
+Follow these steps to run MovieMonk locally:
+
+### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/mfscpayload-690/moviemonk-ai.git
 cd moviemonk-ai
 ```
 
-### 2. Install dependencies
+### 2. Install Dependencies
+
 ```bash
 npm install
 ```
 
-### 3. Configure environment variables
-Create a `.env.local` file in the root directory (see `.env.local.example`):
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the root directory. You will need API keys for the services used.
 
 ```env
-# Required
-GROQ_API_KEY=your_groq_api_key_here
-TMDB_API_KEY=your_tmdb_v3_api_key_here
-TMDB_READ_TOKEN=your_tmdb_v4_read_token_here
-OMDB_API_KEY=your_omdb_api_key_here
+# Core Data APIs
+TMDB_API_KEY=your_tmdb_key
+OMDB_API_KEY=your_omdb_key
+SERPAPI_KEY=your_serpapi_key
 
-# Optional but recommended
-MISTRAL_API_KEY=your_mistral_api_key_here
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-PERPLEXITY_API_KEY=your_perplexity_api_key_here
+# AI Providers
+GROQ_API_KEY=your_groq_key
+MISTRAL_API_KEY=your_mistral_key
+OPENROUTER_API_KEY=your_openrouter_key
+PERPLEXITY_API_KEY=your_perplexity_key
 ```
 
-**Note**: You need at least Groq, TMDB, and OMDB keys to run the app.
+### 4. Run Development Server
 
-### 4. Start the development server
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+The application will be available at `http://localhost:3000`.
 
-### 5. Build for production
+### 5. Production Build
+
+To build the application for production:
+
 ```bash
 npm run build
 ```
 
 ---
 
-## 🚢 Deploy to Vercel
+## Contributing
 
-1. **Install Vercel CLI**
-```bash
-npm i -g vercel
-```
+We welcome contributions to MovieMonk!
 
-2. **Login and add your API keys**
-```bash
-vercel login
-vercel env add GROQ_API_KEY
-vercel env add TMDB_API_KEY
-vercel env add TMDB_READ_TOKEN
-vercel env add OMDB_API_KEY
-# Add optional ones if you have them
-```
-
-3. **Deploy**
-```bash
-vercel --prod
-```
-
-Your app will be live at `https://your-project.vercel.app`
+1.  **Fork** the repository.
+2.  Create a **feature branch**: `git checkout -b feature/new-feature`
+3.  **Commit** your changes: `git commit -m 'Add new feature'`
+4.  **Push** to the branch: `git push origin feature/new-feature`
+5.  Submit a **Pull Request**.
 
 ---
 
-## 📖 More Info
+## License
 
-- [API Setup](docs/API.md) - How the AI and data APIs work
-- [Caching](docs/CACHING.md) - How we keep things fast
-- [Development](docs/DEVELOPMENT.md) - Contributing guidelines
-
----
-
-## 🗂️ Code Structure
-
-- `components/` - React UI components
-- `services/` - AI and API integrations
-- `App.tsx` - Main app logic
-- `constants.ts` - AI prompts and config
-- `types.ts` - TypeScript types
-
----
-
-## 🎯 Usage
-
-1. **Type a movie name** - "Inception", "Breaking Bad season 5", etc.
-2. **Toggle complexity** - Simple for quick info, Complex for detailed analysis
-3. **Get results** - Cast, ratings, summaries, streaming links
-4. **Click around** - Play trailers, view gallery, reveal spoilers
-
-That's it! The app handles the rest.
-
----
-
-## 🤝 Contributing
-
-Want to help? Great!
-
-1. Fork the repo
-2. Make your changes
-3. Submit a pull request
-
-Check [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for more details.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
+This project is licensed under the [MIT License](LICENSE).
