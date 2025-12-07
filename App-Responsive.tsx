@@ -436,19 +436,7 @@ const App: React.FC = () => {
       {ambiguous && (
         <AmbiguousModal
           candidates={ambiguous}
-          onSelect={async (c) => {
-            setAmbiguous(null);
-            if (c.type === 'person') {
-              setIsLoading(true);
-              const data = await fetch(`/api/person/${c.id}`).then(r => r.json());
-              setPersonData(data);
-              setMovieData(null);
-              setSources(data?.sources || null);
-              setIsLoading(false);
-            } else {
-              handleSendMessage(c.name, QueryComplexity.SIMPLE, 'groq');
-            }
-          }}
+          onSelect={handleSelectResult}
           onClose={() => setAmbiguous(null)}
         />
       )}

@@ -132,12 +132,14 @@ async function searchTMDB(title: string, limit = 6): Promise<SearchResult[]> {
       const type: 'movie' | 'person' | 'review' = mediaType === 'person' ? 'person' : 'movie';
 
       return {
+        id: item.id,
         title: name,
         snippet: item.overview || item.known_for_department || '',
         url: `https://www.tmdb.org/${mediaType}/${item.id}`,
         type,
         confidence: item.popularity ? Math.min(item.popularity / 100, 1) : 0.7,
-        year: item.release_date ? item.release_date.substring(0, 4) : undefined
+        year: item.release_date ? item.release_date.substring(0, 4) : undefined,
+        image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : (item.profile_path ? `https://image.tmdb.org/t/p/w500${item.profile_path}` : undefined)
       };
     });
   } catch (error) {
