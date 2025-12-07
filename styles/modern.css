@@ -1,0 +1,220 @@
+/* Modern Cinematic Theme - MovieMonk AI */
+:root {
+    /* Color Palette - Cyberpunk / Cinematic Dark */
+    --color-bg: #050508;
+    --color-surface: #0f0f16;
+    --color-surface-hover: #161621;
+
+    --color-primary: #7c3aed;
+    /* Violet */
+    --color-primary-glow: rgba(124, 58, 237, 0.5);
+
+    --color-accent: #db2777;
+    /* Pink */
+    --color-accent-glow: rgba(219, 39, 119, 0.5);
+
+    --color-text-main: #ffffff;
+    --color-text-muted: #94a3b8;
+    --color-text-dim: #475569;
+
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-highlight: rgba(255, 255, 255, 0.15);
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2.5rem;
+    --spacing-2xl: 4rem;
+
+    /* Radius */
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-full: 9999px;
+
+    /* Shadows & Glows */
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    --glow-primary: 0 0 20px var(--color-primary-glow);
+}
+
+/* Global Reset & Base */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    width: 100%;
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    /* App handles scrolling */
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Overrides */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+/* Utilities */
+.glass-panel {
+    background: rgba(15, 15, 22, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-panel:hover {
+    border-color: var(--border-highlight);
+    background: rgba(20, 20, 30, 0.7);
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Layout Containers */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-surface-hover) transparent;
+}
+
+/* Custom Scrollbar */
+.main-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.main-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Button Styles */
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+}
+
+.btn-glass {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--color-text-main);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-glass:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-text-muted);
+}
+
+/* Backward Compatibility Layer */
+.bg-brand-bg {
+    background-color: var(--color-bg);
+}
+
+.bg-brand-surface {
+    background-color: var(--color-surface);
+}
+
+.text-brand-text-light {
+    color: var(--color-text-main);
+}
+
+.text-brand-text-dark {
+    color: var(--color-text-muted);
+}
+
+.text-brand-primary {
+    color: var(--color-primary);
+}
+
+.text-brand-secondary {
+    color: var(--color-accent);
+}
+
+.text-brand-accent {
+    color: var(--color-accent);
+}
+
+.border-brand-primary\/30 {
+    border-color: rgba(124, 58, 237, 0.3);
+}

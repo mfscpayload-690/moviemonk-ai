@@ -3,6 +3,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import './styles/modern.css';
+import './styles/dynamic-search-island.css';
 import App from './App-Responsive';
 
 const rootElement = document.getElementById('root');

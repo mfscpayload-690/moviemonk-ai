@@ -17,11 +17,11 @@ interface MovieDisplayProps {
 const getYouTubeEmbedUrl = (url: string): string | null => {
     if (!url) return null;
     let videoId: string | null = null;
-    
+
     // Regular expression to find a YouTube video ID from various URL formats
     const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(regex);
-    
+
     if (match && match[1]) {
         videoId = match[1];
     }
@@ -29,7 +29,7 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
     if (videoId) {
         return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
     }
-    
+
     return null;
 };
 
@@ -73,7 +73,7 @@ const markdownToHtml = (text: string): string => {
     html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>'); // Bold + Italic
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');       // Bold
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');               // Italic
-    
+
     return html;
 };
 
@@ -102,33 +102,33 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
 
 
 const LoadingSkeleton = () => (
-        <div className="h-full w-full p-4 md:p-8">
-            <div className="relative w-full h-[50vh] md:h-[60vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20">
-                <div className="absolute inset-0 animate-pulse bg-brand-surface/30" />
-                <div className="absolute bottom-6 left-6 flex items-center gap-6">
-                    <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg bg-brand-surface/50 animate-pulse" />
-                    <div className="space-y-4">
-                        <div className="h-10 w-64 bg-brand-surface/50 rounded-md animate-pulse" />
-                        <div className="h-6 w-40 bg-brand-surface/40 rounded-md animate-pulse" />
-                        <div className="flex gap-2 mt-4">
-                            {Array.from({length:4}).map((_,i) => <div key={i} className="h-6 w-16 bg-brand-surface/40 rounded-full animate-pulse" />)}
-                        </div>
-                        <div className="h-10 w-40 bg-brand-surface/50 rounded-md mt-6 animate-pulse" />
+    <div className="h-full w-full p-4 md:p-8">
+        <div className="relative w-full h-[50vh] md:h-[60vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20">
+            <div className="absolute inset-0 animate-pulse bg-brand-surface/30" />
+            <div className="absolute bottom-6 left-6 flex items-center gap-6">
+                <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg bg-brand-surface/50 animate-pulse" />
+                <div className="space-y-4">
+                    <div className="h-10 w-64 bg-brand-surface/50 rounded-md animate-pulse" />
+                    <div className="h-6 w-40 bg-brand-surface/40 rounded-md animate-pulse" />
+                    <div className="flex gap-2 mt-4">
+                        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 w-16 bg-brand-surface/40 rounded-full animate-pulse" />)}
                     </div>
-                </div>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="h-40 bg-brand-surface/40 rounded-lg animate-pulse" />
-                    <div className="h-64 bg-brand-surface/40 rounded-lg animate-pulse" />
-                </div>
-                <div className="space-y-6">
-                    <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
-                    <div className="h-48 bg-brand-surface/40 rounded-lg animate-pulse" />
-                    <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
+                    <div className="h-10 w-40 bg-brand-surface/50 rounded-md mt-6 animate-pulse" />
                 </div>
             </div>
         </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+                <div className="h-40 bg-brand-surface/40 rounded-lg animate-pulse" />
+                <div className="h-64 bg-brand-surface/40 rounded-lg animate-pulse" />
+            </div>
+            <div className="space-y-6">
+                <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
+                <div className="h-48 bg-brand-surface/40 rounded-lg animate-pulse" />
+                <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
+            </div>
+        </div>
+    </div>
 );
 
 const DISCOVER_TITLES = [
@@ -143,19 +143,19 @@ const DISCOVER_TITLES = [
 ];
 
 const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch }) => {
-  const [showFullPlot, setShowFullPlot] = useState(false);
-  const [showSuspenseBreaker, setShowSuspenseBreaker] = useState(false);
-  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
-  const [showAllCast, setShowAllCast] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isLoadingFullPlot, setIsLoadingFullPlot] = useState(false);
-  const [fullPlotContent, setFullPlotContent] = useState<string>('');
-  const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
+    const [showFullPlot, setShowFullPlot] = useState(false);
+    const [showSuspenseBreaker, setShowSuspenseBreaker] = useState(false);
+    const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+    const [showAllCast, setShowAllCast] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isLoadingFullPlot, setIsLoadingFullPlot] = useState(false);
+    const [fullPlotContent, setFullPlotContent] = useState<string>('');
+    const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
 
-  useEffect(() => {
-    // This effect runs on the client, where document is available.
-    setModalRoot(document.getElementById('modal-root'));
-  }, []);
+    useEffect(() => {
+        // This effect runs on the client, where document is available.
+        setModalRoot(document.getElementById('modal-root'));
+    }, []);
 
     // Reset spoiler state when movie changes & prefill if already present
     useEffect(() => {
@@ -164,36 +164,36 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         setFullPlotContent(movie?.summary_long_spoilers || '');
     }, [movie]);
 
-  const embedUrl = movie ? getYouTubeEmbedUrl(movie.trailer_url) : null;
-  
-  // Ensure ratings is always an array (handle legacy cached data)
-  const safeRatings = movie && Array.isArray(movie.ratings) ? movie.ratings : [];
-  const safeCast = movie && Array.isArray(movie.cast) ? movie.cast : [];
-  const safeGenres = movie && Array.isArray(movie.genres) ? movie.genres : [];
-  
-  // Normalize where_to_watch: handle both proper objects and malformed string arrays
-  const safeWhereToWatch = movie && Array.isArray(movie.where_to_watch) 
-    ? movie.where_to_watch.map((option: any) => {
-        // If it's a string, convert to proper WatchOption
-        if (typeof option === 'string') {
-          return {
-            platform: option,
-            link: '#',
-            type: 'subscription' as const
-          };
-        }
-        // If object but missing fields, add defaults
-        return {
-          platform: option.platform || 'Unknown',
-          link: option.link || '#',
-          type: option.type || 'subscription'
-        };
-      })
-    : [];
-  
-  const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
-  
-  const displayedCast = showAllCast ? safeCast : safeCast.slice(0, 8);
+    const embedUrl = movie ? getYouTubeEmbedUrl(movie.trailer_url) : null;
+
+    // Ensure ratings is always an array (handle legacy cached data)
+    const safeRatings = movie && Array.isArray(movie.ratings) ? movie.ratings : [];
+    const safeCast = movie && Array.isArray(movie.cast) ? movie.cast : [];
+    const safeGenres = movie && Array.isArray(movie.genres) ? movie.genres : [];
+
+    // Normalize where_to_watch: handle both proper objects and malformed string arrays
+    const safeWhereToWatch = movie && Array.isArray(movie.where_to_watch)
+        ? movie.where_to_watch.map((option: any) => {
+            // If it's a string, convert to proper WatchOption
+            if (typeof option === 'string') {
+                return {
+                    platform: option,
+                    link: '#',
+                    type: 'subscription' as const
+                };
+            }
+            // If object but missing fields, add defaults
+            return {
+                platform: option.platform || 'Unknown',
+                link: option.link || '#',
+                type: option.type || 'subscription'
+            };
+        })
+        : [];
+
+    const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
+
+    const displayedCast = showAllCast ? safeCast : safeCast.slice(0, 8);
 
 
     useEffect(() => {
@@ -217,38 +217,36 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     }, [selectedImage, safeExtraImages]);
 
 
-  if (isLoading && !movie) {
-    return <LoadingSkeleton />;
-  }
-  
+    if (isLoading && !movie) {
+        return <LoadingSkeleton />;
+    }
+
     if (!movie) {
         return (
-            <div className="h-full overflow-y-auto px-3 py-4 md:p-6 animate-fade-in">
-                <div className="max-w-5xl mx-auto">
-                    <div className="text-center mb-6 md:mb-10">
-                        <Logo className="mx-auto h-16 w-16 md:h-24 md:w-24 animate-fade-in" />
-                        <h1 className="mt-3 md:mt-6 text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-brand-primary to-brand-secondary text-transparent bg-clip-text animate-slide-up">Welcome to MovieMonk</h1>
-                        <p className="mt-2 md:mt-4 text-sm md:text-lg lg:text-xl text-brand-text-dark max-w-2xl mx-auto animate-fade-in px-2" style={{animationDelay:'0.15s'}}>Your AI-powered guide to the world of cinema. Dive in instantly or ask anything.</p>
+            <div className="h-full flex items-center justify-center p-6 animate-fade-in relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-radial from-violet-900/20 to-transparent pointer-events-none" />
+                <div className="max-w-6xl mx-auto w-full relative z-10">
+                    <div className="text-center mb-12">
+                        <Logo className="mx-auto h-24 w-24 animate-fade-in text-primary drop-shadow-glow" />
+                        <h1 className="mt-6 text-5xl md:text-7xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up">MovieMonk</h1>
+                        <p className="mt-4 text-xl md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-4 lg:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                         {DISCOVER_TITLES.map((title, idx) => (
                             <button
                                 key={title}
                                 onClick={() => onQuickSearch(title)}
-                                className="group relative bg-brand-surface/60 border border-white/10 rounded-lg md:rounded-xl p-2.5 md:p-4 flex flex-col items-start justify-between hover:border-brand-primary/60 hover:bg-brand-surface/80 transition-all duration-300 overflow-hidden min-h-[110px] md:min-h-[140px]"
-                                style={{animationDelay: `${0.1 + idx*0.05}s`}}
+                                className="glass-panel group relative p-6 flex flex-col items-start justify-between hover:border-violet-500/50 transition-all duration-300 min-h-[160px] rounded-xl text-left"
+                                style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
                             >
-                                <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-br from-brand-primary to-brand-secondary transition-opacity" />
-                                <span className="text-[10px] md:text-sm font-medium text-brand-text-dark uppercase tracking-wide">Featured</span>
-                                <h3 className="mt-1 md:mt-2 text-sm md:text-lg font-bold text-brand-text-light line-clamp-2 group-hover:text-white transition-colors leading-tight">{title}</h3>
-                                <span className="mt-2 md:mt-4 inline-flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs font-semibold text-brand-primary group-hover:translate-x-1 transition-transform">
-                                    <PlayIcon className="w-3 h-3 md:w-4 md:h-4" /> Explore
+                                <span className="absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-br from-violet-600 to-pink-600 transition-opacity rounded-xl" />
+                                <span className="text-xs font-medium text-violet-400 uppercase tracking-widest">Featured</span>
+                                <h3 className="mt-2 text-xl font-bold text-white group-hover:text-primary transition-colors leading-tight">{title}</h3>
+                                <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-muted group-hover:text-white transition-colors">
+                                    <PlayIcon className="w-4 h-4" /> Explore
                                 </span>
                             </button>
                         ))}
-                    </div>
-                    <div className="mt-6 md:mt-10 text-center px-2">
-                        <p className="text-xs md:text-sm text-brand-text-dark">Tip: Type a title and toggle Complex Query for deeper analysis.</p>
                     </div>
                 </div>
             </div>
@@ -257,315 +255,318 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     return (
         <div className="h-full overflow-y-auto relative pt-3 md:pt-0">
-                {isLoading && (
-                        <div className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-fade-in">
-                                <div className="relative">
-                                    <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
-                                    <FilmIcon className="w-20 h-20 text-brand-primary animate-spin" />
-                                </div>
-                                <p className="mt-6 text-lg font-semibold text-brand-text-light flex items-center gap-2">
-                                    <span className="inline-flex w-2 h-2 bg-brand-secondary rounded-full animate-pulse" /> Loading cinematic data...
-                                </p>
-                        </div>
-                )}
-        {/* Hero Section with Poster Card */}
-        <div className="relative w-full h-[60vh] md:h-[70vh] mb-8 overflow-hidden">
-            {/* Backdrop Image Layer */}
-            {movie.backdrop_url && (
-                <img 
-                    src={movie.backdrop_url} 
-                    alt={`${movie.title} backdrop`} 
-                    className="absolute inset-0 w-full h-full object-cover z-0"
-                    loading="eager"
-                />
-            )}
-            {/* Gradient Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/50 to-transparent z-10"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-bg/70 via-brand-bg/30 to-transparent z-10"></div>
-            
-            {/* Content Layer - Above gradients */}
-            <div className="relative h-full flex items-end p-6 md:p-12 max-w-screen-xl mx-auto z-20">
-                <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
-                    {/* Poster Card */}
-                    <div className="flex-shrink-0 animate-fade-in" style={{animationDelay:'0.05s', animationFillMode: 'forwards'}}>
-                        <ImageWithFallback 
-                            src={movie.poster_url} 
-                            alt={`${movie.title} poster`} 
-                            className="w-48 md:w-56 lg:w-64 rounded-xl shadow-2xl border-4 border-white/20 aspect-[2/3] object-cover transform hover:scale-105 transition-transform duration-300" 
-                        />
+            {isLoading && (
+                <div className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-fade-in">
+                    <div className="relative">
+                        <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
+                        <FilmIcon className="w-20 h-20 text-brand-primary animate-spin" />
                     </div>
-                    
-                    {/* Title and Info Card */}
-                    <div className="flex-1 text-left pb-4">
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl animate-fade-in" style={{animationDelay:'0.15s', animationFillMode: 'forwards'}}>{movie.title}</h1>
-                        <p className="mt-3 text-lg md:text-xl text-brand-text-light font-semibold animate-slide-up" style={{animationDelay:'0.25s', animationFillMode: 'forwards'}}>
-                            {movie.year} &bull; {typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : ''}
-                        </p>
-                        
-                        <div className="mt-4 flex flex-wrap gap-2 animate-slide-up" style={{animationDelay:'0.35s', animationFillMode: 'forwards'}}>
-                            {safeGenres.map(genre => (
-                                <span key={genre} className="px-3 py-1.5 bg-white/20 text-white text-sm font-bold rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">{genre}</span>
-                            ))}
+                    <p className="mt-6 text-lg font-semibold text-brand-text-light flex items-center gap-2">
+                        <span className="inline-flex w-2 h-2 bg-brand-secondary rounded-full animate-pulse" /> Loading cinematic data...
+                    </p>
+                </div>
+            )}
+            {/* Hero Section with Poster Card */}
+            <div className="relative w-full h-[60vh] md:h-[70vh] mb-8 overflow-hidden">
+                {/* Backdrop Image Layer */}
+                {movie.backdrop_url && (
+                    <img
+                        src={movie.backdrop_url}
+                        alt={`${movie.title} backdrop`}
+                        className="absolute inset-0 w-full h-full object-cover z-0"
+                        loading="eager"
+                    />
+                )}
+                {/* Gradient Overlays - Cinematic */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/60 to-transparent z-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-bg)]/90 via-[var(--color-bg)]/40 to-transparent z-10"></div>
+
+                {/* Content Layer - Above gradients */}
+                <div className="relative h-full flex items-end p-6 md:p-12 max-w-screen-xl mx-auto z-20">
+                    <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
+                        {/* Poster Card */}
+                        <div className="flex-shrink-0 animate-fade-in" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
+                            <ImageWithFallback
+                                src={movie.poster_url}
+                                alt={`${movie.title} poster`}
+                                className="w-48 md:w-56 lg:w-64 rounded-xl shadow-2xl border-4 border-white/20 aspect-[2/3] object-cover transform hover:scale-105 transition-transform duration-300"
+                            />
                         </div>
-                        
-                        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center animate-slide-up" style={{animationDelay:'0.45s', animationFillMode: 'forwards'}}>
-                            {safeRatings.map(rating => (
-                                <div key={rating.source} className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg border border-white/20">
-                                    {rating.source.toLowerCase().includes('rotten') && (
-                                        <RottenTomatoesIcon className="w-6 h-6 text-red-500" />
-                                    )}
-                                    {rating.source.toLowerCase().includes('imdb') && (
-                                        <StarIcon className="w-6 h-6 text-yellow-400" />
-                                    )}
-                                    <div>
-                                        <p className="font-bold text-white text-base leading-tight">{rating.score}</p>
-                                        <p className="text-xs text-gray-300">{rating.source}</p>
+
+                        {/* Title and Info Card */}
+                        <div className="flex-1 text-left pb-4">
+                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl animate-fade-in" style={{ animationDelay: '0.15s', animationFillMode: 'forwards' }}>{movie.title}</h1>
+                            <p className="mt-3 text-lg md:text-xl text-brand-text-light font-semibold animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'forwards' }}>
+                                {movie.year} &bull; {typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : ''}
+                            </p>
+
+                            <div className="mt-4 flex flex-wrap gap-2 animate-slide-up" style={{ animationDelay: '0.35s', animationFillMode: 'forwards' }}>
+                                {safeGenres.map(genre => (
+                                    <span key={genre} className="px-3 py-1.5 bg-white/20 text-white text-sm font-bold rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">{genre}</span>
+                                ))}
+                            </div>
+
+                            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center animate-slide-up" style={{ animationDelay: '0.45s', animationFillMode: 'forwards' }}>
+                                {safeRatings.map(rating => (
+                                    <div key={rating.source} className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg border border-white/20">
+                                        {rating.source.toLowerCase().includes('rotten') && (
+                                            <RottenTomatoesIcon className="w-6 h-6 text-red-500" />
+                                        )}
+                                        {rating.source.toLowerCase().includes('imdb') && (
+                                            <StarIcon className="w-6 h-6 text-yellow-400" />
+                                        )}
+                                        <div>
+                                            <p className="font-bold text-white text-base leading-tight">{rating.score}</p>
+                                            <p className="text-xs text-gray-300">{rating.source}</p>
+                                        </div>
                                     </div>
+                                ))}
+                            </div>
+
+                            {embedUrl && (
+                                <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.55s', animationFillMode: 'forwards' }}>
+                                    <button
+                                        onClick={() => {
+                                            track('trailer_opened', {
+                                                title: movie.title,
+                                                year: movie.year,
+                                                type: movie.type
+                                            });
+                                            setIsTrailerOpen(true);
+                                        }}
+                                        className="inline-flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-bold text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
+                                    >
+                                        <PlayIcon className="w-6 h-6" />
+                                        <span>Play Trailer</span>
+                                    </button>
                                 </div>
-                            ))}
+                            )}
                         </div>
-                        
-                        {embedUrl && (
-                            <div className="mt-8 animate-slide-up" style={{animationDelay:'0.55s', animationFillMode: 'forwards'}}>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+                <div className="lg:col-span-2 space-y-8">
+                    <Section title="Synopsis">
+                        <p className="text-brand-text-dark leading-relaxed">{movie.summary_medium}</p>
+
+                        <div className="mt-6">
+                            <h3 className="text-lg font-semibold text-brand-accent mb-2">Suspense Breaker</h3>
+                            <div className="relative p-4 rounded-lg bg-brand-surface group cursor-pointer" onClick={() => setShowSuspenseBreaker(true)}>
+                                <p className={`italic text-brand-text-dark transition-all duration-300 ${!showSuspenseBreaker ? 'blur-sm select-none' : 'blur-none'}`}>{movie.suspense_breaker}</p>
+                                {!showSuspenseBreaker && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                        <EyeIcon className="w-6 h-6 text-white" />
+                                        <span className="ml-2 font-semibold text-white">Click to Reveal</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mt-6">
+                            <div className="space-y-3">
                                 <button
-                                    onClick={() => {
-                                      track('trailer_opened', {
-                                        title: movie.title,
-                                        year: movie.year,
-                                        type: movie.type
-                                      });
-                                      setIsTrailerOpen(true);
+                                    onClick={async () => {
+                                        if (!fullPlotContent && movie) {
+                                            setIsLoadingFullPlot(true);
+                                            try {
+                                                const plot = await onFetchFullPlot(movie.title, movie.year, movie.type, selectedProvider);
+                                                setFullPlotContent(plot);
+                                                setShowFullPlot(true);
+                                            } catch (error) {
+                                                setFullPlotContent("Failed to load full plot details. Please try again.");
+                                                setShowFullPlot(true);
+                                            }
+                                            setIsLoadingFullPlot(false);
+                                            return;
+                                        }
+                                        setShowFullPlot(p => !p);
                                     }}
-                                    className="inline-flex items-center gap-3 px-8 py-4 bg-brand-primary text-white font-bold text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
+                                    disabled={isLoadingFullPlot}
+                                    aria-controls="spoiler-content"
+                                    aria-expanded={showFullPlot}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors"
                                 >
-                                    <PlayIcon className="w-6 h-6" />
-                                    <span>Play Trailer</span>
+                                    {isLoadingFullPlot ? (
+                                        <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                                    ) : showFullPlot ? (
+                                        <EyeSlashIcon className="w-5 h-5" />
+                                    ) : (
+                                        <EyeIcon className="w-5 h-5" />
+                                    )}
+                                    {fullPlotContent ? (showFullPlot ? 'Hide Spoiler Plot' : 'Show Spoiler Plot') : 'Load Full Plot (Spoilers)'}
+                                </button>
+                                {showFullPlot && fullPlotContent && (
+                                    <div id="spoiler-content" className="pt-3 border-t border-brand-primary/20 animate-fade-in">
+                                        <p className="text-sm font-bold text-red-400 mb-2">{fullPlotContent.startsWith('SPOILER WARNING') ? fullPlotContent.split('—')[0] : 'SPOILER WARNING'}</p>
+                                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">{fullPlotContent.replace(/^SPOILER WARNING — Full plot explained below\.\n*/, '')}</p>
+                                    </div>
+                                )}
+                                {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
+                                    <p className="text-sm text-brand-text-dark italic">No spoiler plot available yet.</p>
+                                )}
+                            </div>
+                        </div>
+                    </Section>
+
+                    <Section title="Cast & Crew">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
+                        </div>
+                        {safeCast.length > 8 && (
+                            <div className="mt-4 text-center">
+                                <button
+                                    onClick={() => setShowAllCast(!showAllCast)}
+                                    className="px-4 py-2 text-sm font-semibold text-brand-primary bg-brand-primary/10 rounded-full hover:bg-brand-primary/20 transition-colors"
+                                >
+                                    {showAllCast ? 'Show Less' : `Show ${safeCast.length - 8} More`}
                                 </button>
                             </div>
                         )}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-      {/* Main Content */}
-      <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-        <div className="lg:col-span-2 space-y-8">
-          <Section title="Synopsis">
-            <p className="text-brand-text-dark leading-relaxed">{movie.summary_medium}</p>
-            
-            <div className="mt-6">
-                <h3 className="text-lg font-semibold text-brand-accent mb-2">Suspense Breaker</h3>
-                <div className="relative p-4 rounded-lg bg-brand-surface group cursor-pointer" onClick={() => setShowSuspenseBreaker(true)}>
-                    <p className={`italic text-brand-text-dark transition-all duration-300 ${!showSuspenseBreaker ? 'blur-sm select-none' : 'blur-none'}`}>{movie.suspense_breaker}</p>
-                    {!showSuspenseBreaker && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                            <EyeIcon className="w-6 h-6 text-white"/>
-                            <span className="ml-2 font-semibold text-white">Click to Reveal</span>
+                        <div className="mt-6 text-sm text-brand-text-dark grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                            <p><span className="font-semibold text-brand-text-light">Director:</span> {movie.crew.director}</p>
+                            <p><span className="font-semibold text-brand-text-light">Writer:</span> {movie.crew.writer}</p>
+                            <p><span className="font-semibold text-brand-text-light">Music:</span> {movie.crew.music}</p>
                         </div>
+                    </Section>
+
+                    <Section title="AI Notes & Trivia">
+                        <div className="prose prose-invert prose-sm text-brand-text-dark max-w-none prose-p:my-2 prose-ul:my-2 prose-headings:text-brand-accent" dangerouslySetInnerHTML={{ __html: markdownToHtml(movie.ai_notes) }} />
+                    </Section>
+                </div>
+
+                <div className="lg:col-span-1 space-y-8">
+                    <Section title="Where to Watch">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                            {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
+                        </div>
+                    </Section>
+
+                    <Section title="Gallery">
+                        {safeExtraImages.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-2">
+                                {safeExtraImages.slice(0, 4).map((img, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setSelectedImage(img)}
+                                        className="focus:outline-none focus:ring-2 focus:ring-brand-primary rounded-lg"
+                                    >
+                                        <ImageWithFallback src={img} alt={`Scene ${i + 1}`} className="rounded-lg object-cover w-full h-full aspect-video hover:scale-105 transition-transform duration-300 cursor-pointer" />
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-brand-text-dark text-sm italic">No gallery images available.</p>
+                        )}
+                    </Section>
+
+                    {sources && sources.length > 0 && (
+                        <Section title="Data Sources">
+                            <div className="space-y-3">
+                                {sources.map((source, index) => (
+                                    source.web && <SourceCard key={index} source={source.web} />
+                                ))}
+                            </div>
+                        </Section>
                     )}
                 </div>
             </div>
-            
-            <div className="mt-6">
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={async () => {
-                                            if (!fullPlotContent && movie) {
-                                                setIsLoadingFullPlot(true);
-                                                try {
-                                                    const plot = await onFetchFullPlot(movie.title, movie.year, movie.type, selectedProvider);
-                                                    setFullPlotContent(plot);
-                                                    setShowFullPlot(true);
-                                                } catch (error) {
-                                                    setFullPlotContent("Failed to load full plot details. Please try again.");
-                                                    setShowFullPlot(true);
-                                                }
-                                                setIsLoadingFullPlot(false);
-                                                return;
-                                            }
-                                            setShowFullPlot(p => !p);
-                                        }}
-                                        disabled={isLoadingFullPlot}
-                                        aria-controls="spoiler-content"
-                                        aria-expanded={showFullPlot}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors"
-                                    >
-                                        {isLoadingFullPlot ? (
-                                            <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
-                                        ) : showFullPlot ? (
-                                            <EyeSlashIcon className="w-5 h-5" />
-                                        ) : (
-                                            <EyeIcon className="w-5 h-5" />
-                                        )}
-                                        {fullPlotContent ? (showFullPlot ? 'Hide Spoiler Plot' : 'Show Spoiler Plot') : 'Load Full Plot (Spoilers)'}
-                                    </button>
-                                    {showFullPlot && fullPlotContent && (
-                                        <div id="spoiler-content" className="pt-3 border-t border-brand-primary/20 animate-fade-in">
-                                            <p className="text-sm font-bold text-red-400 mb-2">{fullPlotContent.startsWith('SPOILER WARNING') ? fullPlotContent.split('—')[0] : 'SPOILER WARNING'}</p>
-                                            <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">{fullPlotContent.replace(/^SPOILER WARNING — Full plot explained below\.\n*/, '')}</p>
-                                        </div>
-                                    )}
-                                    {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
-                                        <p className="text-sm text-brand-text-dark italic">No spoiler plot available yet.</p>
-                                    )}
-                                </div>
-            </div>
-          </Section>
-          
-          <Section title="Cast & Crew">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
-            </div>
-            {safeCast.length > 8 && (
-                <div className="mt-4 text-center">
-                    <button
-                        onClick={() => setShowAllCast(!showAllCast)}
-                        className="px-4 py-2 text-sm font-semibold text-brand-primary bg-brand-primary/10 rounded-full hover:bg-brand-primary/20 transition-colors"
-                    >
-                        {showAllCast ? 'Show Less' : `Show ${safeCast.length - 8} More`}
-                    </button>
-                </div>
-            )}
-             <div className="mt-6 text-sm text-brand-text-dark grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                <p><span className="font-semibold text-brand-text-light">Director:</span> {movie.crew.director}</p>
-                <p><span className="font-semibold text-brand-text-light">Writer:</span> {movie.crew.writer}</p>
-                <p><span className="font-semibold text-brand-text-light">Music:</span> {movie.crew.music}</p>
-            </div>
-          </Section>
-          
-          <Section title="AI Notes & Trivia">
-             <div className="prose prose-invert prose-sm text-brand-text-dark max-w-none prose-p:my-2 prose-ul:my-2 prose-headings:text-brand-accent" dangerouslySetInnerHTML={{ __html: markdownToHtml(movie.ai_notes) }} />
-          </Section>
-        </div>
 
-        <div className="lg:col-span-1 space-y-8">
-          <Section title="Where to Watch">
-                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                             {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform+option.type} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
-                         </div>
-          </Section>
-          
-           <Section title="Gallery">
-             {safeExtraImages.length > 0 ? (
-                 <div className="grid grid-cols-2 gap-2">
-                    {safeExtraImages.slice(0, 4).map((img, i) => (
-                        <button 
-                          key={i}
-                          onClick={() => setSelectedImage(img)}
-                          className="focus:outline-none focus:ring-2 focus:ring-brand-primary rounded-lg"
-                        >
-                            <ImageWithFallback src={img} alt={`Scene ${i+1}`} className="rounded-lg object-cover w-full h-full aspect-video hover:scale-105 transition-transform duration-300 cursor-pointer"/>
-                        </button>
-                    ))}
-                 </div>
-             ) : (
-                <p className="text-brand-text-dark text-sm italic">No gallery images available.</p>
-             )}
-           </Section>
-
-           {sources && sources.length > 0 && (
-            <Section title="Data Sources">
-              <div className="space-y-3">
-                {sources.map((source, index) => (
-                    source.web && <SourceCard key={index} source={source.web} />
-                ))}
-              </div>
-            </Section>
-          )}
-        </div>
-      </div>
-
-      {isTrailerOpen && embedUrl && modalRoot && ReactDOM.createPortal(
-          <div 
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
-            onClick={() => setIsTrailerOpen(false)}
-            aria-modal="true"
-            role="dialog"
-          >
-              <div 
-                className="relative w-full max-w-4xl aspect-video bg-black rounded-lg shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                  <iframe
-                      src={embedUrl}
-                      title={`${movie.title} Trailer`}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full h-full rounded-lg"
-                  ></iframe>
-                  <button 
+            {isTrailerOpen && embedUrl && modalRoot && ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
                     onClick={() => setIsTrailerOpen(false)}
-                    aria-label="Close trailer"
-                    className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
-                  >
-                      <XMarkIcon className="w-6 h-6" />
-                  </button>
-              </div>
-          </div>,
-          modalRoot
-      )}
+                    aria-modal="true"
+                    role="dialog"
+                >
+                    <div
+                        className="relative w-full max-w-4xl aspect-video bg-black rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <iframe
+                            src={embedUrl}
+                            title={`${movie.title} Trailer`}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="w-full h-full rounded-lg"
+                        ></iframe>
+                        <button
+                            onClick={() => setIsTrailerOpen(false)}
+                            aria-label="Close trailer"
+                            className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
+                        >
+                            <XMarkIcon className="w-6 h-6" />
+                        </button>
+                    </div>
+                </div>,
+                modalRoot
+            )}
 
-      {selectedImage && modalRoot && ReactDOM.createPortal(
-          <div 
-            className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
-            onClick={() => setSelectedImage(null)}
-            aria-modal="true"
-            role="dialog"
-          >
-              <div 
-                className="relative max-w-6xl max-h-[90vh] bg-black rounded-lg shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                  <img
-                      src={selectedImage}
-                      alt="Gallery image"
-                      className="max-w-full max-h-[90vh] rounded-lg object-contain"
-                  />
-                                    {safeExtraImages.length > 1 && (
-                                        <>
-                                            <button
-                                                onClick={() => {
-                                                    const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const prev = (idx - 1 + imgs.length) % imgs.length; setSelectedImage(imgs[prev]);
-                                                }}
-                                                aria-label="Previous image"
-                                                className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
-                                            >
-                                                <ArrowLeftIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const next = (idx + 1) % imgs.length; setSelectedImage(imgs[next]);
-                                                }}
-                                                aria-label="Next image"
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
-                                            >
-                                                <ArrowRightIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                            </button>
-                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white/80 bg-black/40 px-3 py-1 rounded-full border border-white/10">
-                                                {safeExtraImages.indexOf(selectedImage) + 1} / {safeExtraImages.length}
-                                            </div>
-                                        </>
-                                    )}
-                  <button 
+            {selectedImage && modalRoot && ReactDOM.createPortal(
+                <div
+                    className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
                     onClick={() => setSelectedImage(null)}
-                    aria-label="Close image"
-                    className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
-                  >
-                      <XMarkIcon className="w-6 h-6" />
-                  </button>
-              </div>
-          </div>,
-          modalRoot
-      )}
-    </div>
-  );
+                    aria-modal="true"
+                    role="dialog"
+                >
+                    <div
+                        className="relative max-w-6xl max-h-[90vh] bg-black rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={selectedImage}
+                            alt="Gallery image"
+                            className="max-w-full max-h-[90vh] rounded-lg object-contain"
+                        />
+                        {safeExtraImages.length > 1 && (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const prev = (idx - 1 + imgs.length) % imgs.length; setSelectedImage(imgs[prev]);
+                                    }}
+                                    aria-label="Previous image"
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
+                                >
+                                    <ArrowLeftIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const next = (idx + 1) % imgs.length; setSelectedImage(imgs[next]);
+                                    }}
+                                    aria-label="Next image"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
+                                >
+                                    <ArrowRightIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                </button>
+                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white/80 bg-black/40 px-3 py-1 rounded-full border border-white/10">
+                                    {safeExtraImages.indexOf(selectedImage) + 1} / {safeExtraImages.length}
+                                </div>
+                            </>
+                        )}
+                        <button
+                            onClick={() => setSelectedImage(null)}
+                            aria-label="Close image"
+                            className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
+                        >
+                            <XMarkIcon className="w-6 h-6" />
+                        </button>
+                    </div>
+                </div>,
+                modalRoot
+            )}
+        </div>
+    );
 };
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="bg-brand-surface/70 backdrop-blur-md border border-white/10 p-3 md:p-6 rounded-xl shadow-lg animate-slide-up">
-        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-brand-text-light border-b border-white/10 pb-2 md:pb-3">{title}</h2>
+    <div className="glass-panel p-6 rounded-2xl animate-slide-up">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 text-white border-b border-white/5 pb-3 flex items-center gap-2">
+            <span className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></span>
+            {title}
+        </h2>
         {children}
     </div>
 );
@@ -578,10 +579,10 @@ const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
 );
 
 const watchTypeIcons: Record<WatchOption['type'], React.FC<{ className?: string }>> = {
-        subscription: TvIcon,
-        rent: TicketIcon,
-        buy: DollarIcon,
-        free: TagIcon,
+    subscription: TvIcon,
+    rent: TicketIcon,
+    buy: DollarIcon,
+    free: TagIcon,
 };
 
 const platformLogos: Record<string, React.FC<{ className?: string }>> = {
