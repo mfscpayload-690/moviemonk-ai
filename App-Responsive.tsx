@@ -200,9 +200,14 @@ const App: React.FC = () => {
       // Display result based on type
       if (selectedResult.type === 'person') {
         setPersonData({
-          name: parseData.title,
-          biography: parseData.summary.long,
-          sources: [{ title: selectedResult.title, url: selectedResult.url }]
+          person: {
+            id: selectedResult.id || 0,
+            name: parseData.title,
+            biography: parseData.summary.long,
+            profile_url: selectedResult.image
+          },
+          filmography: [],
+          sources: [{ name: selectedResult.title, url: selectedResult.url }]
         });
         setMovieData(null);
       } else {
@@ -311,9 +316,14 @@ const App: React.FC = () => {
       // Display result based on type
       if (selectedAmbiguous.type === 'person') {
         setPersonData({
-          name: parseData.title,
-          biography: parseData.summary.long,
-          sources: [{ title: selectedAmbiguous.title, url: selectedAmbiguous.url }]
+          person: {
+            id: selectedAmbiguous.id || 0,
+            name: parseData.title,
+            biography: parseData.summary.long,
+            profile_url: selectedAmbiguous.image
+          },
+          filmography: [],
+          sources: [{ name: selectedAmbiguous.title, url: selectedAmbiguous.url }]
         });
         setMovieData(null);
       } else {
