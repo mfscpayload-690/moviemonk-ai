@@ -210,6 +210,9 @@ const App: React.FC = () => {
           title: parseData.title,
           summary_short: parseData.summary.short,
           summary_long: parseData.summary.long,
+          poster_url: selectedResult.image,
+          year: selectedResult.year,
+          type: selectedResult.type,
           sources: [{ title: selectedResult.title, url: selectedResult.url }]
         } as any);
         setPersonData(null);
@@ -318,6 +321,9 @@ const App: React.FC = () => {
           title: parseData.title,
           summary_short: parseData.summary.short,
           summary_long: parseData.summary.long,
+          poster_url: selectedAmbiguous.image,
+          year: selectedAmbiguous.year || '',
+          type: selectedAmbiguous.type,
           sources: [{ title: selectedAmbiguous.name, url: selectedAmbiguous.url }]
         } as any);
         setPersonData(null);

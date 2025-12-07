@@ -426,9 +426,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                             </div>
                         )}
                         <div className="mt-6 text-sm text-brand-text-dark grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                            <p><span className="font-semibold text-brand-text-light">Director:</span> {movie.crew.director}</p>
-                            <p><span className="font-semibold text-brand-text-light">Writer:</span> {movie.crew.writer}</p>
-                            <p><span className="font-semibold text-brand-text-light">Music:</span> {movie.crew.music}</p>
+                            <p><span className="font-semibold text-brand-text-light">Director:</span> {movie.crew?.director || 'Unknown'}</p>
+                            <p><span className="font-semibold text-brand-text-light">Writer:</span> {movie.crew?.writer || 'Unknown'}</p>
+                            <p><span className="font-semibold text-brand-text-light">Music:</span> {movie.crew?.music || 'Unknown'}</p>
                         </div>
                     </Section>
 
