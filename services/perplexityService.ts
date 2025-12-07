@@ -5,7 +5,7 @@
  */
 
 import { MovieData, ChatMessage, QueryComplexity, FetchResult } from '../types';
-import { ParsedQuery, formatForAIPrompt } from './queryParser';
+import { ParsedQuery, formatForAIPrompt, parseQuery } from './queryParser';
 
 const PERPLEXITY_API = 'https://api.perplexity.ai/chat/completions';
 
@@ -60,8 +60,8 @@ Return ONLY valid JSON with this structure:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: complexity === QueryComplexity.COMPLEX 
-          ? 'sonar-pro' 
+        model: complexity === QueryComplexity.COMPLEX
+          ? 'sonar-pro'
           : 'sonar',
         messages: [
           {
@@ -106,7 +106,7 @@ Return ONLY valid JSON with this structure:
     }
 
     const movieData = parsePerplexityResponse(content);
-    
+
     if (!movieData || movieData.error) {
       return {
         movieData: null,
@@ -228,14 +228,14 @@ If not found, return: {"error": "not_found"}`;
 
     // Parse JSON response (avoid shadowing function parameter "parsed")
     const parsedResponse = parsePerplexityResponse(content);
-    
+
     if (!parsedResponse || parsedResponse.error === 'not_found') {
       console.log(`❌ Perplexity: "${parsedResponse?.title || parsed.title}" not found on web`);
       return null;
     }
 
     console.log(`✅ Perplexity: Found data for "${parsedResponse.title}"`);
-    
+
     // Fill in missing fields with empty values
     return {
       ...parsedResponse,
@@ -277,5 +277,34 @@ function parsePerplexityResponse(content: string): any {
     console.error('Failed to parse Perplexity response:', e);
     console.error('Raw content:', content);
     return null;
+  }
+}
+
+/**
+ * Adapter for global search interface (used by api/ai.ts)
+ * Converts textual query to ParsedQuery and formats result as a search candidate
+ */
+export async function searchPerplexity(query: string, limit: number = 6): Promise<any[]> {
+  try {
+    const parsed = parseQuery(query);
+    const data = await searchWithPerplexity(parsed);
+
+    if (!data) return [];
+
+    // Map MovieData to SearchResult shape expected by ai.ts
+    // interface SearchResult { title, snippet, url, image, type, confidence, year, language }
+    return [{
+      title: data.title,
+      snippet: data.summary_short || data.summary_medium || 'No summary available',
+      url: data.trailer_url || data.where_to_watch?.[0]?.link || '',
+      image: data.poster_url,
+      type: data.type === 'show' ? 'movie' : 'movie', // Map 'show' to 'movie' as SearchResult only has 'movie'|'person'|'review'
+      confidence: 0.9,
+      year: data.year,
+      language: 'en'
+    }];
+  } catch (e) {
+    console.error('Wrapper searchPerplexity error:', e);
+    return [];
   }
 }
