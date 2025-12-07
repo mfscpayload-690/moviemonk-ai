@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 export interface Candidate {
   id: number;
-  name: string;
+  title: string;
   type: 'movie' | 'person' | 'review';
   score: number;
   url?: string;
@@ -24,8 +24,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   const listRef = useRef<HTMLDivElement>(null);
 
   // Filter candidates based on selected type
-  const filtered = filterType === 'all' 
-    ? candidates 
+  const filtered = filterType === 'all'
+    ? candidates
     : candidates.filter(c => c.type === filterType);
 
   // Keyboard navigation
@@ -85,9 +85,9 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
             <h2 className="text-2xl font-bold text-brand-text-light">Search Results</h2>
             <p className="text-sm text-brand-text-dark mt-1">Found {filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-2 rounded-lg hover:bg-white/10 transition" 
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-white/10 transition"
             aria-label="Close"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,11 +105,10 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 setFilterType(type as any);
                 setFocused(0);
               }}
-              className={`px-4 py-2 rounded-full font-semibold text-sm transition whitespace-nowrap ${
-                filterType === type
+              className={`px-4 py-2 rounded-full font-semibold text-sm transition whitespace-nowrap ${filterType === type
                   ? 'bg-brand-primary text-white border border-brand-primary'
                   : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
-              }`}
+                }`}
             >
               {typeIcon[type as string] || '\u2728'} {typeof type === 'string' && type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : ''} ({typeCount[type as keyof typeof typeCount]})
             </button>
@@ -129,17 +128,16 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                   key={`${c.type}-${c.id}`}
                   data-idx={i}
                   onClick={() => onSelect(c)}
-                  className={`w-full text-left px-6 py-4 transition flex gap-4 items-start hover:bg-white/5 border-l-4 ${
-                    focused === i 
-                      ? 'border-l-brand-primary bg-brand-primary/10' 
+                  className={`w-full text-left px-6 py-4 transition flex gap-4 items-start hover:bg-white/5 border-l-4 ${focused === i
+                      ? 'border-l-brand-primary bg-brand-primary/10'
                       : 'border-l-transparent hover:border-l-brand-primary/50'
-                  }`}
+                    }`}
                   aria-selected={focused === i}
                 >
                   {/* Thumbnail */}
                   <div className="flex-shrink-0 w-20 h-28 rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
                     {c.image ? (
-                      <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
+                      <img src={c.image} alt={c.title} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-3xl">{typeIcon[c.type]}</span>
                     )}
@@ -149,7 +147,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                   <div className="flex-1 min-w-0">
                     {/* Title */}
                     <div className="flex items-start gap-2 mb-2">
-                      <h3 className="font-semibold text-lg text-brand-text-light leading-tight">{c.name}</h3>
+                      <h3 className="font-semibold text-lg text-brand-text-light leading-tight">{c.title}</h3>
                       {c.year && (
                         <span className="text-xs px-2 py-1 rounded bg-white/10 text-brand-text-dark flex-shrink-0 mt-0.5">
                           {c.year}

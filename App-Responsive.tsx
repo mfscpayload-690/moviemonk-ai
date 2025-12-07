@@ -280,7 +280,7 @@ const App: React.FC = () => {
     try {
       // Select best model for this query type
       const modelRes = await fetch(
-        `/api/ai?action=selectModel&type=${selectedAmbiguous.type}&title=${encodeURIComponent(selectedAmbiguous.name)}`
+        `/api/ai?action=selectModel&type=${selectedAmbiguous.type}&title=${encodeURIComponent(selectedAmbiguous.title)}`
       );
       const modelData = await modelRes.json();
       const selectedModel = modelData.selectedModel || 'groq';
@@ -294,7 +294,7 @@ const App: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: selectedAmbiguous.url,
-          title: selectedAmbiguous.name,
+          title: selectedAmbiguous.title,
           snippet: selectedAmbiguous.snippet,
           type: selectedAmbiguous.type,
           selectedModel
@@ -313,7 +313,7 @@ const App: React.FC = () => {
         setPersonData({
           name: parseData.title,
           biography: parseData.summary.long,
-          sources: [{ title: selectedAmbiguous.name, url: selectedAmbiguous.url }]
+          sources: [{ title: selectedAmbiguous.title, url: selectedAmbiguous.url }]
         });
         setMovieData(null);
       } else {
@@ -324,12 +324,12 @@ const App: React.FC = () => {
           poster_url: selectedAmbiguous.image,
           year: selectedAmbiguous.year || '',
           type: selectedAmbiguous.type,
-          sources: [{ title: selectedAmbiguous.name, url: selectedAmbiguous.url }]
+          sources: [{ title: selectedAmbiguous.title, url: selectedAmbiguous.url }]
         } as any);
         setPersonData(null);
       }
 
-      setSources([{ title: selectedAmbiguous.name, url: selectedAmbiguous.url }]);
+      setSources([{ title: selectedAmbiguous.title, url: selectedAmbiguous.url }]);
 
       const modelResponse: ChatMessage = {
         id: Date.now().toString() + '-model',

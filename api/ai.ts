@@ -325,9 +325,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         results.sort((a, b) => {
+          const lowerQ = parsed.title.toLowerCase();
+          const aTitle = a.title.toLowerCase();
+          const bTitle = b.title.toLowerCase();
+
+          const aExact = aTitle === lowerQ ? 20 : 0;
+          const bExact = bTitle === lowerQ ? 20 : 0;
+
           const aImdb = a.url.includes('imdb.com') ? 10 : 0;
           const bImdb = b.url.includes('imdb.com') ? 10 : 0;
-          return (b.confidence + bImdb) - (a.confidence + aImdb);
+          return (b.confidence + bImdb + bExact) - (a.confidence + aImdb + aExact);
         });
 
         const response = {
