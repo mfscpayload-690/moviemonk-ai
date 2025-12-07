@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { searchPerplexity } from '../services/perplexityService';
+import { searchSerpApi } from '../services/serpApiService';
 // Note: generateSummary is client-side code, cannot be imported in serverless functions
 // import { generateSummary } from '../services/ai';
 
@@ -129,7 +130,7 @@ async function searchTMDB(title: string, limit = 6): Promise<SearchResult[]> {
       const name = item.title || item.name || '';
       const mediaType = item.media_type || 'movie';
       const type: 'movie' | 'person' | 'review' = mediaType === 'person' ? 'person' : 'movie';
-      
+
       return {
         title: name,
         snippet: item.overview || item.known_for_department || '',
@@ -146,75 +147,35 @@ async function searchTMDB(title: string, limit = 6): Promise<SearchResult[]> {
 }
 
 // Scrape DuckDuckGo search results - PROVEN WORKING VERSION
-async function searchDuckDuckGo(query: string, limit = 6): Promise<SearchResult[]> {
+// Search using SerpApi - Google Search Results (High Accuracy)
+async function searchWeb(query: string, limit = 6): Promise<SearchResult[]> {
   try {
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+    const serpResults = await searchSerpApi(query, limit);
+
+    return serpResults.map(item => {
+      let type: 'movie' | 'person' | 'review' = 'movie';
+      if (item.type === 'person') type = 'person';
+      if (item.type === 'review') type = 'review';
+
+      // Boost confidence for Knowledge Graph items or official sources
+      let confidence = 0.7;
+      if (item.link.includes('imdb.com')) confidence = 0.95;
+      if (item.link.includes('wikipedia.org')) confidence = 0.9;
+      if (item.link.includes('rotten') || item.link.includes('letterboxd')) confidence = 0.85;
+
+      return {
+        title: item.title,
+        snippet: item.snippet,
+        url: item.link,
+        image: item.thumbnail,
+        type,
+        confidence: Math.min(confidence, 1),
+        year: item.year,
+        language: undefined
+      };
     });
-
-    if (!response.ok) {
-      console.error('DuckDuckGo request failed:', response.status);
-      return [];
-    }
-
-    const html = await response.text();
-    const results: SearchResult[] = [];
-
-    // Parse HTML for results (DuckDuckGo structure)
-    const resultRegex = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-    
-    let match;
-    let count = 0;
-    while ((match = resultRegex.exec(html)) !== null && count < limit) {
-      try {
-        let url = match[1].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, '').replace(/%2F/g, '/');
-        const title = match[2].replace(/<[^>]+>/g, '').trim();
-        const snippet = match[3].replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
-        
-        if (url && title && snippet) {
-          try {
-            url = decodeURIComponent(url);
-          } catch (e) {
-            // Keep URL as-is if decode fails
-          }
-
-          // Detect type
-          let type: 'movie' | 'person' | 'review' = 'movie';
-          if (url.includes('imdb.com/name/') || title.toLowerCase().includes('actor') || title.toLowerCase().includes('director')) {
-            type = 'person';
-          } else if (title.toLowerCase().includes('review') || title.toLowerCase().includes('rating')) {
-            type = 'review';
-          }
-
-          // Calculate confidence
-          let confidence = 0.6;
-          if (url.includes('imdb.com')) confidence = 0.95;
-          if (url.includes('wikipedia.org')) confidence = 0.85;
-
-          results.push({
-            title,
-            snippet,
-            url,
-            type,
-            confidence: Math.min(confidence, 1),
-            year: extractYear(title),
-            language: extractLanguage(title)
-          });
-          count++;
-        }
-      } catch (parseError) {
-        console.warn('Error parsing result:', parseError);
-        continue;
-      }
-    }
-
-    return results;
   } catch (error) {
-    console.error('DuckDuckGo search error:', error);
+    console.error('Web search error:', error);
     return [];
   }
 }
@@ -338,11 +299,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let results = await searchTMDB(parsed.title, 6);
         console.log(`📺 TMDB returned ${results.length} results`);
 
-        // Fallback to Perplexity if TMDB returns nothing
+        // Fallback or Enrichment with SerpApi
+        if (results.length === 0 || parsed.language) {
+          console.log('🔄 Searching SerpApi for better results...');
+          const serpResults = await searchWeb(searchQuery, 6);
+
+          // Merge results, preferring SerpApi for regional content if TMDB failed
+          if (results.length === 0) {
+            results = serpResults;
+          } else {
+            // De-duplicate by url or title
+            const existingUrls = new Set(results.map(r => r.url));
+            for (const res of serpResults) {
+              if (!existingUrls.has(res.url)) {
+                results.push(res);
+              }
+            }
+          }
+        }
+
+        // Final Fallback to Perplexity if EVERYTHING fails
         if (results.length === 0) {
-          console.log('🔄 Falling back to Perplexity...');
+          console.log('🔄 Falling back to Perplexity as last resort...');
           results = await searchPerplexity(searchQuery, 6);
-          console.log(`🤖 Perplexity returned ${results.length} results`);
         }
 
         results.sort((a, b) => {
