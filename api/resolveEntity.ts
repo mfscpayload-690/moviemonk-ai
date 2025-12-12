@@ -34,12 +34,25 @@ function similarity(a: string, b: string) {
 async function tmdb(path: string, params: Record<string, string | number | undefined>) {
   const TMDB_READ_TOKEN = process.env.TMDB_READ_TOKEN;
   const TMDB_API_KEY = process.env.TMDB_API_KEY;
-  const url = new URL(`${TMDB_BASE}/${path}`);
-  for (const [k, v] of Object.entries(params)) if (v !== undefined) url.searchParams.set(k, String(v));
+  
+  // Sanitize path to prevent directory traversal
+  const sanitizedPath = path.split('/').filter(seg => seg && !seg.startsWith('.')).join('/');
+  const url = new URL(`${TMDB_BASE}/${sanitizedPath}`);
+  
+  // Only set safe parameter values
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined) {
+      const strVal = String(v);
+      // Validate parameter values don't contain suspicious content
+      if (!strVal.includes('\0') && !strVal.includes('\n') && !strVal.includes('\r')) {
+        url.searchParams.set(k, strVal);
+      }
+    }
+  }
   if (TMDB_API_KEY) url.searchParams.set('api_key', TMDB_API_KEY);
   const headers: Record<string, string> = TMDB_READ_TOKEN ? { Authorization: `Bearer ${TMDB_READ_TOKEN}` } : {};
   const r = await fetch(url.toString(), { headers });
-  if (!r.ok) throw new Error(`TMDB ${path} failed ${r.status}`);
+  if (!r.ok) throw new Error(`TMDB ${sanitizedPath} failed ${r.status}`);
   return r.json();
 }
 
