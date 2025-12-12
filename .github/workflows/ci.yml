@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 22
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -27,6 +28,15 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Build-time env vars (from vite.config.ts)
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'test-key' }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY || 'test-key' }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY || 'test-key' }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY || 'test-key' }}
+          TMDB_READ_TOKEN: ${{ secrets.TMDB_READ_TOKEN || 'test-token' }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY || 'test-key' }}
+          OMDB_API_KEY: ${{ secrets.OMDB_API_KEY || 'test-key' }}
 
       - name: Test
         run: npm test
