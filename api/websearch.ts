@@ -37,13 +37,24 @@ async function searchDuckDuckGo(query: string, limit = 5): Promise<SearchResult[
   let match;
   let count = 0;
   while ((match = resultRegex.exec(html)) !== null && count < limit) {
-    const url = match[1].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, '').replace(/%2F/g, '/');
+    const rawUrl = match[1].replace(/^\/\/duckduckgo\.com\/l\/\?uddg=/, '').replace(/%2F/g, '/');
     const title = match[2].replace(/<[^>]+>/g, '').trim();
     const snippet = match[3].replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
     
-    if (url && title && snippet) {
-      results.push({ title, snippet, url: decodeURIComponent(url) });
-      count++;
+    if (title && snippet) {
+      try {
+        // Validate and decode URL safely
+        const decodedUrl = decodeURIComponent(rawUrl);
+        const urlObj = new URL(decodedUrl); // Throws if invalid
+        // Only allow http(s) URLs
+        if (['http:', 'https:'].includes(urlObj.protocol)) {
+          results.push({ title, snippet, url: urlObj.href });
+          count++;
+        }
+      } catch {
+        // Skip invalid URLs
+        continue;
+      }
     }
   }
 
