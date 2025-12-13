@@ -26,22 +26,25 @@ export function useWatchlists() {
     }
   }, []);
 
-  const persist = (next: WatchlistFolder[]) => {
-    setFolders(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
-      console.warn('Failed to save watchlists', e);
-    }
+  // Use functional updates so add + save in one tick do not clobber state
+  const persist = (updater: (prev: WatchlistFolder[]) => WatchlistFolder[]) => {
+    setFolders(prev => {
+      const next = updater(prev);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.warn('Failed to save watchlists', e);
+      }
+      return next;
+    });
   };
 
   const addFolder = (name: string, color: string) => {
     const trimmed = name.trim();
     if (!trimmed) return null;
-    const folder: WatchlistFolder = { id: generateId(), name: trimmed, color: color || '#7c3aed', items: [] };
-    const next = [folder, ...folders];
-    persist(next);
-    return folder.id;
+    const folderId = generateId();
+    persist(prev => [{ id: folderId, name: trimmed, color: color || '#7c3aed', items: [] }, ...prev]);
+    return folderId;
   };
 
   const saveToFolder = (folderId: string, movie: MovieData, savedTitle?: string) => {
@@ -50,10 +53,9 @@ export function useWatchlists() {
     const title = (savedTitle && savedTitle.trim()) || movie.title;
     const now = new Date().toISOString();
 
-    const next = folders.map(folder => {
+    persist(prev => prev.map(folder => {
       if (folder.id !== folderId) return folder;
       const existingIdx = folder.items.findIndex(i => getMovieKey(i.movie) === key);
-      let items: WatchlistItem[];
       const item: WatchlistItem = {
         id: existingIdx >= 0 ? folder.items[existingIdx].id : generateId(),
         saved_title: title,
@@ -61,15 +63,12 @@ export function useWatchlists() {
         added_at: now
       };
       if (existingIdx >= 0) {
-        items = [...folder.items];
+        const items = [...folder.items];
         items[existingIdx] = item;
-      } else {
-        items = [item, ...folder.items];
+        return { ...folder, items };
       }
-      return { ...folder, items };
-    });
-
-    persist(next);
+      return { ...folder, items: [item, ...folder.items] };
+    }));
   };
 
   const findItem = (folderId: string, itemId: string) => {
