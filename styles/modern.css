@@ -116,6 +116,15 @@ h6 {
     z-index: 1;
     scrollbar-width: thin;
     scrollbar-color: var(--color-surface-hover) transparent;
+    /* Provide breathing room below header, especially on mobile */
+    padding-top: var(--spacing-md);
+}
+
+/* Mobile adjustments: ensure top banner isn't obscured by header */
+@media (max-width: 640px) {
+    .main-content {
+        padding-top: calc(var(--spacing-xl));
+    }
 }
 
 /* Custom Scrollbar */
