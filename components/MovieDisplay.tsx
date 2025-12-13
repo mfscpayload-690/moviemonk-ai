@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
-import { MovieData, CastMember, WatchOption, GroundingSource, WebSource } from '../types';
+import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 import type { AIProvider } from '../types';
 
@@ -12,6 +12,9 @@ interface MovieDisplayProps {
     selectedProvider: AIProvider;
     onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
     onQuickSearch: (title: string) => void;
+    watchlists: WatchlistFolder[];
+    onCreateWatchlist: (name: string, color: string) => string | null;
+    onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
 }
 
 const getYouTubeEmbedUrl = (url: string): string | null => {
@@ -142,7 +145,9 @@ const DISCOVER_TITLES = [
     'The Last of Us'
 ];
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch }) => {
+const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
+
+const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist }) => {
     const [showFullPlot, setShowFullPlot] = useState(false);
 
     const [isTrailerOpen, setIsTrailerOpen] = useState(false);
@@ -151,6 +156,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [isLoadingFullPlot, setIsLoadingFullPlot] = useState(false);
     const [fullPlotContent, setFullPlotContent] = useState<string>('');
     const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
+    const [showWatchlistModal, setShowWatchlistModal] = useState(false);
+    const [selectedFolderId, setSelectedFolderId] = useState('');
+    const [newFolderName, setNewFolderName] = useState('');
+    const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
+    const [customSavedTitle, setCustomSavedTitle] = useState('');
 
     useEffect(() => {
         // This effect runs on the client, where document is available.
@@ -163,6 +173,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         setIsLoadingFullPlot(false);
         setFullPlotContent(movie?.summary_long_spoilers || '');
     }, [movie]);
+
+    useEffect(() => {
+        setCustomSavedTitle(movie?.title || '');
+        setSelectedFolderId(watchlists?.[0]?.id || '');
+        setNewFolderName('');
+        setNewFolderColor('#7c3aed');
+    }, [movie, watchlists]);
 
     const embedUrl = movie ? getYouTubeEmbedUrl(movie.trailer_url) : null;
 
@@ -190,6 +207,21 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             };
         })
         : [];
+
+        const handleSaveToWatchlist = () => {
+            if (!movie) return;
+            let folderId = selectedFolderId;
+            if (!folderId && newFolderName.trim()) {
+                const createdId = onCreateWatchlist(newFolderName, newFolderColor);
+                if (createdId) {
+                    folderId = createdId;
+                    setSelectedFolderId(createdId);
+                }
+            }
+            if (!folderId) return;
+            onSaveToWatchlist(folderId, movie, customSavedTitle || movie.title);
+            setShowWatchlistModal(false);
+        };
 
     const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
 
@@ -333,22 +365,31 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 </div>
                             </div>
 
-                            {embedUrl && (
-                                <div className="mt-4 md:mt-8 animate-slide-up" style={{ animationDelay: '0.55s', animationFillMode: 'forwards' }}>
+                            {movie && (
+                                <div className="mt-4 md:mt-8 animate-slide-up flex flex-wrap gap-3" style={{ animationDelay: '0.55s', animationFillMode: 'forwards' }}>
                                     <button
-                                        onClick={() => {
-                                            track('trailer_opened', {
-                                                title: movie.title,
-                                                year: movie.year,
-                                                type: movie.type
-                                            });
-                                            setIsTrailerOpen(true);
-                                        }}
-                                        className="inline-flex items-center gap-2 md:gap-3 px-6 py-3 md:px-8 md:py-4 bg-brand-primary text-white font-bold text-base md:text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
+                                        onClick={() => setShowWatchlistModal(true)}
+                                        className="inline-flex items-center gap-2 px-5 py-3 bg-white/15 text-white font-semibold text-sm md:text-base rounded-xl border border-white/15 hover:border-brand-primary/50 hover:bg-white/20 transition-all duration-200"
                                     >
-                                        <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />
-                                        <span>Play Trailer</span>
+                                        <TagIcon className="w-5 h-5" />
+                                        <span>Save to List</span>
                                     </button>
+                                    {embedUrl && (
+                                        <button
+                                            onClick={() => {
+                                                track('trailer_opened', {
+                                                    title: movie.title,
+                                                    year: movie.year,
+                                                    type: movie.type
+                                                });
+                                                setIsTrailerOpen(true);
+                                            }}
+                                            className="inline-flex items-center gap-2 md:gap-3 px-6 py-3 md:px-8 md:py-4 bg-brand-primary text-white font-bold text-base md:text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
+                                        >
+                                            <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />
+                                            <span>Play Trailer</span>
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -486,6 +527,94 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     )}
                 </div>
             </div>
+
+                {showWatchlistModal && modalRoot && ReactDOM.createPortal(
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                        <div className="w-full max-w-md bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-5 space-y-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-white">Save to Watch Later</h3>
+                                <button onClick={() => setShowWatchlistModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close watchlist modal">
+                                    <XMarkIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-brand-text-light">Save as</label>
+                                <input
+                                    value={customSavedTitle}
+                                    onChange={(e) => setCustomSavedTitle(e.target.value)}
+                                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                    placeholder="Custom title"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-semibold text-white">Choose folder</p>
+                                    <span className="text-xs text-brand-text-dark">{watchlists.length || 0} folders</span>
+                                </div>
+                                <div className="max-h-40 overflow-y-auto space-y-2">
+                                    {watchlists.length === 0 && (
+                                        <p className="text-sm text-brand-text-dark">No folders yet. Create one below.</p>
+                                    )}
+                                    {watchlists.map(folder => (
+                                        <label key={folder.id} className="flex items-center gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="watchlist-folder"
+                                                value={folder.id}
+                                                checked={selectedFolderId === folder.id}
+                                                onChange={() => setSelectedFolderId(folder.id)}
+                                                className="accent-brand-primary"
+                                            />
+                                            <span className="w-4 h-4 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                            <span className="text-sm text-white">{folder.name}</span>
+                                            <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="border-t border-white/10 pt-3 space-y-2">
+                                <p className="text-sm font-semibold text-white">Create new folder</p>
+                                <input
+                                    value={newFolderName}
+                                    onChange={(e) => setNewFolderName(e.target.value)}
+                                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                    placeholder="e.g., Sci-Fi Gems"
+                                />
+                                <div className="flex items-center gap-2">
+                                    {COLOR_PRESETS.map(color => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => setNewFolderColor(color)}
+                                            className={`w-7 h-7 rounded-full border ${newFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
+                                            style={{ backgroundColor: color }}
+                                            aria-label={`Choose ${color}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    onClick={() => setShowWatchlistModal(false)}
+                                    className="px-4 py-2 rounded-lg border border-white/15 text-white text-sm hover:bg-white/10"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveToWatchlist}
+                                    className="px-4 py-2 rounded-lg bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    modalRoot
+                )}
 
             {isTrailerOpen && embedUrl && modalRoot && ReactDOM.createPortal(
                 <div

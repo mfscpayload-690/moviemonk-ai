@@ -23,9 +23,11 @@ export interface Rating {
 }
 
 export interface MovieData {
+  tmdb_id?: string;
   title: string;
   year: string;
   type: 'movie' | 'show' | 'song' | 'franchise';
+  media_type?: string;
   genres: string[];
   poster_url: string;
   backdrop_url: string;
@@ -40,6 +42,20 @@ export interface MovieData {
   where_to_watch: WatchOption[];
   extra_images: string[];
   ai_notes: string;
+}
+
+export interface WatchlistItem {
+  id: string;
+  saved_title: string;
+  movie: MovieData;
+  added_at: string;
+}
+
+export interface WatchlistFolder {
+  id: string;
+  name: string;
+  color: string;
+  items: WatchlistItem[];
 }
 
 export interface ChatMessage {

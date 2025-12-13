@@ -641,9 +641,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : extra_images[0] || '';
 
         const movieData: MovieData = {
+          tmdb_id: data.id ? String(data.id) : undefined,
           title: data.title || data.name,
           year: (data.release_date || data.first_air_date || '').substring(0, 4),
           type: mediaType === 'tv' ? 'show' : 'movie',
+          media_type: mediaType,
           genres: data.genres?.map((g: any) => g.name) || [],
           poster_url,
           backdrop_url,

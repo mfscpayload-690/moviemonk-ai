@@ -8,6 +8,7 @@ import { ChatMessage, MovieData, QueryComplexity, GroundingSource, AIProvider } 
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { Logo } from './components/icons';
 import { track } from '@vercel/analytics/react';
+import { useWatchlists } from './hooks/useWatchlists';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -24,6 +25,7 @@ const App: React.FC = () => {
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  const { folders: watchlists, addFolder, saveToFolder } = useWatchlists();
 
   // Load shared link on mount
   useEffect(() => {
@@ -463,6 +465,9 @@ const App: React.FC = () => {
               selectedProvider={selectedProvider}
               onFetchFullPlot={fetchFullPlotDetails}
               onQuickSearch={handleQuickSearch}
+              watchlists={watchlists}
+              onCreateWatchlist={addFolder}
+              onSaveToWatchlist={saveToFolder}
             />
           )}
         </div>
