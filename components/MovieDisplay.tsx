@@ -307,20 +307,30 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                             </div>
 
                             <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 items-center animate-slide-up" style={{ animationDelay: '0.45s', animationFillMode: 'forwards' }}>
-                                {safeRatings.map(rating => (
-                                    <div key={rating.source} className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg border border-white/20">
-                                        {rating.source.toLowerCase().includes('rotten') && (
-                                            <RottenTomatoesIcon className="w-6 h-6 text-red-500" />
-                                        )}
-                                        {rating.source.toLowerCase().includes('imdb') && (
-                                            <StarIcon className="w-6 h-6 text-yellow-400" />
-                                        )}
-                                        <div>
-                                            <p className="font-bold text-white text-base leading-tight">{rating.score}</p>
-                                            <p className="text-xs text-gray-300">{rating.source}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                                {/* Ratings Grid - IMDb Style */}
+                                <div className="flex flex-wrap gap-4 items-center w-full">
+                                    {safeRatings.length > 0 && (
+                                        safeRatings.map(rating => (
+                                            <div key={rating.source} className="flex items-center gap-3 bg-black/50 backdrop-blur-md px-4 py-3 rounded-lg border border-white/15 hover:border-brand-primary/40 transition-colors">
+                                                <div className="flex items-center gap-2 min-w-fit">
+                                                    {rating.source.toLowerCase().includes('rotten') && (
+                                                        <RottenTomatoesIcon className="w-6 h-6 text-red-500 flex-shrink-0" />
+                                                    )}
+                                                    {rating.source.toLowerCase().includes('imdb') && (
+                                                        <StarIcon className="w-6 h-6 text-yellow-400 flex-shrink-0" />
+                                                    )}
+                                                    {rating.source.toLowerCase().includes('tmdb') && (
+                                                        <FilmIcon className="w-6 h-6 text-blue-400 flex-shrink-0" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <p className="font-bold text-white text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
+                                                    <p className="text-lg font-extrabold text-brand-primary">{rating.score}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
 
                             {embedUrl && (

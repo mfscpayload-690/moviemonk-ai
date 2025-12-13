@@ -245,8 +245,82 @@ h6 {
 }
 
 /* ============================================================================
+   Hero Section Rating Enhancements
+   ============================================================================ */
+
+.hero-ratings-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    width: 100%;
+}
+
+.rating-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.3s ease;
+}
+
+.rating-card:hover {
+    border-color: rgba(124, 58, 237, 0.4);
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.2);
+}
+
+.rating-card-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.rating-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.rating-card-source {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1;
+}
+
+.rating-card-score {
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+@media (max-width: 640px) {
+    .hero-ratings-grid {
+        gap: 0.75rem;
+    }
+    
+    .rating-card {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .rating-card-score {
+        font-size: 1rem;
+    }
+}
+
+/* ============================================================================
    Gallery Redesign: Filmstrip + Enhanced Lightbox
    ============================================================================ */
+
 
 .gallery-container {
     display: flex;
