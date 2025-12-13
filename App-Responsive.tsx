@@ -4,7 +4,7 @@ import PersonDisplay from './components/PersonDisplay';
 import ErrorBanner from './components/ErrorBanner';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import AmbiguousModal from './components/AmbiguousModal';
-import { ChatMessage, MovieData, QueryComplexity, GroundingSource } from './types';
+import { ChatMessage, MovieData, QueryComplexity, GroundingSource, AIProvider } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { Logo } from './components/icons';
 import { track } from '@vercel/analytics/react';
@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [personData, setPersonData] = useState<any | null>(null);
   const [ambiguous, setAmbiguous] = useState<{ id: number; name: string; type: 'movie' | 'person'; score: number }[] | null>(null);
   const [sources, setSources] = useState<GroundingSource[] | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('groq');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingProgress, setLoadingProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +124,7 @@ const App: React.FC = () => {
     return raw;
   };
 
-  const handleSendMessage = async (message: string, complexity: QueryComplexity, provider: 'groq' | 'mistral') => {
+  const handleSendMessage = async (message: string, complexity: QueryComplexity, provider: AIProvider = 'groq') => {
     setIsLoading(true);
     setLoadingProgress('🔍 Searching...');
     setError(null);
@@ -174,14 +175,15 @@ const App: React.FC = () => {
         `/api/ai?action=selectModel&type=${selectedResult.type}&title=${encodeURIComponent(selectedResult.title)}`
       );
       const modelData = await modelRes.json();
-      const selectedModel = modelData.selectedModel || provider;
+      const selectedModel: AIProvider = (modelData.selectedModel as AIProvider) || provider;
+      setSelectedProvider(selectedModel);
 
       console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
 
       // Use the new Details endpoint for movies/results too, to ensure consistent high-quality data
       setLoadingProgress('🔍 Fetching full details...');
 
-      const detailsRes = await fetch(`/api/ai?action=details&id=${selectedResult.id}&media_type=${selectedResult.media_type || 'movie'}`);
+      const detailsRes = await fetch(`/api/ai?action=details&id=${selectedResult.id}&media_type=${selectedResult.media_type || 'movie'}&provider=${selectedModel}`);
       const detailsData = await detailsRes.json();
 
       // Check type and handle accordingly
@@ -319,6 +321,7 @@ const App: React.FC = () => {
       const selectedModel = modelData.selectedModel || 'groq';
 
       console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
+      setSelectedProvider(selectedModel as AIProvider);
 
       setLoadingProgress('🔍 Fetching full details...');
 
@@ -334,7 +337,7 @@ const App: React.FC = () => {
         }
       } else {
         // Use the new Details endpoint which gets Credits, Videos, etc.
-        const detailsRes = await fetch(`/api/ai?action=details&id=${selectedAmbiguous.id}&media_type=${selectedAmbiguous.media_type || 'movie'}`);
+        const detailsRes = await fetch(`/api/ai?action=details&id=${selectedAmbiguous.id}&media_type=${selectedAmbiguous.media_type || 'movie'}&provider=${selectedModel}`);
         const detailsData = await detailsRes.json();
 
         if (detailsRes.ok && detailsData.title) {
@@ -428,7 +431,7 @@ const App: React.FC = () => {
               movie={movieData}
               isLoading={isLoading}
               sources={sources}
-              selectedProvider="groq"
+              selectedProvider={selectedProvider}
               onFetchFullPlot={fetchFullPlotDetails}
               onQuickSearch={handleQuickSearch}
             />

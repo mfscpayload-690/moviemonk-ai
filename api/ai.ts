@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { searchPerplexity } from '../services/perplexityService';
 import { searchSerpApi } from '../services/serpApiService';
+import { CREATIVE_ONLY_PROMPT } from '../constants';
+import { MovieData } from '../types';
 // Note: generateSummary is client-side code, cannot be imported in serverless functions
 // import { generateSummary } from '../services/ai';
 
@@ -242,6 +244,163 @@ function detectQueryType(
   return 'movie';
 }
 
+type ProviderChoice = 'groq' | 'mistral' | 'openrouter';
+
+function buildGalleryImages(images: any): string[] {
+  if (!images) return [];
+  const galleryPaths: string[] = [];
+  (images.backdrops || []).slice(0, 6).forEach((b: any) => b?.file_path && galleryPaths.push(b.file_path));
+  (images.posters || []).slice(0, 2).forEach((p: any) => p?.file_path && galleryPaths.push(p.file_path));
+  return galleryPaths
+    .map((p) => `https://image.tmdb.org/t/p/w780${p}`)
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+function buildCreativePrompt(movie: MovieData): string {
+  const castList = movie.cast.slice(0, 6).map((c) => `${c.name} as ${c.role}`).join('; ');
+  return `Movie/Show: "${movie.title}" (${movie.year})
+Type: ${movie.type}
+Genres: ${movie.genres.join(', ') || 'Unknown'}
+Director: ${movie.crew?.director || 'Unknown'}
+Writer: ${movie.crew?.writer || 'Unknown'}
+Music: ${movie.crew?.music || 'Unknown'}
+Top Cast: ${castList || 'N/A'}
+Overview: ${movie.summary_medium || movie.summary_short || 'N/A'}
+
+Fill ONLY creative fields (summary_short, summary_medium, summary_long_spoilers, suspense_breaker, ai_notes). Do not change factual fields.`;
+}
+
+function parseCreativeFields(text: string): Partial<MovieData> | null {
+  if (!text) return null;
+  try {
+    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch (e) {
+    try {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) return JSON.parse(match[0]);
+    } catch (e2) {
+      console.error('Failed to parse creative JSON', e2);
+    }
+  }
+  return null;
+}
+
+async function callCreativeProvider(provider: ProviderChoice, prompt: string): Promise<Partial<MovieData> | null> {
+  const messages = [
+    { role: 'system', content: CREATIVE_ONLY_PROMPT },
+    { role: 'user', content: prompt }
+  ];
+
+  const withAbort = async (fn: (signal: AbortSignal) => Promise<Response>) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 9000);
+    try {
+      const res = await fn(controller.signal);
+      return res;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  try {
+    if (provider === 'groq') {
+      const key = process.env.GROQ_API_KEY;
+      if (!key) return null;
+      const res = await withAbort((signal) => fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages,
+          temperature: 0.2,
+          max_tokens: 3000,
+          response_format: { type: 'json_object' }
+        }),
+        signal
+      }));
+      if (!res.ok) return null;
+      const json = await res.json();
+      const text: string = json?.choices?.[0]?.message?.content || '';
+      return parseCreativeFields(text);
+    }
+
+    if (provider === 'mistral') {
+      const key = process.env.MISTRAL_API_KEY;
+      if (!key) return null;
+      const res = await withAbort((signal) => fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'mistral-large-latest',
+          messages,
+          temperature: 0.2,
+          max_tokens: 3000,
+          response_format: { type: 'json_object' }
+        }),
+        signal
+      }));
+      if (!res.ok) return null;
+      const json = await res.json();
+      const text: string = json?.choices?.[0]?.message?.content || '';
+      return parseCreativeFields(text);
+    }
+
+    if (provider === 'openrouter') {
+      const key = process.env.OPENROUTER_API_KEY;
+      if (!key) return null;
+      const res = await withAbort((signal) => fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.VERCEL_URL || 'https://moviemonk-ai.vercel.app',
+          'X-Title': 'MovieMonk'
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.1-8b-instruct',
+          messages,
+          temperature: 0.2,
+          max_tokens: 3000,
+          response_format: { type: 'json_object' }
+        }),
+        signal
+      }));
+      if (!res.ok) return null;
+      const json = await res.json();
+      const text: string = json?.choices?.[0]?.message?.content || '';
+      return parseCreativeFields(text);
+    }
+  } catch (error) {
+    console.warn(`Creative provider ${provider} failed:`, (error as any)?.message || error);
+    return null;
+  }
+
+  return null;
+}
+
+async function enrichCreativeFields(movie: MovieData, preferred: ProviderChoice): Promise<Partial<MovieData>> {
+  const order: ProviderChoice[] = [preferred, 'groq', 'mistral', 'openrouter']
+    .filter((p, idx, arr) => arr.indexOf(p) === idx);
+  const prompt = buildCreativePrompt(movie);
+
+  for (const provider of order) {
+    const creative = await callCreativeProvider(provider, prompt);
+    if (creative && (creative.summary_short || creative.summary_medium || creative.summary_long_spoilers || creative.suspense_breaker || creative.ai_notes)) {
+      return creative;
+    }
+  }
+
+  return {};
+}
+
 function checkProviderAvailability(provider: string): boolean {
   // Simplified: assume all available unless in cooldown
   return true;
@@ -373,21 +532,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'details' && req.method === 'GET') {
       const id = req.query.id;
       const mediaType = (req.query.media_type as string) || 'movie'; // 'movie' or 'tv'
+      const preferredProvider = ((req.query.provider as string) || 'groq').toLowerCase() as ProviderChoice;
 
       if (!id) {
         return res.status(400).json({ ok: false, error: 'Missing id' });
       }
 
-      const cacheKey = `details_${mediaType}_${id}`;
+      const cacheKey = `details_${mediaType}_${id}_${preferredProvider}`;
       const cached = await getCache(cacheKey);
       if (cached) return res.status(200).json(cached);
 
       try {
         const TMDB_API_KEY = process.env.TMDB_API_KEY;
-        const append = 'credits,videos,recommendations,watch/providers,release_dates,content_ratings,external_ids';
-        const url = `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${TMDB_API_KEY}&append_to_response=${append}`;
+        if (!TMDB_API_KEY) {
+          throw new Error('TMDB_API_KEY not configured');
+        }
+        const append = 'credits,videos,recommendations,watch/providers,release_dates,content_ratings,external_ids,images';
+        const url = new URL(`https://api.themoviedb.org/3/${mediaType}/${id}`);
+        url.searchParams.set('api_key', TMDB_API_KEY);
+        url.searchParams.set('append_to_response', append);
+        url.searchParams.set('include_image_language', 'en,null');
 
-        const response = await fetch(url);
+        const response = await fetch(url.toString());
         if (!response.ok) {
           throw new Error(`TMDB error: ${response.status}`);
         }
@@ -429,28 +595,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Trailer
         const trailer = data.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
 
-        const movieData = {
+        // Images/Gallery
+        const extra_images = buildGalleryImages(data.images);
+        const poster_url = data.poster_path
+          ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
+          : (data.images?.posters?.[0]?.file_path ? `https://image.tmdb.org/t/p/w500${data.images.posters[0].file_path}` : '');
+        const backdrop_url = data.backdrop_path
+          ? `https://image.tmdb.org/t/p/original${data.backdrop_path}`
+          : extra_images[0] || '';
+
+        const movieData: MovieData = {
           title: data.title || data.name,
           year: (data.release_date || data.first_air_date || '').substring(0, 4),
           type: mediaType === 'tv' ? 'show' : 'movie',
           genres: data.genres?.map((g: any) => g.name) || [],
-          poster_url: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '',
-          backdrop_url: data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : '',
+          poster_url,
+          backdrop_url,
           trailer_url: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : '',
           ratings: ratings,
           cast: cast,
           crew: crew,
-          summary_short: data.overview,
-          summary_medium: data.overview,
-          summary_long_spoilers: '', // Populated later if requested
+          summary_short: data.overview || '',
+          summary_medium: data.overview || '',
+          summary_long_spoilers: '', // Populated by AI below
           suspense_breaker: '',
           where_to_watch: watchProviders,
-          extra_images: [],
-          ai_notes: '' // Could populate with AI later
+          extra_images,
+          ai_notes: ''
         };
 
-        await setCache(cacheKey, movieData, 24 * 60 * 60);
-        return res.status(200).json(movieData);
+        const creative = await enrichCreativeFields(movieData, preferredProvider);
+        const enriched: MovieData = {
+          ...movieData,
+          summary_short: creative.summary_short || movieData.summary_short,
+          summary_medium: creative.summary_medium || movieData.summary_medium,
+          summary_long_spoilers: creative.summary_long_spoilers || movieData.summary_long_spoilers,
+          suspense_breaker: creative.suspense_breaker || movieData.suspense_breaker,
+          ai_notes: creative.ai_notes || movieData.ai_notes
+        };
+
+        await setCache(cacheKey, enriched, 24 * 60 * 60);
+        return res.status(200).json(enriched);
 
       } catch (e: any) {
         console.error('Details fetch error:', e);
