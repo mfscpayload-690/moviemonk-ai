@@ -144,7 +144,7 @@ const DISCOVER_TITLES = [
 
 const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch }) => {
     const [showFullPlot, setShowFullPlot] = useState(false);
-    const [showSuspenseBreaker, setShowSuspenseBreaker] = useState(false);
+
     const [isTrailerOpen, setIsTrailerOpen] = useState(false);
     const [showAllCast, setShowAllCast] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -352,18 +352,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     <Section title="Synopsis">
                         <p className="text-brand-text-dark leading-relaxed">{movie.summary_medium}</p>
 
-                        <div className="mt-6">
-                            <h3 className="text-lg font-semibold text-brand-accent mb-2">Suspense Breaker</h3>
-                            <div className="relative p-4 rounded-lg bg-brand-surface group cursor-pointer" onClick={() => setShowSuspenseBreaker(true)}>
-                                <p className={`italic text-brand-text-dark transition-all duration-300 ${!showSuspenseBreaker ? 'blur-sm select-none' : 'blur-none'}`}>{movie.suspense_breaker}</p>
-                                {!showSuspenseBreaker && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                        <EyeIcon className="w-6 h-6 text-white" />
-                                        <span className="ml-2 font-semibold text-white">Click to Reveal</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+
 
                         <div className="mt-6">
                             <div className="space-y-3">
