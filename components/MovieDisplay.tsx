@@ -435,16 +435,30 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
                     <Section title="Gallery">
                         {safeExtraImages.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-2">
-                                {safeExtraImages.slice(0, 4).map((img, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setSelectedImage(img)}
-                                        className="focus:outline-none focus:ring-2 focus:ring-brand-primary rounded-lg"
-                                    >
-                                        <ImageWithFallback src={img} alt={`Scene ${i + 1}`} className="rounded-lg object-cover w-full h-full aspect-video hover:scale-105 transition-transform duration-300 cursor-pointer" />
-                                    </button>
-                                ))}
+                            <div className="gallery-container">
+                                <div className="gallery-filmstrip">
+                                    {safeExtraImages.map((img, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setSelectedImage(img)}
+                                            className="gallery-thumb"
+                                            aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
+                                            title={`Scene ${i + 1}`}
+                                        >
+                                            <ImageWithFallback 
+                                                src={img} 
+                                                alt={`Gallery image ${i + 1}`} 
+                                                className="gallery-thumb-img" 
+                                            />
+                                            <div className="gallery-thumb-overlay">
+                                                <span className="gallery-thumb-number">{i + 1}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="gallery-info text-xs text-brand-text-dark mt-3">
+                                    {safeExtraImages.length} images available • Click to view
+                                </div>
                             </div>
                         ) : (
                             <p className="text-brand-text-dark text-sm italic">No gallery images available.</p>
@@ -496,49 +510,76 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
             {selectedImage && modalRoot && ReactDOM.createPortal(
                 <div
-                    className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
+                    className="gallery-lightbox"
                     onClick={() => setSelectedImage(null)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft') {
+                            const idx = safeExtraImages.indexOf(selectedImage);
+                            const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
+                            setSelectedImage(safeExtraImages[prev]);
+                        } else if (e.key === 'ArrowRight') {
+                            const idx = safeExtraImages.indexOf(selectedImage);
+                            const next = (idx + 1) % safeExtraImages.length;
+                            setSelectedImage(safeExtraImages[next]);
+                        } else if (e.key === 'Escape') {
+                            setSelectedImage(null);
+                        }
+                    }}
+                    tabIndex={-1}
                     aria-modal="true"
                     role="dialog"
+                    aria-label="Image gallery viewer"
                 >
                     <div
-                        className="relative max-w-6xl max-h-[90vh] bg-black rounded-lg shadow-2xl"
+                        className="gallery-lightbox-content"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <img
                             src={selectedImage}
-                            alt="Gallery image"
-                            className="max-w-full max-h-[90vh] rounded-lg object-contain"
+                            alt={`Gallery image ${safeExtraImages.indexOf(selectedImage) + 1}`}
+                            className="gallery-lightbox-image"
                         />
                         {safeExtraImages.length > 1 && (
                             <>
                                 <button
                                     onClick={() => {
-                                        const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const prev = (idx - 1 + imgs.length) % imgs.length; setSelectedImage(imgs[prev]);
+                                        const idx = safeExtraImages.indexOf(selectedImage);
+                                        const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
+                                        setSelectedImage(safeExtraImages[prev]);
                                     }}
+                                    onKeyDown={(e) => e.stopPropagation()}
                                     aria-label="Previous image"
-                                    className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
+                                    className="gallery-lightbox-nav gallery-lightbox-prev"
+                                    title="Previous (← Arrow key)"
                                 >
-                                    <ArrowLeftIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                    <ArrowLeftIcon className="w-6 h-6" />
                                 </button>
                                 <button
                                     onClick={() => {
-                                        const imgs = safeExtraImages; const idx = imgs.indexOf(selectedImage); const next = (idx + 1) % imgs.length; setSelectedImage(imgs[next]);
+                                        const idx = safeExtraImages.indexOf(selectedImage);
+                                        const next = (idx + 1) % safeExtraImages.length;
+                                        setSelectedImage(safeExtraImages[next]);
                                     }}
+                                    onKeyDown={(e) => e.stopPropagation()}
                                     aria-label="Next image"
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white flex items-center justify-center transition group"
+                                    className="gallery-lightbox-nav gallery-lightbox-next"
+                                    title="Next (→ Arrow key)"
                                 >
-                                    <ArrowRightIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                    <ArrowRightIcon className="w-6 h-6" />
                                 </button>
-                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white/80 bg-black/40 px-3 py-1 rounded-full border border-white/10">
-                                    {safeExtraImages.indexOf(selectedImage) + 1} / {safeExtraImages.length}
+                                <div className="gallery-lightbox-counter">
+                                    <span>{safeExtraImages.indexOf(selectedImage) + 1}</span>
+                                    <span className="text-white/60">/</span>
+                                    <span>{safeExtraImages.length}</span>
                                 </div>
                             </>
                         )}
                         <button
                             onClick={() => setSelectedImage(null)}
-                            aria-label="Close image"
-                            className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
+                            onKeyDown={(e) => e.stopPropagation()}
+                            aria-label="Close gallery (Esc key)"
+                            className="gallery-lightbox-close"
+                            title="Close (Esc key)"
                         >
                             <XMarkIcon className="w-6 h-6" />
                         </button>

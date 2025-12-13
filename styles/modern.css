@@ -243,3 +243,310 @@ h6 {
 .border-brand-primary\/30 {
     border-color: rgba(124, 58, 237, 0.3);
 }
+
+/* ============================================================================
+   Gallery Redesign: Filmstrip + Enhanced Lightbox
+   ============================================================================ */
+
+.gallery-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.gallery-filmstrip {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.gallery-filmstrip::-webkit-scrollbar {
+    height: 4px;
+}
+
+.gallery-filmstrip::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.gallery-filmstrip::-webkit-scrollbar-thumb {
+    background: rgba(124, 58, 237, 0.3);
+    border-radius: 2px;
+}
+
+.gallery-filmstrip::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 58, 237, 0.6);
+}
+
+.gallery-thumb {
+    flex: 0 0 auto;
+    position: relative;
+    width: 140px;
+    height: 100px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: rgba(15, 15, 22, 0.5);
+    transition: all 0.3s ease;
+    scroll-snap-align: start;
+    focus-visible: outline 2px solid var(--color-primary);
+    focus-visible: outline-offset: 2px;
+}
+
+.gallery-thumb:hover {
+    border-color: rgba(124, 58, 237, 0.6);
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.3);
+    transform: scale(1.05);
+}
+
+.gallery-thumb:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.gallery-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-thumb-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(2px);
+}
+
+.gallery-thumb:hover .gallery-thumb-overlay {
+    opacity: 1;
+}
+
+.gallery-thumb-number {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(124, 58, 237, 0.8);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.gallery-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+/* Lightbox Modal */
+
+.gallery-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease;
+    overflow: hidden;
+    overscroll-behavior: contain;
+}
+
+.gallery-lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    animation: slideUp 0.3s ease;
+}
+
+.gallery-lightbox-image {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    display: block;
+}
+
+.gallery-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+}
+
+.gallery-lightbox-nav:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.gallery-lightbox-nav:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.gallery-lightbox-prev {
+    left: 12px;
+}
+
+.gallery-lightbox-next {
+    right: 12px;
+}
+
+@media (max-width: 640px) {
+    .gallery-lightbox-nav {
+        padding: 10px;
+    }
+    
+    .gallery-lightbox-nav svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .gallery-lightbox-prev {
+        left: 8px;
+    }
+
+    .gallery-lightbox-next {
+        right: 8px;
+    }
+}
+
+.gallery-lightbox-counter {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 500;
+    color: white;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+}
+
+.gallery-lightbox-close {
+    position: absolute;
+    top: -16px;
+    right: -16px;
+    padding: 8px;
+    background: white;
+    color: black;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 20;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.gallery-lightbox-close:hover {
+    background: #e5e7eb;
+    transform: scale(1.1);
+}
+
+.gallery-lightbox-close:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .gallery-lightbox-close {
+        top: -12px;
+        right: -12px;
+        padding: 6px;
+    }
+    
+    .gallery-lightbox-close svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Animations */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Reduced Motion Support */
+
+@media (prefers-reduced-motion: reduce) {
+    .gallery-thumb,
+    .gallery-lightbox,
+    .gallery-lightbox-content,
+    .gallery-lightbox-nav {
+        transition: none;
+    }
+    
+    .gallery-lightbox {
+        animation: none;
+    }
+    
+    .gallery-lightbox-content {
+        animation: none;
+    }
+    
+    .gallery-thumb:hover {
+        transform: none;
+    }
+}
