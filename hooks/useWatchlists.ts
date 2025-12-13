@@ -72,9 +72,18 @@ export function useWatchlists() {
     persist(next);
   };
 
+  const findItem = (folderId: string, itemId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return null;
+    const item = folder.items.find(i => i.id === itemId);
+    if (!item) return null;
+    return { folder, item };
+  };
+
   return {
     folders,
     addFolder,
-    saveToFolder
+    saveToFolder,
+    findItem
   };
 }

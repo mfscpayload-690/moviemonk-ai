@@ -25,7 +25,21 @@ const App: React.FC = () => {
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
-  const { folders: watchlists, addFolder, saveToFolder } = useWatchlists();
+  const { folders: watchlists, addFolder, saveToFolder, findItem } = useWatchlists();
+  const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
+
+  const handleLoadSavedItem = (folderId: string, itemId: string) => {
+    const found = findItem(folderId, itemId);
+    if (!found) return;
+    const { item } = found;
+    setMovieData(item.movie);
+    setPersonData(null);
+    setSources(item.movie.tmdb_id ? [{ web: { uri: `https://www.themoviedb.org/${item.movie.media_type || 'movie'}/${item.movie.tmdb_id}`, title: 'The Movie Database (TMDB)' } }] : null);
+    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'system', content: `📁 Loaded ${item.saved_title} from Watch Later.` }]);
+    setShowWatchlistsModal(false);
+    const main = document.querySelector('.main-content');
+    if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Load shared link on mount
   useEffect(() => {
@@ -411,18 +425,30 @@ const App: React.FC = () => {
             <Logo className="w-10 h-10 text-primary drop-shadow-glow" />
             <h1 className="text-2xl font-bold text-gradient tracking-tight">MovieMonk</h1>
           </div>
-          {(movieData || personData) && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleShare}
+              onClick={() => setShowWatchlistsModal(true)}
               className="btn-glass flex items-center gap-2"
-              aria-label="Share this result"
+              aria-label="Open watch later"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm0 2c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2zm0 6c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2z" />
               </svg>
-              <span className="hidden sm:inline">Share</span>
+              <span className="hidden sm:inline">Watchlists</span>
             </button>
-          )}
+            {(movieData || personData) && (
+              <button
+                onClick={handleShare}
+                className="btn-glass flex items-center gap-2"
+                aria-label="Share this result"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span className="hidden sm:inline">Share</span>
+              </button>
+            )}
+          </div>
         </header>
 
         {/* Copy Toast Notification */}
@@ -510,6 +536,55 @@ const App: React.FC = () => {
           </div>
         )
       }
+
+      {/* Watchlists Modal */}
+      {showWatchlistsModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Your Watchlists</h3>
+              <button onClick={() => setShowWatchlistsModal(false)} className="p-2 rounded-lg hover:bg-white/10" aria-label="Close watchlists">
+                ✕
+              </button>
+            </div>
+
+            {watchlists.length === 0 && (
+              <p className="text-brand-text-dark text-sm">No watchlists yet. Save a title with "Save to List" to get started.</p>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+              {watchlists.map(folder => (
+                <div key={folder.id} className="p-3 rounded-xl border border-white/10 bg-white/5 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                    <p className="text-white font-semibold text-sm">{folder.name}</p>
+                    <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
+                  </div>
+                  {folder.items.length === 0 ? (
+                    <p className="text-xs text-brand-text-dark">Empty folder.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {folder.items.map(item => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleLoadSavedItem(folder.id, item.id)}
+                          className="w-full flex items-start gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 hover:bg-white/5 text-left"
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-white">{item.saved_title}</span>
+                            <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0,3).join(', ')}</span>
+                          </div>
+                          <span className="text-[10px] text-brand-text-dark ml-auto">Added {new Date(item.added_at).toLocaleDateString()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
