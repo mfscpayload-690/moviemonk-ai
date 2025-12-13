@@ -539,8 +539,16 @@ const App: React.FC = () => {
 
       {/* Watchlists Modal */}
       {showWatchlistsModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4">
+        <div
+          className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowWatchlistsModal(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">Your Watchlists</h3>
               <button onClick={() => setShowWatchlistsModal(false)} className="p-2 rounded-lg hover:bg-white/10" aria-label="Close watchlists">
