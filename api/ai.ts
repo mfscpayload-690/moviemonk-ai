@@ -583,13 +583,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { source: 'TMDB', score: `${Math.round(data.vote_average * 10)}%` }
         ];
 
+        // Helper to build streaming platform URLs
+        const buildPlatformUrl = (providerName: string, movieTitle: string): string => {
+          const encoded = encodeURIComponent(movieTitle);
+          const provider = providerName.toLowerCase();
+          
+          if (provider.includes('netflix')) return `https://www.netflix.com/search?q=${encoded}`;
+          if (provider.includes('prime') || provider.includes('amazon')) return `https://www.amazon.com/s?k=${encoded}&i=instant-video`;
+          if (provider.includes('hulu')) return `https://www.hulu.com/search?q=${encoded}`;
+          if (provider.includes('disney')) return `https://www.disneyplus.com/search?q=${encoded}`;
+          if (provider.includes('hbo') || provider.includes('max')) return `https://www.max.com/search?q=${encoded}`;
+          if (provider.includes('apple')) return `https://tv.apple.com/search?q=${encoded}`;
+          if (provider.includes('paramount')) return `https://www.paramountplus.com/search/?q=${encoded}`;
+          if (provider.includes('peacock')) return `https://www.peacocktv.com/search?q=${encoded}`;
+          if (provider.includes('youtube')) return `https://www.youtube.com/results?search_query=${encoded}`;
+          if (provider.includes('hotstar')) return `https://www.hotstar.com/in/search?q=${encoded}`;
+          if (provider.includes('zee5')) return `https://www.zee5.com/search?q=${encoded}`;
+          if (provider.includes('sonyliv')) return `https://www.sonyliv.com/search?q=${encoded}`;
+          
+          // Fallback to JustWatch
+          return `https://www.justwatch.com/us/search?q=${encoded}`;
+        };
+
         // Process Watch Providers
         const watchProviders: any[] = [];
+        const movieTitle = data.title || data.name || '';
+        
         if (data['watch/providers']?.results?.IN) { // Default to India as per user request
           const inProvider = data['watch/providers'].results.IN;
-          if (inProvider.flatrate) watchProviders.push(...inProvider.flatrate.map((p: any) => ({ platform: p.provider_name, type: 'subscription' })));
-          if (inProvider.rent) watchProviders.push(...inProvider.rent.map((p: any) => ({ platform: p.provider_name, type: 'rent' })));
-          if (inProvider.buy) watchProviders.push(...inProvider.buy.map((p: any) => ({ platform: p.provider_name, type: 'buy' })));
+          if (inProvider.flatrate) watchProviders.push(...inProvider.flatrate.map((p: any) => ({ 
+            platform: p.provider_name, 
+            type: 'subscription',
+            link: buildPlatformUrl(p.provider_name, movieTitle)
+          })));
+          if (inProvider.rent) watchProviders.push(...inProvider.rent.map((p: any) => ({ 
+            platform: p.provider_name, 
+            type: 'rent',
+            link: buildPlatformUrl(p.provider_name, movieTitle)
+          })));
+          if (inProvider.buy) watchProviders.push(...inProvider.buy.map((p: any) => ({ 
+            platform: p.provider_name, 
+            type: 'buy',
+            link: buildPlatformUrl(p.provider_name, movieTitle)
+          })));
         }
 
         // Trailer

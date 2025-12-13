@@ -186,6 +186,22 @@ const App: React.FC = () => {
       const detailsRes = await fetch(`/api/ai?action=details&id=${selectedResult.id}&media_type=${selectedResult.media_type || 'movie'}&provider=${selectedModel}`);
       const detailsData = await detailsRes.json();
 
+      // Set data sources for attribution
+      setSources([
+        { 
+          web: {
+            uri: `https://www.themoviedb.org/${selectedResult.media_type || 'movie'}/${selectedResult.id}`,
+            title: 'The Movie Database (TMDB)'
+          }
+        },
+        {
+          web: {
+            uri: 'https://www.omdb.org/',
+            title: 'Open Movie Database (OMDb)'
+          }
+        }
+      ]);
+
       // Check type and handle accordingly
 
       // For person, we might need to handle slightly effectively if details API returns person struct
@@ -343,7 +359,20 @@ const App: React.FC = () => {
         if (detailsRes.ok && detailsData.title) {
           setMovieData(detailsData);
           setPersonData(null);
-          setSources([{ title: 'TMDB', url: `https://www.themoviedb.org/${selectedAmbiguous.media_type || 'movie'}/${selectedAmbiguous.id}` }]);
+          setSources([
+            { 
+              web: {
+                uri: `https://www.themoviedb.org/${selectedAmbiguous.media_type || 'movie'}/${selectedAmbiguous.id}`,
+                title: 'The Movie Database (TMDB)'
+              }
+            },
+            {
+              web: {
+                uri: 'https://www.omdb.org/',
+                title: 'Open Movie Database (OMDb)'
+              }
+            }
+          ]);
         } else {
           console.error('Details fetch failed:', detailsData);
           throw new Error(detailsData.error || 'Failed to load details');
