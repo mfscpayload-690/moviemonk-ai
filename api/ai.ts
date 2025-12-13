@@ -387,7 +387,7 @@ async function callCreativeProvider(provider: ProviderChoice, prompt: string): P
 }
 
 async function enrichCreativeFields(movie: MovieData, preferred: ProviderChoice): Promise<Partial<MovieData>> {
-  const order: ProviderChoice[] = [preferred, 'groq', 'mistral', 'openrouter']
+  const order: ProviderChoice[] = ([preferred, 'groq', 'mistral', 'openrouter'] as ProviderChoice[])
     .filter((p, idx, arr) => arr.indexOf(p) === idx);
   const prompt = buildCreativePrompt(movie);
 
