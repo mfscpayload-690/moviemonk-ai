@@ -400,6 +400,38 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         </div>
                     </Section>
 
+                    <Section title="Gallery">
+                        {safeExtraImages.length > 0 ? (
+                            <div className="gallery-container">
+                                <div className="gallery-filmstrip">
+                                    {safeExtraImages.map((img, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setSelectedImage(img)}
+                                            className="gallery-thumb"
+                                            aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
+                                            title={`Scene ${i + 1}`}
+                                        >
+                                            <ImageWithFallback 
+                                                src={img} 
+                                                alt={`Gallery image ${i + 1}`} 
+                                                className="gallery-thumb-img" 
+                                            />
+                                            <div className="gallery-thumb-overlay">
+                                                <span className="gallery-thumb-number">{i + 1}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="gallery-info text-xs text-brand-text-dark mt-3">
+                                    {safeExtraImages.length} images available • Click to view
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-brand-text-dark text-sm italic">No gallery images available.</p>
+                        )}
+                    </Section>
+
                     <Section title="Cast & Crew">
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
@@ -431,38 +463,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                             {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
                         </div>
-                    </Section>
-
-                    <Section title="Gallery">
-                        {safeExtraImages.length > 0 ? (
-                            <div className="gallery-container">
-                                <div className="gallery-filmstrip">
-                                    {safeExtraImages.map((img, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setSelectedImage(img)}
-                                            className="gallery-thumb"
-                                            aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
-                                            title={`Scene ${i + 1}`}
-                                        >
-                                            <ImageWithFallback 
-                                                src={img} 
-                                                alt={`Gallery image ${i + 1}`} 
-                                                className="gallery-thumb-img" 
-                                            />
-                                            <div className="gallery-thumb-overlay">
-                                                <span className="gallery-thumb-number">{i + 1}</span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="gallery-info text-xs text-brand-text-dark mt-3">
-                                    {safeExtraImages.length} images available • Click to view
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="text-brand-text-dark text-sm italic">No gallery images available.</p>
-                        )}
                     </Section>
 
                     {sources && sources.length > 0 && (
