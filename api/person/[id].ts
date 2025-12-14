@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../../lib/cache';
+import { fetchRelatedPeopleForPerson } from '../../services/tmdbService';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -58,6 +59,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .filter((f) => f.title)
       .sort((a, b) => (b.year || 0) - (a.year || 0));
 
+    // People Also Search (related people) with 6h cache
+    let related_people: any[] = [];
+    try {
+      const relatedKey = withCacheKey('related_person', { id });
+      const cachedRelated = await getCache(relatedKey);
+      if (cachedRelated) {
+        related_people = cachedRelated;
+      } else {
+        related_people = await fetchRelatedPeopleForPerson(Number(id));
+        await setCache(relatedKey, related_people, 6 * 60 * 60);
+      }
+    } catch (e) {
+      console.warn('Related people fetch failed:', e);
+    }
+
     const payload = {
       person: {
         id: person.id,
@@ -68,6 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         profile_url: person.profile_path ? `https://image.tmdb.org/t/p/w342${person.profile_path}` : undefined,
       },
       filmography,
+      related_people,
       sources: [
         { name: 'TMDB', url: `https://www.themoviedb.org/person/${person.id}` },
       ],

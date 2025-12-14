@@ -161,6 +161,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
     const [customSavedTitle, setCustomSavedTitle] = useState('');
+    const [showRelatedModal, setShowRelatedModal] = useState(false);
     const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
     const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
 
@@ -523,6 +524,37 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 </div>
 
                 <div className="lg:col-span-1 space-y-8">
+                    {/* Similar Titles above Where to Watch */}
+                    {Array.isArray((movie as any).related) && (movie as any).related.length > 0 && (
+                        <Section title="Similar Titles">
+                            <div className="space-y-3">
+                                {/* Lightweight inline row to avoid importing until props are refactored */}
+                                <div className="flex gap-3 overflow-x-auto pb-2">
+                                    {(movie as any).related.slice(0, 12).map((it: any, idx: number) => (
+                                        <button
+                                            key={`${it.media_type}-${it.id}-${idx}`}
+                                            className="flex-shrink-0 w-24 text-left group"
+                                            onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title }); onQuickSearch(it.title); }}
+                                            aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
+                                        >
+                                            <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                                                {it.poster_url ? (
+                                                    <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover" loading="lazy" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-white/10" />
+                                                )}
+                                            </div>
+                                            <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2">{it.title}</p>
+                                            {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex justify-end">
+                                    <button className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
+                                </div>
+                            </div>
+                        </Section>
+                    )}
                     <Section title="Where to Watch">
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                             {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
@@ -760,6 +792,44 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         >
                             <XMarkIcon className="w-6 h-6" />
                         </button>
+                    </div>
+                </div>,
+                modalRoot
+            )}
+
+            {showRelatedModal && modalRoot && ReactDOM.createPortal(
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" onClick={() => setShowRelatedModal(false)}>
+                    <div className="w-full max-w-5xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg md:text-xl font-bold text-white">Similar Titles</h3>
+                            <button onClick={() => setShowRelatedModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close similar titles modal">
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {Array.isArray((movie as any).related) && (movie as any).related.length > 0 ? (
+                                (movie as any).related.map((it: any, idx: number) => (
+                                    <button
+                                        key={`${it.media_type}-${it.id}-${idx}`}
+                                        className="text-left group"
+                                        onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title, context: 'modal' }); onQuickSearch(it.title); setShowRelatedModal(false); }}
+                                        aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
+                                    >
+                                        <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                                            {it.poster_url ? (
+                                                <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover" loading="lazy" />
+                                            ) : (
+                                                <div className="w-full h-full bg-white/10" />
+                                            )}
+                                        </div>
+                                        <p className="mt-2 text-xs font-semibold text-white line-clamp-2">{it.title}</p>
+                                        {it.year && <p className="text-[11px] text-brand-text-dark">{it.year}</p>}
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="text-brand-text-dark">No similar titles found.</p>
+                            )}
+                        </div>
                     </div>
                 </div>,
                 modalRoot
