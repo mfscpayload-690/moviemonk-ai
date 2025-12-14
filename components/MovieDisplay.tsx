@@ -176,7 +176,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     useEffect(() => {
         setCustomSavedTitle(movie?.title || '');
-        setSelectedFolderId(watchlists?.[0]?.id || '');
+        // Only initialize a default folder if none is selected or it no longer exists
+        const exists = watchlists.some(f => f.id === selectedFolderId);
+        if (!exists) {
+            setSelectedFolderId(watchlists?.[0]?.id || '');
+        }
         setNewFolderName('');
         setNewFolderColor('#7c3aed');
     }, [movie, watchlists]);
