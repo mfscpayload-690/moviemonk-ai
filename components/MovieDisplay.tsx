@@ -161,6 +161,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
     const [customSavedTitle, setCustomSavedTitle] = useState('');
+    const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
+    const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
 
     useEffect(() => {
         // This effect runs on the client, where document is available.
@@ -176,14 +178,21 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     useEffect(() => {
         setCustomSavedTitle(movie?.title || '');
-        // Only initialize a default folder if none is selected or it no longer exists
-        const exists = watchlists.some(f => f.id === selectedFolderId);
+        // Preserve selection only if it still exists; otherwise clear selection
+        const exists = selectedFolderId && watchlists.some(f => f.id === selectedFolderId);
         if (!exists) {
-            setSelectedFolderId(watchlists?.[0]?.id || '');
+            setSelectedFolderId('');
         }
         setNewFolderName('');
         setNewFolderColor('#7c3aed');
     }, [movie, watchlists]);
+
+    // When opening the modal, clear selection to force explicit choice
+    useEffect(() => {
+        if (showWatchlistModal) {
+            setSelectedFolderId('');
+        }
+    }, [showWatchlistModal]);
 
     const embedUrl = movie ? getYouTubeEmbedUrl(movie.trailer_url) : null;
 
@@ -584,9 +593,12 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 <input
                                     value={newFolderName}
                                     onChange={(e) => setNewFolderName(e.target.value)}
-                                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                    className={`w-full rounded-lg border bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 ${newFolderNameError ? 'border-red-500 focus:ring-red-500' : 'border-white/10 focus:ring-brand-primary'}`}
                                     placeholder="e.g., Sci-Fi Gems"
                                 />
+                                {newFolderNameError && (
+                                    <p className="text-xs text-red-400">{newFolderNameError}</p>
+                                )}
                                 <div className="flex items-center gap-2">
                                     {COLOR_PRESETS.map(color => (
                                         <button
@@ -601,7 +613,28 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-2">
+                            <div className="flex items-center justify-between gap-2 pt-2">
+                                {/* Selected target indicator */}
+                                <div className="text-xs text-brand-text-dark">
+                                    {selectedFolderId ? (
+                                        (() => {
+                                            const folder = watchlists.find(f => f.id === selectedFolderId);
+                                            return folder ? (
+                                                <span className="inline-flex items-center gap-2">
+                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                                    <span>Saving to: <span className="text-white font-semibold">{folder.name}</span></span>
+                                                </span>
+                                            ) : null;
+                                        })()
+                                    ) : newFolderName.trim().length > 0 ? (
+                                        <span className="inline-flex items-center gap-2">
+                                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: newFolderColor }}></span>
+                                            <span>Saving to new: <span className="text-white font-semibold">{newFolderName.trim()}</span></span>
+                                        </span>
+                                    ) : (
+                                        <span>Choose a folder or create one</span>
+                                    )}
+                                </div>
                                 <button
                                     onClick={() => setShowWatchlistModal(false)}
                                     className="px-4 py-2 rounded-lg border border-white/15 text-white text-sm hover:bg-white/10"
@@ -610,7 +643,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 </button>
                                 <button
                                     onClick={handleSaveToWatchlist}
-                                    className="px-4 py-2 rounded-lg bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                    disabled={!canSave}
+                                    className={`px-4 py-2 rounded-lg text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-primary ${canSave ? 'bg-brand-primary hover:bg-brand-secondary' : 'bg-white/10 cursor-not-allowed'}`}
                                 >
                                     Save
                                 </button>
