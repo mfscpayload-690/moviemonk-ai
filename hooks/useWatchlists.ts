@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MovieData, WatchlistFolder, WatchlistItem } from '../types';
 
 const STORAGE_KEY = 'moviemonk_watchlists_v1';
@@ -12,36 +12,48 @@ const getMovieKey = (movie: MovieData) => {
 
 export function useWatchlists() {
   const [folders, setFolders] = useState<WatchlistFolder[]>([]);
+  const hydratedRef = useRef(false);
 
-  // Load from storage on client
-  useEffect(() => {
+  const loadFromStorage = useCallback((): WatchlistFolder[] => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setFolders(parsed);
-      }
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.warn('Failed to load watchlists', e);
+      return [];
     }
   }, []);
 
-  const persist = (next: WatchlistFolder[]) => {
-    setFolders(next);
+  // Hydrate from storage once on mount
+  useEffect(() => {
+    const initial = loadFromStorage();
+    setFolders(initial);
+    hydratedRef.current = true;
+  }, [loadFromStorage]);
+
+  // Persist to storage after hydration
+  useEffect(() => {
+    if (!hydratedRef.current) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(folders));
     } catch (e) {
       console.warn('Failed to save watchlists', e);
     }
+  }, [folders]);
+
+  // Use functional updates so add + save in one tick do not clobber state
+  const persist = (updater: (prev: WatchlistFolder[]) => WatchlistFolder[]) => {
+    setFolders(prev => updater(prev));
   };
 
   const addFolder = (name: string, color: string) => {
     const trimmed = name.trim();
     if (!trimmed) return null;
-    const folder: WatchlistFolder = { id: generateId(), name: trimmed, color: color || '#7c3aed', items: [] };
-    const next = [folder, ...folders];
-    persist(next);
-    return folder.id;
+    const folderId = generateId();
+    persist(prev => [{ id: folderId, name: trimmed, color: color || '#7c3aed', items: [] }, ...prev]);
+    return folderId;
   };
 
   const saveToFolder = (folderId: string, movie: MovieData, savedTitle?: string) => {
@@ -50,10 +62,9 @@ export function useWatchlists() {
     const title = (savedTitle && savedTitle.trim()) || movie.title;
     const now = new Date().toISOString();
 
-    const next = folders.map(folder => {
+    persist(prev => prev.map(folder => {
       if (folder.id !== folderId) return folder;
       const existingIdx = folder.items.findIndex(i => getMovieKey(i.movie) === key);
-      let items: WatchlistItem[];
       const item: WatchlistItem = {
         id: existingIdx >= 0 ? folder.items[existingIdx].id : generateId(),
         saved_title: title,
@@ -61,16 +72,18 @@ export function useWatchlists() {
         added_at: now
       };
       if (existingIdx >= 0) {
-        items = [...folder.items];
+        const items = [...folder.items];
         items[existingIdx] = item;
-      } else {
-        items = [item, ...folder.items];
+        return { ...folder, items };
       }
-      return { ...folder, items };
-    });
-
-    persist(next);
+      return { ...folder, items: [item, ...folder.items] };
+    }));
   };
+
+  const refresh = useCallback(() => {
+    const fromStorage = loadFromStorage();
+    setFolders(fromStorage);
+  }, [loadFromStorage]);
 
   const findItem = (folderId: string, itemId: string) => {
     const folder = folders.find(f => f.id === folderId);
@@ -84,6 +97,7 @@ export function useWatchlists() {
     folders,
     addFolder,
     saveToFolder,
-    findItem
+    findItem,
+    refresh
   };
 }

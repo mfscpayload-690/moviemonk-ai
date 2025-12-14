@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
-  const { folders: watchlists, addFolder, saveToFolder, findItem } = useWatchlists();
+  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
 
   const handleLoadSavedItem = (folderId: string, itemId: string) => {
@@ -62,6 +62,12 @@ const App: React.FC = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (showWatchlistsModal) {
+      refresh();
+    }
+  }, [showWatchlistsModal, refresh]);
 
   const loadPersonFromShare = async (personId: number) => {
     try {
