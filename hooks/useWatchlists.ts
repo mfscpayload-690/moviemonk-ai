@@ -92,6 +92,27 @@ export function useWatchlists() {
     persist(prev => prev.map(f => f.id === folderId ? { ...f, color: nextColor } : f));
   };
 
+  const moveItem = (fromFolderId: string, itemId: string, toFolderId: string) => {
+    if (!fromFolderId || !toFolderId || !itemId) return;
+    if (fromFolderId === toFolderId) return; // no-op
+
+    persist(prev => {
+      const from = prev.find(f => f.id === fromFolderId);
+      const to = prev.find(f => f.id === toFolderId);
+      if (!from || !to) return prev;
+      const idx = from.items.findIndex(i => i.id === itemId);
+      if (idx === -1) return prev;
+      const item = from.items[idx];
+      const updatedFrom = { ...from, items: from.items.filter(i => i.id !== itemId) };
+      const updatedTo = { ...to, items: [item, ...to.items] };
+      return prev.map(f => {
+        if (f.id === fromFolderId) return updatedFrom;
+        if (f.id === toFolderId) return updatedTo;
+        return f;
+      });
+    });
+  };
+
   const refresh = useCallback(() => {
     const fromStorage = loadFromStorage();
     setFolders(fromStorage);
@@ -112,6 +133,7 @@ export function useWatchlists() {
     findItem,
     refresh,
     renameFolder,
-    setFolderColor
+    setFolderColor,
+    moveItem
   };
 }

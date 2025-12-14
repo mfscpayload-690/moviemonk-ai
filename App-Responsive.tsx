@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
-  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor } = useWatchlists();
+  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
@@ -624,17 +624,30 @@ const App: React.FC = () => {
                   ) : (
                     <div className="space-y-2">
                       {folder.items.map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => handleLoadSavedItem(folder.id, item.id)}
-                          className="w-full flex items-start gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 hover:bg-white/5 text-left"
-                        >
-                          <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-white">{item.saved_title}</span>
-                            <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0,3).join(', ')}</span>
-                          </div>
+                        <div key={item.id} className="w-full flex items-start gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 hover:bg-white/5">
+                          <button
+                            onClick={() => handleLoadSavedItem(folder.id, item.id)}
+                            className="flex-1 text-left"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-white">{item.saved_title}</span>
+                              <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0,3).join(', ')}</span>
+                            </div>
+                          </button>
                           <span className="text-[10px] text-brand-text-dark ml-auto">Added {new Date(item.added_at).toLocaleDateString()}</span>
-                        </button>
+                          <div className="ml-2">
+                            <select
+                              className="text-xs bg-white/5 border border-white/10 rounded p-1 text-white"
+                              value={folder.id}
+                              onChange={(e) => moveItem(folder.id, item.id, e.target.value)}
+                              aria-label="Move to folder"
+                            >
+                              {watchlists.map(f => (
+                                <option key={f.id} value={f.id}>{f.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
