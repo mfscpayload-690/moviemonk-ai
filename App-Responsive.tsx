@@ -25,11 +25,12 @@ const App: React.FC = () => {
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
-  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem } = useWatchlists();
+  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
+  const [draggedItem, setDraggedItem] = useState<{ folderId: string; itemId: string } | null>(null);
 
   const handleLoadSavedItem = (folderId: string, itemId: string) => {
     const found = findItem(folderId, itemId);
@@ -73,16 +74,38 @@ const App: React.FC = () => {
   }, [showWatchlistsModal, refresh]);
 
   const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
+  
   const startEditFolder = (folder: any) => {
     setEditingFolderId(folder.id);
     setEditFolderName(folder.name);
     setEditFolderColor(folder.color || '#7c3aed');
   };
+  
   const saveFolderEdits = () => {
     if (!editingFolderId) return;
     renameFolder(editingFolderId, editFolderName);
     setFolderColor(editingFolderId, editFolderColor);
     setEditingFolderId(null);
+  };
+
+  const handleDragStart = (e: React.DragEvent, folderId: string, itemId: string) => {
+    setDraggedItem({ folderId, itemId });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem.folderId === targetFolderId) {
+      setDraggedItem(null);
+      return;
+    }
+    moveItem(draggedItem.folderId, draggedItem.itemId, targetFolderId);
+    setDraggedItem(null);
   };
 
   const loadPersonFromShare = async (personId: number) => {
@@ -584,7 +607,12 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
               {watchlists.map(folder => (
-                <div key={folder.id} className="p-3 rounded-xl border border-white/10 bg-white/5 space-y-2">
+                <div 
+                  key={folder.id} 
+                  className="p-3 rounded-xl border border-white/10 bg-white/5 space-y-2 min-h-[300px]"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, folder.id)}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
                     <p className="text-white font-semibold text-sm">{folder.name}</p>
@@ -620,11 +648,20 @@ const App: React.FC = () => {
                   )}
 
                   {folder.items.length === 0 ? (
-                    <p className="text-xs text-brand-text-dark">Empty folder.</p>
+                    <p className="text-xs text-brand-text-dark">Empty folder. Drag items here.</p>
                   ) : (
                     <div className="space-y-2">
                       {folder.items.map(item => (
-                        <div key={item.id} className="w-full flex items-start gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 hover:bg-white/5">
+                        <div
+                          key={item.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
+                          className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${
+                            draggedItem?.itemId === item.id
+                              ? 'opacity-50 border-brand-primary bg-brand-primary/10'
+                              : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
+                          }`}
+                        >
                           <button
                             onClick={() => handleLoadSavedItem(folder.id, item.id)}
                             className="flex-1 text-left"
@@ -634,19 +671,15 @@ const App: React.FC = () => {
                               <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0,3).join(', ')}</span>
                             </div>
                           </button>
-                          <span className="text-[10px] text-brand-text-dark ml-auto">Added {new Date(item.added_at).toLocaleDateString()}</span>
-                          <div className="ml-2">
-                            <select
-                              className="text-xs bg-white/5 border border-white/10 rounded p-1 text-white"
-                              value={folder.id}
-                              onChange={(e) => moveItem(folder.id, item.id, e.target.value)}
-                              aria-label="Move to folder"
-                            >
-                              {watchlists.map(f => (
-                                <option key={f.id} value={f.id}>{f.name}</option>
-                              ))}
-                            </select>
-                          </div>
+                          <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
+                          <button
+                            onClick={() => deleteItem(folder.id, item.id)}
+                            className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10"
+                            aria-label="Delete item"
+                            title="Delete from watchlist"
+                          >
+                            🗑️
+                          </button>
                         </div>
                       ))}
                     </div>

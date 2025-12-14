@@ -113,6 +113,15 @@ export function useWatchlists() {
     });
   };
 
+  const deleteItem = (folderId: string, itemId: string) => {
+    if (!folderId || !itemId) return;
+    persist(prev => prev.map(f => 
+      f.id === folderId 
+        ? { ...f, items: f.items.filter(i => i.id !== itemId) }
+        : f
+    ));
+  };
+
   const refresh = useCallback(() => {
     const fromStorage = loadFromStorage();
     setFolders(fromStorage);
@@ -134,6 +143,7 @@ export function useWatchlists() {
     refresh,
     renameFolder,
     setFolderColor,
-    moveItem
+    moveItem,
+    deleteItem
   };
 }
