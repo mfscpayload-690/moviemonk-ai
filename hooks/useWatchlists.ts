@@ -80,6 +80,18 @@ export function useWatchlists() {
     }));
   };
 
+  const renameFolder = (folderId: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    persist(prev => prev.map(f => f.id === folderId ? { ...f, name: trimmed } : f));
+  };
+
+  const setFolderColor = (folderId: string, color: string) => {
+    const nextColor = color && color.trim() ? color : undefined;
+    if (!nextColor) return;
+    persist(prev => prev.map(f => f.id === folderId ? { ...f, color: nextColor } : f));
+  };
+
   const refresh = useCallback(() => {
     const fromStorage = loadFromStorage();
     setFolders(fromStorage);
@@ -98,6 +110,8 @@ export function useWatchlists() {
     addFolder,
     saveToFolder,
     findItem,
-    refresh
+    refresh,
+    renameFolder,
+    setFolderColor
   };
 }

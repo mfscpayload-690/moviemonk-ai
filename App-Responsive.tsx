@@ -25,8 +25,11 @@ const App: React.FC = () => {
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
-  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh } = useWatchlists();
+  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editFolderName, setEditFolderName] = useState('');
+  const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
 
   const handleLoadSavedItem = (folderId: string, itemId: string) => {
     const found = findItem(folderId, itemId);
@@ -68,6 +71,19 @@ const App: React.FC = () => {
       refresh();
     }
   }, [showWatchlistsModal, refresh]);
+
+  const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
+  const startEditFolder = (folder: any) => {
+    setEditingFolderId(folder.id);
+    setEditFolderName(folder.name);
+    setEditFolderColor(folder.color || '#7c3aed');
+  };
+  const saveFolderEdits = () => {
+    if (!editingFolderId) return;
+    renameFolder(editingFolderId, editFolderName);
+    setFolderColor(editingFolderId, editFolderColor);
+    setEditingFolderId(null);
+  };
 
   const loadPersonFromShare = async (personId: number) => {
     try {
@@ -573,7 +589,36 @@ const App: React.FC = () => {
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
                     <p className="text-white font-semibold text-sm">{folder.name}</p>
                     <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
+                    <button onClick={() => startEditFolder(folder)} className="ml-2 text-xs text-brand-text-dark hover:text-white p-1 rounded hover:bg-white/10">✎ Edit</button>
                   </div>
+
+                  {editingFolderId === folder.id && (
+                    <div className="space-y-2 p-2 rounded-lg border border-white/10 bg-white/5">
+                      <label className="text-xs text-brand-text-light">Folder name</label>
+                      <input
+                        value={editFolderName}
+                        onChange={(e) => setEditFolderName(e.target.value)}
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                      />
+                      <div className="flex items-center gap-2">
+                        {COLOR_PRESETS.map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setEditFolderColor(color)}
+                            className={`w-6 h-6 rounded-full border ${editFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
+                            style={{ backgroundColor: color }}
+                            aria-label={`Choose ${color}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => setEditingFolderId(null)} className="px-3 py-1.5 rounded-lg border border-white/15 text-white text-xs hover:bg-white/10">Cancel</button>
+                        <button onClick={saveFolderEdits} className="px-3 py-1.5 rounded-lg bg-brand-primary text-white text-xs font-semibold hover:bg-brand-secondary">Save</button>
+                      </div>
+                    </div>
+                  )}
+
                   {folder.items.length === 0 ? (
                     <p className="text-xs text-brand-text-dark">Empty folder.</p>
                   ) : (
