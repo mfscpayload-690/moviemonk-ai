@@ -21,6 +21,7 @@ interface PersonPayload {
   };
   filmography: FilmItem[];
   sources?: { name: string; url: string }[];
+  related_people?: { id: number; name: string; profile_url?: string; known_for?: string }[];
 }
 
 // Skeleton card component for loading states
@@ -40,7 +41,7 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
   const [bioExpanded, setBioExpanded] = useState(false);
 
   if (!data) return null;
-  const { person, filmography, sources } = data;
+  const { person, filmography, sources, related_people } = data;
 
   const bioTruncated = person.biography && person.biography.length > BIO_LIMIT;
   const displayBio = bioExpanded || !bioTruncated ? person.biography : person.biography?.slice(0, BIO_LIMIT) + '…';
@@ -124,6 +125,34 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
           </div>
         )}
       </div>
+
+      {/* People Also Search */}
+      {Array.isArray(related_people) && related_people.length > 0 && (
+        <div className="mb-8 glass-panel p-6 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-xl text-white">People Also Search</h3>
+            <button className="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15" onClick={() => track('related_see_all_open', { type: 'person', id: person.id })}>See all</button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {related_people.slice(0, 12).map((p) => (
+              <button key={p.id} className="flex-shrink-0 w-24 text-left group" onClick={() => {
+                track('related_tile_click', { type: 'person', id: p.id, name: p.name });
+                onQuickSearch && onQuickSearch(p.name);
+              }} aria-label={`Open ${p.name}`}>
+                <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                  {p.profile_url ? (
+                    <img src={p.profile_url} alt={`${p.name} profile`} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full bg-white/10" />
+                  )}
+                </div>
+                <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2">{p.name}</p>
+                {p.known_for && <p className="text-[10px] text-brand-text-dark">{p.known_for}</p>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sources */}
       {sources && sources.length > 0 && (

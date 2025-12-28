@@ -17,6 +17,26 @@ export interface WatchOption {
   type: 'subscription' | 'rent' | 'free' | 'buy';
 }
 
+// Related content types for Similar/People Also Search
+export type RelatedTitle = {
+  id: number;
+  title: string;
+  year?: string;
+  media_type: 'movie' | 'tv';
+  poster_url?: string;
+  popularity?: number;
+  source: 'tmdb-similar' | 'tmdb-recommendations' | 'serpapi';
+};
+
+export type RelatedPerson = {
+  id: number;
+  name: string;
+  known_for?: string;
+  profile_url?: string;
+  popularity?: number;
+  source: 'tmdb-co-star' | 'tmdb-similar' | 'serpapi';
+};
+
 export interface Rating {
   source: 'Rotten Tomatoes' | 'IMDb' | string;
   score: string;

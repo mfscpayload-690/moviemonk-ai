@@ -36,7 +36,17 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
     return null;
 };
 
-// Helper function to convert simple markdown to HTML
+// Basic HTML escape function
+const escapeHtml = (unsafe: string) => {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
+// Helper function to convert simple markdown to HTML (XSS Safe)
 const markdownToHtml = (text: string): string => {
     if (!text) return '';
 
@@ -54,17 +64,17 @@ const markdownToHtml = (text: string): string => {
     lines.forEach(line => {
         if (line.startsWith('### ')) {
             closeList();
-            htmlBlocks.push(`<h3>${line.substring(4)}</h3>`);
+            htmlBlocks.push(`<h3>${escapeHtml(line.substring(4))}</h3>`);
         } else if (line.startsWith('## ')) {
             closeList();
-            htmlBlocks.push(`<h2>${line.substring(3)}</h2>`);
+            htmlBlocks.push(`<h2>${escapeHtml(line.substring(3))}</h2>`);
         } else if (line.startsWith('* ')) {
-            currentList.push(`<li>${line.substring(2)}</li>`);
+            currentList.push(`<li>${escapeHtml(line.substring(2))}</li>`);
         } else if (line.trim() === '') {
             closeList();
         } else {
             closeList();
-            htmlBlocks.push(`<p>${line}</p>`);
+            htmlBlocks.push(`<p>${escapeHtml(line)}</p>`);
         }
     });
 
@@ -72,7 +82,17 @@ const markdownToHtml = (text: string): string => {
 
     let html = htmlBlocks.join('');
 
-    // Inline replacements
+    // Inline replacements (Applied AFTER escaping to preserve tags)
+    // Note: This logic prevents bolding if the user inputs literal **foo**.
+    // To support markdown styles properly, we should unescape the specific specific tags we want to allow,
+    // or use a proper parser. For this simple case, we'll re-apply the formatting tags to the escaped string.
+
+    html = html.replace(/&lt;strong&gt;&lt;em&gt;(.*?)&lt;\/em&gt;&lt;\/strong&gt;/g, '<strong><em>$1</em></strong>'); // simplified for this regex approach
+    // Actually, simple regex replacement on escaped text:
+    // We want **text** to become <strong>text</strong>.
+    // The escape happened first, so **text** became **text** (unchanged special chars).
+    // So we can just run the replacements now.
+
     html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>'); // Bold + Italic
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');       // Bold
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');               // Italic
@@ -161,6 +181,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
     const [customSavedTitle, setCustomSavedTitle] = useState('');
+    const [showRelatedModal, setShowRelatedModal] = useState(false);
     const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
     const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
 
@@ -221,20 +242,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         })
         : [];
 
-        const handleSaveToWatchlist = () => {
-            if (!movie) return;
-            let folderId = selectedFolderId;
-            if (!folderId && newFolderName.trim()) {
-                const createdId = onCreateWatchlist(newFolderName, newFolderColor);
-                if (createdId) {
-                    folderId = createdId;
-                    setSelectedFolderId(createdId);
-                }
+    const handleSaveToWatchlist = () => {
+        if (!movie) return;
+        let folderId = selectedFolderId;
+        if (!folderId && newFolderName.trim()) {
+            const createdId = onCreateWatchlist(newFolderName, newFolderColor);
+            if (createdId) {
+                folderId = createdId;
+                setSelectedFolderId(createdId);
             }
-            if (!folderId) return;
-            onSaveToWatchlist(folderId, movie, customSavedTitle || movie.title);
-            setShowWatchlistModal(false);
-        };
+        }
+        if (!folderId) return;
+        onSaveToWatchlist(folderId, movie, customSavedTitle || movie.title);
+        setShowWatchlistModal(false);
+    };
 
     const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
 
@@ -268,27 +289,27 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     if (!movie) {
         return (
-            <div className="h-full flex items-center justify-center p-6 animate-fade-in relative overflow-hidden">
+            <div className="min-h-full flex items-center justify-center p-6 pt-24 animate-fade-in relative">
                 <div className="absolute inset-0 bg-gradient-radial from-violet-900/20 to-transparent pointer-events-none" />
                 <div className="max-w-6xl mx-auto w-full relative z-10">
                     <div className="text-center mb-12">
-                        <Logo className="mx-auto h-24 w-24 animate-fade-in text-primary drop-shadow-glow" />
-                        <h1 className="mt-6 text-5xl md:text-7xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up">MovieMonk</h1>
-                        <p className="mt-4 text-xl md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
+                        <Logo className="mx-auto h-20 w-20 md:h-24 md:w-24 animate-fade-in text-primary drop-shadow-glow" />
+                        <h1 className="mt-6 text-4xl md:text-7xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up">MovieMonk</h1>
+                        <p className="mt-4 text-lg md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pb-20">
                         {DISCOVER_TITLES.map((title, idx) => (
                             <button
                                 key={title}
                                 onClick={() => onQuickSearch(title)}
-                                className="glass-panel group relative p-6 flex flex-col items-start justify-between hover:border-violet-500/50 transition-all duration-300 min-h-[160px] rounded-xl text-left"
+                                className="glass-panel group relative p-4 md:p-6 flex flex-col items-start justify-between hover:border-violet-500/50 transition-all duration-300 min-h-[130px] md:min-h-[160px] rounded-xl text-left"
                                 style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
                             >
                                 <span className="absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-br from-violet-600 to-pink-600 transition-opacity rounded-xl" />
-                                <span className="text-xs font-medium text-violet-400 uppercase tracking-widest">Featured</span>
-                                <h3 className="mt-2 text-xl font-bold text-white group-hover:text-primary transition-colors leading-tight">{title}</h3>
-                                <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-muted group-hover:text-white transition-colors">
-                                    <PlayIcon className="w-4 h-4" /> Explore
+                                <span className="text-[10px] md:text-xs font-medium text-violet-400 uppercase tracking-widest">Featured</span>
+                                <h3 className="mt-1 md:mt-2 text-lg md:text-xl font-bold text-white group-hover:text-primary transition-colors leading-tight">{title}</h3>
+                                <span className="mt-auto inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-muted group-hover:text-white transition-colors">
+                                    <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> Explore
                                 </span>
                             </button>
                         ))}
@@ -476,10 +497,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
                                             title={`Scene ${i + 1}`}
                                         >
-                                            <ImageWithFallback 
-                                                src={img} 
-                                                alt={`Gallery image ${i + 1}`} 
-                                                className="gallery-thumb-img" 
+                                            <ImageWithFallback
+                                                src={img}
+                                                alt={`Gallery image ${i + 1}`}
+                                                className="gallery-thumb-img"
                                             />
                                             <div className="gallery-thumb-overlay">
                                                 <span className="gallery-thumb-number">{i + 1}</span>
@@ -523,6 +544,37 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 </div>
 
                 <div className="lg:col-span-1 space-y-8">
+                    {/* Similar Titles above Where to Watch */}
+                    {Array.isArray((movie as any).related) && (movie as any).related.length > 0 && (
+                        <Section title="Similar Titles">
+                            <div className="space-y-3">
+                                {/* Lightweight inline row to avoid importing until props are refactored */}
+                                <div className="flex gap-3 overflow-x-auto pb-2">
+                                    {(movie as any).related.slice(0, 12).map((it: any, idx: number) => (
+                                        <button
+                                            key={`${it.media_type}-${it.id}-${idx}`}
+                                            className="flex-shrink-0 w-24 text-left group"
+                                            onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title }); onQuickSearch(it.title); }}
+                                            aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
+                                        >
+                                            <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                                                {it.poster_url ? (
+                                                    <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover" loading="lazy" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-white/10" />
+                                                )}
+                                            </div>
+                                            <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2">{it.title}</p>
+                                            {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex justify-end">
+                                    <button className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
+                                </div>
+                            </div>
+                        </Section>
+                    )}
                     <Section title="Where to Watch">
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                             {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
@@ -541,118 +593,118 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 </div>
             </div>
 
-                {showWatchlistModal && modalRoot && ReactDOM.createPortal(
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-                        <div className="w-full max-w-md bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-5 space-y-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            {showWatchlistModal && modalRoot && ReactDOM.createPortal(
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                    <div className="w-full max-w-md bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-5 space-y-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-white">Save to Watch Later</h3>
+                            <button onClick={() => setShowWatchlistModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close watchlist modal">
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-brand-text-light">Save as</label>
+                            <input
+                                value={customSavedTitle}
+                                onChange={(e) => setCustomSavedTitle(e.target.value)}
+                                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                placeholder="Custom title"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold text-white">Save to Watch Later</h3>
-                                <button onClick={() => setShowWatchlistModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close watchlist modal">
-                                    <XMarkIcon className="w-5 h-5" />
-                                </button>
+                                <p className="text-sm font-semibold text-white">Choose folder</p>
+                                <span className="text-xs text-brand-text-dark">{watchlists.length || 0} folders</span>
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-brand-text-light">Save as</label>
-                                <input
-                                    value={customSavedTitle}
-                                    onChange={(e) => setCustomSavedTitle(e.target.value)}
-                                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                                    placeholder="Custom title"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm font-semibold text-white">Choose folder</p>
-                                    <span className="text-xs text-brand-text-dark">{watchlists.length || 0} folders</span>
-                                </div>
-                                <div className="max-h-40 overflow-y-auto space-y-2">
-                                    {watchlists.length === 0 && (
-                                        <p className="text-sm text-brand-text-dark">No folders yet. Create one below.</p>
-                                    )}
-                                    {watchlists.map(folder => (
-                                        <label key={folder.id} className="flex items-center gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="watchlist-folder"
-                                                value={folder.id}
-                                                checked={selectedFolderId === folder.id}
-                                                onChange={() => setSelectedFolderId(folder.id)}
-                                                className="accent-brand-primary"
-                                            />
-                                            <span className="w-4 h-4 rounded-full" style={{ backgroundColor: folder.color }}></span>
-                                            <span className="text-sm text-white">{folder.name}</span>
-                                            <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="border-t border-white/10 pt-3 space-y-2">
-                                <p className="text-sm font-semibold text-white">Create new folder</p>
-                                <input
-                                    value={newFolderName}
-                                    onChange={(e) => setNewFolderName(e.target.value)}
-                                    className={`w-full rounded-lg border bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 ${newFolderNameError ? 'border-red-500 focus:ring-red-500' : 'border-white/10 focus:ring-brand-primary'}`}
-                                    placeholder="e.g., Sci-Fi Gems"
-                                />
-                                {newFolderNameError && (
-                                    <p className="text-xs text-red-400">{newFolderNameError}</p>
+                            <div className="max-h-40 overflow-y-auto space-y-2">
+                                {watchlists.length === 0 && (
+                                    <p className="text-sm text-brand-text-dark">No folders yet. Create one below.</p>
                                 )}
-                                <div className="flex items-center gap-2">
-                                    {COLOR_PRESETS.map(color => (
-                                        <button
-                                            key={color}
-                                            type="button"
-                                            onClick={() => setNewFolderColor(color)}
-                                            className={`w-7 h-7 rounded-full border ${newFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
-                                            style={{ backgroundColor: color }}
-                                            aria-label={`Choose ${color}`}
+                                {watchlists.map(folder => (
+                                    <label key={folder.id} className="flex items-center gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="watchlist-folder"
+                                            value={folder.id}
+                                            checked={selectedFolderId === folder.id}
+                                            onChange={() => setSelectedFolderId(folder.id)}
+                                            className="accent-brand-primary"
                                         />
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2 pt-2">
-                                {/* Selected target indicator */}
-                                <div className="text-xs text-brand-text-dark">
-                                    {selectedFolderId ? (
-                                        (() => {
-                                            const folder = watchlists.find(f => f.id === selectedFolderId);
-                                            return folder ? (
-                                                <span className="inline-flex items-center gap-2">
-                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
-                                                    <span>Saving to: <span className="text-white font-semibold">{folder.name}</span></span>
-                                                </span>
-                                            ) : null;
-                                        })()
-                                    ) : newFolderName.trim().length > 0 ? (
-                                        <span className="inline-flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: newFolderColor }}></span>
-                                            <span>Saving to new: <span className="text-white font-semibold">{newFolderName.trim()}</span></span>
-                                        </span>
-                                    ) : (
-                                        <span>Choose a folder or create one</span>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => setShowWatchlistModal(false)}
-                                    className="px-4 py-2 rounded-lg border border-white/15 text-white text-sm hover:bg-white/10"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveToWatchlist}
-                                    disabled={!canSave}
-                                    className={`px-4 py-2 rounded-lg text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-primary ${canSave ? 'bg-brand-primary hover:bg-brand-secondary' : 'bg-white/10 cursor-not-allowed'}`}
-                                >
-                                    Save
-                                </button>
+                                        <span className="w-4 h-4 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                        <span className="text-sm text-white">{folder.name}</span>
+                                        <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
-                    </div>,
-                    modalRoot
-                )}
+
+                        <div className="border-t border-white/10 pt-3 space-y-2">
+                            <p className="text-sm font-semibold text-white">Create new folder</p>
+                            <input
+                                value={newFolderName}
+                                onChange={(e) => setNewFolderName(e.target.value)}
+                                className={`w-full rounded-lg border bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 ${newFolderNameError ? 'border-red-500 focus:ring-red-500' : 'border-white/10 focus:ring-brand-primary'}`}
+                                placeholder="e.g., Sci-Fi Gems"
+                            />
+                            {newFolderNameError && (
+                                <p className="text-xs text-red-400">{newFolderNameError}</p>
+                            )}
+                            <div className="flex items-center gap-2">
+                                {COLOR_PRESETS.map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => setNewFolderColor(color)}
+                                        className={`w-7 h-7 rounded-full border ${newFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
+                                        style={{ backgroundColor: color }}
+                                        aria-label={`Choose ${color}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 pt-2">
+                            {/* Selected target indicator */}
+                            <div className="text-xs text-brand-text-dark">
+                                {selectedFolderId ? (
+                                    (() => {
+                                        const folder = watchlists.find(f => f.id === selectedFolderId);
+                                        return folder ? (
+                                            <span className="inline-flex items-center gap-2">
+                                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                                <span>Saving to: <span className="text-white font-semibold">{folder.name}</span></span>
+                                            </span>
+                                        ) : null;
+                                    })()
+                                ) : newFolderName.trim().length > 0 ? (
+                                    <span className="inline-flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: newFolderColor }}></span>
+                                        <span>Saving to new: <span className="text-white font-semibold">{newFolderName.trim()}</span></span>
+                                    </span>
+                                ) : (
+                                    <span>Choose a folder or create one</span>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setShowWatchlistModal(false)}
+                                className="px-4 py-2 rounded-lg border border-white/15 text-white text-sm hover:bg-white/10"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveToWatchlist}
+                                disabled={!canSave}
+                                className={`px-4 py-2 rounded-lg text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-primary ${canSave ? 'bg-brand-primary hover:bg-brand-secondary' : 'bg-white/10 cursor-not-allowed'}`}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                modalRoot
+            )}
 
             {isTrailerOpen && embedUrl && modalRoot && ReactDOM.createPortal(
                 <div
@@ -760,6 +812,44 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         >
                             <XMarkIcon className="w-6 h-6" />
                         </button>
+                    </div>
+                </div>,
+                modalRoot
+            )}
+
+            {showRelatedModal && modalRoot && ReactDOM.createPortal(
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" onClick={() => setShowRelatedModal(false)}>
+                    <div className="w-full max-w-5xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg md:text-xl font-bold text-white">Similar Titles</h3>
+                            <button onClick={() => setShowRelatedModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close similar titles modal">
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {Array.isArray((movie as any).related) && (movie as any).related.length > 0 ? (
+                                (movie as any).related.map((it: any, idx: number) => (
+                                    <button
+                                        key={`${it.media_type}-${it.id}-${idx}`}
+                                        className="text-left group"
+                                        onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title, context: 'modal' }); onQuickSearch(it.title); setShowRelatedModal(false); }}
+                                        aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
+                                    >
+                                        <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                                            {it.poster_url ? (
+                                                <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover" loading="lazy" />
+                                            ) : (
+                                                <div className="w-full h-full bg-white/10" />
+                                            )}
+                                        </div>
+                                        <p className="mt-2 text-xs font-semibold text-white line-clamp-2">{it.title}</p>
+                                        {it.year && <p className="text-[11px] text-brand-text-dark">{it.year}</p>}
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="text-brand-text-dark">No similar titles found.</p>
+                            )}
+                        </div>
                     </div>
                 </div>,
                 modalRoot

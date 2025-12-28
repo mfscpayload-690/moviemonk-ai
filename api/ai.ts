@@ -4,6 +4,7 @@ import { searchPerplexity } from '../services/perplexityService';
 import { searchSerpApi } from '../services/serpApiService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
 import { MovieData } from '../types';
+import { fetchSimilarTitles } from '../services/tmdbService';
 // Note: generateSummary is client-side code, cannot be imported in serverless functions
 // import { generateSummary } from '../services/ai';
 
@@ -587,7 +588,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const buildPlatformUrl = (providerName: string, movieTitle: string): string => {
           const encoded = encodeURIComponent(movieTitle);
           const provider = providerName.toLowerCase();
-          
+
           if (provider.includes('netflix')) return `https://www.netflix.com/search?q=${encoded}`;
           if (provider.includes('prime') || provider.includes('amazon')) return `https://www.amazon.com/s?k=${encoded}&i=instant-video`;
           if (provider.includes('hulu')) return `https://www.hulu.com/search?q=${encoded}`;
@@ -600,7 +601,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (provider.includes('hotstar')) return `https://www.hotstar.com/in/search?q=${encoded}`;
           if (provider.includes('zee5')) return `https://www.zee5.com/search?q=${encoded}`;
           if (provider.includes('sonyliv')) return `https://www.sonyliv.com/search?q=${encoded}`;
-          
+
           // Fallback to JustWatch
           return `https://www.justwatch.com/us/search?q=${encoded}`;
         };
@@ -608,21 +609,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Process Watch Providers
         const watchProviders: any[] = [];
         const movieTitle = data.title || data.name || '';
-        
+
         if (data['watch/providers']?.results?.IN) { // Default to India as per user request
           const inProvider = data['watch/providers'].results.IN;
-          if (inProvider.flatrate) watchProviders.push(...inProvider.flatrate.map((p: any) => ({ 
-            platform: p.provider_name, 
+          if (inProvider.flatrate) watchProviders.push(...inProvider.flatrate.map((p: any) => ({
+            platform: p.provider_name,
             type: 'subscription',
             link: buildPlatformUrl(p.provider_name, movieTitle)
           })));
-          if (inProvider.rent) watchProviders.push(...inProvider.rent.map((p: any) => ({ 
-            platform: p.provider_name, 
+          if (inProvider.rent) watchProviders.push(...inProvider.rent.map((p: any) => ({
+            platform: p.provider_name,
             type: 'rent',
             link: buildPlatformUrl(p.provider_name, movieTitle)
           })));
-          if (inProvider.buy) watchProviders.push(...inProvider.buy.map((p: any) => ({ 
-            platform: p.provider_name, 
+          if (inProvider.buy) watchProviders.push(...inProvider.buy.map((p: any) => ({
+            platform: p.provider_name,
             type: 'buy',
             link: buildPlatformUrl(p.provider_name, movieTitle)
           })));
@@ -662,6 +663,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ai_notes: ''
         };
 
+        // Fetch related titles for movie/tv with caching
+        let related: any[] = [];
+        try {
+          if (mediaType === 'movie' || mediaType === 'tv') {
+            const relatedKey = `related_${mediaType}_${id}`;
+            const cachedRelated = await getCache(relatedKey);
+            if (cachedRelated) {
+              related = cachedRelated;
+            } else {
+              related = await fetchSimilarTitles(Number(id), mediaType as 'movie' | 'tv');
+              await setCache(relatedKey, related, 6 * 60 * 60);
+            }
+          }
+        } catch (relErr) {
+          console.warn('Related titles fetch failed:', relErr);
+        }
+
         const creative = await enrichCreativeFields(movieData, preferredProvider);
         const enriched: MovieData = {
           ...movieData,
@@ -671,6 +689,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           suspense_breaker: creative.suspense_breaker || movieData.suspense_breaker,
           ai_notes: creative.ai_notes || movieData.ai_notes
         };
+
+        (enriched as any).related = related || [];
 
         await setCache(cacheKey, enriched, 24 * 60 * 60);
         return res.status(200).json(enriched);

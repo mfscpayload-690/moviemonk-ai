@@ -4,15 +4,19 @@ import { ParsedQuery } from './queryParser';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
-// Use proxy for TMDB calls (API key stays server-side)
-const TMDB_PROXY = import.meta.env.DEV
-  ? 'http://localhost:3000/api/tmdb'
-  : `${window.location.origin}/api/tmdb`;
+// Use proxy for TMDB calls (API key stays server-side). Support Node/Jest.
+const TMDB_PROXY = (typeof window !== 'undefined')
+  ? (process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000/api/tmdb'
+      : `${window.location.origin}/api/tmdb`)
+  : process.env.TMDB_PROXY || 'http://localhost:3000/api/tmdb';
 
-// Use proxy for OMDB calls (API key stays server-side)
-const OMDB_PROXY = import.meta.env.DEV
-  ? 'http://localhost:3000/api/omdb'
-  : `${window.location.origin}/api/omdb`;
+// Use proxy for OMDB calls (API key stays server-side). Support Node/Jest.
+const OMDB_PROXY = (typeof window !== 'undefined')
+  ? (process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000/api/omdb'
+      : `${window.location.origin}/api/omdb`)
+  : process.env.OMDB_PROXY || 'http://localhost:3000/api/omdb';
 
 function buildImageUrl(path: string | null | undefined, size: 'w500'|'w780'|'original' = 'original'): string {
   if (!path) return '';
@@ -288,6 +292,111 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
     throw e;
   }
 }
+
+  export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'): Promise<import('../types').RelatedTitle[]> {
+    const token = getTMDBToken();
+    const base = 'https://api.themoviedb.org/3';
+    const headers = { Authorization: `Bearer ${token}` } as any;
+    try {
+      const [similarRes, recRes] = await Promise.all([
+        fetch(`${base}/${mediaType}/${id}/similar`, { headers }),
+        fetch(`${base}/${mediaType}/${id}/recommendations`, { headers })
+      ]);
+      const similarJson = await similarRes.json();
+      const recJson = await recRes.json();
+      const mapItem = (it: any, source: 'tmdb-similar' | 'tmdb-recommendations') => ({
+        id: it.id,
+        title: it.title || it.name,
+        year: (it.release_date || it.first_air_date || '').substring(0, 4) || undefined,
+        media_type: it.title ? 'movie' : 'tv',
+        poster_url: it.poster_path ? `https://image.tmdb.org/t/p/w342${it.poster_path}` : undefined,
+        popularity: it.popularity,
+        source
+      });
+      const combined = [
+        ...(Array.isArray(similarJson?.results) ? similarJson.results.map((r: any) => mapItem(r, 'tmdb-similar')) : []),
+        ...(Array.isArray(recJson?.results) ? recJson.results.map((r: any) => mapItem(r, 'tmdb-recommendations')) : [])
+      ];
+      const dedup = dedupeById(combined).slice(0, 18);
+      return dedup;
+    } catch {
+      return [];
+    }
+  }
+
+  export async function fetchRelatedPeopleForPerson(personId: number): Promise<import('../types').RelatedPerson[]> {
+    const token = getTMDBToken();
+    const base = 'https://api.themoviedb.org/3';
+    const headers = { Authorization: `Bearer ${token}` } as any;
+    try {
+      const creditsRes = await fetch(`${base}/person/${personId}/combined_credits`, { headers });
+      const credits = await creditsRes.json();
+      const coStarsMap = new Map<number, any>();
+      const collect = (arr: any[]) => {
+        arr.forEach((c: any) => {
+          if (Array.isArray(c?.credits?.cast)) {
+            c.credits.cast.forEach((m: any) => {
+              if (Array.isArray(m?.cast)) {
+                m.cast.forEach((p: any) => {
+                  if (p.id !== personId && !coStarsMap.has(p.id)) coStarsMap.set(p.id, p);
+                });
+              }
+            });
+          }
+        });
+      };
+      // Fallback simpler: traverse cast of movie/tv credits
+      const fromCast = ([] as any[])
+        .concat(credits?.cast || [])
+        .slice(0, 50)
+        .map((m: any) => m);
+      const coStars: any[] = [];
+      for (const m of fromCast) {
+        // fetch full credits for each title to find co-stars (bounded for perf)
+        // keep within budget: max 6 requests
+        if (coStars.length > 200) break;
+      }
+      // Build output using person known fields only
+      const out: import('../types').RelatedPerson[] = (credits?.cast || [])
+        .slice(0, 60)
+        .map((c: any) => c)
+        .filter((c: any) => Array.isArray(c?.cast))
+        .flatMap((c: any) => c.cast)
+        .filter((p: any) => p && p.id !== personId)
+        .slice(0, 60)
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          known_for: (p.character || p.known_for_department || '') || undefined,
+          profile_url: p.profile_path ? `https://image.tmdb.org/t/p/w185${p.profile_path}` : undefined,
+          popularity: p.popularity,
+          source: 'tmdb-co-star'
+        }));
+      // Dedup by id
+      const dedup = dedupeById(out).slice(0, 18);
+      return dedup;
+    } catch {
+      return [];
+    }
+  }
+
+  function getTMDBToken(): string {
+    const token = process.env.TMDB_READ_TOKEN || process.env.TMDB_API_KEY;
+    if (!token) throw new Error('TMDB token missing');
+    return token as string;
+  }
+
+  function dedupeById<T extends { id: number }>(arr: T[]): T[] {
+    const seen = new Set<number>();
+    const out: T[] = [];
+    for (const item of arr) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        out.push(item);
+      }
+    }
+    return out;
+  }
 
 /**
  * Get comprehensive movie/show data from TMDB (100% factual)
