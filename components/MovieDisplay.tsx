@@ -289,27 +289,27 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     if (!movie) {
         return (
-            <div className="h-full flex items-center justify-center p-6 animate-fade-in relative overflow-hidden">
+            <div className="min-h-full flex items-center justify-center p-6 pt-24 animate-fade-in relative">
                 <div className="absolute inset-0 bg-gradient-radial from-violet-900/20 to-transparent pointer-events-none" />
                 <div className="max-w-6xl mx-auto w-full relative z-10">
                     <div className="text-center mb-12">
-                        <Logo className="mx-auto h-24 w-24 animate-fade-in text-primary drop-shadow-glow" />
-                        <h1 className="mt-6 text-5xl md:text-7xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up">MovieMonk</h1>
-                        <p className="mt-4 text-xl md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
+                        <Logo className="mx-auto h-20 w-20 md:h-24 md:w-24 animate-fade-in text-primary drop-shadow-glow" />
+                        <h1 className="mt-6 text-4xl md:text-7xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up">MovieMonk</h1>
+                        <p className="mt-4 text-lg md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pb-20">
                         {DISCOVER_TITLES.map((title, idx) => (
                             <button
                                 key={title}
                                 onClick={() => onQuickSearch(title)}
-                                className="glass-panel group relative p-6 flex flex-col items-start justify-between hover:border-violet-500/50 transition-all duration-300 min-h-[160px] rounded-xl text-left"
+                                className="glass-panel group relative p-4 md:p-6 flex flex-col items-start justify-between hover:border-violet-500/50 transition-all duration-300 min-h-[130px] md:min-h-[160px] rounded-xl text-left"
                                 style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
                             >
                                 <span className="absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-br from-violet-600 to-pink-600 transition-opacity rounded-xl" />
-                                <span className="text-xs font-medium text-violet-400 uppercase tracking-widest">Featured</span>
-                                <h3 className="mt-2 text-xl font-bold text-white group-hover:text-primary transition-colors leading-tight">{title}</h3>
-                                <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-muted group-hover:text-white transition-colors">
-                                    <PlayIcon className="w-4 h-4" /> Explore
+                                <span className="text-[10px] md:text-xs font-medium text-violet-400 uppercase tracking-widest">Featured</span>
+                                <h3 className="mt-1 md:mt-2 text-lg md:text-xl font-bold text-white group-hover:text-primary transition-colors leading-tight">{title}</h3>
+                                <span className="mt-auto inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-muted group-hover:text-white transition-colors">
+                                    <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> Explore
                                 </span>
                             </button>
                         ))}

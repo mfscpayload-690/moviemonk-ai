@@ -74,13 +74,13 @@ const App: React.FC = () => {
   }, [showWatchlistsModal, refresh]);
 
   const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
-  
+
   const startEditFolder = (folder: any) => {
     setEditingFolderId(folder.id);
     setEditFolderName(folder.name);
     setEditFolderColor(folder.color || '#7c3aed');
   };
-  
+
   const saveFolderEdits = () => {
     if (!editingFolderId) return;
     renameFolder(editingFolderId, editFolderName);
@@ -249,7 +249,7 @@ const App: React.FC = () => {
 
       // Set data sources for attribution
       setSources([
-        { 
+        {
           web: {
             uri: `https://www.themoviedb.org/${selectedResult.media_type || 'movie'}/${selectedResult.id}`,
             title: 'The Movie Database (TMDB)'
@@ -421,7 +421,7 @@ const App: React.FC = () => {
           setMovieData(detailsData);
           setPersonData(null);
           setSources([
-            { 
+            {
               web: {
                 uri: `https://www.themoviedb.org/${selectedAmbiguous.media_type || 'movie'}/${selectedAmbiguous.id}`,
                 title: 'The Movie Database (TMDB)'
@@ -520,7 +520,7 @@ const App: React.FC = () => {
         }
 
         {/* Main Content Area - Full width Featured UI */}
-        <div className="main-content">
+        <div className="main-content pb-24">
           {personData ? (
             <PersonDisplay
               data={personData}
@@ -607,8 +607,8 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
               {watchlists.map(folder => (
-                <div 
-                  key={folder.id} 
+                <div
+                  key={folder.id}
                   className="p-3 rounded-xl border border-white/10 bg-white/5 space-y-2 min-h-[300px]"
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, folder.id)}
@@ -656,11 +656,10 @@ const App: React.FC = () => {
                           key={item.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
-                          className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${
-                            draggedItem?.itemId === item.id
+                          className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${draggedItem?.itemId === item.id
                               ? 'opacity-50 border-brand-primary bg-brand-primary/10'
                               : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
-                          }`}
+                            }`}
                         >
                           <button
                             onClick={() => handleLoadSavedItem(folder.id, item.id)}
@@ -668,7 +667,7 @@ const App: React.FC = () => {
                           >
                             <div className="flex flex-col">
                               <span className="text-sm font-semibold text-white">{item.saved_title}</span>
-                              <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0,3).join(', ')}</span>
+                              <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0, 3).join(', ')}</span>
                             </div>
                           </button>
                           <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
