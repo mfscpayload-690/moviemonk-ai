@@ -458,17 +458,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log('🔍 Parsed Query:', parsed);
         console.log('🔍 Search Query:', searchQuery);
-      const cacheKey = `details_${mediaType}_${id}_${preferredProvider}`;
-      // Enhance: include related titles for movie/tv
-      const mediaType = (req.query.media_type as string) || 'movie';
-      const id = parseInt(req.query.id as string);
-      try {
-        const related = await fetchSimilarTitles(id, mediaType as 'movie' | 'tv');
-        (result as any).related = related;
-      } catch (e) {
-        console.warn('related fetch failed', e);
-        (result as any).related = [];
-      }
+
         // Try TMDB first (more reliable)
         let results = await searchTMDB(parsed.title, 6);
         console.log(`📺 TMDB returned ${results.length} results`);
@@ -598,7 +588,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const buildPlatformUrl = (providerName: string, movieTitle: string): string => {
           const encoded = encodeURIComponent(movieTitle);
           const provider = providerName.toLowerCase();
-          
+
           if (provider.includes('netflix')) return `https://www.netflix.com/search?q=${encoded}`;
           if (provider.includes('prime') || provider.includes('amazon')) return `https://www.amazon.com/s?k=${encoded}&i=instant-video`;
           if (provider.includes('hulu')) return `https://www.hulu.com/search?q=${encoded}`;
@@ -611,7 +601,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (provider.includes('hotstar')) return `https://www.hotstar.com/in/search?q=${encoded}`;
           if (provider.includes('zee5')) return `https://www.zee5.com/search?q=${encoded}`;
           if (provider.includes('sonyliv')) return `https://www.sonyliv.com/search?q=${encoded}`;
-          
+
           // Fallback to JustWatch
           return `https://www.justwatch.com/us/search?q=${encoded}`;
         };
@@ -619,21 +609,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Process Watch Providers
         const watchProviders: any[] = [];
         const movieTitle = data.title || data.name || '';
-        
+
         if (data['watch/providers']?.results?.IN) { // Default to India as per user request
           const inProvider = data['watch/providers'].results.IN;
-          if (inProvider.flatrate) watchProviders.push(...inProvider.flatrate.map((p: any) => ({ 
-            platform: p.provider_name, 
+          if (inProvider.flatrate) watchProviders.push(...inProvider.flatrate.map((p: any) => ({
+            platform: p.provider_name,
             type: 'subscription',
             link: buildPlatformUrl(p.provider_name, movieTitle)
           })));
-          if (inProvider.rent) watchProviders.push(...inProvider.rent.map((p: any) => ({ 
-            platform: p.provider_name, 
+          if (inProvider.rent) watchProviders.push(...inProvider.rent.map((p: any) => ({
+            platform: p.provider_name,
             type: 'rent',
             link: buildPlatformUrl(p.provider_name, movieTitle)
           })));
-          if (inProvider.buy) watchProviders.push(...inProvider.buy.map((p: any) => ({ 
-            platform: p.provider_name, 
+          if (inProvider.buy) watchProviders.push(...inProvider.buy.map((p: any) => ({
+            platform: p.provider_name,
             type: 'buy',
             link: buildPlatformUrl(p.provider_name, movieTitle)
           })));

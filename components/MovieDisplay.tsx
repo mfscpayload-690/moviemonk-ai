@@ -36,7 +36,17 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
     return null;
 };
 
-// Helper function to convert simple markdown to HTML
+// Basic HTML escape function
+const escapeHtml = (unsafe: string) => {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
+// Helper function to convert simple markdown to HTML (XSS Safe)
 const markdownToHtml = (text: string): string => {
     if (!text) return '';
 
@@ -54,17 +64,17 @@ const markdownToHtml = (text: string): string => {
     lines.forEach(line => {
         if (line.startsWith('### ')) {
             closeList();
-            htmlBlocks.push(`<h3>${line.substring(4)}</h3>`);
+            htmlBlocks.push(`<h3>${escapeHtml(line.substring(4))}</h3>`);
         } else if (line.startsWith('## ')) {
             closeList();
-            htmlBlocks.push(`<h2>${line.substring(3)}</h2>`);
+            htmlBlocks.push(`<h2>${escapeHtml(line.substring(3))}</h2>`);
         } else if (line.startsWith('* ')) {
-            currentList.push(`<li>${line.substring(2)}</li>`);
+            currentList.push(`<li>${escapeHtml(line.substring(2))}</li>`);
         } else if (line.trim() === '') {
             closeList();
         } else {
             closeList();
-            htmlBlocks.push(`<p>${line}</p>`);
+            htmlBlocks.push(`<p>${escapeHtml(line)}</p>`);
         }
     });
 
@@ -72,7 +82,17 @@ const markdownToHtml = (text: string): string => {
 
     let html = htmlBlocks.join('');
 
-    // Inline replacements
+    // Inline replacements (Applied AFTER escaping to preserve tags)
+    // Note: This logic prevents bolding if the user inputs literal **foo**.
+    // To support markdown styles properly, we should unescape the specific specific tags we want to allow,
+    // or use a proper parser. For this simple case, we'll re-apply the formatting tags to the escaped string.
+
+    html = html.replace(/&lt;strong&gt;&lt;em&gt;(.*?)&lt;\/em&gt;&lt;\/strong&gt;/g, '<strong><em>$1</em></strong>'); // simplified for this regex approach
+    // Actually, simple regex replacement on escaped text:
+    // We want **text** to become <strong>text</strong>.
+    // The escape happened first, so **text** became **text** (unchanged special chars).
+    // So we can just run the replacements now.
+
     html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>'); // Bold + Italic
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');       // Bold
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');               // Italic
@@ -222,20 +242,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         })
         : [];
 
-        const handleSaveToWatchlist = () => {
-            if (!movie) return;
-            let folderId = selectedFolderId;
-            if (!folderId && newFolderName.trim()) {
-                const createdId = onCreateWatchlist(newFolderName, newFolderColor);
-                if (createdId) {
-                    folderId = createdId;
-                    setSelectedFolderId(createdId);
-                }
+    const handleSaveToWatchlist = () => {
+        if (!movie) return;
+        let folderId = selectedFolderId;
+        if (!folderId && newFolderName.trim()) {
+            const createdId = onCreateWatchlist(newFolderName, newFolderColor);
+            if (createdId) {
+                folderId = createdId;
+                setSelectedFolderId(createdId);
             }
-            if (!folderId) return;
-            onSaveToWatchlist(folderId, movie, customSavedTitle || movie.title);
-            setShowWatchlistModal(false);
-        };
+        }
+        if (!folderId) return;
+        onSaveToWatchlist(folderId, movie, customSavedTitle || movie.title);
+        setShowWatchlistModal(false);
+    };
 
     const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
 
@@ -477,10 +497,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
                                             title={`Scene ${i + 1}`}
                                         >
-                                            <ImageWithFallback 
-                                                src={img} 
-                                                alt={`Gallery image ${i + 1}`} 
-                                                className="gallery-thumb-img" 
+                                            <ImageWithFallback
+                                                src={img}
+                                                alt={`Gallery image ${i + 1}`}
+                                                className="gallery-thumb-img"
                                             />
                                             <div className="gallery-thumb-overlay">
                                                 <span className="gallery-thumb-number">{i + 1}</span>
@@ -573,118 +593,118 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 </div>
             </div>
 
-                {showWatchlistModal && modalRoot && ReactDOM.createPortal(
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-                        <div className="w-full max-w-md bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-5 space-y-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            {showWatchlistModal && modalRoot && ReactDOM.createPortal(
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+                    <div className="w-full max-w-md bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-5 space-y-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-white">Save to Watch Later</h3>
+                            <button onClick={() => setShowWatchlistModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close watchlist modal">
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-brand-text-light">Save as</label>
+                            <input
+                                value={customSavedTitle}
+                                onChange={(e) => setCustomSavedTitle(e.target.value)}
+                                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                                placeholder="Custom title"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold text-white">Save to Watch Later</h3>
-                                <button onClick={() => setShowWatchlistModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close watchlist modal">
-                                    <XMarkIcon className="w-5 h-5" />
-                                </button>
+                                <p className="text-sm font-semibold text-white">Choose folder</p>
+                                <span className="text-xs text-brand-text-dark">{watchlists.length || 0} folders</span>
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-brand-text-light">Save as</label>
-                                <input
-                                    value={customSavedTitle}
-                                    onChange={(e) => setCustomSavedTitle(e.target.value)}
-                                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                                    placeholder="Custom title"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm font-semibold text-white">Choose folder</p>
-                                    <span className="text-xs text-brand-text-dark">{watchlists.length || 0} folders</span>
-                                </div>
-                                <div className="max-h-40 overflow-y-auto space-y-2">
-                                    {watchlists.length === 0 && (
-                                        <p className="text-sm text-brand-text-dark">No folders yet. Create one below.</p>
-                                    )}
-                                    {watchlists.map(folder => (
-                                        <label key={folder.id} className="flex items-center gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="watchlist-folder"
-                                                value={folder.id}
-                                                checked={selectedFolderId === folder.id}
-                                                onChange={() => setSelectedFolderId(folder.id)}
-                                                className="accent-brand-primary"
-                                            />
-                                            <span className="w-4 h-4 rounded-full" style={{ backgroundColor: folder.color }}></span>
-                                            <span className="text-sm text-white">{folder.name}</span>
-                                            <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="border-t border-white/10 pt-3 space-y-2">
-                                <p className="text-sm font-semibold text-white">Create new folder</p>
-                                <input
-                                    value={newFolderName}
-                                    onChange={(e) => setNewFolderName(e.target.value)}
-                                    className={`w-full rounded-lg border bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 ${newFolderNameError ? 'border-red-500 focus:ring-red-500' : 'border-white/10 focus:ring-brand-primary'}`}
-                                    placeholder="e.g., Sci-Fi Gems"
-                                />
-                                {newFolderNameError && (
-                                    <p className="text-xs text-red-400">{newFolderNameError}</p>
+                            <div className="max-h-40 overflow-y-auto space-y-2">
+                                {watchlists.length === 0 && (
+                                    <p className="text-sm text-brand-text-dark">No folders yet. Create one below.</p>
                                 )}
-                                <div className="flex items-center gap-2">
-                                    {COLOR_PRESETS.map(color => (
-                                        <button
-                                            key={color}
-                                            type="button"
-                                            onClick={() => setNewFolderColor(color)}
-                                            className={`w-7 h-7 rounded-full border ${newFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
-                                            style={{ backgroundColor: color }}
-                                            aria-label={`Choose ${color}`}
+                                {watchlists.map(folder => (
+                                    <label key={folder.id} className="flex items-center gap-3 p-2 rounded-lg border border-white/10 hover:border-brand-primary/50 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="watchlist-folder"
+                                            value={folder.id}
+                                            checked={selectedFolderId === folder.id}
+                                            onChange={() => setSelectedFolderId(folder.id)}
+                                            className="accent-brand-primary"
                                         />
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2 pt-2">
-                                {/* Selected target indicator */}
-                                <div className="text-xs text-brand-text-dark">
-                                    {selectedFolderId ? (
-                                        (() => {
-                                            const folder = watchlists.find(f => f.id === selectedFolderId);
-                                            return folder ? (
-                                                <span className="inline-flex items-center gap-2">
-                                                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
-                                                    <span>Saving to: <span className="text-white font-semibold">{folder.name}</span></span>
-                                                </span>
-                                            ) : null;
-                                        })()
-                                    ) : newFolderName.trim().length > 0 ? (
-                                        <span className="inline-flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: newFolderColor }}></span>
-                                            <span>Saving to new: <span className="text-white font-semibold">{newFolderName.trim()}</span></span>
-                                        </span>
-                                    ) : (
-                                        <span>Choose a folder or create one</span>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => setShowWatchlistModal(false)}
-                                    className="px-4 py-2 rounded-lg border border-white/15 text-white text-sm hover:bg-white/10"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSaveToWatchlist}
-                                    disabled={!canSave}
-                                    className={`px-4 py-2 rounded-lg text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-primary ${canSave ? 'bg-brand-primary hover:bg-brand-secondary' : 'bg-white/10 cursor-not-allowed'}`}
-                                >
-                                    Save
-                                </button>
+                                        <span className="w-4 h-4 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                        <span className="text-sm text-white">{folder.name}</span>
+                                        <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
-                    </div>,
-                    modalRoot
-                )}
+
+                        <div className="border-t border-white/10 pt-3 space-y-2">
+                            <p className="text-sm font-semibold text-white">Create new folder</p>
+                            <input
+                                value={newFolderName}
+                                onChange={(e) => setNewFolderName(e.target.value)}
+                                className={`w-full rounded-lg border bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 ${newFolderNameError ? 'border-red-500 focus:ring-red-500' : 'border-white/10 focus:ring-brand-primary'}`}
+                                placeholder="e.g., Sci-Fi Gems"
+                            />
+                            {newFolderNameError && (
+                                <p className="text-xs text-red-400">{newFolderNameError}</p>
+                            )}
+                            <div className="flex items-center gap-2">
+                                {COLOR_PRESETS.map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => setNewFolderColor(color)}
+                                        className={`w-7 h-7 rounded-full border ${newFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
+                                        style={{ backgroundColor: color }}
+                                        aria-label={`Choose ${color}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 pt-2">
+                            {/* Selected target indicator */}
+                            <div className="text-xs text-brand-text-dark">
+                                {selectedFolderId ? (
+                                    (() => {
+                                        const folder = watchlists.find(f => f.id === selectedFolderId);
+                                        return folder ? (
+                                            <span className="inline-flex items-center gap-2">
+                                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                                <span>Saving to: <span className="text-white font-semibold">{folder.name}</span></span>
+                                            </span>
+                                        ) : null;
+                                    })()
+                                ) : newFolderName.trim().length > 0 ? (
+                                    <span className="inline-flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: newFolderColor }}></span>
+                                        <span>Saving to new: <span className="text-white font-semibold">{newFolderName.trim()}</span></span>
+                                    </span>
+                                ) : (
+                                    <span>Choose a folder or create one</span>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setShowWatchlistModal(false)}
+                                className="px-4 py-2 rounded-lg border border-white/15 text-white text-sm hover:bg-white/10"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveToWatchlist}
+                                disabled={!canSave}
+                                className={`px-4 py-2 rounded-lg text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-primary ${canSave ? 'bg-brand-primary hover:bg-brand-secondary' : 'bg-white/10 cursor-not-allowed'}`}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                modalRoot
+            )}
 
             {isTrailerOpen && embedUrl && modalRoot && ReactDOM.createPortal(
                 <div
