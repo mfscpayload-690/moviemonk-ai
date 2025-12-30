@@ -374,14 +374,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
                 {/* Content Layer - Above gradients */}
                 <div className="relative h-full flex items-end p-4 md:p-12 max-w-screen-xl mx-auto z-20">
-                    {/* Mobile: column-reverse, Desktop: row */}
-                    <div className="flex flex-col-reverse sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto">
-                        {/* Poster Card - Shows below text on mobile */}
+                    {/* Mobile: column, Desktop: row */}
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto">
+                        {/* Poster Card - Shows Above text on mobile now */}
                         <div className="flex-shrink-0 animate-fade-in will-change-transform" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
                             <ImageWithFallback
                                 src={movie.poster_url}
                                 alt={`${movie.title} poster`}
-                                className="w-24 sm:w-40 md:w-56 lg:w-64 rounded-lg md:rounded-xl shadow-2xl border-2 md:border-4 border-white/20 aspect-[2/3] poster-hover-effect"
+                                className="w-40 sm:w-40 md:w-56 lg:w-64 rounded-lg md:rounded-xl shadow-2xl border-2 md:border-4 border-white/20 aspect-[2/3] poster-hover-effect"
                             />
                         </div>
 
