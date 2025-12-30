@@ -561,8 +561,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     </Section>
 
                     <Section title="Cast & Crew">
-                        {/* Horizontal scroll on mobile, grid on desktop */}
-                        <div className="cast-grid-mobile-scroll horizontal-scroll-fade-right">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
                         </div>
                         {safeCast.length > 8 && (
