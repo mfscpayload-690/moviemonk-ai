@@ -102,13 +102,19 @@ const markdownToHtml = (text: string): string => {
 
 const ImageWithFallback: React.FC<{ src: string, alt: string, className: string }> = ({ src, alt, className }) => {
     const [error, setError] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         setError(false);
+        setLoaded(false);
     }, [src]);
 
     const handleError = () => {
         setError(true);
+    };
+
+    const handleLoad = () => {
+        setLoaded(true);
     };
 
     if (error || !src) {
@@ -120,7 +126,22 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
         );
     }
 
-    return <img src={src} alt={alt} className={className} onError={handleError} />;
+    return (
+        <div className={`relative ${className}`}>
+            {/* Skeleton loader */}
+            {!loaded && (
+                <div className="absolute inset-0 image-skeleton rounded-lg" />
+            )}
+            <img
+                src={src}
+                alt={alt}
+                className={`w-full h-full object-cover transition-opacity duration-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                onError={handleError}
+                onLoad={handleLoad}
+                loading="lazy"
+            />
+        </div>
+    );
 };
 
 
@@ -169,6 +190,7 @@ const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#
 
 const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist }) => {
     const [showFullPlot, setShowFullPlot] = useState(false);
+    const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
     const [isTrailerOpen, setIsTrailerOpen] = useState(false);
     const [showAllCast, setShowAllCast] = useState(false);
@@ -184,6 +206,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [showRelatedModal, setShowRelatedModal] = useState(false);
     const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
     const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
+
+    // Check if synopsis is long enough to need truncation
+    const synopsisNeedsTruncation = movie?.summary_medium && movie.summary_medium.length > 300;
 
     useEffect(() => {
         // This effect runs on the client, where document is available.
@@ -333,7 +358,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 </div>
             )}
             {/* Hero Section with Poster Card */}
-            <div className="relative w-full h-[45vh] md:h-[70vh] mb-6 md:mb-8 overflow-hidden">
+            <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">
                 {/* Backdrop Image Layer */}
                 {movie.backdrop_url && (
                     <img
@@ -349,61 +374,60 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
                 {/* Content Layer - Above gradients */}
                 <div className="relative h-full flex items-end p-4 md:p-12 max-w-screen-xl mx-auto z-20">
-                    <div className="flex flex-col md:flex-row items-start gap-4 md:gap-8">
-                        {/* Poster Card */}
-                        <div className="flex-shrink-0 animate-fade-in" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
+                    {/* Mobile: column-reverse, Desktop: row */}
+                    <div className="flex flex-col-reverse sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto">
+                        {/* Poster Card - Shows below text on mobile */}
+                        <div className="flex-shrink-0 animate-fade-in will-change-transform" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
                             <ImageWithFallback
                                 src={movie.poster_url}
                                 alt={`${movie.title} poster`}
-                                className="w-28 sm:w-40 md:w-56 lg:w-64 rounded-lg md:rounded-xl shadow-2xl border-2 md:border-4 border-white/20 aspect-[2/3] object-cover transform hover:scale-105 transition-transform duration-300"
+                                className="w-24 sm:w-40 md:w-56 lg:w-64 rounded-lg md:rounded-xl shadow-2xl border-2 md:border-4 border-white/20 aspect-[2/3] poster-hover-effect"
                             />
                         </div>
 
                         {/* Title and Info Card */}
-                        <div className="flex-1 text-left pb-2 md:pb-4">
-                            <h1 className="text-2xl sm:text-3xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl animate-fade-in leading-tight" style={{ animationDelay: '0.15s', animationFillMode: 'forwards' }}>{movie.title}</h1>
+                        <div className="flex-1 text-center sm:text-left pb-2 md:pb-4 w-full sm:w-auto">
+                            <h1 className="text-2xl sm:text-3xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl animate-fade-in leading-tight text-depth" style={{ animationDelay: '0.15s', animationFillMode: 'forwards' }}>{movie.title}</h1>
                             <p className="mt-2 md:mt-3 text-sm sm:text-base md:text-xl text-brand-text-light font-semibold animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'forwards' }}>
                                 {movie.year} &bull; {typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : ''}
                             </p>
 
-                            <div className="mt-2 md:mt-4 flex flex-wrap gap-1.5 md:gap-2 animate-slide-up" style={{ animationDelay: '0.35s', animationFillMode: 'forwards' }}>
+                            <div className="mt-2 md:mt-4 flex flex-wrap justify-center sm:justify-start gap-1.5 md:gap-2 animate-slide-up" style={{ animationDelay: '0.35s', animationFillMode: 'forwards' }}>
                                 {safeGenres.map(genre => (
                                     <span key={genre} className="px-2 py-1 md:px-3 md:py-1.5 bg-white/20 text-white text-xs md:text-sm font-bold rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">{genre}</span>
                                 ))}
                             </div>
 
-                            <div className="mt-3 md:mt-6 flex flex-wrap gap-x-3 gap-y-2 md:gap-x-6 md:gap-y-3 items-center animate-slide-up" style={{ animationDelay: '0.45s', animationFillMode: 'forwards' }}>
-                                {/* Ratings Grid - IMDb Style */}
-                                <div className="flex flex-wrap gap-2 md:gap-4 items-center w-full">
-                                    {safeRatings.length > 0 && (
-                                        safeRatings.map(rating => (
-                                            <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-2.5 py-2 md:px-4 md:py-3 rounded-lg border border-white/15 hover:border-brand-primary/40 transition-colors">
-                                                <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
-                                                    {rating.source.toLowerCase().includes('rotten') && (
-                                                        <RottenTomatoesIcon className="w-4 h-4 md:w-6 md:h-6 text-red-500 flex-shrink-0" />
-                                                    )}
-                                                    {rating.source.toLowerCase().includes('imdb') && (
-                                                        <StarIcon className="w-4 h-4 md:w-6 md:h-6 text-yellow-400 flex-shrink-0" />
-                                                    )}
-                                                    {rating.source.toLowerCase().includes('tmdb') && (
-                                                        <FilmIcon className="w-4 h-4 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
-                                                    <p className="text-sm md:text-lg font-extrabold text-brand-primary">{rating.score}</p>
-                                                </div>
+                            <div className="mt-3 md:mt-6 flex flex-wrap justify-center sm:justify-start gap-2 md:gap-4 items-center animate-slide-up" style={{ animationDelay: '0.45s', animationFillMode: 'forwards' }}>
+                                {/* Ratings Grid - With hover effects and improved touch targets */}
+                                {safeRatings.length > 0 && (
+                                    safeRatings.map(rating => (
+                                        <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
+                                            <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
+                                                {rating.source.toLowerCase().includes('rotten') && (
+                                                    <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 text-red-500 flex-shrink-0" />
+                                                )}
+                                                {rating.source.toLowerCase().includes('imdb') && (
+                                                    <StarIcon className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 flex-shrink-0" />
+                                                )}
+                                                {rating.source.toLowerCase().includes('tmdb') && (
+                                                    <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
+                                                )}
                                             </div>
-                                        ))
-                                    )}
-                                </div>
+                                            <div className="flex flex-col gap-0.5">
+                                                <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
+                                                <p className="text-sm md:text-lg font-extrabold rating-score-accessible">{rating.score}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
 
                             {movie && (
-                                <div className="mt-4 md:mt-8 animate-slide-up flex flex-wrap gap-3" style={{ animationDelay: '0.55s', animationFillMode: 'forwards' }}>
+                                <div className="mt-4 md:mt-8 animate-slide-up flex flex-wrap justify-center sm:justify-start gap-3" style={{ animationDelay: '0.55s', animationFillMode: 'forwards' }}>
                                     <button
                                         onClick={() => setShowWatchlistModal(true)}
-                                        className="inline-flex items-center gap-2 px-5 py-3 bg-white/15 text-white font-semibold text-sm md:text-base rounded-xl border border-white/15 hover:border-brand-primary/50 hover:bg-white/20 transition-all duration-200"
+                                        className="inline-flex items-center gap-2 px-5 py-3 bg-white/15 text-white font-semibold text-sm md:text-base rounded-xl border border-white/15 hover:border-brand-primary/50 hover:bg-white/20 transition-all duration-200 touch-target btn-mobile-friendly"
                                     >
                                         <TagIcon className="w-5 h-5" />
                                         <span>Save to List</span>
@@ -418,7 +442,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                                 });
                                                 setIsTrailerOpen(true);
                                             }}
-                                            className="inline-flex items-center gap-2 md:gap-3 px-6 py-3 md:px-8 md:py-4 bg-brand-primary text-white font-bold text-base md:text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50"
+                                            className="inline-flex items-center gap-2 md:gap-3 px-6 py-3 md:px-8 md:py-4 bg-brand-primary text-white font-bold text-base md:text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50 play-trailer-pulse touch-target"
                                         >
                                             <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />
                                             <span>Play Trailer</span>
@@ -435,9 +459,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 <div className="lg:col-span-2 space-y-8">
                     <Section title="Synopsis">
-                        <p className="text-brand-text-dark leading-relaxed">{movie.summary_medium}</p>
-
-
+                        {/* Synopsis with Read More for long text */}
+                        <div className="relative">
+                            <p className={`text-brand-text-dark text-accessible-muted leading-relaxed ${synopsisNeedsTruncation && !synopsisExpanded ? 'synopsis-truncated' : ''}`}>
+                                {movie.summary_medium}
+                            </p>
+                            {synopsisNeedsTruncation && (
+                                <button
+                                    onClick={() => setSynopsisExpanded(!synopsisExpanded)}
+                                    className="mt-2 text-sm font-semibold text-brand-primary hover:text-brand-accent transition-colors touch-target"
+                                >
+                                    {synopsisExpanded ? 'Show less' : 'Read more'}
+                                </button>
+                            )}
+                        </div>
 
                         <div className="mt-6">
                             <div className="space-y-3">
@@ -461,7 +496,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     disabled={isLoadingFullPlot}
                                     aria-controls="spoiler-content"
                                     aria-expanded={showFullPlot}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors touch-target"
                                 >
                                     {isLoadingFullPlot ? (
                                         <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
@@ -487,13 +522,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
                     <Section title="Gallery">
                         {safeExtraImages.length > 0 ? (
-                            <div className="gallery-container">
+                            <div className="gallery-container horizontal-scroll-fade-right">
                                 <div className="gallery-filmstrip">
                                     {safeExtraImages.map((img, i) => (
                                         <button
                                             key={i}
                                             onClick={() => setSelectedImage(img)}
-                                            className="gallery-thumb"
+                                            className="gallery-thumb touch-target"
                                             aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
                                             title={`Scene ${i + 1}`}
                                         >
@@ -508,24 +543,33 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                         </button>
                                     ))}
                                 </div>
-                                <div className="gallery-info text-xs text-brand-text-dark mt-3">
-                                    {safeExtraImages.length} images available • Click to view
+                                <div className="gallery-info text-xs text-accessible-muted mt-3 flex items-center gap-2">
+                                    <span>{safeExtraImages.length} images</span>
+                                    <span className="hidden sm:inline">• Click to view</span>
+                                    <span className="sm:hidden">• Swipe to browse</span>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-brand-text-dark text-sm italic">No gallery images available.</p>
+                            <div className="empty-state">
+                                <div className="empty-state-icon">
+                                    <ImageIcon className="w-8 h-8" />
+                                </div>
+                                <p className="empty-state-title">No gallery images available</p>
+                                <p className="empty-state-subtitle">Images may be added later</p>
+                            </div>
                         )}
                     </Section>
 
                     <Section title="Cast & Crew">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {/* Horizontal scroll on mobile, grid on desktop */}
+                        <div className="cast-grid-mobile-scroll horizontal-scroll-fade-right">
                             {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
                         </div>
                         {safeCast.length > 8 && (
                             <div className="mt-4 text-center">
                                 <button
                                     onClick={() => setShowAllCast(!showAllCast)}
-                                    className="px-4 py-2 text-sm font-semibold text-brand-primary bg-brand-primary/10 rounded-full hover:bg-brand-primary/20 transition-colors"
+                                    className="px-5 py-2.5 text-sm font-semibold text-brand-primary bg-brand-primary/10 rounded-full hover:bg-brand-primary/20 transition-colors touch-target"
                                 >
                                     {showAllCast ? 'Show Less' : `Show ${safeCast.length - 8} More`}
                                 </button>
@@ -548,36 +592,48 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     {Array.isArray((movie as any).related) && (movie as any).related.length > 0 && (
                         <Section title="Similar Titles">
                             <div className="space-y-3">
-                                {/* Lightweight inline row to avoid importing until props are refactored */}
-                                <div className="flex gap-3 overflow-x-auto pb-2">
-                                    {(movie as any).related.slice(0, 12).map((it: any, idx: number) => (
-                                        <button
-                                            key={`${it.media_type}-${it.id}-${idx}`}
-                                            className="flex-shrink-0 w-24 text-left group"
-                                            onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title }); onQuickSearch(it.title); }}
-                                            aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
-                                        >
-                                            <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5">
-                                                {it.poster_url ? (
-                                                    <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover" loading="lazy" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-white/10" />
-                                                )}
-                                            </div>
-                                            <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2">{it.title}</p>
-                                            {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
-                                        </button>
-                                    ))}
+                                {/* Horizontal scroll with fade indicator */}
+                                <div className="horizontal-scroll-fade-right relative">
+                                    <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth">
+                                        {(movie as any).related.slice(0, 12).map((it: any, idx: number) => (
+                                            <button
+                                                key={`${it.media_type}-${it.id}-${idx}`}
+                                                className="flex-shrink-0 w-24 text-left group touch-target"
+                                                onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title }); onQuickSearch(it.title); }}
+                                                aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
+                                            >
+                                                <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5 group-hover:border-brand-primary/50 transition-colors">
+                                                    {it.poster_url ? (
+                                                        <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-white/10" />
+                                                    )}
+                                                </div>
+                                                <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2 group-hover:text-brand-primary transition-colors">{it.title}</p>
+                                                {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className="flex justify-end">
-                                    <button className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
+                                    <button className="text-xs px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 transition-colors touch-target" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
                                 </div>
                             </div>
                         </Section>
                     )}
                     <Section title="Where to Watch">
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                            {safeWhereToWatch.length > 0 ? safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />) : <p className="text-brand-text-dark">Streaming information not available.</p>}
+                            {safeWhereToWatch.length > 0 ? (
+                                safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />)
+                            ) : (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">
+                                        <TvIcon className="w-8 h-8" />
+                                    </div>
+                                    <p className="empty-state-title">Streaming info not available</p>
+                                    <p className="empty-state-subtitle">Check JustWatch for availability</p>
+                                </div>
+                            )}
                         </div>
                     </Section>
 
@@ -895,16 +951,32 @@ const platformLogos: Record<string, React.FC<{ className?: string }>> = {
     'apple tv+': AppleTvIcon,
 };
 
+// Platform brand colors map
+const platformColorClasses: Record<string, string> = {
+    netflix: 'platform-netflix',
+    'prime video': 'platform-prime',
+    amazon: 'platform-prime',
+    hulu: 'platform-hulu',
+    max: 'platform-max',
+    'hbo max': 'platform-max',
+    'disney+': 'platform-disney',
+    disney: 'platform-disney',
+    'apple tv': 'platform-apple',
+    'apple tv+': 'platform-apple',
+};
+
 const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
     const TypeIcon = watchTypeIcons[option.type] || TvIcon;
     const key = option.platform.toLowerCase().trim();
     const Logo = platformLogos[key];
+    const platformClass = platformColorClasses[key] || '';
+
     return (
         <a
             href={option.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="group rounded-xl border border-white/10 bg-brand-surface/60 p-3 md:p-4 flex flex-col gap-2 md:gap-3 hover:shadow-lg hover:border-brand-primary/50 transition relative overflow-hidden"
+            className={`group rounded-xl border border-white/10 bg-brand-surface/60 p-3 md:p-4 flex flex-col gap-2 md:gap-3 hover:shadow-lg transition-all relative overflow-hidden platform-card touch-target ${platformClass}`}
             aria-label={`Open ${option.platform} (${option.type})`}
         >
             <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent)]" />
@@ -921,11 +993,11 @@ const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="text-xs md:text-sm font-semibold text-brand-text-light truncate" title={option.platform}>{option.platform}</p>
-                    <p className="text-xs text-brand-text-dark capitalize">{option.type}</p>
+                    <p className="text-xs text-accessible-muted capitalize">{option.type}</p>
                 </div>
             </div>
             <div className="flex justify-end">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1.5 md:px-3 md:py-2 text-xs font-bold rounded-lg bg-brand-primary/90 text-white transform transition-transform group-hover:scale-105 shadow-md">
+                <span className="inline-flex items-center gap-1 px-3 py-2 md:px-4 md:py-2.5 text-xs font-bold rounded-lg bg-brand-primary/90 text-white transform transition-transform group-hover:scale-105 shadow-md">
                     <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> Go
                 </span>
             </div>

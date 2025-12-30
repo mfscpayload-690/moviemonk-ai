@@ -306,12 +306,12 @@ h6 {
     .hero-ratings-grid {
         gap: 0.75rem;
     }
-    
+
     .rating-card {
         padding: 0.625rem 0.75rem;
         font-size: 0.875rem;
     }
-    
+
     .rating-card-score {
         font-size: 1rem;
     }
@@ -369,8 +369,11 @@ h6 {
     background: rgba(15, 15, 22, 0.5);
     transition: all 0.3s ease;
     scroll-snap-align: start;
-    focus-visible: outline 2px solid var(--color-primary);
-    focus-visible: outline-offset: 2px;
+}
+
+.gallery-thumb:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 .gallery-thumb:hover {
@@ -503,12 +506,12 @@ h6 {
     .gallery-lightbox-nav {
         padding: 10px;
     }
-    
+
     .gallery-lightbox-nav svg {
         width: 20px;
         height: 20px;
     }
-    
+
     .gallery-lightbox-prev {
         left: 8px;
     }
@@ -573,7 +576,7 @@ h6 {
         right: -12px;
         padding: 6px;
     }
-    
+
     .gallery-lightbox-close svg {
         width: 20px;
         height: 20px;
@@ -586,6 +589,7 @@ h6 {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -596,6 +600,7 @@ h6 {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -605,21 +610,22 @@ h6 {
 /* Reduced Motion Support */
 
 @media (prefers-reduced-motion: reduce) {
+
     .gallery-thumb,
     .gallery-lightbox,
     .gallery-lightbox-content,
     .gallery-lightbox-nav {
         transition: none;
     }
-    
+
     .gallery-lightbox {
         animation: none;
     }
-    
+
     .gallery-lightbox-content {
         animation: none;
     }
-    
+
     .gallery-thumb:hover {
         transform: none;
     }
@@ -639,4 +645,559 @@ h6 {
         width: 160px;
         height: 110px;
     }
+}
+
+/* ============================================================================
+   MOBILE-FIRST UI/UX IMPROVEMENTS
+   ============================================================================ */
+
+/* --- 1. Hero Section Mobile Improvements --- */
+.hero-section-mobile {
+    min-height: 55vh;
+}
+
+@media (max-width: 640px) {
+    .hero-content-mobile {
+        flex-direction: column-reverse !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 1rem !important;
+    }
+
+    .hero-poster-mobile {
+        width: 120px !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .hero-title-mobile {
+        font-size: 1.75rem !important;
+        line-height: 1.2 !important;
+    }
+
+    .hero-meta-mobile {
+        justify-content: center !important;
+    }
+
+    .hero-genres-mobile {
+        justify-content: center !important;
+    }
+
+    .hero-ratings-mobile {
+        justify-content: center !important;
+    }
+
+    .hero-actions-mobile {
+        justify-content: center !important;
+    }
+}
+
+/* --- 2. Touch Targets (44px minimum) --- */
+@media (max-width: 767px) {
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .rating-card {
+        padding: 0.875rem 1rem;
+        min-height: 44px;
+    }
+
+    .filter-tab-mobile {
+        min-height: 44px;
+        padding: 0.75rem 1rem !important;
+    }
+
+    .cast-card-mobile {
+        padding: 0.75rem !important;
+        min-height: 60px;
+    }
+
+    /* Larger buttons on mobile */
+    .btn-mobile-friendly {
+        min-height: 48px;
+        padding: 0.875rem 1.25rem;
+    }
+}
+
+/* --- 3. Horizontal Scroll Indicators --- */
+.horizontal-scroll-container {
+    position: relative;
+}
+
+.horizontal-scroll-container::before,
+.horizontal-scroll-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.horizontal-scroll-container::before {
+    left: 0;
+    background: linear-gradient(to right, var(--color-surface), transparent);
+}
+
+.horizontal-scroll-container::after {
+    right: 0;
+    background: linear-gradient(to left, var(--color-surface), transparent);
+}
+
+.horizontal-scroll-container.show-left-fade::before {
+    opacity: 1;
+}
+
+.horizontal-scroll-container.show-right-fade::after {
+    opacity: 1;
+}
+
+/* Always show right fade initially */
+.horizontal-scroll-fade-right::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 50px;
+    background: linear-gradient(to left, var(--color-surface), transparent);
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* --- 4. Modal Animations for Mobile --- */
+@keyframes slideUpModal {
+    from {
+        transform: translateY(100%);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDownModal {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .modal-mobile-slide {
+        animation: slideUpModal 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
+    }
+
+    .modal-fullscreen-mobile {
+        max-height: 95vh !important;
+        height: 95vh !important;
+        border-radius: 1.5rem 1.5rem 0 0 !important;
+        margin-top: auto !important;
+    }
+}
+
+/* --- 5. Image Loading States --- */
+.image-skeleton {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0.05) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.image-fade-in {
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+}
+
+.image-fade-in.loaded {
+    opacity: 1;
+}
+
+/* --- 6. Platform Brand Colors for Where to Watch --- */
+.platform-netflix {
+    --platform-color: #e50914;
+}
+
+.platform-prime {
+    --platform-color: #00a8e1;
+}
+
+.platform-disney {
+    --platform-color: #113ccf;
+}
+
+.platform-max {
+    --platform-color: #5822bf;
+}
+
+.platform-hulu {
+    --platform-color: #1ce783;
+}
+
+.platform-apple {
+    --platform-color: #a3a3a3;
+}
+
+.platform-card {
+    transition: all 0.3s ease;
+}
+
+.platform-card:hover {
+    border-color: var(--platform-color, var(--color-primary)) !important;
+    box-shadow: 0 0 20px rgba(var(--platform-color-rgb, 124, 58, 237), 0.3);
+}
+
+/* --- 7. Poster Hover Effects (Desktop) --- */
+@media (min-width: 768px) {
+    .poster-hover-effect {
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+            box-shadow 0.4s ease;
+        transform-style: preserve-3d;
+    }
+
+    .poster-hover-effect:hover {
+        transform: perspective(1000px) rotateY(5deg) scale(1.03);
+        box-shadow: -15px 15px 40px rgba(0, 0, 0, 0.4),
+            0 0 30px rgba(124, 58, 237, 0.2);
+    }
+}
+
+/* --- 8. Rating Card Hover Effects --- */
+.rating-card-hover {
+    transition: all 0.25s ease;
+}
+
+.rating-card-hover:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(124, 58, 237, 0.35);
+    border-color: rgba(124, 58, 237, 0.5) !important;
+}
+
+/* --- 9. Play Trailer Button Pulse --- */
+.play-trailer-pulse {
+    position: relative;
+    overflow: hidden;
+}
+
+.play-trailer-pulse::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    border-radius: inherit;
+    opacity: 0;
+    animation: none;
+    z-index: -1;
+}
+
+@media (min-width: 768px) {
+    .play-trailer-pulse:hover::before {
+        animation: pulse-glow 1.5s ease-in-out infinite;
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* --- 10. Empty State Styling --- */
+.empty-state {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+}
+
+.empty-state-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(219, 39, 119, 0.2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state-icon svg {
+    width: 2rem;
+    height: 2rem;
+    color: var(--color-primary);
+}
+
+.empty-state-title {
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    margin-bottom: 0.25rem;
+}
+
+.empty-state-subtitle {
+    color: var(--color-text-dim);
+    font-size: 0.75rem;
+}
+
+/* --- 11. Button Hierarchy System --- */
+.btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--color-primary);
+    color: var(--color-primary);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(124, 58, 237, 0.15);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-tertiary {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    position: relative;
+}
+
+.btn-tertiary::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--color-primary);
+    transition: all 0.25s ease;
+    transform: translateX(-50%);
+}
+
+.btn-tertiary:hover {
+    color: var(--color-text-main);
+}
+
+.btn-tertiary:hover::after {
+    width: 100%;
+}
+
+/* --- 12. Typography Enhancements --- */
+.section-title-enhanced {
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.text-depth {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* --- 13. Color Accessibility Improvements --- */
+.text-accessible-muted {
+    color: #a8b2c1;
+    /* Better contrast than #94a3b8 */
+}
+
+.rating-score-accessible {
+    color: #a78bfa;
+    /* Lighter purple for better visibility */
+    text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+}
+
+/* --- 14. Cast Card Horizontal Scroll (Mobile) --- */
+@media (max-width: 767px) {
+    .cast-grid-mobile-scroll {
+        display: flex !important;
+        overflow-x: auto !important;
+        gap: 0.75rem !important;
+        padding-bottom: 0.5rem !important;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .cast-grid-mobile-scroll>* {
+        flex-shrink: 0 !important;
+        width: 120px !important;
+        scroll-snap-align: start;
+    }
+}
+
+@media (min-width: 768px) {
+    .cast-grid-mobile-scroll {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        overflow: visible !important;
+    }
+
+    .cast-grid-mobile-scroll>* {
+        width: auto !important;
+    }
+}
+
+/* --- 15. Synopsis Read More --- */
+.synopsis-truncated {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.synopsis-expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+
+/* --- 16. Person Display Mobile Improvements --- */
+@media (max-width: 640px) {
+    .person-profile-circular {
+        border-radius: 50% !important;
+        width: 100px !important;
+        height: 100px !important;
+        object-fit: cover;
+    }
+
+    .filmography-mobile-scroll {
+        display: flex !important;
+        overflow-x: auto !important;
+        gap: 0.75rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+
+    .filmography-mobile-scroll>* {
+        flex-shrink: 0 !important;
+        width: 140px !important;
+    }
+}
+
+/* --- 17. AmbiguousModal Mobile Improvements --- */
+@media (max-width: 767px) {
+    .ambiguous-modal-mobile {
+        max-height: 95vh !important;
+        height: auto;
+        min-height: 70vh;
+        border-radius: 1.5rem 1.5rem 0 0 !important;
+    }
+
+    .ambiguous-thumb-mobile {
+        width: 5rem !important;
+        height: 7rem !important;
+    }
+}
+
+/* --- 18. Scroll Padding for Search Island --- */
+.main-content {
+    scroll-padding-bottom: 100px;
+}
+
+/* --- 19. Focus States for Accessibility --- */
+*:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+}
+
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* --- 20. Performance Optimizations --- */
+.will-change-transform {
+    will-change: transform;
+}
+
+.overscroll-contain {
+    overscroll-behavior: contain;
+}
+
+/* --- 21. Loading Skeleton for Cards --- */
+.skeleton-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.skeleton-card .skeleton-image {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.03) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeleton-card .skeleton-text {
+    height: 1rem;
+    margin: 0.75rem;
+    border-radius: 0.25rem;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.skeleton-card .skeleton-text-sm {
+    height: 0.75rem;
+    width: 60%;
+    margin: 0.5rem 0.75rem;
+}
+
+/* --- 22. Swipe Indicator for Gallery --- */
+.swipe-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0;
+}
+
+.swipe-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.swipe-dot.active {
+    width: 18px;
+    border-radius: 3px;
+    background: var(--color-primary);
 }

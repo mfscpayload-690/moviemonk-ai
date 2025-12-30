@@ -78,17 +78,17 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-fade-in max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-bold text-brand-text-light">Search Results</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-brand-text-light">Search Results</h2>
             <p className="text-sm text-brand-text-dark mt-1">Found {filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/10 transition"
+            className="p-2.5 rounded-lg hover:bg-white/10 transition touch-target"
             aria-label="Close"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +98,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-6 py-3 border-b border-white/5 bg-black/10 flex gap-2 flex-shrink-0 overflow-x-auto">
+        <div className="px-4 sm:px-6 py-3 border-b border-white/5 bg-black/10 flex gap-2 flex-shrink-0 overflow-x-auto">
           {['all', 'movie', 'person', 'review'].map((type) => (
             <button
               key={type}
@@ -106,7 +106,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 setFilterType(type as any);
                 setFocused(0);
               }}
-              className={`px-4 py-2 rounded-full font-semibold text-sm transition whitespace-nowrap ${filterType === type
+              className={`px-4 py-2.5 rounded-full font-semibold text-sm transition whitespace-nowrap filter-tab-mobile touch-target ${filterType === type
                 ? 'bg-brand-primary text-white border border-brand-primary'
                 : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
                 }`}
@@ -117,7 +117,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         </div>
 
         {/* Results List */}
-        <div ref={listRef} className="overflow-y-auto flex-1">
+        <div ref={listRef} className="overflow-y-auto flex-1 overscroll-contain">
           <div className="divide-y divide-white/5">
             {filtered.length === 0 ? (
               <div className="px-6 py-8 text-center">
@@ -129,18 +129,18 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                   key={`${c.type}-${c.id}`}
                   data-idx={i}
                   onClick={() => onSelect(c)}
-                  className={`w-full text-left px-6 py-4 transition flex gap-4 items-start hover:bg-white/5 border-l-4 ${focused === i
+                  className={`w-full text-left px-4 sm:px-6 py-4 transition flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
                     ? 'border-l-brand-primary bg-brand-primary/10'
                     : 'border-l-transparent hover:border-l-brand-primary/50'
                     }`}
                   aria-selected={focused === i}
                 >
-                  {/* Thumbnail */}
-                  <div className="flex-shrink-0 w-20 h-28 rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
+                  {/* Thumbnail - larger on mobile */}
+                  <div className="flex-shrink-0 w-20 h-28 sm:w-20 sm:h-28 ambiguous-thumb-mobile rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
                     {c.image ? (
-                      <img src={c.image} alt={c.title} className="w-full h-full object-cover" />
+                      <img src={c.image} alt={c.title} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <span className="text-3xl">{typeIcon[c.type]}</span>
+                      <span className="text-2xl sm:text-3xl">{typeIcon[c.type]}</span>
                     )}
                   </div>
 
@@ -184,7 +184,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
 
                   {/* Select Button */}
                   <div className="flex-shrink-0">
-                    <div className="px-3 py-2 rounded-lg bg-brand-primary/20 text-brand-primary font-semibold text-xs border border-brand-primary/30 hover:border-brand-primary/50 hover:bg-brand-primary/30 transition">
+                    <div className="px-3 py-2.5 rounded-lg bg-brand-primary/20 text-brand-primary font-semibold text-xs border border-brand-primary/30 hover:border-brand-primary/50 hover:bg-brand-primary/30 transition touch-target">
                       Select
                     </div>
                   </div>
@@ -195,8 +195,9 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0">
-          💡 Tip: Use ↑ ↓ arrow keys to navigate, Enter to select, Esc to close
+        <div className="px-4 sm:px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0 text-center sm:text-left">
+          <span className="hidden sm:inline">💡 Tip: Use ↑ ↓ arrow keys to navigate, Enter to select, Esc to close</span>
+          <span className="sm:hidden">💡 Tap to select a result</span>
         </div>
       </div>
     </div>

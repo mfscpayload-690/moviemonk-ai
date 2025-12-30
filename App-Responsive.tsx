@@ -565,17 +565,17 @@ const App: React.FC = () => {
       {/* Summary Modal */}
       {
         summaryModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-xl shadow-2xl p-4">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl p-4 sm:p-5 modal-mobile-slide">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold">Brief: {summaryModal.title}</h3>
-                <button onClick={() => setSummaryModal(null)} className="p-2 rounded hover:bg-white/10">✕</button>
+                <button onClick={() => setSummaryModal(null)} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close">✕</button>
               </div>
               {summaryModal.short && (
                 <div className="mb-3 text-sm text-brand-text-light">{summaryModal.short}</div>
               )}
               {summaryModal.long && (
-                <div className="text-sm whitespace-pre-wrap text-brand-text-light">{summaryModal.long}</div>
+                <div className="text-sm whitespace-pre-wrap text-brand-text-light max-h-[60vh] overflow-y-auto">{summaryModal.long}</div>
               )}
             </div>
           </div>
@@ -585,18 +585,18 @@ const App: React.FC = () => {
       {/* Watchlists Modal */}
       {showWatchlistsModal && (
         <div
-          className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setShowWatchlistsModal(false)}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4"
+            className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 sm:p-5 space-y-4 modal-mobile-slide max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">Your Watchlists</h3>
-              <button onClick={() => setShowWatchlistsModal(false)} className="p-2 rounded-lg hover:bg-white/10" aria-label="Close watchlists">
+            <div className="flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg sm:text-xl font-bold text-white">Your Watchlists</h3>
+              <button onClick={() => setShowWatchlistsModal(false)} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close watchlists">
                 ✕
               </button>
             </div>
@@ -605,7 +605,7 @@ const App: React.FC = () => {
               <p className="text-brand-text-dark text-sm">No watchlists yet. Save a title with "Save to List" to get started.</p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1 pr-1 overscroll-contain">
               {watchlists.map(folder => (
                 <div
                   key={folder.id}
@@ -657,8 +657,8 @@ const App: React.FC = () => {
                           draggable
                           onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
                           className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${draggedItem?.itemId === item.id
-                              ? 'opacity-50 border-brand-primary bg-brand-primary/10'
-                              : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
+                            ? 'opacity-50 border-brand-primary bg-brand-primary/10'
+                            : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
                             }`}
                         >
                           <button
