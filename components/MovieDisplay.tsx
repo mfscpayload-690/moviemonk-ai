@@ -108,6 +108,13 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
     useEffect(() => {
         setError(false);
         setLoaded(false);
+
+        // Fallback: force show image after 2 seconds if onLoad doesn't fire
+        const timeout = setTimeout(() => {
+            setLoaded(true);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
     }, [src]);
 
     const handleError = () => {
@@ -139,7 +146,7 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
                 className={`w-full h-full object-cover transition-opacity duration-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                 onError={handleError}
                 onLoad={handleLoad}
-                loading="lazy"
+                crossOrigin="anonymous"
             />
         </div>
     );
