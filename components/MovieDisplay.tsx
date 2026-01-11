@@ -4,6 +4,7 @@ import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 import type { AIProvider } from '../types';
+import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -107,6 +108,13 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
     useEffect(() => {
         setError(false);
         setLoaded(false);
+
+        // Fallback: force show image after 2 seconds if onLoad doesn't fire
+        const timeout = setTimeout(() => {
+            setLoaded(true);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
     }, [src]);
 
     const handleError = () => {
@@ -138,7 +146,7 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
                 className={`w-full h-full object-cover transition-opacity duration-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                 onError={handleError}
                 onLoad={handleLoad}
-                loading="lazy"
+                crossOrigin="anonymous"
             />
         </div>
     );
@@ -344,6 +352,12 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         );
     }
 
+    // If this is a TV show with episode data, use the dedicated TV Show display
+    if (movie && movie.tvShow) {
+        return <TVShowDisplay movie={movie} />;
+    }
+
+    // Otherwise, use the standard movie display
     return (
         <div className="h-full overflow-y-auto relative">
             {isLoading && (
