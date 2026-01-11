@@ -42,6 +42,42 @@ export interface Rating {
   score: string;
 }
 
+// TV Show specific types
+export interface TVShowSeason {
+  number: number;
+  name: string;
+  episodeCount: number;
+  premiereDate: string | null;
+  endDate: string | null;
+  image: string | null;
+  summary: string | null;
+}
+
+export interface TVShowEpisode {
+  id: number;
+  season: number;
+  episode: number;
+  name: string;
+  airdate: string;
+  runtime: number | null;
+  rating: number | null;
+  image: string | null;
+  summary: string | null;
+}
+
+export interface TVShowData {
+  status: string; // "Running", "Ended", "In Development"
+  premiered: string | null;
+  ended: string | null;
+  totalSeasons: number;
+  totalEpisodes: number;
+  network: string;
+  language: string;
+  officialSite: string | null;
+  seasons: TVShowSeason[];
+  episodes: TVShowEpisode[];
+}
+
 export interface MovieData {
   tmdb_id?: string;
   title: string;
@@ -62,6 +98,9 @@ export interface MovieData {
   where_to_watch: WatchOption[];
   extra_images: string[];
   ai_notes: string;
+
+  // TV Show specific data (optional, only for type === 'show')
+  tvShow?: TVShowData;
 }
 
 export interface WatchlistItem {

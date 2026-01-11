@@ -4,6 +4,7 @@ import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 import type { AIProvider } from '../types';
+import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -344,6 +345,12 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         );
     }
 
+    // If this is a TV show with episode data, use the dedicated TV Show display
+    if (movie && movie.tvShow) {
+        return <TVShowDisplay movie={movie} />;
+    }
+
+    // Otherwise, use the standard movie display
     return (
         <div className="h-full overflow-y-auto relative">
             {isLoading && (

@@ -7,6 +7,7 @@ import { getCachedResponse, cacheResponse, clearOldCacheEntries } from './cacheS
 import { getFromIndexedDB, saveToIndexedDB, clearOldIndexedDBEntries } from './indexedDBService';
 import { parseQuery, shouldUseComplexModel } from './queryParser';
 import { getFromTMDB } from './tmdbService';
+import { fetchFromBestSource } from './hybridDataService'; // NEW: Multi-source data fetcher
 import { searchWithPerplexity } from './perplexityService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
 
@@ -76,12 +77,12 @@ async function tryProvidersInOrder(
 export function checkProviderAvailability(provider: AIProvider): 'available' | 'unavailable' | 'checking' {
   const lastError = lastErrors[provider];
   if (!lastError) return 'available';
-  
+
   const timeSinceError = Date.now() - lastError;
   if (timeSinceError < ERROR_COOLDOWN) {
     return 'unavailable';
   }
-  
+
   // Clear old error after cooldown
   lastErrors[provider] = null;
   return 'available';
@@ -108,14 +109,14 @@ export async function fetchMovieData(
   // Step 1: Parse query
   const parsed = parseQuery(query);
   console.log('📝 Parsed query:', parsed);
-  
+
   // Step 2: Auto-detect complexity
   const autoComplexity = shouldUseComplexModel(parsed) ? QueryComplexity.COMPLEX : complexity;
   console.log(`🎯 Complexity: ${autoComplexity} (user: ${complexity}, auto: ${shouldUseComplexModel(parsed)})`);
-  
+
   // Step 3: Check cache (only for fresh searches without chat history)
   const shouldCache = !chatHistory || chatHistory.length === 0;
-  
+
   if (shouldCache) {
     // Check IndexedDB first
     const indexedDBResult = await getFromIndexedDB(query, provider);
@@ -126,7 +127,7 @@ export async function fetchMovieData(
         error: undefined
       };
     }
-    
+
     // Check localStorage second
     const cached = getCachedResponse(query, provider);
     if (cached) {
@@ -139,84 +140,97 @@ export async function fetchMovieData(
       };
     }
   }
-  
+
   // Clear old cache entries periodically
   if (Math.random() < 0.1) {
     clearOldCacheEntries();
     clearOldIndexedDBEntries();
   }
-  
+
   try {
-    // Step 4: Try TMDB first (most accurate for popular titles)
-    console.log('🎬 Searching TMDB...');
-    const tmdbData = await getFromTMDB(parsed);
-    
-    if (tmdbData) {
-      console.log('✅ TMDB: Found factual data, requesting AI summaries...');
-      
+    // Step 4: Try HYBRID source (TVMaze for TV, TMDB for movies) - IMPROVED!
+    console.log('🔍 Searching best data source (TVMaze for TV, TMDB for movies)...');
+    const hybridResult = await fetchFromBestSource(parsed);
+
+    if (hybridResult.data) {
+      console.log(`✅ ${hybridResult.source.toUpperCase()}: Found factual data (confidence: ${(hybridResult.confidence * 100).toFixed(0)}%), requesting AI summaries...`);
+
       // Use AI to fill in creative content only
-      const enriched = await enrichWithAIContent(tmdbData, autoComplexity, provider, chatHistory);
-      
+      const enriched = await enrichWithAIContent(hybridResult.data, autoComplexity, provider, chatHistory);
+
       if (enriched.movieData) {
+        // Add data source info to AI notes
+        if (enriched.movieData.ai_notes) {
+          const sourceInfo = hybridResult.source === 'tvmaze'
+            ? '**Data Source**: TVMaze (comprehensive TV show database)'
+            : hybridResult.source === 'tmdb'
+              ? '**Data Source**: The Movie Database (TMDB)'
+              : '**Data Source**: Multiple databases';
+
+          enriched.movieData.ai_notes = `${sourceInfo}\n\n${enriched.movieData.ai_notes}`;
+        }
+
         // Cache successful hybrid results
         if (shouldCache) {
           cacheResponse(query, provider, enriched.movieData, enriched.sources);
           saveToIndexedDB(query, provider, enriched.movieData, enriched.sources);
         }
-        
+
         return {
           ...enriched,
           error: undefined
         };
       }
+    } else if (hybridResult.error) {
+      console.warn(`⚠️  Hybrid search failed: ${hybridResult.error}`);
     }
-    
+
     // Step 5: TMDB not found, try Perplexity web search
     console.log('🔍 TMDB not found, trying Perplexity web search...');
     const perplexityData = await searchWithPerplexity(parsed);
-    
+
     if (perplexityData) {
       console.log('✅ Perplexity: Found data from web, requesting AI summaries...');
-      
+
       // Use AI to fill in creative content
       const enriched = await enrichWithAIContent(perplexityData, autoComplexity, provider, chatHistory);
-      
+
       if (enriched.movieData) {
         // Cache web search + AI results
         if (shouldCache) {
           cacheResponse(query, provider, enriched.movieData, enriched.sources);
           saveToIndexedDB(query, provider, enriched.movieData, enriched.sources);
         }
-        
+
         return {
           ...enriched,
           error: undefined
         };
       }
     }
-    
+
     // Step 6: Last resort - full AI generation (legacy fallback)
     console.log('⚠️  No TMDB/Perplexity data, falling back to pure AI...');
     const result = await fallbackToAI(query, autoComplexity, provider, chatHistory);
-    
+
     // Track errors
     if (result.error) {
       lastErrors[provider] = Date.now();
     } else if (result.movieData) {
       lastErrors[provider] = null;
-      
+
       // Cache AI-only results (shorter TTL would be ideal)
       if (shouldCache) {
         cacheResponse(query, provider, result.movieData, result.sources);
         saveToIndexedDB(query, provider, result.movieData, result.sources);
       }
     }
-    
+
     return result;
-    
+
   } catch (error: any) {
     lastErrors[provider] = Date.now();
-    
+
     return {
       movieData: null,
       sources: null,
@@ -253,7 +267,7 @@ Provide engaging creative content (summaries, spoilers, trivia) for this title.`
       : preferredOrder;
 
     aiResult = await tryProvidersInOrder(creativePrompt, complexity, chatHistory, order, 10000);
-    
+
     if (aiResult.movieData) {
       // Merge: Keep factual data from TMDB/Perplexity, add AI creative content
       const merged: MovieData = {
@@ -264,21 +278,21 @@ Provide engaging creative content (summaries, spoilers, trivia) for this title.`
         suspense_breaker: aiResult.movieData.suspense_breaker || '',
         ai_notes: aiResult.movieData.ai_notes || ''
       };
-      
+
       return {
         movieData: merged,
         sources: aiResult.sources,
         provider: aiResult.provider
       };
     }
-    
+
     // AI failed, return factual data with basic summaries
     return {
       movieData: factualData,
       sources: null,
       provider
     };
-    
+
   } catch (error) {
     console.error('AI enrichment error:', error);
     // Return factual data without AI enrichment
@@ -300,7 +314,7 @@ async function fallbackToAI(
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
   let result: FetchResult;
-  
+
   if (provider === 'groq') {
     result = await fetchFromGroq(query, complexity, chatHistory);
   } else if (provider === 'mistral') {
@@ -309,11 +323,11 @@ async function fallbackToAI(
     result = await fetchFromPerplexity(query, complexity, chatHistory);
   } else {
     result = await fetchFromOpenRouter(query, complexity, chatHistory);
-    
+
     // OpenRouter fallback chain
     if (!result.movieData) {
       lastErrors[provider] = Date.now();
-      
+
       const mistral = await fetchFromMistral(query, complexity, chatHistory);
       if (mistral.movieData) {
         return {
@@ -321,7 +335,7 @@ async function fallbackToAI(
           error: `OpenRouter failed, used Mistral: ${result.error || 'unknown'}`
         };
       }
-      
+
       const groq = await fetchFromGroq(query, complexity, chatHistory);
       if (groq.movieData) {
         return {
@@ -331,7 +345,7 @@ async function fallbackToAI(
       }
     }
   }
-  
+
   return result;
 }
 
@@ -357,7 +371,7 @@ Include:
 Format: Start with "SPOILER WARNING — Full plot explained below." then provide 3-5 detailed paragraphs.`;
 
     let result: FetchResult;
-    
+
     if (provider === 'groq') {
       result = await fetchFromGroq(prompt, QueryComplexity.COMPLEX);
     } else if (provider === 'mistral') {
@@ -365,18 +379,18 @@ Format: Start with "SPOILER WARNING — Full plot explained below." then provide
     } else {
       result = await fetchFromOpenRouter(prompt, QueryComplexity.COMPLEX);
     }
-    
+
     if (result.movieData && result.movieData.summary_long_spoilers) {
       return result.movieData.summary_long_spoilers;
     }
-    
+
     // Fallback if AI doesn't provide summary_long_spoilers field
     if (result.movieData && result.movieData.summary_medium) {
       return `SPOILER WARNING — Full plot explained below.\n\n${result.movieData.summary_medium}\n\nNote: Full spoiler details could not be generated at this time.`;
     }
-    
+
     return "Unable to fetch full plot details at this time. Please try again.";
-    
+
   } catch (error) {
     console.error('Full plot fetch error:', error);
     return "Error loading full plot details. Please try again later.";
