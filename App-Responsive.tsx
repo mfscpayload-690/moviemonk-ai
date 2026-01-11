@@ -226,7 +226,7 @@ const App: React.FC = () => {
         return;
       }
 
-      // STEP 3: If single result, proceed to model selection and parsing
+      // STEP 3: If single result, proceed to fetch data using hybrid service
       const selectedResult = searchData.results[0];
       console.log('✅ Single clear match found:', selectedResult.title);
 
@@ -241,74 +241,9 @@ const App: React.FC = () => {
 
       console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
 
-      // Use the new Details endpoint for movies/results too, to ensure consistent high-quality data
-      setLoadingProgress('🔍 Fetching full details...');
-
-      const detailsRes = await fetch(`/api/ai?action=details&id=${selectedResult.id}&media_type=${selectedResult.media_type || 'movie'}&provider=${selectedModel}`);
-      const detailsData = await detailsRes.json();
-
-      // Set data sources for attribution
-      setSources([
-        {
-          web: {
-            uri: `https://www.themoviedb.org/${selectedResult.media_type || 'movie'}/${selectedResult.id}`,
-            title: 'The Movie Database (TMDB)'
-          }
-        },
-        {
-          web: {
-            uri: 'https://www.omdb.org/',
-            title: 'Open Movie Database (OMDb)'
-          }
-        }
-      ]);
-
-      // Check type and handle accordingly
-
-      // For person, we might need to handle slightly effectively if details API returns person struct
-      // But actually, api/ai.ts details endpoint handles movies well. 
-      // If type is person, we should ideally call api/person or ensure details handles person?
-      // Review api/ai.ts: It handles 'movie' or 'tv'. 
-      // If type is person, we need to be careful.
-      // Currently details logic in api/ai.ts (generic) handles 'movie' or 'tv'.
-      // Wait, for person, we might still rely on the old logic or need a person-specific detail fetch.
-      // Let's check api/ai.ts 'details' action capability. 
-      // ... It calls https://api.themoviedb.org/3/${mediaType}/${id}
-      // If mediaType is 'person', TMDB supports /person/{id}.
-      // So it SHOULD work if we pass media_type='person'.
-      // Let's verify if api/ai.ts handles person response structure (biography etc).
-      // Checking api/ai.ts... structure maps to 'movieData' (title, year, cast, etc). 
-      // Person structure is different (birthday, biography).
-      // So for PERSON, we should stick to the existing/working Person logic or separate it.
-
-      // Current app logic for Person (Step 237/213) uses: /api/person/${c.id} OR custom logic.
-      // Let's look at what handleSelectResult does? 
-      // It calls /api/ai?action=details... 
-      // Wait. handleSelectResult calls details... Does it handle Person?
-      // In Step 311, handleSelectResult calls setMovieData(detailsData).
-      // If it's a PERSON, setMovieData might be wrong?
-      // Let's look at handleSelectResult again.
-      // It sets setMovieData(detailsData). It sets setPersonData(null).
-      // So handleSelectResult assumes it's a MOVIE/SHOW.
-      // What if user selects a PERSON from ambiguous modal?
-      // Ambiguous modal has types.
-      // The user reported "Search for Chris Hemsworth resulted in Ambiguous Search Results".
-      // Selecting it loaded "Young Sheldon" data? No.
-      // Selecting Chris Hemsworth -> 'handleSelectResult'.
-      // It calls 'details'. 
-      // If media_type is person, TMDB returns Person object.
-      // 'movieData' mapping in api/ai.ts tries to map 'overview' to summary etc.
-      // Person object has 'biography'. 'overview' is undefined.
-      // So 'details' endpoint returns a partial/broken object for Person.
-      // And frontend sets it to 'MovieData'.
-      // This effectively breaks Person display if we use 'details' endpoint blindly.
-
-      // CORRECT LOGIC:
-      // If type is 'person', use the Person Fetch logic (which exists elsewhere? or needs to be here).
-
-
+      // Check if it's a person query - use dedicated endpoint
       if (selectedResult.type === 'person') {
-        // Use specific person endpoint or logic
+        setLoadingProgress('🔍 Fetching person details...');
         const personRes = await fetch(`/api/person/${selectedResult.id}`);
         if (personRes.ok) {
           const personData = await personRes.json();
@@ -316,17 +251,24 @@ const App: React.FC = () => {
           setMovieData(null);
           setSources(personData.sources);
         } else {
-          // Fallback or error
           throw new Error('Failed to load person details');
         }
       } else {
-        // It's a movie or show
-        if (detailsRes.ok && detailsData.title) {
-          setMovieData(detailsData);
+        // Use NEW hybrid service for movies/TV shows (supports TVMaze!)
+        setLoadingProgress('🔍 Fetching details from best source...');
+
+        const result = await fetchMovieData(
+          message, // Original query
+          complexity,
+          selectedModel
+        );
+
+        if (result.movieData) {
+          setMovieData(result.movieData);
           setPersonData(null);
-          setSources([{ title: 'TMDB', url: `https://www.themoviedb.org/${selectedResult.media_type || 'movie'}/${selectedResult.id}` }]);
+          setSources(result.sources || []);
         } else {
-          throw new Error(detailsData.error || 'Failed to load details');
+          throw new Error(result.error || 'Failed to load data');
         }
       }
 
@@ -413,30 +355,21 @@ const App: React.FC = () => {
           throw new Error('Failed to load person details');
         }
       } else {
-        // Use the new Details endpoint which gets Credits, Videos, etc.
-        const detailsRes = await fetch(`/api/ai?action=details&id=${selectedAmbiguous.id}&media_type=${selectedAmbiguous.media_type || 'movie'}&provider=${selectedModel}`);
-        const detailsData = await detailsRes.json();
+        // Use NEW hybrid service for movies/TV shows (supports TVMaze!)
+        setLoadingProgress('🔍 Fetching details from best source...');
 
-        if (detailsRes.ok && detailsData.title) {
-          setMovieData(detailsData);
+        const result = await fetchMovieData(
+          selectedAmbiguous.title, // Use the selected title as query
+          QueryComplexity.SIMPLE,
+          selectedModel as AIProvider
+        );
+
+        if (result.movieData) {
+          setMovieData(result.movieData);
           setPersonData(null);
-          setSources([
-            {
-              web: {
-                uri: `https://www.themoviedb.org/${selectedAmbiguous.media_type || 'movie'}/${selectedAmbiguous.id}`,
-                title: 'The Movie Database (TMDB)'
-              }
-            },
-            {
-              web: {
-                uri: 'https://www.omdb.org/',
-                title: 'Open Movie Database (OMDb)'
-              }
-            }
-          ]);
+          setSources(result.sources || []);
         } else {
-          console.error('Details fetch failed:', detailsData);
-          throw new Error(detailsData.error || 'Failed to load details');
+          throw new Error(result.error || 'Failed to load details');
         }
       }
 
