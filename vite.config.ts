@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
     plugins: [
+      tailwindcss(),
       react(),
       {
         name: 'mock-api-middleware',

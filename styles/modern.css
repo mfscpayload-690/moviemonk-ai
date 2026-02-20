@@ -1,3 +1,28 @@
+@import "tailwindcss";
+
+/* ─── Scrollbar (moved from index.html) ─── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(30, 30, 30, 0.5);
+}
+::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #6a44ff;
+}
+
+/* Smooth mobile scrolling */
+.chat-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: auto;
+}
+
 /* Modern Cinematic Theme - MovieMonk AI */
 :root {
     /* Color Palette - Cyberpunk / Cinematic Dark */
