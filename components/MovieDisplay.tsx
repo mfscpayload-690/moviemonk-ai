@@ -156,42 +156,42 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
 const LoadingSkeleton = () => (
     <div className="h-full w-full p-4 md:p-8">
         <div className="relative w-full h-[50vh] md:h-[60vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20">
-            <div className="absolute inset-0 animate-pulse bg-brand-surface/30" />
+            <div className="absolute inset-0 skeleton-shimmer" />
             <div className="absolute bottom-6 left-6 flex items-center gap-6">
-                <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg bg-brand-surface/50 animate-pulse" />
+                <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg skeleton-shimmer" />
                 <div className="space-y-4">
-                    <div className="h-10 w-64 bg-brand-surface/50 rounded-md animate-pulse" />
-                    <div className="h-6 w-40 bg-brand-surface/40 rounded-md animate-pulse" />
+                    <div className="h-10 w-64 skeleton-shimmer rounded-md" />
+                    <div className="h-6 w-40 skeleton-shimmer rounded-md" />
                     <div className="flex gap-2 mt-4">
-                        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 w-16 bg-brand-surface/40 rounded-full animate-pulse" />)}
+                        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 w-16 skeleton-shimmer rounded-full" />)}
                     </div>
-                    <div className="h-10 w-40 bg-brand-surface/50 rounded-md mt-6 animate-pulse" />
+                    <div className="h-10 w-40 skeleton-shimmer rounded-md mt-6" />
                 </div>
             </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-                <div className="h-40 bg-brand-surface/40 rounded-lg animate-pulse" />
-                <div className="h-64 bg-brand-surface/40 rounded-lg animate-pulse" />
+                <div className="h-40 skeleton-shimmer rounded-lg" />
+                <div className="h-64 skeleton-shimmer rounded-lg" />
             </div>
             <div className="space-y-6">
-                <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
-                <div className="h-48 bg-brand-surface/40 rounded-lg animate-pulse" />
-                <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
+                <div className="h-32 skeleton-shimmer rounded-lg" />
+                <div className="h-48 skeleton-shimmer rounded-lg" />
+                <div className="h-32 skeleton-shimmer rounded-lg" />
             </div>
         </div>
     </div>
 );
 
 const DISCOVER_TITLES = [
-    'Interstellar',
-    'Oppenheimer',
-    'The Dark Knight',
-    'Inception',
-    'Dune',
-    'Breaking Bad',
-    'Stranger Things',
-    'The Last of Us'
+    { title: 'Interstellar', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', genre: 'Sci-Fi' },
+    { title: 'Oppenheimer', poster: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', genre: 'Drama' },
+    { title: 'The Dark Knight', poster: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911BTUgMe1l6C6.jpg', genre: 'Action' },
+    { title: 'Inception', poster: 'https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqNgFinIhJBJlRnhQ.jpg', genre: 'Sci-Fi Thriller' },
+    { title: 'Dune', poster: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg', genre: 'Sci-Fi' },
+    { title: 'Breaking Bad', poster: 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', genre: 'Crime Drama' },
+    { title: 'Stranger Things', poster: 'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg', genre: 'Sci-Fi Horror' },
+    { title: 'The Last of Us', poster: 'https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg', genre: 'Post-Apocalyptic' },
 ];
 
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
@@ -331,19 +331,21 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         <p className="mt-4 text-lg md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pb-20">
-                        {DISCOVER_TITLES.map((title, idx) => (
+                        {DISCOVER_TITLES.map((item, idx) => (
                             <button
-                                key={title}
-                                onClick={() => onQuickSearch(title)}
-                                className="glass-panel group relative p-4 md:p-6 flex flex-col items-start justify-between hover:border-violet-500/50 transition-all duration-300 min-h-[130px] md:min-h-[160px] rounded-xl text-left"
-                                style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
+                                key={item.title}
+                                onClick={() => onQuickSearch(item.title)}
+                                className="featured-card animate-stagger-in min-h-[160px] md:min-h-[200px] text-left"
                             >
-                                <span className="absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-br from-violet-600 to-pink-600 transition-opacity rounded-xl" />
-                                <span className="text-[10px] md:text-xs font-medium text-violet-400 uppercase tracking-widest">Featured</span>
-                                <h3 className="mt-1 md:mt-2 text-lg md:text-xl font-bold text-white group-hover:text-primary transition-colors leading-tight">{title}</h3>
-                                <span className="mt-auto inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-muted group-hover:text-white transition-colors">
-                                    <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> Explore
-                                </span>
+                                <div className="featured-card-bg" style={{ backgroundImage: `url(${item.poster})` }} />
+                                <div className="featured-card-overlay" />
+                                <div className="featured-card-content">
+                                    <span className="featured-card-genre">{item.genre}</span>
+                                    <h3 className="featured-card-title">{item.title}</h3>
+                                    <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white/60 group-hover:text-white transition-colors">
+                                        <PlayIcon className="w-3.5 h-3.5" /> Explore
+                                    </span>
+                                </div>
                             </button>
                         ))}
                     </div>
@@ -372,7 +374,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 </div>
             )}
             {/* Hero Section with Poster Card */}
-            <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">
+            <div className="relative w-full min-h-[45vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden hero-section-mobile">
                 {/* Backdrop Image Layer */}
                 {movie.backdrop_url && (
                     <img
@@ -389,9 +391,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 {/* Content Layer - Above gradients */}
                 <div className="relative h-full flex items-end p-4 md:p-12 max-w-screen-xl mx-auto z-20">
                     {/* Mobile: column, Desktop: row */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto hero-content-mobile">
                         {/* Poster Card - Shows Above text on mobile now */}
-                        <div className="flex-shrink-0 animate-fade-in will-change-transform" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
+                        <div className="flex-shrink-0 animate-fade-in will-change-transform hero-poster-mobile" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
                             <ImageWithFallback
                                 src={movie.poster_url}
                                 alt={`${movie.title} poster`}
@@ -575,7 +577,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     </Section>
 
                     <Section title="Cast & Crew">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="cast-grid-mobile-scroll">
                             {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
                         </div>
                         {safeCast.length > 8 && (

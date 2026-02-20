@@ -21,7 +21,7 @@
 @media (min-width: 768px) {
   .search-island {
     bottom: max(2rem, env(safe-area-inset-bottom));
-    left: 41%;
+    left: 50%;
   }
 }
 
@@ -32,6 +32,8 @@
     /* Enhanced upward shadow for better visibility over content */
     box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6),
       0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 }
 

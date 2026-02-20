@@ -5,13 +5,16 @@
     width: 8px;
     height: 8px;
 }
+
 ::-webkit-scrollbar-track {
     background: rgba(30, 30, 30, 0.5);
 }
+
 ::-webkit-scrollbar-thumb {
     background: #4a4a4a;
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #6a44ff;
 }
@@ -104,6 +107,7 @@ h6 {
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border-bottom: 1px solid rgba(124, 58, 237, 0.15);
 }
 
 .glass-panel:hover {
@@ -123,6 +127,7 @@ h6 {
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 30px rgba(124, 58, 237, 0.3));
 }
 
 /* Layout Containers */
@@ -141,6 +146,7 @@ h6 {
     z-index: 1;
     scrollbar-width: thin;
     scrollbar-color: var(--color-surface-hover) transparent;
+    scroll-padding-bottom: 140px;
 }
 
 /* Custom Scrollbar */
@@ -1225,4 +1231,146 @@ a:focus-visible {
     width: 18px;
     border-radius: 3px;
     background: var(--color-primary);
+}
+
+/* --- 23. Stagger Animation for cards --- */
+@keyframes staggerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-stagger-in {
+    opacity: 0;
+    animation: staggerFadeIn 0.5s ease-out forwards;
+}
+
+.animate-stagger-in:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.animate-stagger-in:nth-child(2) {
+    animation-delay: 0.10s;
+}
+
+.animate-stagger-in:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.animate-stagger-in:nth-child(4) {
+    animation-delay: 0.20s;
+}
+
+.animate-stagger-in:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.animate-stagger-in:nth-child(6) {
+    animation-delay: 0.30s;
+}
+
+.animate-stagger-in:nth-child(7) {
+    animation-delay: 0.35s;
+}
+
+.animate-stagger-in:nth-child(8) {
+    animation-delay: 0.40s;
+}
+
+/* --- 24. Page Transition --- */
+@keyframes pageTransition {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.page-transition {
+    animation: pageTransition 0.35s ease-out;
+}
+
+/* --- 25. Enhanced Skeleton Shimmer --- */
+.skeleton-shimmer {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.03) 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.03) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-md);
+}
+
+/* --- 26. Featured Card with poster --- */
+.featured-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    background: var(--color-surface);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.featured-card:hover {
+    border-color: rgba(124, 58, 237, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+}
+
+.featured-card-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+    transition: transform 0.4s ease;
+}
+
+.featured-card:hover .featured-card-bg {
+    transform: scale(1.05);
+}
+
+.featured-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top,
+            rgba(5, 5, 8, 0.95) 0%,
+            rgba(5, 5, 8, 0.6) 50%,
+            rgba(5, 5, 8, 0.3) 100%);
+    z-index: 1;
+}
+
+.featured-card-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    padding: 1rem;
+}
+
+.featured-card-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+    line-height: 1.3;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.featured-card-genre {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
 }
