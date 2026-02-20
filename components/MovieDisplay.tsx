@@ -109,44 +109,34 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
     useEffect(() => {
         setError(false);
         setLoaded(false);
-
-        // Fallback: force show image after 2 seconds if onLoad doesn't fire
-        const timeout = setTimeout(() => {
-            setLoaded(true);
-        }, 2000);
-
+        const timeout = setTimeout(() => setLoaded(true), 2000);
         return () => clearTimeout(timeout);
     }, [src]);
 
-    const handleError = () => {
-        setError(true);
-    };
-
-    const handleLoad = () => {
-        setLoaded(true);
-    };
-
     if (error || !src) {
         return (
-            <div className={`${className} flex flex-col items-center justify-center bg-brand-surface border-2 border-dashed border-white/20 p-2`}>
-                <ImageIcon className="w-1/4 h-1/4 text-brand-text-dark" />
-                <p className="mt-2 text-xs text-center text-brand-text-dark">Image Unavailable</p>
+            <div className={`${className} image-fallback-gradient flex flex-col items-center justify-center p-4 overflow-hidden`}>
+                <div className="image-fallback-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="3" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                </div>
+                <p className="mt-3 text-sm font-semibold text-white/70 text-center leading-tight max-w-[90%]">{alt || 'Image'}</p>
             </div>
         );
     }
 
     return (
         <div className={`relative ${className}`}>
-            {/* Skeleton loader */}
-            {!loaded && (
-                <div className="absolute inset-0 image-skeleton rounded-lg" />
-            )}
+            {!loaded && <div className="absolute inset-0 image-skeleton rounded-lg" />}
             <img
                 src={src}
                 alt={alt}
                 className={`w-full h-full object-cover transition-opacity duration-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-                onError={handleError}
-                onLoad={handleLoad}
+                onError={() => setError(true)}
+                onLoad={() => setLoaded(true)}
                 crossOrigin="anonymous"
             />
         </div>
@@ -155,44 +145,60 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
 
 
 const LoadingSkeleton = () => (
-    <div className="h-full w-full p-4 md:p-8">
-        <div className="relative w-full h-[50vh] md:h-[60vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20">
+    <div className="h-full w-full p-6 md:p-12 max-w-screen-xl mx-auto animate-fade-in">
+        {/* Hero skeleton */}
+        <div className="relative w-full min-h-[45vh] md:min-h-[55vh] mb-10 overflow-hidden rounded-2xl loading-hero-gradient">
             <div className="absolute inset-0 skeleton-shimmer" />
-            <div className="absolute bottom-6 left-6 flex items-center gap-6">
-                <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg skeleton-shimmer" />
-                <div className="space-y-4">
-                    <div className="h-10 w-64 skeleton-shimmer rounded-md" />
-                    <div className="h-6 w-40 skeleton-shimmer rounded-md" />
-                    <div className="flex gap-2 mt-4">
-                        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 w-16 skeleton-shimmer rounded-full" />)}
+            <div className="absolute bottom-8 left-8 flex flex-col sm:flex-row items-center sm:items-end gap-6">
+                <div className="w-32 sm:w-40 md:w-48 aspect-[2/3] rounded-xl skeleton-shimmer-card" />
+                <div className="space-y-4 pb-2">
+                    <div className="h-8 md:h-12 w-48 md:w-72 skeleton-shimmer-card rounded-lg" />
+                    <div className="h-5 w-32 md:w-48 skeleton-shimmer-card rounded-md" />
+                    <div className="flex gap-3 mt-4">
+                        {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-7 w-20 skeleton-shimmer-card rounded-full" />)}
                     </div>
-                    <div className="h-10 w-40 skeleton-shimmer rounded-md mt-6" />
+                    <div className="flex gap-3 mt-4">
+                        <div className="h-10 w-32 skeleton-shimmer-card rounded-lg" />
+                        <div className="h-10 w-28 skeleton-shimmer-card rounded-lg" />
+                    </div>
                 </div>
             </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-                <div className="h-40 skeleton-shimmer rounded-lg" />
-                <div className="h-64 skeleton-shimmer rounded-lg" />
+        {/* Content skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+            <div className="lg:col-span-2 space-y-8">
+                <div className="glass-panel p-6 rounded-2xl space-y-4">
+                    <div className="h-6 w-32 skeleton-shimmer-card rounded-md" />
+                    <div className="h-4 w-full skeleton-shimmer-card rounded" />
+                    <div className="h-4 w-5/6 skeleton-shimmer-card rounded" />
+                    <div className="h-4 w-4/6 skeleton-shimmer-card rounded" />
+                </div>
+                <div className="glass-panel p-6 rounded-2xl space-y-4">
+                    <div className="h-6 w-24 skeleton-shimmer-card rounded-md" />
+                    <div className="flex gap-3 overflow-hidden">
+                        {Array.from({ length: 5 }).map((_, i) => <div key={i} className="w-32 h-20 skeleton-shimmer-card rounded-lg flex-shrink-0" />)}
+                    </div>
+                </div>
             </div>
-            <div className="space-y-6">
-                <div className="h-32 skeleton-shimmer rounded-lg" />
-                <div className="h-48 skeleton-shimmer rounded-lg" />
-                <div className="h-32 skeleton-shimmer rounded-lg" />
+            <div className="space-y-8">
+                <div className="glass-panel p-6 rounded-2xl space-y-4">
+                    <div className="h-6 w-36 skeleton-shimmer-card rounded-md" />
+                    {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-12 skeleton-shimmer-card rounded-lg" />)}
+                </div>
             </div>
         </div>
     </div>
 );
 
 const DISCOVER_TITLES = [
-    { title: 'Interstellar', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', genre: 'Sci-Fi' },
-    { title: 'Oppenheimer', poster: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', genre: 'Drama' },
-    { title: 'The Dark Knight', poster: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911BTUgMe1l6C6.jpg', genre: 'Action' },
-    { title: 'Inception', poster: 'https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqNgFinIhJBJlRnhQ.jpg', genre: 'Sci-Fi Thriller' },
-    { title: 'Dune', poster: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg', genre: 'Sci-Fi' },
-    { title: 'Breaking Bad', poster: 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', genre: 'Crime Drama' },
-    { title: 'Stranger Things', poster: 'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg', genre: 'Sci-Fi Horror' },
-    { title: 'The Last of Us', poster: 'https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg', genre: 'Post-Apocalyptic' },
+    { title: 'Interstellar', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', genre: 'Sci-Fi', year: '2014', rating: '8.7' },
+    { title: 'Oppenheimer', poster: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', genre: 'Drama', year: '2023', rating: '8.3', badge: 'TRENDING' },
+    { title: 'The Dark Knight', poster: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911BTUgMe1l6C6.jpg', genre: 'Action', year: '2008', rating: '9.0' },
+    { title: 'Inception', poster: 'https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg', genre: 'Sci-Fi Thriller', year: '2010', rating: '8.8' },
+    { title: 'Dune', poster: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg', genre: 'Sci-Fi', year: '2021', rating: '8.0' },
+    { title: 'Breaking Bad', poster: 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', genre: 'Crime Drama', year: '2008', rating: '9.5', badge: 'GOAT' },
+    { title: 'Stranger Things', poster: 'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg', genre: 'Sci-Fi Horror', year: '2016', rating: '8.7' },
+    { title: 'The Last of Us', poster: 'https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg', genre: 'Post-Apocalyptic', year: '2023', rating: '8.8' },
 ];
 
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
@@ -323,30 +329,40 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     if (!movie) {
         return (
-            <div className="min-h-full flex items-center justify-center p-6 pt-24 animate-fade-in relative">
-                <div className="absolute inset-0 bg-gradient-radial from-violet-900/20 to-transparent pointer-events-none" />
+            <div className="min-h-full flex items-center justify-center p-6 pt-16 animate-fade-in relative">
+                {/* Animated background mesh */}
+                <div className="hero-bg-mesh" />
+                <div className="hero-bg-glow" />
                 <div className="max-w-6xl mx-auto w-full relative z-10">
-                    <div className="text-center mb-12">
-                        <Logo className="mx-auto h-20 w-20 md:h-24 md:w-24 animate-fade-in text-primary drop-shadow-glow" />
-                        <h1 className="mt-6 text-4xl md:text-7xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up">MovieMonk</h1>
-                        <p className="mt-4 text-lg md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
+                    <div className="text-center mb-10 md:mb-14">
+                        <h1 className="text-5xl md:text-8xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up hero-title-font">MovieMonk</h1>
+                        <p className="mt-4 text-lg md:text-2xl text-white/50 max-w-2xl mx-auto animate-fade-in hero-tagline" style={{ animationDelay: '0.15s' }}>
+                            Your AI-powered cinematic companion.<br />
+                            <span className="hero-tagline-rotate">Discover. Explore. Analyze.</span>
+                        </p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pb-20">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 pb-20 featured-grid">
                         {DISCOVER_TITLES.map((item, idx) => (
                             <button
                                 key={item.title}
                                 onClick={() => onQuickSearch(item.title)}
-                                className="featured-card animate-stagger-in min-h-[160px] md:min-h-[200px] text-left"
+                                className={`featured-card animate-stagger-in text-left ${idx === 0 ? 'featured-card-hero' : ''}`}
+                                style={{ animationDelay: `${idx * 60}ms` }}
                             >
                                 <div className="featured-card-bg" style={{ backgroundImage: `url(${item.poster})` }} />
                                 <div className="featured-card-overlay" />
                                 <div className="featured-card-content">
+                                    {'badge' in item && item.badge && (
+                                        <span className="featured-badge">{item.badge}</span>
+                                    )}
                                     <span className="featured-card-genre">{item.genre}</span>
                                     <h3 className="featured-card-title">{item.title}</h3>
-                                    <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-white/60 group-hover:text-white transition-colors">
-                                        <PlayIcon className="w-3.5 h-3.5" /> Explore
-                                    </span>
+                                    <div className="flex items-center justify-between mt-1.5">
+                                        <span className="featured-card-year">{item.year}</span>
+                                        <span className="featured-card-rating">★ {item.rating}</span>
+                                    </div>
                                 </div>
+                                <div className="featured-card-shine" />
                             </button>
                         ))}
                     </div>
