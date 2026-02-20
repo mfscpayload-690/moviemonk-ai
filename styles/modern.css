@@ -450,6 +450,24 @@ h6 {
     border-radius: 4px;
 }
 
+/* Gallery hover zoom enhancement */
+.gallery-thumb-animate {
+    border-radius: 10px;
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gallery-thumb-animate:hover {
+    border-color: rgba(167, 139, 250, 0.5);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.25), 0 8px 30px rgba(0, 0, 0, 0.3);
+    transform: scale(1.08);
+}
+
+.gallery-thumb-animate:hover .gallery-thumb-img {
+    transform: scale(1.1);
+    transition: transform 0.5s ease;
+}
+
 .gallery-info {
     display: flex;
     align-items: center;

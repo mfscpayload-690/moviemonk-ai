@@ -489,7 +489,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             </div>
 
             {/* Main Content */}
-            <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+            <div className="px-6 md:px-14 py-4 grid grid-cols-1 lg:grid-cols-3 gap-10 md:gap-12 relative z-10">
                 <div className="lg:col-span-2 space-y-8">
                     <Section title="Synopsis" icon="📖">
                         {/* Synopsis with Read More for long text */}
@@ -561,7 +561,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                         <button
                                             key={i}
                                             onClick={() => setSelectedImage(img)}
-                                            className="gallery-thumb touch-target"
+                                            className="gallery-thumb touch-target gallery-thumb-animate"
                                             aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
                                             title={`Scene ${i + 1}`}
                                         >
