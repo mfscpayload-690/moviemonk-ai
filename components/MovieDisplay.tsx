@@ -491,7 +491,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             {/* Main Content */}
             <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 <div className="lg:col-span-2 space-y-8">
-                    <Section title="Synopsis">
+                    <Section title="Synopsis" icon="📖">
                         {/* Synopsis with Read More for long text */}
                         <div className="relative">
                             <p className={`text-brand-text-dark text-accessible-muted leading-relaxed ${synopsisNeedsTruncation && !synopsisExpanded ? 'synopsis-truncated' : ''}`}>
@@ -553,7 +553,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         </div>
                     </Section>
 
-                    <Section title="Gallery">
+                    <Section title="Gallery" icon="🎬">
                         {safeExtraImages.length > 0 ? (
                             <div className="gallery-container horizontal-scroll-fade-right">
                                 <div className="gallery-filmstrip">
@@ -593,7 +593,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         )}
                     </Section>
 
-                    <Section title="Cast & Crew">
+                    <Section title="Cast & Crew" icon="🎭">
                         <div className="cast-grid-mobile-scroll">
                             {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
                         </div>
