@@ -410,7 +410,7 @@ const App: React.FC = () => {
               aria-label="Open watch later"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm0 2c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2zm0 6c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
               <span className="hidden sm:inline">Watchlists</span>
             </button>
@@ -453,26 +453,30 @@ const App: React.FC = () => {
         }
 
         {/* Main Content Area - Full width Featured UI */}
-        <div className="main-content pb-24">
+        <div className="main-content pb-36">
           {personData ? (
-            <PersonDisplay
-              data={personData}
-              isLoading={isLoading}
-              onQuickSearch={handleQuickSearch}
-              onBriefMe={handleBriefMe}
-            />
+            <div className="page-transition">
+              <PersonDisplay
+                data={personData}
+                isLoading={isLoading}
+                onQuickSearch={handleQuickSearch}
+                onBriefMe={handleBriefMe}
+              />
+            </div>
           ) : (
-            <MovieDisplay
-              movie={movieData}
-              isLoading={isLoading}
-              sources={sources}
-              selectedProvider={selectedProvider}
-              onFetchFullPlot={fetchFullPlotDetails}
-              onQuickSearch={handleQuickSearch}
-              watchlists={watchlists}
-              onCreateWatchlist={addFolder}
-              onSaveToWatchlist={saveToFolder}
-            />
+            <div className="page-transition">
+              <MovieDisplay
+                movie={movieData}
+                isLoading={isLoading}
+                sources={sources}
+                selectedProvider={selectedProvider}
+                onFetchFullPlot={fetchFullPlotDetails}
+                onQuickSearch={handleQuickSearch}
+                watchlists={watchlists}
+                onCreateWatchlist={addFolder}
+                onSaveToWatchlist={saveToFolder}
+              />
+            </div>
           )}
         </div>
 
@@ -498,7 +502,7 @@ const App: React.FC = () => {
       {/* Summary Modal */}
       {
         summaryModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="fixed inset-0 z-[5000] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
             <div className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl p-4 sm:p-5 modal-mobile-slide">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold">Brief: {summaryModal.title}</h3>
@@ -518,7 +522,7 @@ const App: React.FC = () => {
       {/* Watchlists Modal */}
       {showWatchlistsModal && (
         <div
-          className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-[5000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setShowWatchlistsModal(false)}
           role="dialog"
           aria-modal="true"

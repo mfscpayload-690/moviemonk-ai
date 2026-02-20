@@ -4,7 +4,8 @@ import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 import type { AIProvider } from '../types';
-import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
+import TVShowDisplay from './TVShowDisplay';
+import Section from './Section';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -929,15 +930,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     );
 };
 
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="glass-panel p-6 rounded-2xl animate-slide-up">
-        <h2 className="text-xl md:text-2xl font-bold mb-4 text-white border-b border-white/5 pb-3 flex items-center gap-2">
-            <span className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></span>
-            {title}
-        </h2>
-        {children}
-    </div>
-);
+
 
 const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
     <div className="bg-white/5 p-2 md:p-3 rounded-lg text-center transform hover:-translate-y-1 transition-transform duration-300 border border-transparent hover:border-brand-primary">
