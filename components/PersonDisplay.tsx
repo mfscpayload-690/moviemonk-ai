@@ -47,7 +47,7 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
   const displayBio = bioExpanded || !bioTruncated ? person.biography : person.biography?.slice(0, BIO_LIMIT) + '…';
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-8 animate-fade-in relative z-10">
+    <div className="h-full flex flex-col p-4 md:p-8 lg:p-12 pb-36 animate-fade-in relative z-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 mb-8 glass-panel p-6 rounded-2xl">
         {person.profile_url ? (

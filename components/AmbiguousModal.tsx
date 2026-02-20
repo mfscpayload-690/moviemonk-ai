@@ -78,7 +78,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[5000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
       <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">

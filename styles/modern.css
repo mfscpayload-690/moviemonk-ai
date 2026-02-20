@@ -1374,3 +1374,85 @@ a:focus-visible {
     color: var(--color-text-muted);
     margin-top: 0.25rem;
 }
+
+/* ===== Cast Grid — Mobile Horizontal Scroll ===== */
+.cast-grid-mobile-scroll {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .cast-grid-mobile-scroll {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .cast-grid-mobile-scroll {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .cast-grid-mobile-scroll {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.75rem;
+        padding-bottom: 0.5rem;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .cast-grid-mobile-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    .cast-grid-mobile-scroll>* {
+        flex-shrink: 0;
+        width: 140px;
+        scroll-snap-align: start;
+    }
+}
+
+/* ===== Hero Section — Mobile Responsiveness ===== */
+@media (max-width: 640px) {
+    .hero-section-mobile {
+        min-height: 40vh;
+    }
+
+    .hero-content-mobile {
+        text-align: center;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .hero-poster-mobile {
+        margin: 0 auto;
+    }
+}
+
+/* ===== AmbiguousModal — Mobile Bottom Sheet ===== */
+@media (max-width: 640px) {
+    .ambiguous-modal-mobile {
+        max-height: 85vh;
+        border-radius: 1rem 1rem 0 0;
+        animation: slideUpModal 0.3s ease-out;
+    }
+
+    @keyframes slideUpModal {
+        from {
+            transform: translateY(100%);
+        }
+
+        to {
+            transform: translateY(0);
+        }
+    }
+}
+
+/* ===== Page Transition ===== */
+.page-transition {
+    animation: pageTransition 0.4s ease-out;
+}
