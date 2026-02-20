@@ -1318,14 +1318,17 @@ a:focus-visible {
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     background: var(--color-surface);
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    min-height: 180px;
 }
 
 .featured-card:hover {
-    border-color: rgba(124, 58, 237, 0.4);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+    border-color: rgba(167, 139, 250, 0.6);
+    transform: translateY(-8px) scale(1.03);
+    box-shadow:
+        0 20px 60px rgba(124, 58, 237, 0.25),
+        0 0 30px rgba(124, 58, 237, 0.1);
 }
 
 .featured-card-bg {
@@ -1334,11 +1337,13 @@ a:focus-visible {
     background-size: cover;
     background-position: center;
     z-index: 0;
-    transition: transform 0.4s ease;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Fallback gradient if poster fails to load */
+    background-color: rgba(124, 58, 237, 0.15);
 }
 
 .featured-card:hover .featured-card-bg {
-    transform: scale(1.05);
+    transform: scale(1.1);
 }
 
 .featured-card-overlay {
@@ -1346,8 +1351,8 @@ a:focus-visible {
     inset: 0;
     background: linear-gradient(to top,
             rgba(5, 5, 8, 0.95) 0%,
-            rgba(5, 5, 8, 0.6) 50%,
-            rgba(5, 5, 8, 0.3) 100%);
+            rgba(5, 5, 8, 0.5) 50%,
+            rgba(5, 5, 8, 0.15) 100%);
     z-index: 1;
 }
 
@@ -1358,21 +1363,295 @@ a:focus-visible {
     flex-direction: column;
     justify-content: flex-end;
     height: 100%;
-    padding: 1rem;
+    padding: 1rem 1.1rem;
 }
 
 .featured-card-title {
-    font-weight: 700;
-    font-size: 0.95rem;
+    font-weight: 800;
+    font-size: 1rem;
     color: #fff;
     line-height: 1.3;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+    letter-spacing: -0.02em;
 }
 
 .featured-card-genre {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgba(167, 139, 250, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+}
+
+.featured-card-year {
     font-size: 0.7rem;
-    color: var(--color-text-muted);
-    margin-top: 0.25rem;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 500;
+}
+
+.featured-card-rating {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #f59e0b;
+    text-shadow: 0 1px 4px rgba(245, 158, 11, 0.3);
+}
+
+/* Badge (TRENDING, GOAT, etc.) */
+.featured-badge {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    z-index: 3;
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.75;
+    }
+}
+
+/* Card shine sweep on hover */
+.featured-card-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: linear-gradient(105deg,
+            transparent 40%,
+            rgba(255, 255, 255, 0.06) 45%,
+            rgba(255, 255, 255, 0.13) 50%,
+            rgba(255, 255, 255, 0.06) 55%,
+            transparent 60%);
+    background-size: 200% 100%;
+    background-position: 200% 0;
+    transition: background-position 0.6s ease;
+    pointer-events: none;
+}
+
+.featured-card:hover .featured-card-shine {
+    background-position: -200% 0;
+}
+
+/* Hero card (first card on mobile) */
+@media (max-width: 640px) {
+    .featured-grid .featured-card-hero {
+        grid-column: span 2;
+        min-height: 220px;
+    }
+
+    .featured-grid .featured-card-hero .featured-card-title {
+        font-size: 1.25rem;
+    }
+}
+
+/* ===== Hero Background — Animated Mesh ===== */
+.hero-bg-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 50% at 20% 80%, rgba(99, 52, 206, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 70%, rgba(167, 139, 250, 0.06) 0%, transparent 60%);
+    animation: meshDrift 12s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hero-bg-glow {
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    animation: glowPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes meshDrift {
+    from {
+        filter: hue-rotate(0deg);
+    }
+
+    to {
+        filter: hue-rotate(15deg);
+    }
+}
+
+@keyframes glowPulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: translateX(-50%) scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: translateX(-50%) scale(1.15);
+    }
+}
+
+/* Hero Title Typography */
+.hero-title-font {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    letter-spacing: -0.04em;
+    filter: drop-shadow(0 0 40px rgba(124, 58, 237, 0.3));
+}
+
+/* Hero Tagline */
+.hero-tagline {
+    font-weight: 300;
+    letter-spacing: 0.01em;
+}
+
+.hero-tagline-rotate {
+    display: inline-block;
+    background: linear-gradient(90deg, #a78bfa, #06b6d4, #f59e0b);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: taglineGradient 4s ease infinite;
+    font-weight: 600;
+}
+
+@keyframes taglineGradient {
+
+    0%,
+    100% {
+        background-position: 0% center;
+    }
+
+    50% {
+        background-position: 100% center;
+    }
+}
+
+/* ===== Image Fallback Gradient ===== */
+.image-fallback-gradient {
+    background: linear-gradient(135deg,
+            rgba(124, 58, 237, 0.2) 0%,
+            rgba(99, 52, 206, 0.15) 40%,
+            rgba(59, 32, 126, 0.2) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: inherit;
+}
+
+.image-fallback-icon {
+    color: rgba(167, 139, 250, 0.4);
+    animation: fallbackFloat 3s ease-in-out infinite;
+}
+
+@keyframes fallbackFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+/* ===== Skeleton Shimmer Card (glass-panel variant) ===== */
+.skeleton-shimmer-card {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.10) 50%,
+            rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+    border-radius: var(--radius-md);
+}
+
+.loading-hero-gradient {
+    background: linear-gradient(135deg,
+            rgba(124, 58, 237, 0.08) 0%,
+            rgba(59, 32, 126, 0.06) 50%,
+            rgba(15, 15, 20, 0.1) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+/* ===== Section Panel Enhanced ===== */
+.section-panel {
+    border: 1px solid rgba(124, 58, 237, 0.1);
+    transition: border-color 0.3s ease;
+}
+
+.section-panel:hover {
+    border-color: rgba(124, 58, 237, 0.2);
+}
+
+.section-accent-bar {
+    display: inline-block;
+    width: 3px;
+    height: 1.4em;
+    border-radius: 2px;
+    background: linear-gradient(to bottom, #a78bfa, #7c3aed, #06b6d4);
+    flex-shrink: 0;
+}
+
+.section-icon {
+    font-size: 1.15em;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.section-heading {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 0.75rem;
+}
+
+/* ===== Search Island Glow Ring ===== */
+.search-island-wrapper {
+    position: relative;
+}
+
+.search-island-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg, rgba(124, 58, 237, 0.4), rgba(6, 182, 212, 0.3), rgba(245, 158, 11, 0.3), rgba(124, 58, 237, 0.4));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+    filter: blur(8px);
+    animation: glowRotate 6s linear infinite;
+}
+
+.search-island-wrapper:hover::before {
+    opacity: 1;
+}
+
+@keyframes glowRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ===== Cast Grid — Mobile Horizontal Scroll ===== */
@@ -1452,7 +1731,6 @@ a:focus-visible {
     }
 }
 
-/* ===== Page Transition ===== */
 .page-transition {
     animation: pageTransition 0.4s ease-out;
 }
