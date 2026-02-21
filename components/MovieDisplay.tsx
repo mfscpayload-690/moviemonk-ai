@@ -329,19 +329,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     if (!movie) {
         return (
-            <div className="min-h-full flex items-center justify-center p-6 pt-16 animate-fade-in relative">
+            <div className="min-h-[calc(100dvh-64px)] flex items-center justify-center p-6 pt-16 animate-fade-in relative">
                 {/* Animated background mesh */}
                 <div className="hero-bg-mesh" />
                 <div className="hero-bg-glow" />
                 <div className="max-w-6xl mx-auto w-full relative z-10">
                     <div className="text-center mb-10 md:mb-14">
                         <h1 className="text-5xl md:text-8xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up hero-title-font">MovieMonk</h1>
-                        <p className="mt-4 text-lg md:text-2xl text-white/50 max-w-2xl mx-auto animate-fade-in hero-tagline" style={{ animationDelay: '0.15s' }}>
+                        <p className="mt-4 text-lg md:text-2xl text-white/65 max-w-2xl mx-auto animate-fade-in hero-tagline" style={{ animationDelay: '0.15s' }}>
                             Your AI-powered cinematic companion.<br />
                             <span className="hero-tagline-rotate">Discover. Explore. Analyze.</span>
                         </p>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 pb-20 featured-grid">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-6 featured-grid max-w-5xl mx-auto">
                         {DISCOVER_TITLES.map((item, idx) => (
                             <button
                                 key={item.title}

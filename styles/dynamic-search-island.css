@@ -6,6 +6,18 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Gradient fade above the search island for visual connection */
+.search-island::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: -50vw;
+  right: -50vw;
+  height: 60px;
+  background: linear-gradient(to top, rgba(5, 5, 8, 0.8), transparent);
+  pointer-events: none;
+}
+
 /* Positioning: bottom-center on both desktop and mobile */
 .search-island {
   bottom: max(1rem, env(safe-area-inset-bottom));
