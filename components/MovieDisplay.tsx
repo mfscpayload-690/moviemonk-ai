@@ -193,7 +193,7 @@ const LoadingSkeleton = () => (
 const DISCOVER_TITLES = [
     { title: 'Interstellar', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', genre: 'Sci-Fi', year: '2014', rating: '8.7' },
     { title: 'Oppenheimer', poster: 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', genre: 'Drama', year: '2023', rating: '8.3', badge: 'TRENDING' },
-    { title: 'The Dark Knight', poster: 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911BTUgMe1l6C6.jpg', genre: 'Action', year: '2008', rating: '9.0' },
+    { title: 'The Dark Knight', poster: 'https://image.tmdb.org/t/p/w500/1hRoyzDtpgMU7Dz4JYkFkEGJFbi.jpg', genre: 'Action', year: '2008', rating: '9.0' },
     { title: 'Inception', poster: 'https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg', genre: 'Sci-Fi Thriller', year: '2010', rating: '8.8' },
     { title: 'Dune', poster: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg', genre: 'Sci-Fi', year: '2021', rating: '8.0' },
     { title: 'Breaking Bad', poster: 'https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', genre: 'Crime Drama', year: '2008', rating: '9.5', badge: 'GOAT' },

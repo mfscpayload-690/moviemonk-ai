@@ -1338,7 +1338,8 @@ a:focus-visible {
     background: var(--color-surface);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
-    min-height: 180px;
+    aspect-ratio: 3 / 4;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3), 0 0 1px rgba(124, 58, 237, 0.1);
 }
 
 .featured-card:hover {
@@ -1381,7 +1382,13 @@ a:focus-visible {
     flex-direction: column;
     justify-content: flex-end;
     height: 100%;
-    padding: 1rem 1.1rem;
+    padding: 0.75rem 1rem;
+    min-height: 90px;
+}
+
+/* Pin the year + rating row to the bottom of the content area */
+.featured-card-content > div:last-child {
+    margin-top: auto;
 }
 
 .featured-card-title {
@@ -1391,6 +1398,11 @@ a:focus-visible {
     line-height: 1.3;
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
     letter-spacing: -0.02em;
+    min-height: 1.3em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .featured-card-genre {
@@ -1400,6 +1412,10 @@ a:focus-visible {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.2rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .featured-card-year {
@@ -1421,10 +1437,10 @@ a:focus-visible {
     top: 0.65rem;
     right: 0.65rem;
     z-index: 3;
-    font-size: 0.55rem;
+    font-size: 0.65rem;
     font-weight: 800;
     letter-spacing: 0.1em;
-    padding: 0.2rem 0.55rem;
+    padding: 0.25rem 0.6rem;
     border-radius: 4px;
     background: linear-gradient(135deg, #f59e0b, #ef4444);
     color: #fff;
