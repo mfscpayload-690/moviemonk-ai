@@ -70,7 +70,8 @@ async function searchWikipedia(query: string): Promise<SearchResult[]> {
   const response = await fetch(url);
   if (!response.ok) return [];
 
-  const [_, titles, snippets, urls] = await response.json();
+  const data = await response.json() as [string, string[], string[], string[]];
+  const [_, titles, snippets, urls] = data;
   
   return titles.map((title: string, idx: number) => ({
     title,
