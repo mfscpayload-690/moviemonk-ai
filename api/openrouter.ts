@@ -2,19 +2,22 @@
  * Serverless proxy for OpenRouter API
  * This avoids CORS issues and keeps the API key secure on the backend
  */
+const { applyCors } = require('./_utils/cors');
+
 module.exports = async function handler(req: any, res: any) {
   const provider = 'openrouter';
   const sendError = (status: number, code: string, message: string, details?: any) => {
     return res.status(status).json({ error: { provider, code, message, details } });
   };
-  // Enable CORS for your frontend
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const { originAllowed } = applyCors(req, res, 'POST, OPTIONS');
+
+  if (req.headers.origin && !originAllowed) {
+    return sendError(403, 'forbidden_origin', 'Origin is not allowed');
+  }
 
   // Handle preflight
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
   }
 
   // Only allow POST requests
