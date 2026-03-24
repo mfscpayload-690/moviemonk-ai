@@ -1,9 +1,7 @@
-## Title
-Move search bar to top-center between MovieMonk logo/title and Watchlists
+# Move search bar to top-center between MovieMonk logo/title and Watchlists
 
 ## Summary
 The current search control (`DynamicSearchIsland`) is fixed at the bottom-center of the viewport. We need it at the top-center of the header, visually between the left brand block (logo + `MovieMonk`) and the right actions (`Watchlists`, `Share`).
-
 ## Current UI behavior (from code)
 - Header layout is in `App-Responsive.tsx` using `justify-between` with:
   - Left: logo + title
