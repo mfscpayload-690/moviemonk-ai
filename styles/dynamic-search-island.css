@@ -6,6 +6,55 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Header-mounted placement overrides */
+.header-search-slot {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.header-search-slot .search-island {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  z-index: 60;
+}
+
+.header-search-slot .search-island.collapsed {
+  width: min(520px, 100%);
+  max-width: 100%;
+  animation: none;
+}
+
+.header-search-slot .search-island.collapsed:hover {
+  transform: translateY(-2px);
+}
+
+.header-search-slot .search-island.expanded {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  animation: none;
+}
+
+@media (max-width: 767px) {
+  .header-search-slot .search-island.collapsed {
+    width: min(300px, 100%);
+    padding: 0 0.875rem;
+  }
+
+  .header-search-slot .collapsed-text {
+    font-size: 0.875rem;
+  }
+
+  .header-search-slot .search-island.expanded {
+    width: min(340px, calc(100vw - 1rem));
+  }
+}
+
 /* Positioning: bottom-center on both desktop and mobile */
 .search-island {
   bottom: max(1rem, env(safe-area-inset-bottom));
