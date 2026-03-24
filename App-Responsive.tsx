@@ -398,10 +398,16 @@ const App: React.FC = () => {
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="flex-shrink-0 flex items-center justify-between px-6 py-4 glass-panel border-b-0 z-50">
+        <header className="flex-shrink-0 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-6 py-4 glass-panel border-b-0 z-50">
           <div className="flex items-center gap-3">
             <Logo className="w-10 h-10 text-primary drop-shadow-glow" />
             <h1 className="text-2xl font-bold text-gradient tracking-tight">MovieMonk</h1>
+          </div>
+          <div className="header-search-slot px-1 sm:px-3">
+            <DynamicSearchIsland
+              onSearch={handleSendMessage}
+              isLoading={isLoading}
+            />
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -476,11 +482,6 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Dynamic Search Island - Floating */}
-        <DynamicSearchIsland
-          onSearch={handleSendMessage}
-          isLoading={isLoading}
-        />
       </div >
 
 
