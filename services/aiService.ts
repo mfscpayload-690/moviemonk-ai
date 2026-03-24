@@ -11,6 +11,12 @@ import { fetchFromBestSource } from './hybridDataService'; // NEW: Multi-source 
 import { searchWithPerplexity } from './perplexityService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
 
+const debugLog = (...args: any[]) => {
+  if (typeof window !== 'undefined' && import.meta.env.DEV) {
+    console.log(...args);
+  }
+};
+
 // AIProvider is declared in types.ts
 
 // Track last error times for availability checking
@@ -108,11 +114,11 @@ export async function fetchMovieData(
 ): Promise<FetchResult> {
   // Step 1: Parse query
   const parsed = parseQuery(query);
-  console.log('📝 Parsed query:', parsed);
+  debugLog('📝 Parsed query:', parsed);
 
   // Step 2: Auto-detect complexity
   const autoComplexity = shouldUseComplexModel(parsed) ? QueryComplexity.COMPLEX : complexity;
-  console.log(`🎯 Complexity: ${autoComplexity} (user: ${complexity}, auto: ${shouldUseComplexModel(parsed)})`);
+  debugLog(`🎯 Complexity: ${autoComplexity} (user: ${complexity}, auto: ${shouldUseComplexModel(parsed)})`);
 
   // Step 3: Check cache (only for fresh searches without chat history)
   const shouldCache = !chatHistory || chatHistory.length === 0;
@@ -121,7 +127,7 @@ export async function fetchMovieData(
     // Check IndexedDB first
     const indexedDBResult = await getFromIndexedDB(query, provider);
     if (indexedDBResult) {
-      console.log('✅ Cache hit from IndexedDB');
+      debugLog('✅ Cache hit from IndexedDB');
       return {
         ...indexedDBResult,
         error: undefined
@@ -131,7 +137,7 @@ export async function fetchMovieData(
     // Check localStorage second
     const cached = getCachedResponse(query, provider);
     if (cached) {
-      console.log('✅ Cache hit from localStorage');
+      debugLog('✅ Cache hit from localStorage');
       // Also save to IndexedDB for longer persistence
       saveToIndexedDB(query, provider, cached.movieData, cached.sources);
       return {
@@ -149,11 +155,11 @@ export async function fetchMovieData(
 
   try {
     // Step 4: Try HYBRID source (TVMaze for TV, TMDB for movies) - IMPROVED!
-    console.log('🔍 Searching best data source (TVMaze for TV, TMDB for movies)...');
+    debugLog('🔍 Searching best data source (TVMaze for TV, TMDB for movies)...');
     const hybridResult = await fetchFromBestSource(parsed);
 
     if (hybridResult.data) {
-      console.log(`✅ ${hybridResult.source.toUpperCase()}: Found factual data (confidence: ${(hybridResult.confidence * 100).toFixed(0)}%), requesting AI summaries...`);
+      debugLog(`✅ ${hybridResult.source.toUpperCase()}: Found factual data (confidence: ${(hybridResult.confidence * 100).toFixed(0)}%), requesting AI summaries...`);
 
       // Use AI to fill in creative content only
       const enriched = await enrichWithAIContent(hybridResult.data, autoComplexity, provider, chatHistory);
@@ -186,11 +192,11 @@ export async function fetchMovieData(
     }
 
     // Step 5: TMDB not found, try Perplexity web search
-    console.log('🔍 TMDB not found, trying Perplexity web search...');
+    debugLog('🔍 TMDB not found, trying Perplexity web search...');
     const perplexityData = await searchWithPerplexity(parsed);
 
     if (perplexityData) {
-      console.log('✅ Perplexity: Found data from web, requesting AI summaries...');
+      debugLog('✅ Perplexity: Found data from web, requesting AI summaries...');
 
       // Use AI to fill in creative content
       const enriched = await enrichWithAIContent(perplexityData, autoComplexity, provider, chatHistory);
@@ -210,7 +216,7 @@ export async function fetchMovieData(
     }
 
     // Step 6: Last resort - full AI generation (legacy fallback)
-    console.log('⚠️  No TMDB/Perplexity data, falling back to pure AI...');
+    debugLog('⚠️  No TMDB/Perplexity data, falling back to pure AI...');
     const result = await fallbackToAI(query, autoComplexity, provider, chatHistory);
 
     // Track errors
