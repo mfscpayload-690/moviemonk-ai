@@ -190,64 +190,116 @@ const SeriesBrowser: React.FC<SeriesBrowserProps> = ({ onClose, onSelectSeries }
 
                 {/* Series Grid */}
                 <div className="series-grid scrollable-content">
-                    {popularSeries.map((series) => (
-                        <div
-                            key={series.id}
-                            className="series-card"
-                            onClick={() => handleSeriesClick(series)}
-                        >
-                            <div className="series-card-poster-container">
-                                <img
-                                    src={series.poster_url}
-                                    alt={series.title}
-                                    className="series-card-poster"
-                                    loading="lazy"
-                                />
-                                <div className="series-card-overlay">
-                                    <div className="series-card-play">
-                                        <TvIcon className="icon-lg" />
-                                        <span>View Details</span>
-                                    </div>
-                                </div>
-                                <div className={`series-card-status ${getStatusColor(series.status)}`}>
-                                    {series.status}
-                                </div>
-                                {series.rating && (
-                                    <div className="series-card-rating">
-                                        <StarIcon className="icon-xs" />
-                                        <span>{series.rating.toFixed(1)}</span>
-                                    </div>
-                                )}
-                            </div>
+                    {popularSeries
+                        .filter((series) => {
+                            const normalizedQuery = searchQuery ? searchQuery.trim().toLowerCase() : '';
+                            const matchesSearch =
+                                !normalizedQuery ||
+                                (series.title && series.title.toLowerCase().includes(normalizedQuery));
 
-                            <div className="series-card-info">
-                                <h3 className="series-card-title">{series.title}</h3>
-                                <div className="series-card-meta">
-                                    <span className="series-card-year">
-                                        <CalendarIcon className="icon-xs" />
-                                        {series.year}
-                                    </span>
-                                    <span className="series-card-episodes">
-                                        {series.seasons} Season{series.seasons !== 1 ? 's' : ''} • {series.episodes} Eps
-                                    </span>
+                            const matchesGenre =
+                                !selectedGenre ||
+                                selectedGenre === 'all' ||
+                                (Array.isArray(series.genres) && series.genres.includes(selectedGenre));
+
+                            const matchesStatus =
+                                !selectedStatus ||
+                                selectedStatus === 'all' ||
+                                series.status === selectedStatus;
+
+                            return matchesSearch && matchesGenre && matchesStatus;
+                        })
+                        .sort((a, b) => {
+                            switch (sortBy) {
+                                case 'rating':
+                                    return (b.rating ?? 0) - (a.rating ?? 0);
+                                case 'year': {
+                                    const yearA = parseInt(a.year, 10) || 0;
+                                    const yearB = parseInt(b.year, 10) || 0;
+                                    return yearB - yearA;
+                                }
+                                case 'title':
+                                    return a.title.localeCompare(b.title);
+                                default:
+                                    return 0;
+                            }
+                        })
+                        .map((series) => (
+                            <div
+                                key={series.id}
+                                className="series-card"
+                                onClick={() => handleSeriesClick(series)}
+                            >
+                                <div className="series-card-poster-container">
+                                    <img
+                                        src={series.poster_url}
+                                        alt={series.title}
+                                        className="series-card-poster"
+                                        loading="lazy"
+                                    />
+                                    <div className="series-card-overlay">
+                                        <div className="series-card-play">
+                                            <TvIcon className="icon-lg" />
+                                            <span>View Details</span>
+                                        </div>
+                                    </div>
+                                    <div className={`series-card-status ${getStatusColor(series.status)}`}>
+                                        {series.status}
+                                    </div>
+                                    {series.rating && (
+                                        <div className="series-card-rating">
+                                            <StarIcon className="icon-xs" />
+                                            <span>{series.rating.toFixed(1)}</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="series-card-genres">
-                                    {series.genres.slice(0, 3).map((genre, idx) => (
-                                        <span key={idx} className="series-card-genre-tag">
-                                            {genre}
+
+                                <div className="series-card-info">
+                                    <h3 className="series-card-title">{series.title}</h3>
+                                    <div className="series-card-meta">
+                                        <span className="series-card-year">
+                                            <CalendarIcon className="icon-xs" />
+                                            {series.year}
                                         </span>
-                                    ))}
+                                        <span className="series-card-episodes">
+                                            {series.seasons} Season{series.seasons !== 1 ? 's' : ''} • {series.episodes} Eps
+                                        </span>
+                                    </div>
+                                    <div className="series-card-genres">
+                                        {series.genres.slice(0, 3).map((genre, idx) => (
+                                            <span key={idx} className="series-card-genre-tag">
+                                                {genre}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    {series.network && (
+                                        <div className="series-card-network">{series.network}</div>
+                                    )}
                                 </div>
-                                {series.network && (
-                                    <div className="series-card-network">{series.network}</div>
-                                )}
                             </div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
 
                 {/* Empty State */}
-                {popularSeries.length === 0 && (
+                {popularSeries
+                    .filter((series) => {
+                        const normalizedQuery = searchQuery ? searchQuery.trim().toLowerCase() : '';
+                        const matchesSearch =
+                            !normalizedQuery ||
+                            (series.title && series.title.toLowerCase().includes(normalizedQuery));
+
+                        const matchesGenre =
+                            !selectedGenre ||
+                            selectedGenre === 'all' ||
+                            (Array.isArray(series.genres) && series.genres.includes(selectedGenre));
+
+                        const matchesStatus =
+                            !selectedStatus ||
+                            selectedStatus === 'all' ||
+                            series.status === selectedStatus;
+
+                        return matchesSearch && matchesGenre && matchesStatus;
+                    }).length === 0 && (
                     <div className="series-empty-state">
                         <TvIcon className="empty-state-icon" />
                         <p>No series found matching your filters</p>
