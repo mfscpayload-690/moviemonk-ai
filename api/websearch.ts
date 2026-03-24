@@ -4,6 +4,7 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
+import { applyCors } from './_utils/cors';
 
 interface SearchResult {
   title: string;
@@ -90,12 +91,14 @@ async function searchIMDB(query: string): Promise<SearchResult[]> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
+
+  if (req.headers.origin && !originAllowed) {
+    return res.status(403).json({ ok: false, error: 'Origin is not allowed' });
+  }
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
   }
 
   if (req.method !== 'GET') {

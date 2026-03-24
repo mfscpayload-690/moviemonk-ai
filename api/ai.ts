@@ -5,6 +5,7 @@ import { searchSerpApi } from '../services/serpApiService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
 import { MovieData } from '../types';
 import { fetchSimilarTitles } from '../services/tmdbService';
+import { applyCors } from './_utils/cors';
 // Note: generateSummary is client-side code, cannot be imported in serverless functions
 // import { generateSummary } from '../services/ai';
 
@@ -419,12 +420,14 @@ const modelMatrix: Record<string, string[]> = {
 // ============================================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const { originAllowed } = applyCors(req, res, 'GET, POST, OPTIONS');
+
+  if (req.headers.origin && !originAllowed) {
+    return res.status(403).json({ ok: false, error: 'Origin is not allowed' });
+  }
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
   }
 
   const action = (req.query.action as string) || 'search';
