@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TvIcon, StarIcon, CalendarIcon, FilterIcon, SearchIcon, XMarkIcon } from './icons';
 import '../styles/series-browser.css';
 

@@ -189,9 +189,9 @@ export const TrendingIcon: React.FC<{ className?: string }> = ({ className }) =>
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
     </svg>
 );
-export const FilterIcon: React.FC<SVGProps> = (props) => (
+export const FilterIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg
-    {...props}
+    className={className}
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"

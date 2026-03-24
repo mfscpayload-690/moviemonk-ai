@@ -1235,7 +1235,7 @@ a:focus-visible {
    ============================================================================ */
 
 /* Responsive Breakpoints:
-   - xs: < 360px (very small phones)
+   - xs: <= 360px (very small phones)
    - sm: 360px - 640px (phones)
    - md: 640px - 768px (large phones, small tablets)
    - lg: 768px - 1024px (tablets, small desktops)
