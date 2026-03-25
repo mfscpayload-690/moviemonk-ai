@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, startTransition } from 'react';
 import MovieDisplay from './components/MovieDisplay';
 import PersonDisplay from './components/PersonDisplay';
+import DiscoveryPage from './components/DiscoveryPage';
 import ErrorBanner from './components/ErrorBanner';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
@@ -18,6 +19,7 @@ const debugLog = (...args: any[]) => {
 };
 
 const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
+type AppView = 'discovery' | 'movie' | 'person';
 
 const App: React.FC = () => {
   useRenderCounter('App');
@@ -34,6 +36,7 @@ const App: React.FC = () => {
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  const [currentView, setCurrentView] = useState<AppView>('discovery');
   const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
@@ -50,6 +53,7 @@ const App: React.FC = () => {
       setPersonData(null);
       setSources(item.movie.tmdb_id ? [{ web: { uri: `https://www.themoviedb.org/${item.movie.media_type || 'movie'}/${item.movie.tmdb_id}`, title: 'The Movie Database (TMDB)' } }] : null);
       setCurrentQuery(item.saved_title || item.movie.title);
+      setCurrentView('movie');
     });
     debugLog('[watchlists] loaded saved item', item.saved_title);
     setShowWatchlistsModal(false);
@@ -125,6 +129,7 @@ const App: React.FC = () => {
       setPersonData(data);
       setMovieData(null);
       setSources(data?.sources || null);
+      setCurrentView('person');
     } catch (e) {
       setError('Failed to load shared person data');
     } finally {
@@ -173,6 +178,58 @@ const App: React.FC = () => {
       document.body.removeChild(textarea);
     }
   }, [currentQuery, movieData, personData]);
+
+  const handleGoHome = useCallback(() => {
+    startTransition(() => {
+      setCurrentView('discovery');
+      setMovieData(null);
+      setPersonData(null);
+      setSources(null);
+      setCurrentQuery('');
+    });
+    const main = document.querySelector('.main-content');
+    if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleOpenTitle = useCallback(async (
+    item: { id: number; mediaType: 'movie' | 'tv' },
+    provider?: AIProvider
+  ) => {
+    setIsLoading(true);
+    setError(null);
+
+    const activeProvider = provider || selectedProvider || 'groq';
+    setSelectedProvider(activeProvider);
+
+    try {
+      const detailsRes = await fetch(
+        `/api/ai?action=details&id=${item.id}&media_type=${item.mediaType}&provider=${activeProvider}`
+      );
+      if (!detailsRes.ok) {
+        throw new Error('Failed to load title details');
+      }
+
+      const detailsData = await detailsRes.json();
+      startTransition(() => {
+        setMovieData(detailsData);
+        setPersonData(null);
+        setSources([
+          {
+            web: {
+              uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`,
+              title: 'The Movie Database (TMDB)'
+            }
+          }
+        ]);
+        setCurrentView('movie');
+        setCurrentQuery(detailsData?.title || '');
+      });
+    } catch (err: any) {
+      setError(err?.message || 'Failed to open title');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedProvider]);
 
   const classifyError = (raw: string | undefined, provider: 'groq' | 'mistral'): string => {
     if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
@@ -229,6 +286,7 @@ const App: React.FC = () => {
             setPersonData(person);
             setMovieData(null);
             setSources(person.sources);
+            setCurrentView('person');
           });
         } else {
           throw new Error('Failed to load person details');
@@ -245,6 +303,7 @@ const App: React.FC = () => {
             setMovieData(result.movieData);
             setPersonData(null);
             setSources(result.sources || []);
+            setCurrentView('movie');
           });
         } else {
           throw new Error(result.error || 'Failed to load data');
@@ -302,37 +361,14 @@ const App: React.FC = () => {
             setPersonData(personData);
             setMovieData(null);
             setSources(personData.sources || null);
+            setCurrentView('person');
           });
         } else {
           throw new Error('Failed to load person details');
         }
       } else {
         const mediaType = suggestion.media_type === 'tv' ? 'tv' : 'movie';
-        const detailsRes = await fetch(
-          `/api/ai?action=details&id=${suggestion.id}&media_type=${mediaType}&provider=${selectedProvider}`
-        );
-
-        if (detailsRes.ok) {
-          const detailsData = await detailsRes.json();
-          startTransition(() => {
-            setMovieData(detailsData);
-            setPersonData(null);
-            setSources(
-              suggestion.id
-                ? [
-                    {
-                      web: {
-                        uri: `https://www.themoviedb.org/${mediaType}/${suggestion.id}`,
-                        title: 'The Movie Database (TMDB)'
-                      }
-                    }
-                  ]
-                : null
-            );
-          });
-        } else {
-          throw new Error('Failed to load title details');
-        }
+        await handleOpenTitle({ id: suggestion.id, mediaType }, selectedProvider);
       }
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to load selected title';
@@ -340,17 +376,17 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProvider]);
+  }, [handleOpenTitle, selectedProvider]);
 
   return (
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 glass-panel border-b-0 z-50">
-          <div className="flex items-center gap-3">
+        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 glass-panel border-b-0 z-50">
+          <button type="button" className="flex items-center gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
             <Logo className="w-10 h-10 text-primary drop-shadow-glow" />
             <h1 className="text-xl sm:text-2xl font-bold text-gradient tracking-tight">MovieMonk</h1>
-          </div>
+          </button>
           <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-3">
             <DynamicSearchIsland
               onSearch={handleSendMessage}
@@ -403,7 +439,9 @@ const App: React.FC = () => {
 
         {/* Main Content Area - Full width Featured UI */}
         <div className="main-content pb-24">
-          {personData ? (
+          {currentView === 'discovery' ? (
+            <DiscoveryPage onOpenTitle={handleOpenTitle} />
+          ) : currentView === 'person' && personData ? (
             <PersonDisplay
               data={personData}
               isLoading={isLoading}
