@@ -3,6 +3,7 @@ import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { applyCors } from './_utils/cors';
 import { sendApiError } from './_utils/http';
 import { beginRequestObservation } from './_utils/observability';
+import { searchPerplexity } from '../services/perplexityService';
 import {
   rankSuggestCandidates,
   SuggestCandidate,
@@ -63,6 +64,24 @@ async function fetchTmdbSuggestions(query: string): Promise<SuggestCandidate[]> 
     .filter((candidate): candidate is SuggestCandidate => Boolean(candidate));
 }
 
+async function fetchFallbackSuggestions(query: string): Promise<SuggestCandidate[]> {
+  const fallback = await searchPerplexity(query, 3);
+  return fallback
+    .map((item: any, idx: number): SuggestCandidate | null => {
+      if (!item?.title) return null;
+      return {
+        id: item.id || Math.abs(`${query}-${idx}`.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)),
+        title: item.title,
+        year: item.year,
+        type: 'movie',
+        media_type: 'movie',
+        poster_url: item.image,
+        popularity: 1
+      };
+    })
+    .filter((candidate): candidate is SuggestCandidate => Boolean(candidate));
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const obs = beginRequestObservation(req, res, '/api/suggest');
   const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
@@ -97,9 +116,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const tmdbCandidates = await fetchTmdbSuggestions(q);
+    const candidates = tmdbCandidates.length > 0
+      ? tmdbCandidates
+      : await fetchFallbackSuggestions(q);
 
-    // Optional fallback can be added later; for now only used when TMDB yields no candidates.
-    const ranked: RankedSuggestCandidate[] = rankSuggestCandidates(q, tmdbCandidates)
+    // Fallback source is only used when TMDB yields no candidates.
+    const ranked: RankedSuggestCandidate[] = rankSuggestCandidates(q, candidates)
       .slice(0, MAX_SUGGESTIONS);
 
     const payload = {

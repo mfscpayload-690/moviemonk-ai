@@ -9,7 +9,12 @@ jest.mock('../../lib/cache', () => ({
   withCacheKey: jest.fn((_prefix: string, parts: Record<string, any>) => JSON.stringify(parts))
 }));
 
+jest.mock('../../services/perplexityService', () => ({
+  searchPerplexity: jest.fn().mockResolvedValue([])
+}));
+
 import handler from '../../api/suggest';
+import { searchPerplexity } from '../../services/perplexityService';
 
 describe('/api/suggest', () => {
   beforeEach(() => {
@@ -107,5 +112,30 @@ describe('/api/suggest', () => {
     const data = res._getJSONData();
     expect(res.statusCode).toBe(200);
     expect(data.suggestions[0].year).toBe('2021');
+  });
+
+  it('uses fallback source only when TMDB returns no candidates', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ results: [] })
+    });
+
+    (searchPerplexity as jest.Mock).mockResolvedValueOnce([
+      {
+        title: 'Fresh',
+        year: '2022',
+        image: 'https://image.tmdb.org/t/p/w154/fresh.jpg'
+      }
+    ]);
+
+    const req = createRequest({ method: 'GET', query: { q: 'Fresh' }, headers: { host: 'localhost:3000' } });
+    const res = createResponse();
+
+    await handler(req as any, res as any);
+
+    const data = res._getJSONData();
+    expect(res.statusCode).toBe(200);
+    expect(searchPerplexity).toHaveBeenCalledTimes(1);
+    expect(data.suggestions[0].title).toBe('Fresh');
   });
 });
