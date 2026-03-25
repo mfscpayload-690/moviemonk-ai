@@ -472,7 +472,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               aria-pressed={analysisMode === 'quick'}
               title="Fast results with summary"
             >
-              <span className="mode-icon">🚀</span>
+              <Zap size={20} className="mode-icon" />
               <div className="mode-content">
                 <span className="mode-label">Quick Search</span>
                 <span className="mode-desc">Find a movie fast</span>
@@ -490,7 +490,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               aria-pressed={analysisMode === 'complex'}
               title="Detailed analysis with cast, crew, ratings"
             >
-              <span className="mode-icon">🔬</span>
+              <FlaskConical size={20} className="mode-icon" />
               <div className="mode-content">
                 <span className="mode-label">Deep Dive</span>
                 <span className="mode-desc">Analyze in detail</span>
@@ -501,9 +501,15 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
           {/* Helper text */}
           <div className="mode-helper-text">
             {analysisMode === 'quick' ? (
-              <span>⚡ Get instant results with key details and summaries</span>
+              <span className="flex items-center gap-1">
+                <Zap size={14} className="inline" />
+                Get instant results with key details and summaries
+              </span>
             ) : (
-              <span>🔍 Full analysis with cast, crew, ratings, and web context</span>
+              <span className="flex items-center gap-1">
+                <FlaskConical size={14} className="inline" />
+                Full analysis with cast, crew, ratings, and web context
+              </span>
             )}
           </div>
 
