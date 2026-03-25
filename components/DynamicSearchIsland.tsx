@@ -2,7 +2,7 @@
  * DynamicSearchIsland Component
  * 
  * Modern header-integrated search interface for MovieMonk.
- * - Two search modes: 🚀 Quick Search (fast) vs 🔬 Deep Dive (detailed)
+ * - Two search modes: Quick Search (fast) vs Deep Dive (detailed)
  * - Auto-completes with icon-tagged suggestions
  * - Keyboard shortcuts: Cmd+K / Ctrl+K to focus, / or K as fallbacks
  * - Accessibility: ARIA labels, keyboard navigation, focus management
@@ -11,17 +11,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
+import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-react';
 import { QueryComplexity, SuggestionItem } from '../types';
 import { Logo, SearchIcon, SendIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
 import '../styles/dynamic-search-island.css';
 
-// Helper to get icon by suggestion type
-const getSuggestionIcon = (type: string, media_type?: string) => {
-  if (type === 'movie' || media_type === 'movie') return '🎬';
-  if (type === 'show' || media_type === 'tv') return '📺';
-  if (type === 'person') return '🎭';
-  return '✨';
+// Helper to get icon component by suggestion type
+const getSuggestionIconComponent = (type: string, media_type?: string) => {
+  if (type === 'movie' || media_type === 'movie') return Film;
+  if (type === 'show' || media_type === 'tv') return Tv;
+  if (type === 'person') return User;
+  return Sparkles;
 };
 
 interface DynamicSearchIslandProps {
@@ -408,45 +409,55 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             {/* Suggestions Dropdown with Icons */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    type="button"
-                    key={`${suggestion.media_type}-${suggestion.id}`}
-                    id={`search-suggestion-${index}`}
-                    role="option"
-                    aria-selected={highlightedIndex === index}
-                    className={`suggest-row ${highlightedIndex === index ? 'active' : ''}`}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                    onClick={() => handleSuggestionSelect(suggestion)}
-                  >
-                    {/* Poster */}
-                    <div className="suggest-poster-wrap">
-                      {suggestion.poster_url ? (
-                        <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                      ) : (
-                        <div className="suggest-poster placeholder">{getSuggestionIcon(suggestion.type, suggestion.media_type)}</div>
-                      )}
-                    </div>
-                    
-                    {/* Title and Metadata */}
-                    <div className="suggest-meta">
-                      <div className="suggest-title-row">
-                        <span className="suggest-title">{suggestion.title}</span>
-                        <span className="suggest-icon-tag">{getSuggestionIcon(suggestion.type, suggestion.media_type)}</span>
+                {suggestions.map((suggestion, index) => {
+                  const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                  return (
+                    <button
+                      type="button"
+                      key={`${suggestion.media_type}-${suggestion.id}`}
+                      id={`search-suggestion-${index}`}
+                      role="option"
+                      aria-selected={highlightedIndex === index}
+                      className={`suggest-row ${highlightedIndex === index ? 'active' : ''}`}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                    >
+                      {/* Poster */}
+                      <div className="suggest-poster-wrap">
+                        {suggestion.poster_url ? (
+                          <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                        ) : (
+                          <div className="suggest-poster placeholder">
+                            <IconComponent size={24} className="poster-icon" />
+                          </div>
+                        )}
                       </div>
-                      <div className="suggest-subtitle">
-                        {suggestion.year && <span>{suggestion.year}</span>}
-                        {suggestion.type && <span>•</span>}
-                        <span className="capitalize">{suggestion.type}</span>
+                      
+                      {/* Title and Metadata */}
+                      <div className="suggest-meta">
+                        <div className="suggest-title-row">
+                          <span className="suggest-title">{suggestion.title}</span>
+                          <IconComponent size={18} className="suggest-icon-tag" />
+                        </div>
+                        <div className="suggest-subtitle">
+                          {suggestion.year && <span>{suggestion.year}</span>}
+                          {suggestion.type && <span>•</span>}
+                          <span className="capitalize">{suggestion.type}</span>
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {inlinePrompt && <div className="suggest-inline-hint">💡 {inlinePrompt}</div>}
+          {inlinePrompt && (
+            <div className="suggest-inline-hint">
+              <Lightbulb size={16} className="inline mr-1" />
+              {inlinePrompt}
+            </div>
+          )}
 
           {/* Mode Selector: Two Button Tabs */}
           <div className="mode-selector">
