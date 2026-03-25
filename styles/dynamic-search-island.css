@@ -430,10 +430,31 @@
   font-size: 0.8125rem;
   color: #9ca3af;
   padding: 0.5rem;
-  text-align: center;
+  text-align: left;
   background: rgba(139, 92, 246, 0.08);
   border-radius: 0.5rem;
   border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.mode-helper-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  column-gap: 0.5rem;
+  line-height: 1.35;
+}
+
+.mode-helper-icon {
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+  color: #a78bfa;
+}
+
+@media (max-width: 639px) {
+  .mode-helper-text {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.625rem;
+  }
 }
 
 /* Search Action Button */

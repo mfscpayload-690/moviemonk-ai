@@ -501,14 +501,14 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
           {/* Helper text */}
           <div className="mode-helper-text">
             {analysisMode === 'quick' ? (
-              <span className="flex items-center gap-1">
-                <Zap size={14} className="inline" />
-                Get instant results with key details and summaries
+              <span className="mode-helper-row">
+                <Zap size={14} className="mode-helper-icon" />
+                <span>Get instant results with key details and summaries</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1">
-                <FlaskConical size={14} className="inline" />
-                Full analysis with cast, crew, ratings, and web context
+              <span className="mode-helper-row">
+                <FlaskConical size={14} className="mode-helper-icon" />
+                <span>Full analysis with cast, crew, ratings, and web context</span>
               </span>
             )}
           </div>
