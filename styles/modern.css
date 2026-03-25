@@ -2331,3 +2331,581 @@ a:focus-visible {
         gap: 0.95rem;
     }
 }
+
+/* Person Experience v2 */
+.person-editorial-page {
+    min-height: 100%;
+    color: #f5f5f5;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    animation: fadeIn 180ms ease;
+}
+
+.person-editorial-hero,
+.person-editorial-section,
+.person-career-snapshot {
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: linear-gradient(165deg, rgba(14, 14, 16, 0.95), rgba(9, 9, 10, 0.95));
+    border-radius: 14px;
+}
+
+.person-editorial-hero {
+    padding: 1rem;
+}
+
+.person-editorial-identity {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 0.95rem;
+    align-items: center;
+}
+
+.person-editorial-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 14px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.person-editorial-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    color: #9ca3af;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.person-editorial-header {
+    min-width: 0;
+}
+
+.person-editorial-name {
+    font-size: clamp(1.5rem, 6vw, 2.3rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    margin-bottom: 0.42rem;
+}
+
+.person-editorial-meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    color: #b5b7bf;
+    font-size: 0.78rem;
+}
+
+.person-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 0.2rem 0.52rem;
+}
+
+.person-meta-role-chip {
+    display: inline-flex;
+    align-items: center;
+    color: #ddd6fe;
+    font-size: 0.73rem;
+    background: rgba(124, 58, 237, 0.24);
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    border-radius: 999px;
+    padding: 0.2rem 0.52rem;
+}
+
+.person-editorial-tags {
+    margin-top: 0.52rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.person-editorial-tags span {
+    color: #c8ccd5;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 0.12rem 0.52rem;
+    font-size: 0.69rem;
+}
+
+.person-editorial-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    position: relative;
+}
+
+.person-editorial-primary-btn,
+.person-editorial-more-btn,
+.person-editorial-secondary-btn {
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: all 150ms ease;
+    font-size: 0.79rem;
+    font-weight: 600;
+}
+
+.person-editorial-primary-btn {
+    color: #111;
+    background: #fff;
+    border-color: rgba(255, 255, 255, 0.9);
+    padding: 0.42rem 0.85rem;
+}
+
+.person-editorial-primary-btn:hover {
+    transform: translateY(-1px);
+}
+
+.person-editorial-secondary-desktop {
+    display: none;
+}
+
+.person-editorial-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: #d1d5db;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+    padding: 0.38rem 0.78rem;
+}
+
+.person-editorial-secondary-btn:hover,
+.person-editorial-more-btn:hover {
+    border-color: rgba(167, 139, 250, 0.45);
+    color: #f5f3ff;
+}
+
+.person-editorial-secondary-mobile {
+    position: relative;
+}
+
+.person-editorial-more-btn {
+    color: #d1d5db;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+    padding: 0.38rem 0.78rem;
+}
+
+.person-editorial-more-sheet {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    min-width: 190px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(8, 8, 10, 0.98);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+    padding: 0.35rem;
+    z-index: 20;
+}
+
+.person-editorial-more-sheet button {
+    width: 100%;
+    text-align: left;
+    color: #d7d9df;
+    font-size: 0.79rem;
+    padding: 0.48rem 0.55rem;
+    border-radius: 8px;
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.person-editorial-more-sheet button:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.person-career-snapshot {
+    padding: 0.72rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.person-career-snapshot article {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.5rem 0.42rem;
+}
+
+.person-career-snapshot p {
+    color: #9ca3af;
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+}
+
+.person-career-snapshot strong {
+    font-size: 0.94rem;
+    font-weight: 640;
+    color: #f5f5f5;
+}
+
+.person-editorial-section {
+    padding: 0.9rem;
+}
+
+.person-editorial-section header {
+    margin-bottom: 0.65rem;
+}
+
+.person-editorial-section h3 {
+    font-size: 1.08rem;
+    line-height: 1.2;
+    font-weight: 650;
+    color: #f5f5f5;
+}
+
+.person-biography-text {
+    color: #b9bdc7;
+    line-height: 1.62;
+    font-size: 0.93rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--person-mobile-lines, 6);
+}
+
+.person-biography-text.is-expanded {
+    display: block;
+    overflow: visible;
+}
+
+.person-biography-toggle {
+    margin-top: 0.6rem;
+    color: #c4b5fd;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.person-credit-rail,
+.person-related-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(138px, 138px);
+    gap: 0.66rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.3rem;
+    scrollbar-width: thin;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+
+.person-rail-card {
+    text-align: left;
+    color: inherit;
+    border-radius: 10px;
+    padding: 0.22rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: all 160ms ease;
+}
+
+.person-rail-card:hover {
+    border-color: rgba(167, 139, 250, 0.45);
+}
+
+.person-rail-poster {
+    border-radius: 9px;
+    overflow: hidden;
+    aspect-ratio: 2 / 3;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.person-rail-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.person-rail-poster-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.66rem;
+    color: #9ca3af;
+}
+
+.person-rail-title {
+    margin-top: 0.4rem;
+    font-size: 0.81rem;
+    color: #f3f4f6;
+    font-weight: 600;
+    line-height: 1.2;
+    min-height: 2rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.person-rail-meta {
+    margin-top: 0.18rem;
+    font-size: 0.71rem;
+    color: #9aa1af;
+}
+
+.person-filmography-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.person-filmography-tabs {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 0.2rem;
+    display: inline-flex;
+    gap: 0.2rem;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    touch-action: pan-x pan-y;
+}
+
+.person-filmography-tabs button {
+    font-size: 0.75rem;
+    color: #a5acb7;
+    border-radius: 999px;
+    padding: 0.32rem 0.58rem;
+    white-space: nowrap;
+}
+
+.person-filmography-tabs button.is-active {
+    color: #fff;
+    background: rgba(124, 58, 237, 0.24);
+    border: 1px solid rgba(167, 139, 250, 0.4);
+}
+
+.person-filmography-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.56rem;
+}
+
+.person-filmography-card {
+    text-align: left;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+    transition: all 160ms ease;
+}
+
+.person-filmography-card:hover {
+    border-color: rgba(167, 139, 250, 0.4);
+    transform: translateY(-1px);
+}
+
+.person-filmography-poster {
+    aspect-ratio: 2 / 3;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.person-filmography-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.person-filmography-body {
+    padding: 0.42rem;
+}
+
+.person-filmography-title {
+    font-size: 0.81rem;
+    color: #f9fafb;
+    font-weight: 620;
+    line-height: 1.2;
+    min-height: 2rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.person-filmography-meta,
+.person-filmography-role {
+    font-size: 0.69rem;
+    color: #9ca3af;
+    margin-top: 0.18rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.person-related-card {
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+    padding: 0.55rem;
+}
+
+.person-related-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    margin-bottom: 0.45rem;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.person-related-avatar img,
+.person-related-avatar-fallback {
+    width: 100%;
+    height: 100%;
+}
+
+.person-related-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d1d5db;
+    font-size: 0.78rem;
+}
+
+.person-related-name {
+    font-size: 0.78rem;
+    color: #f5f5f5;
+    font-weight: 620;
+    line-height: 1.2;
+}
+
+.person-related-snippet {
+    margin-top: 0.2rem;
+    color: #9ca3af;
+    font-size: 0.68rem;
+    line-height: 1.3;
+    min-height: 1.7rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.person-sources-section ul {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.person-sources-section a {
+    color: #c4b5fd;
+    font-size: 0.8rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.person-loading-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.78rem;
+    color: #9ca3af;
+    margin-bottom: 1.5rem;
+}
+
+.person-loading-spinner {
+    width: 0.95rem;
+    height: 0.95rem;
+    border: 2px solid rgba(124, 58, 237, 0.28);
+    border-top-color: rgba(124, 58, 237, 0.92);
+    border-radius: 999px;
+    animation: discoverySpin 780ms linear infinite;
+}
+
+.person-credit-skeleton {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.person-credit-skeleton-poster {
+    aspect-ratio: 2 / 3;
+    background: linear-gradient(90deg, #161616 25%, #262626 50%, #161616 75%);
+    background-size: 220% 100%;
+    animation: discoveryPulse 1.4s ease-in-out infinite;
+}
+
+.person-credit-skeleton-lines {
+    padding: 0.45rem;
+}
+
+.person-credit-skeleton-lines div {
+    height: 0.6rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.person-credit-skeleton-lines div+div {
+    margin-top: 0.36rem;
+    width: 70%;
+}
+
+.ambiguous-modal-editorial {
+    background: linear-gradient(165deg, rgba(14, 14, 16, 0.98), rgba(8, 8, 10, 0.98));
+}
+
+@media (min-width: 768px) {
+    .person-editorial-page {
+        padding: 1.25rem;
+        gap: 1.2rem;
+    }
+
+    .person-editorial-hero {
+        padding: 1.3rem;
+    }
+
+    .person-editorial-identity {
+        grid-template-columns: 132px minmax(0, 1fr);
+        gap: 1.15rem;
+    }
+
+    .person-editorial-avatar {
+        width: 132px;
+        height: 132px;
+    }
+
+    .person-editorial-secondary-desktop {
+        display: inline-flex;
+        gap: 0.42rem;
+    }
+
+    .person-editorial-secondary-mobile {
+        display: none;
+    }
+
+    .person-biography-text {
+        -webkit-line-clamp: var(--person-desktop-lines, 5);
+    }
+
+    .person-filmography-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.72rem;
+    }
+
+    .person-credit-rail,
+    .person-related-rail {
+        grid-auto-columns: minmax(150px, 150px);
+    }
+}

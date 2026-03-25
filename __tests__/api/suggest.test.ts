@@ -138,4 +138,34 @@ describe('/api/suggest', () => {
     expect(searchPerplexity).toHaveBeenCalledTimes(1);
     expect(data.suggestions[0].title).toBe('Fresh');
   });
+
+  it('returns person role metadata for person suggestions', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        results: [
+          {
+            id: 99,
+            name: 'Christopher Nolan',
+            media_type: 'person',
+            popularity: 80,
+            profile_path: '/nolan.jpg',
+            known_for_department: 'Directing',
+            known_for: [{ title: 'Inception' }, { title: 'Interstellar' }]
+          }
+        ]
+      })
+    });
+
+    const req = createRequest({ method: 'GET', query: { q: 'director nolan' }, headers: { host: 'localhost:3000' } });
+    const res = createResponse();
+
+    await handler(req as any, res as any);
+
+    const data = res._getJSONData();
+    expect(res.statusCode).toBe(200);
+    expect(data.suggestions[0].type).toBe('person');
+    expect(data.suggestions[0].known_for_department).toBe('Directing');
+    expect(data.suggestions[0].known_for_titles).toEqual(expect.arrayContaining(['Inception', 'Interstellar']));
+  });
 });
