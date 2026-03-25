@@ -1,202 +1,67 @@
 # Development Guide
 
-How to work on MovieMonk locally.
+How to work on MovieMonk locally with the current toolchain.
 
 ---
+
+## Prerequisites
+- Node.js 20+
+- npm (installed with Node)
+- Access to required API keys (see environment list below)
 
 ## Setup
-
-### 1. Clone and Install
-
-```bash
-git clone https://github.com/mfscpayload-690/moviemonk-ai.git
-cd moviemonk-ai
-npm install
-```
-
-### 2. Add API Keys
-
-Create `.env.local` and add your keys:
-
-```env
-# Required
-GROQ_API_KEY=your_key
-TMDB_API_KEY=your_key
-TMDB_READ_TOKEN=your_token
-OMDB_API_KEY=your_key
-
-# Optional but recommended
-MISTRAL_API_KEY=your_key
-OPENROUTER_API_KEY=your_key
-PERPLEXITY_API_KEY=your_key
-```
-
-### 3. Start Dev Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000)
-
-Changes auto-reload in the browser.
-
----
-
-## Project Structure
-
-- `components/` - React UI components
-- `services/` - API integrations (AI, TMDB, caching)
-- `App.tsx` - Main app logic
-- `constants.ts` - AI prompts and settings
-- `types.ts` - TypeScript types
-
----
-
-## Making Changes
-
-### Adding a Feature
-
-1. Create a new branch: `git checkout -b my-feature`
-2. Make your changes
-3. Test locally: `npm run dev`
-4. Build: `npm run build` (check for errors)
-5. Commit: `git commit -m "Add my feature"`
-6. Push: `git push origin my-feature`
-7. Open a Pull Request on GitHub
-
-### Fixing a Bug
-
-Same as above, but branch name like `fix-something`
-
----
-
-## Code Style
-
-- Use TypeScript (not plain JavaScript)
-- Use Tailwind classes for styling
-- Keep components small and focused
-- Add comments for complex logic
-
----
-
-## Testing
-
-```bash
-npm run build
-```
-
-This checks for TypeScript errors. If it builds successfully, you're good!
-
----
-
-## Debugging
-
-### Check Browser Console
-
-Press F12 in browser to see errors and logs.
-
-### Check API Responses
-
-Look for `console.log` messages in terminal and browser.
-
-### Common Issues
-
-**"Invalid API key"**
-- Check `.env.local` file
-- Make sure keys are correct
-
-**Build errors**
-- Run `npm install` again
-- Check TypeScript errors in terminal
-
----
-
-## Contributing
-
-1. Fork the repo
-2. Create your feature branch
-3. Make changes
-4. Test thoroughly
-5. Submit pull request
-
-Keep pull requests small and focused on one thing.
-
----
-
-## Need Help?
-
-Open an issue on GitHub or check the main [README](../README.md).
-  // Implementation
-}
-```
-
-### React Components
-
-- **Functional components** with hooks
-- Props interface for each component
-- Use `React.FC` type annotation
-
-**Example:**
-```typescript
-interface ChatInterfaceProps {
-  onSendMessage: (message: string, complexity: QueryComplexity) => void;
-  messages: ChatMessage[];
-  isLoading: boolean;
-}
-
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage, messages, isLoading }) => {
-  // Component logic
-};
-```
-
-### Naming Conventions
-
-- **Components**: PascalCase (`MovieDisplay.tsx`)
-- **Functions/variables**: camelCase (`fetchMovieData`)
-- **Constants**: UPPER_SNAKE_CASE (`INITIAL_PROMPT`)
-- **Types/Interfaces**: PascalCase (`MovieData`, `FetchResult`)
-- **Files**: kebab-case or PascalCase matching component name
-
-### Styling
-
-- **Tailwind CSS** utility classes
-- Custom colors defined in `index.html` (Tailwind config)
-- Responsive design: mobile-first approach
-- Dark theme default
-
-**Color Palette:**
-```javascript
-'brand-bg': '#121212',
-'brand-surface': '#1e1e1e',
-'brand-primary': '#6a44ff',
-'brand-secondary': '#a855f7',
-'brand-accent': '#f472b6',
-'brand-text-light': '#e5e7eb',
-'brand-text-dark': '#9ca3af',
-```
-
----
-
-## Development Workflows
-
-### Adding a New Feature
-
-1. **Create a branch**:
+1. Clone your fork and install dependencies:
    ```bash
-   git checkout -b feature/my-new-feature
+   git clone https://github.com/mfscpayload-690/moviemonk-ai.git
+   cd moviemonk-ai
+   npm install
    ```
-
-2. **Implement** the feature
-   - Update types in `types.ts` if needed
-   - Add/modify components
-   - Update services if API changes needed
-
-3. **Test locally**:
+2. Create `.env.local` with the keys you need:
+   ```env
+   TMDB_API_KEY=...
+   TMDB_READ_TOKEN=...
+   OMDB_API_KEY=...
+   GROQ_API_KEY=...
+   MISTRAL_API_KEY=...
+   OPENROUTER_API_KEY=...
+   PERPLEXITY_API_KEY=...
+   SERPAPI_KEY=...
+   REDIS_URL=...        # optional for server cache
+   ALLOWED_ORIGINS=...  # optional CORS allowlist
+   APP_ORIGIN=...       # optional origin for CORS headers
+   ```
+3. Start the dev server:
    ```bash
    npm run dev
-   # Test in browser
    ```
+   Vite serves the app at http://localhost:3000 with hot reload.
+
+## Project layout
+- `App-Responsive.tsx` — main UI shell that wires the search island and result views.
+- `components/` — UI components (search island, displays, icons).
+- `services/` — API integrations, AI provider orchestration, caching helpers.
+- `api/` — Vercel-style serverless routes for TMDB/OMDB, AI providers, and search endpoints.
+- `lib/` — shared utilities (e.g., Redis cache wrapper).
+- `styles/` — global styles and component-specific CSS.
+- `__tests__/` — Jest tests covering APIs and core services.
+
+## Common workflows
+- **Feature work**: create a branch, implement changes, `npm run dev` for manual verification, then `npm test -- --runInBand` and `npm run build`.
+- **Bug fixes**: reproduce in dev, add or update tests alongside the fix, ensure `npm run lint` passes.
+- **API changes**: update handlers under `api/`, keep observability/cors helpers intact, and refresh related docs in `docs/API.md`.
+
+## Testing and quality
+- Unit/integration tests: `npm test -- --runInBand`
+- Type check: `npm run lint`
+- Production build: `npm run build`
+
+## Troubleshooting
+- **Invalid API key**: confirm values in `.env.local` and ensure Vite picked up changes (restart dev server).
+- **CORS issues**: set `ALLOWED_ORIGINS` or `APP_ORIGIN` when calling APIs from different origins.
+- **Slow responses**: verify `REDIS_URL` is reachable if server caching is enabled; otherwise caching falls back to browser storage only.
+
+## Contributing
+See `../CONTRIBUTING.md` for branching, review, and PR expectations.
 
 4. **Build** to ensure no errors:
    ```bash
