@@ -421,11 +421,11 @@ export async function getFromTMDB(parsed: ParsedQuery): Promise<MovieData | null
     );
     
     if (!search) {
-      console.log(`❌ TMDB: No results for "${parsed.title}"`);
+      console.log(`[tmdb] no results for "${parsed.title}"`);
       return null;
     }
     
-    console.log(`✅ TMDB: Found ${search.mediaType} ID ${search.id} for "${parsed.title}"`);
+    console.log(`[tmdb] found ${search.mediaType} ID ${search.id} for "${parsed.title}"`);
     
     // Fetch all data in parallel
     const [details, cast, crew, images, watchProviders, imdbId] = await Promise.all([
@@ -441,7 +441,7 @@ export async function getFromTMDB(parsed: ParsedQuery): Promise<MovieData | null
     let ratings: Rating[] = [];
     if (imdbId) {
       ratings = await fetchOMDBRatings(imdbId);
-      console.log(`✅ OMDB: Fetched ${ratings.length} ratings for ${imdbId}`);
+      console.log(`[omdb] fetched ${ratings.length} ratings for ${imdbId}`);
     }
     
     // Build MovieData from TMDB facts (no AI hallucinations!)

@@ -1,5 +1,27 @@
 import React from 'react';
+import {
+    AlertCircle,
+    AlertTriangle,
+    Bot,
+    CheckCircle2,
+    ClipboardCheck,
+    Edit3,
+    MapPin,
+    Folder,
+    Info,
+    Link as LucideLink,
+    Loader2,
+    Cake,
+    Search as LucideSearch,
+    Share2,
+    Sparkles as LucideSparkles,
+    Trash2
+} from 'lucide-react';
 import logoUrl from '../asset/MovieMonk Logo.png';
+
+type IconProps = { className?: string; 'aria-label'?: string };
+
+const baseIconProps = { 'aria-hidden': true, focusable: false };
 
 export const Logo: React.FC<{ className?: string }> = ({ className }) => (
     <img src={logoUrl} alt="MovieMonk Logo" className={className} />
@@ -11,41 +33,81 @@ export const SendIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-export const SearchIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-    </svg>
+export const SearchIcon: React.FC<IconProps> = ({ className }) => (
+    <LucideSearch {...baseIconProps} className={className} />
 );
 
-export const SparklesIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM18 13.5l-.259 1.035a3.375 3.375 0 00-2.456 2.456L14.25 18l1.035.259a3.375 3.375 0 002.456 2.456L18 21.75l.259-1.035a3.375 3.375 0 002.456-2.456L21.75 18l-1.035-.259a3.375 3.375 0 00-2.456-2.456z" />
-    </svg>
+export const SparklesIcon: React.FC<IconProps> = ({ className }) => (
+    <LucideSparkles {...baseIconProps} className={className} />
 );
 
-export const InfoIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-    </svg>
+export const InfoIcon: React.FC<IconProps> = ({ className }) => (
+    <Info {...baseIconProps} className={className} />
 );
 
-export const EyeIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+export const EyeIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className} {...baseIconProps}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
 );
 
-export const EyeSlashIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+export const EyeSlashIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className} {...baseIconProps}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243L6.228 6.228" />
     </svg>
 );
 
-export const LinkIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-    </svg>
+export const LinkIcon: React.FC<IconProps> = ({ className }) => (
+    <LucideLink {...baseIconProps} className={className} />
+);
+
+export const CheckIcon: React.FC<IconProps> = ({ className }) => (
+    <CheckCircle2 {...baseIconProps} className={className} />
+);
+
+export const WarningIcon: React.FC<IconProps> = ({ className }) => (
+    <AlertTriangle {...baseIconProps} className={className} />
+);
+
+export const ErrorIcon: React.FC<IconProps> = ({ className }) => (
+    <AlertCircle {...baseIconProps} className={className} />
+);
+
+export const SpinnerIcon: React.FC<IconProps> = ({ className }) => (
+    <Loader2 {...baseIconProps} className={className} />
+);
+
+export const BotIcon: React.FC<IconProps> = ({ className }) => (
+    <Bot {...baseIconProps} className={className} />
+);
+
+export const ClipboardIcon: React.FC<IconProps> = ({ className }) => (
+    <ClipboardCheck {...baseIconProps} className={className} />
+);
+
+export const ShareIcon: React.FC<IconProps> = ({ className }) => (
+    <Share2 {...baseIconProps} className={className} />
+);
+
+export const EditIcon: React.FC<IconProps> = ({ className }) => (
+    <Edit3 {...baseIconProps} className={className} />
+);
+
+export const TrashIcon: React.FC<IconProps> = ({ className }) => (
+    <Trash2 {...baseIconProps} className={className} />
+);
+
+export const FolderIcon: React.FC<IconProps> = ({ className }) => (
+    <Folder {...baseIconProps} className={className} />
+);
+
+export const LocationIcon: React.FC<IconProps> = ({ className }) => (
+    <MapPin {...baseIconProps} className={className} />
+);
+
+export const BirthdayIcon: React.FC<IconProps> = ({ className }) => (
+    <Cake {...baseIconProps} className={className} />
 );
 
 export const PlayIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -205,4 +267,3 @@ export const FilterIcon: React.FC<{ className?: string }> = ({ className }) => (
     />
   </svg>
 );
-

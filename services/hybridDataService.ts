@@ -40,7 +40,7 @@ export async function fetchFromBestSource(
 
     // Strategy 1: If explicitly a movie, try TMDB only
     if (isMovie && !parsed.hasSeasonInfo) {
-        console.log('🎬 Detected MOVIE query, using TMDB...');
+        console.log('[hybrid] detected MOVIE query, using TMDB...');
         const tmdbData = await getFromTMDB(parsed);
         if (tmdbData) {
             return {
@@ -53,13 +53,13 @@ export async function fetchFromBestSource(
 
     // Strategy 2: If TV show or has season info, try TVMaze first
     if (isTVShow || parsed.hasSeasonInfo) {
-        console.log('📺 Detected TV SHOW query, trying TVMaze...');
+        console.log('[hybrid] detected TV SHOW query, trying TVMaze...');
 
         try {
             const tvmazeShow = await findBestTVShow(parsed.title, parsed.year?.toString());
 
             if (tvmazeShow) {
-                console.log(`✅ TVMaze: Found "${tvmazeShow.name}"`);
+                console.log(`[hybrid] TVMaze found "${tvmazeShow.name}"`);
 
                 // Get full details with episodes and cast
                 const fullDetails = await getTVShowDetails(tvmazeShow.id);
@@ -110,7 +110,7 @@ export async function fetchFromBestSource(
         }
 
         // Fallback to TMDB for TV shows
-        console.log('📺 TVMaze failed, trying TMDB for TV show...');
+        console.log('[hybrid] TVMaze failed, trying TMDB for TV show...');
         const tmdbData = await getFromTMDB(parsed);
         if (tmdbData) {
             return {
@@ -122,7 +122,7 @@ export async function fetchFromBestSource(
     }
 
     // Strategy 3: Auto-detect (try both sources)
-    console.log('🔍 Auto-detecting media type, trying all sources...');
+    console.log('[hybrid] auto-detecting media type, trying all sources...');
 
     // Try TMDB first (faster for movies)
     const tmdbData = await getFromTMDB(parsed);

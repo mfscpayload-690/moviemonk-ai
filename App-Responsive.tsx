@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState, startTransition } from 'react';
 import MovieDisplay from './components/MovieDisplay';
 import PersonDisplay from './components/PersonDisplay';
 import ErrorBanner from './components/ErrorBanner';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
-import { ChatMessage, MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
+import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
-import { Logo } from './components/icons';
+import { ClipboardIcon, EditIcon, FolderIcon, Logo, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
 import { track } from '@vercel/analytics/react';
 import { useWatchlists } from './hooks/useWatchlists';
+import { VirtualizedList } from './components/VirtualizedList';
+import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
 
 const debugLog = (...args: any[]) => {
   if (import.meta.env.DEV) {
@@ -15,16 +17,19 @@ const debugLog = (...args: any[]) => {
   }
 };
 
+const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
+
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'system-1', role: 'system', content: 'Ready to explore! Ask about any movie or show.' }
-  ]);
+  useRenderCounter('App');
+  useEffect(() => {
+    initPerfDebug('app-shell');
+  }, []);
+
   const [movieData, setMovieData] = useState<MovieData | null>(null);
   const [personData, setPersonData] = useState<any | null>(null);
   const [sources, setSources] = useState<GroundingSource[] | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('groq');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [loadingProgress, setLoadingProgress] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
@@ -36,18 +41,21 @@ const App: React.FC = () => {
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
   const [draggedItem, setDraggedItem] = useState<{ folderId: string; itemId: string } | null>(null);
 
-  const handleLoadSavedItem = (folderId: string, itemId: string) => {
+  const handleLoadSavedItem = useCallback((folderId: string, itemId: string) => {
     const found = findItem(folderId, itemId);
     if (!found) return;
     const { item } = found;
-    setMovieData(item.movie);
-    setPersonData(null);
-    setSources(item.movie.tmdb_id ? [{ web: { uri: `https://www.themoviedb.org/${item.movie.media_type || 'movie'}/${item.movie.tmdb_id}`, title: 'The Movie Database (TMDB)' } }] : null);
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'system', content: `📁 Loaded ${item.saved_title} from Watch Later.` }]);
+    startTransition(() => {
+      setMovieData(item.movie);
+      setPersonData(null);
+      setSources(item.movie.tmdb_id ? [{ web: { uri: `https://www.themoviedb.org/${item.movie.media_type || 'movie'}/${item.movie.tmdb_id}`, title: 'The Movie Database (TMDB)' } }] : null);
+      setCurrentQuery(item.saved_title || item.movie.title);
+    });
+    debugLog('[watchlists] loaded saved item', item.saved_title);
     setShowWatchlistsModal(false);
     const main = document.querySelector('.main-content');
     if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [findItem]);
 
   // Load shared link on mount
   useEffect(() => {
@@ -77,32 +85,30 @@ const App: React.FC = () => {
     }
   }, [showWatchlistsModal, refresh]);
 
-  const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
-
-  const startEditFolder = (folder: any) => {
+  const startEditFolder = useCallback((folder: any) => {
     setEditingFolderId(folder.id);
     setEditFolderName(folder.name);
     setEditFolderColor(folder.color || '#7c3aed');
-  };
+  }, []);
 
-  const saveFolderEdits = () => {
+  const saveFolderEdits = useCallback(() => {
     if (!editingFolderId) return;
     renameFolder(editingFolderId, editFolderName);
     setFolderColor(editingFolderId, editFolderColor);
     setEditingFolderId(null);
-  };
+  }, [editingFolderId, editFolderName, editFolderColor, renameFolder, setFolderColor]);
 
-  const handleDragStart = (e: React.DragEvent, folderId: string, itemId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, folderId: string, itemId: string) => {
     setDraggedItem({ folderId, itemId });
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, targetFolderId: string) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetFolderId: string) => {
     e.preventDefault();
     if (!draggedItem || draggedItem.folderId === targetFolderId) {
       setDraggedItem(null);
@@ -110,7 +116,7 @@ const App: React.FC = () => {
     }
     moveItem(draggedItem.folderId, draggedItem.itemId, targetFolderId);
     setDraggedItem(null);
-  };
+  }, [draggedItem, moveItem]);
 
   const loadPersonFromShare = async (personId: number) => {
     try {
@@ -126,7 +132,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     let shareUrl = window.location.origin;
 
     if (movieData) {
@@ -166,7 +172,7 @@ const App: React.FC = () => {
       }
       document.body.removeChild(textarea);
     }
-  };
+  }, [currentQuery, movieData, personData]);
 
   const classifyError = (raw: string | undefined, provider: 'groq' | 'mistral'): string => {
     if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
@@ -189,18 +195,13 @@ const App: React.FC = () => {
     return raw;
   };
 
-  const handleSendMessage = async (message: string, complexity: QueryComplexity, provider: AIProvider = 'groq') => {
+  const handleSendMessage = useCallback(async (message: string, complexity: QueryComplexity, provider: AIProvider = 'groq') => {
     setIsLoading(true);
-    setLoadingProgress('🔍 Searching...');
     setError(null);
     setCurrentQuery(message);
 
-    const userMessage: ChatMessage = { id: Date.now().toString(), role: 'user', content: message };
-    setMessages(prev => [...prev, userMessage]);
-
     try {
-      // STEP 1: Search using TMDB (primary) and Perplexity (fallback)
-      debugLog('📡 Fetching search results from TMDB/Perplexity...');
+      debugLog('[search] fetching search results');
       const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(message)}`);
       const searchData = await searchRes.json();
 
@@ -208,14 +209,9 @@ const App: React.FC = () => {
         throw new Error('No search results found');
       }
 
-      setLoadingProgress(`Found ${searchData.total} results...`);
-
-      // STEP 2: Prefer top ranked result when query submit does not include an explicit inline pick.
       const selectedResult = searchData.results[0];
-      debugLog('✅ Using top ranked search match:', selectedResult.title);
+      debugLog('[search] using top ranked match', selectedResult.title);
 
-      // Select best model for this query type
-      setLoadingProgress('🤖 Selecting best AI model...');
       const modelRes = await fetch(
         `/api/ai?action=selectModel&type=${selectedResult.type}&title=${encodeURIComponent(selectedResult.title)}`
       );
@@ -223,72 +219,55 @@ const App: React.FC = () => {
       const selectedModel: AIProvider = (modelData.selectedModel as AIProvider) || provider;
       setSelectedProvider(selectedModel);
 
-      debugLog(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
+      debugLog('[search] selected model', selectedModel);
 
-      // Check if it's a person query - use dedicated endpoint
       if (selectedResult.type === 'person') {
-        setLoadingProgress('🔍 Fetching person details...');
         const personRes = await fetch(`/api/person/${selectedResult.id}`);
         if (personRes.ok) {
-          const personData = await personRes.json();
-          setPersonData(personData);
-          setMovieData(null);
-          setSources(personData.sources);
+          const person = await personRes.json();
+          startTransition(() => {
+            setPersonData(person);
+            setMovieData(null);
+            setSources(person.sources);
+          });
         } else {
           throw new Error('Failed to load person details');
         }
       } else {
-        // Use NEW hybrid service for movies/TV shows (supports TVMaze!)
-        setLoadingProgress('🔍 Fetching details from best source...');
-
         const result = await fetchMovieData(
-          message, // Original query
+          message,
           complexity,
           selectedModel
         );
 
         if (result.movieData) {
-          setMovieData(result.movieData);
-          setPersonData(null);
-          setSources(result.sources || []);
+          startTransition(() => {
+            setMovieData(result.movieData);
+            setPersonData(null);
+            setSources(result.sources || []);
+          });
         } else {
           throw new Error(result.error || 'Failed to load data');
         }
       }
-
-
-
-      const modelResponse: ChatMessage = {
-        id: Date.now().toString() + '-model',
-        role: 'model',
-        content: `✅ Loaded ${selectedResult.title}.`
-      };
-      setMessages(prev => [...prev, modelResponse]);
     } catch (err: any) {
-      setLoadingProgress('');
       const errorMsg = err.message || 'Search and parse failed';
-      const errorMessage: ChatMessage = {
-        id: Date.now().toString() + '-error',
-        role: 'system',
-        content: `❌ Error: ${errorMsg}. Try rephrasing your query.`
-      };
       setError(errorMsg);
-      setMessages(prev => [...prev, errorMessage]);
-      setSources(null);
+      startTransition(() => {
+        setSources(null);
+      });
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    setIsLoading(false);
-  };
-
-  const handleQuickSearch = (title: string) => {
-    // Default to groq and simple for quick searches
+  const handleQuickSearch = useCallback((title: string) => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
-  };
+  }, [handleSendMessage]);
 
-  const handleBriefMe = async (name: string) => {
+  const handleBriefMe = useCallback(async (name: string) => {
     try {
       setIsLoading(true);
-      setLoadingProgress('Summarizing…');
       const res = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -296,7 +275,9 @@ const App: React.FC = () => {
       });
       const json = await res.json();
       if (json?.ok) {
-        setSummaryModal({ title: name, short: json?.summary?.summary_short, long: json?.summary?.summary_long });
+        startTransition(() => {
+          setSummaryModal({ title: name, short: json?.summary?.summary_short, long: json?.summary?.summary_long });
+        });
       } else {
         setError(json?.error || 'Failed to summarize');
       }
@@ -304,13 +285,11 @@ const App: React.FC = () => {
       setError(e?.message || 'Failed to summarize');
     } finally {
       setIsLoading(false);
-      setLoadingProgress('');
     }
-  };
+  }, []);
 
-  const handleSuggestionSelect = async (suggestion: SuggestionItem) => {
+  const handleSuggestionSelect = useCallback(async (suggestion: SuggestionItem) => {
     setIsLoading(true);
-    setLoadingProgress('🔍 Fetching full details...');
     setError(null);
     setCurrentQuery(suggestion.title);
 
@@ -319,9 +298,11 @@ const App: React.FC = () => {
         const personRes = await fetch(`/api/person/${suggestion.id}`);
         if (personRes.ok) {
           const personData = await personRes.json();
-          setPersonData(personData);
-          setMovieData(null);
-          setSources(personData.sources || null);
+          startTransition(() => {
+            setPersonData(personData);
+            setMovieData(null);
+            setSources(personData.sources || null);
+          });
         } else {
           throw new Error('Failed to load person details');
         }
@@ -333,45 +314,33 @@ const App: React.FC = () => {
 
         if (detailsRes.ok) {
           const detailsData = await detailsRes.json();
-          setMovieData(detailsData);
-          setPersonData(null);
-          setSources(
-            suggestion.id
-              ? [
-                  {
-                    web: {
-                      uri: `https://www.themoviedb.org/${mediaType}/${suggestion.id}`,
-                      title: 'The Movie Database (TMDB)'
+          startTransition(() => {
+            setMovieData(detailsData);
+            setPersonData(null);
+            setSources(
+              suggestion.id
+                ? [
+                    {
+                      web: {
+                        uri: `https://www.themoviedb.org/${mediaType}/${suggestion.id}`,
+                        title: 'The Movie Database (TMDB)'
+                      }
                     }
-                  }
-                ]
-              : null
-          );
+                  ]
+                : null
+            );
+          });
         } else {
           throw new Error('Failed to load title details');
         }
       }
-
-      const modelResponse: ChatMessage = {
-        id: Date.now().toString() + '-model',
-        role: 'model',
-        content: `✅ Loaded ${suggestion.title}.`
-      };
-      setMessages(prev => [...prev, modelResponse]);
     } catch (err: any) {
-      setLoadingProgress('');
       const errorMsg = err.message || 'Failed to load selected title';
-      const errorMessage: ChatMessage = {
-        id: Date.now().toString() + '-error',
-        role: 'system',
-        content: `❌ Error: ${errorMsg}. Try another suggestion.`
-      };
       setError(errorMsg);
-      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-  };
+  }, [selectedProvider]);
 
   return (
     <>
@@ -395,9 +364,7 @@ const App: React.FC = () => {
               className="btn-glass flex items-center gap-2"
               aria-label="Open watch later"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm0 2c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2zm0 6c-1.105 0-2 .895-2 2s.895 2 2 2 2-.895 2-2-.895-2-2-2z" />
-              </svg>
+              <FolderIcon className="w-4 h-4" />
               <span className="hidden sm:inline">Watchlists</span>
             </button>
             {(movieData || personData) && (
@@ -406,9 +373,7 @@ const App: React.FC = () => {
                 className="btn-glass flex items-center gap-2"
                 aria-label="Share this result"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
+                <ShareIcon className="w-4 h-4" />
                 <span className="hidden sm:inline">Share</span>
               </button>
             )}
@@ -420,9 +385,7 @@ const App: React.FC = () => {
           showCopyToast && (
             <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10000] animate-fade-in">
               <div className="bg-brand-primary text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 border border-brand-primary/50">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <ClipboardIcon className="w-5 h-5" />
                 <span className="font-semibold">Link copied to clipboard!</span>
               </div>
             </div>
@@ -470,7 +433,9 @@ const App: React.FC = () => {
             <div className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl p-4 sm:p-5 modal-mobile-slide">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold">Brief: {summaryModal.title}</h3>
-                <button onClick={() => setSummaryModal(null)} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close">✕</button>
+                <button onClick={() => setSummaryModal(null)} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close">
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
               </div>
               {summaryModal.short && (
                 <div className="mb-3 text-sm text-brand-text-light">{summaryModal.short}</div>
@@ -498,7 +463,7 @@ const App: React.FC = () => {
             <div className="flex items-center justify-between flex-shrink-0">
               <h3 className="text-lg sm:text-xl font-bold text-white">Your Watchlists</h3>
               <button onClick={() => setShowWatchlistsModal(false)} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close watchlists">
-                ✕
+                <XMarkIcon className="w-4 h-4" />
               </button>
             </div>
 
@@ -506,7 +471,7 @@ const App: React.FC = () => {
               <p className="text-brand-text-dark text-sm">No watchlists yet. Save a title with "Save to List" to get started.</p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1 pr-1 overscroll-contain">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1 pr-1 overscroll-contain content-visibility-auto">
               {watchlists.map(folder => (
                 <div
                   key={folder.id}
@@ -518,7 +483,10 @@ const App: React.FC = () => {
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
                     <p className="text-white font-semibold text-sm">{folder.name}</p>
                     <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
-                    <button onClick={() => startEditFolder(folder)} className="ml-2 text-xs text-brand-text-dark hover:text-white p-1 rounded hover:bg-white/10">✎ Edit</button>
+                    <button onClick={() => startEditFolder(folder)} className="ml-2 text-xs text-brand-text-dark hover:text-white p-1 rounded hover:bg-white/10 inline-flex items-center gap-1">
+                      <EditIcon className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
                   </div>
 
                   {editingFolderId === folder.id && (
@@ -530,7 +498,7 @@ const App: React.FC = () => {
                         className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
                       />
                       <div className="flex items-center gap-2">
-                        {COLOR_PRESETS.map(color => (
+                        {WATCHLIST_COLORS.map(color => (
                           <button
                             key={color}
                             type="button"
@@ -552,36 +520,76 @@ const App: React.FC = () => {
                     <p className="text-xs text-brand-text-dark">Empty folder. Drag items here.</p>
                   ) : (
                     <div className="space-y-2">
-                      {folder.items.map(item => (
-                        <div
-                          key={item.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
-                          className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${draggedItem?.itemId === item.id
-                            ? 'opacity-50 border-brand-primary bg-brand-primary/10'
-                            : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
-                            }`}
-                        >
-                          <button
-                            onClick={() => handleLoadSavedItem(folder.id, item.id)}
-                            className="flex-1 text-left"
-                          >
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold text-white">{item.saved_title}</span>
-                              <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0, 3).join(', ')}</span>
+                      {folder.items.length > 10 ? (
+                        <VirtualizedList
+                          items={folder.items}
+                          itemHeight={90}
+                          height={Math.min(420, folder.items.length * 90)}
+                          renderItem={(item) => (
+                            <div className="px-0.5 py-0.5">
+                              <div
+                                key={item.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
+                                className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${draggedItem?.itemId === item.id
+                                  ? 'opacity-50 border-brand-primary bg-brand-primary/10'
+                                  : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
+                                  }`}
+                              >
+                                <button
+                                  onClick={() => handleLoadSavedItem(folder.id, item.id)}
+                                  className="flex-1 text-left"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-semibold text-white">{item.saved_title}</span>
+                                    <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0, 3).join(', ')}</span>
+                                  </div>
+                                </button>
+                                <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
+                                <button
+                                  onClick={() => deleteItem(folder.id, item.id)}
+                                  className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center"
+                                  aria-label="Delete item"
+                                  title="Delete from watchlist"
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
-                          </button>
-                          <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
-                          <button
-                            onClick={() => deleteItem(folder.id, item.id)}
-                            className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10"
-                            aria-label="Delete item"
-                            title="Delete from watchlist"
+                          )}
+                        />
+                      ) : (
+                        folder.items.map(item => (
+                          <div
+                            key={item.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
+                            className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${draggedItem?.itemId === item.id
+                              ? 'opacity-50 border-brand-primary bg-brand-primary/10'
+                              : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
+                              }`}
                           >
-                            🗑️
-                          </button>
-                        </div>
-                      ))}
+                            <button
+                              onClick={() => handleLoadSavedItem(folder.id, item.id)}
+                              className="flex-1 text-left"
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-white">{item.saved_title}</span>
+                                <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0, 3).join(', ')}</span>
+                              </div>
+                            </button>
+                            <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
+                            <button
+                              onClick={() => deleteItem(folder.id, item.id)}
+                              className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center"
+                              aria-label="Delete item"
+                              title="Delete from watchlist"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>

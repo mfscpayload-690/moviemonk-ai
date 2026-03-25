@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MovieData, TVShowEpisode, TVShowSeason } from '../types';
-import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon } from './icons';
+import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon } from './icons';
 import '../styles/tv-show.css';
 
 interface TVShowDisplayProps {
@@ -287,9 +287,10 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
                         href={tvShow.officialSite}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="official-site-link"
+                        className="official-site-link inline-flex items-center gap-2"
                     >
-                        🔗 Visit Official Website
+                        <LinkIcon className="w-4 h-4" aria-hidden />
+                        <span>Visit Official Website</span>
                     </a>
                 </div>
             )}

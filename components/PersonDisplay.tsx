@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles } from 'lucide-react';
 import { track } from '@vercel/analytics/react';
+import { BirthdayIcon, LocationIcon, SparklesIcon } from './icons';
+import { useRenderCounter } from '../lib/perfDebug';
 
 interface FilmItem {
   id: number;
@@ -40,6 +41,7 @@ const BIO_LIMIT = 600;
 
 const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuickSearch?: (q: string) => void; onBriefMe?: (name: string) => void }> = ({ data, isLoading, onQuickSearch, onBriefMe }) => {
   const [bioExpanded, setBioExpanded] = useState(false);
+  useRenderCounter('PersonDisplay');
 
   if (!data) return null;
   const { person, filmography, sources, related_people } = data;
@@ -63,8 +65,18 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
         <div className="flex-1 space-y-3 text-center sm:text-left">
           <h2 className="text-2xl sm:text-5xl font-extrabold text-gradient tracking-tight">{person.name}</h2>
           <div className="text-base text-muted flex flex-wrap justify-center sm:justify-start gap-2 items-center">
-            {person.birthday && <span className="bg-white/5 px-2 py-1 rounded-md">🎂 {person.birthday}</span>}
-            {person.place_of_birth && <span className="bg-white/5 px-2 py-1 rounded-md">📍 {person.place_of_birth}</span>}
+            {person.birthday && (
+              <span className="bg-white/5 px-2 py-1 rounded-md inline-flex items-center gap-2">
+                <BirthdayIcon className="w-4 h-4" />
+                <span>{person.birthday}</span>
+              </span>
+            )}
+            {person.place_of_birth && (
+              <span className="bg-white/5 px-2 py-1 rounded-md inline-flex items-center gap-2">
+                <LocationIcon className="w-4 h-4" />
+                <span>{person.place_of_birth}</span>
+              </span>
+            )}
           </div>
           {(onQuickSearch || onBriefMe) && (
             <div className="flex flex-wrap justify-center sm:justify-start gap-3 pt-2">
@@ -79,7 +91,7 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
                   track('brief_me_clicked', { person_name: person.name });
                   onBriefMe(person.name);
                 }} aria-label="Brief Me">
-                  <Sparkles size={16} />
+                  <SparklesIcon className="w-4 h-4" />
                   Brief Me
                 </button>
               )}
@@ -111,7 +123,7 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
             {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : (
-          <div className="filmography-mobile-scroll horizontal-scroll-fade-right sm:grid sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4 sm:overflow-visible">
+          <div className="filmography-mobile-scroll horizontal-scroll-fade-right sm:grid sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4 sm:overflow-visible content-visibility-auto">
             {filmography.map((f) => (
               <div key={`${f.id}-${f.role}`} className="glass-panel p-0 rounded-xl overflow-hidden hover:border-violet-500/50 hover:scale-[1.02] transition-all duration-300 group touch-target">
                 {f.poster_url ? (

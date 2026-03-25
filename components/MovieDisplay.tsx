@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
+import { VirtualizedList } from './VirtualizedList';
+import { useRenderCounter } from '../lib/perfDebug';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -196,6 +198,7 @@ const DISCOVER_TITLES = [
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
 const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist }) => {
+    useRenderCounter('MovieDisplay');
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
@@ -293,6 +296,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
 
     const displayedCast = showAllCast ? safeCast : safeCast.slice(0, 8);
+    const shouldVirtualizeCast = showAllCast && safeCast.length > 20;
+    const castListHeight = Math.min(520, Math.max(260, safeCast.length * 120));
+    const renderCastItem = useCallback((member: CastMember) => (
+        <div className="px-1 py-1">
+            <CastCard key={member.name} member={member} />
+        </div>
+    ), []);
 
 
     useEffect(() => {
@@ -575,9 +585,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     </Section>
 
                     <Section title="Cast & Crew">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
-                        </div>
+                        {shouldVirtualizeCast ? (
+                            <div className="content-visibility-auto">
+                                <VirtualizedList
+                                    items={safeCast}
+                                    itemHeight={128}
+                                    height={castListHeight}
+                                    renderItem={(item) => renderCastItem(item)}
+                                />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
+                            </div>
+                        )}
                         {safeCast.length > 8 && (
                             <div className="mt-4 text-center">
                                 <button
@@ -928,7 +949,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 };
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="glass-panel p-6 rounded-2xl animate-slide-up">
+    <div className="glass-panel p-6 rounded-2xl animate-slide-up content-visibility-auto">
         <h2 className="text-xl md:text-2xl font-bold mb-4 text-white border-b border-white/5 pb-3 flex items-center gap-2">
             <span className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></span>
             {title}

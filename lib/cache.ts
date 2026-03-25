@@ -9,7 +9,7 @@ async function getRedis(): Promise<RedisClientType | null> {
   
   const REDIS_URL = process.env.REDIS_URL;
   if (!REDIS_URL) {
-    console.warn('⚠️ REDIS_URL not found - caching disabled');
+    console.warn('[cache] REDIS_URL not found - caching disabled');
     redisAvailable = false;
     return null;
   }
@@ -23,10 +23,10 @@ async function getRedis(): Promise<RedisClientType | null> {
     });
     await client.connect();
     redisClient = client as RedisClientType;
-    console.log('✅ Redis connected');
+    console.log('[cache] Redis connected');
     return redisClient;
   } catch (error) {
-    console.error('❌ Redis connection failed:', error);
+    console.error('[cache] Redis connection failed:', error);
     redisAvailable = false;
     return null;
   }
