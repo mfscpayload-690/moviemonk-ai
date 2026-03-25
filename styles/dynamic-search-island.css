@@ -320,6 +320,115 @@
   color: #6b7280;
 }
 
+.suggest-loading {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.suggest-dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 10050;
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(180deg, rgba(15, 15, 24, 0.98), rgba(22, 22, 34, 0.98));
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.45);
+}
+
+.suggest-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: #f3f4f6;
+  cursor: pointer;
+  min-height: 56px;
+}
+
+.suggest-row + .suggest-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.suggest-row:hover,
+.suggest-row.active {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.suggest-poster-wrap {
+  width: 36px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 0.35rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.suggest-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.suggest-poster.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: #9ca3af;
+}
+
+.suggest-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.suggest-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f9fafb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggest-subtitle {
+  font-size: 0.78rem;
+  color: #c4b5fd;
+  text-transform: capitalize;
+}
+
+.suggest-inline-hint {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: #fbbf24;
+  text-align: left;
+}
+
+@media (max-width: 767px) {
+  .suggest-dropdown {
+    max-height: 300px;
+  }
+
+  .suggest-row {
+    min-height: 62px;
+    padding: 0.7rem 0.8rem;
+  }
+}
+
 /* Selector and toggle */
 .controls-row {
   display: flex;

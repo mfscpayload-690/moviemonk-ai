@@ -4,8 +4,7 @@ import PersonDisplay from './components/PersonDisplay';
 import SeriesBrowser from './components/SeriesBrowser';
 import ErrorBanner from './components/ErrorBanner';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
-import AmbiguousModal from './components/AmbiguousModal';
-import { ChatMessage, MovieData, QueryComplexity, GroundingSource, AIProvider } from './types';
+import { ChatMessage, MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { Logo } from './components/icons';
 import { track } from '@vercel/analytics/react';
@@ -23,7 +22,6 @@ const App: React.FC = () => {
   ]);
   const [movieData, setMovieData] = useState<MovieData | null>(null);
   const [personData, setPersonData] = useState<any | null>(null);
-  const [ambiguous, setAmbiguous] = useState<{ id: number; name: string; type: 'movie' | 'person'; score: number }[] | null>(null);
   const [sources, setSources] = useState<GroundingSource[] | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('groq');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -214,29 +212,9 @@ const App: React.FC = () => {
 
       setLoadingProgress(`Found ${searchData.total} results...`);
 
-      // STEP 2: If multiple results, show disambiguation modal
-      if (searchData.results.length > 1) {
-        debugLog('📋 Multiple results found, showing disambiguation modal');
-        setAmbiguous(
-          searchData.results.map((r: any) => ({
-            id: r.id,
-            title: r.title,
-            type: r.type,
-            score: r.confidence,
-            url: r.url,
-            snippet: r.snippet,
-            image: r.image,
-            year: r.year,
-            media_type: r.media_type
-          }))
-        );
-        setIsLoading(false);
-        return;
-      }
-
-      // STEP 3: If single result, proceed to fetch data using hybrid service
+      // STEP 2: Prefer top ranked result when query submit does not include an explicit inline pick.
       const selectedResult = searchData.results[0];
-      debugLog('✅ Single clear match found:', selectedResult.title);
+      debugLog('✅ Using top ranked search match:', selectedResult.title);
 
       // Select best model for this query type
       setLoadingProgress('🤖 Selecting best AI model...');
@@ -332,68 +310,63 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle selection from disambiguation modal
-  const handleSelectResult = async (selectedAmbiguous: any) => {
-    setAmbiguous(null);
+  const handleSuggestionSelect = async (suggestion: SuggestionItem) => {
     setIsLoading(true);
-    setLoadingProgress('🤖 Selecting best AI model...');
+    setLoadingProgress('🔍 Fetching full details...');
     setError(null);
+    setCurrentQuery(suggestion.title);
 
     try {
-      // Select best model for this query type
-      const modelRes = await fetch(
-        `/api/ai?action=selectModel&type=${selectedAmbiguous.type}&title=${encodeURIComponent(selectedAmbiguous.title)}`
-      );
-      const modelData = await modelRes.json();
-      const selectedModel = modelData.selectedModel || 'groq';
-
-      debugLog(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
-      setSelectedProvider(selectedModel as AIProvider);
-
-      setLoadingProgress('🔍 Fetching full details...');
-
-      if (selectedAmbiguous.type === 'person') {
-        const personRes = await fetch(`/api/person/${selectedAmbiguous.id}`);
+      if (suggestion.type === 'person') {
+        const personRes = await fetch(`/api/person/${suggestion.id}`);
         if (personRes.ok) {
           const personData = await personRes.json();
           setPersonData(personData);
           setMovieData(null);
-          setSources(personData.sources);
+          setSources(personData.sources || null);
         } else {
           throw new Error('Failed to load person details');
         }
       } else {
-        // Use NEW hybrid service for movies/TV shows (supports TVMaze!)
-        setLoadingProgress('🔍 Fetching details from best source...');
-
-        const result = await fetchMovieData(
-          selectedAmbiguous.title, // Use the selected title as query
-          QueryComplexity.SIMPLE,
-          selectedModel as AIProvider
+        const mediaType = suggestion.media_type === 'tv' ? 'tv' : 'movie';
+        const detailsRes = await fetch(
+          `/api/ai?action=details&id=${suggestion.id}&media_type=${mediaType}&provider=${selectedProvider}`
         );
 
-        if (result.movieData) {
-          setMovieData(result.movieData);
+        if (detailsRes.ok) {
+          const detailsData = await detailsRes.json();
+          setMovieData(detailsData);
           setPersonData(null);
-          setSources(result.sources || []);
+          setSources(
+            suggestion.id
+              ? [
+                  {
+                    web: {
+                      uri: `https://www.themoviedb.org/${mediaType}/${suggestion.id}`,
+                      title: 'The Movie Database (TMDB)'
+                    }
+                  }
+                ]
+              : null
+          );
         } else {
-          throw new Error(result.error || 'Failed to load details');
+          throw new Error('Failed to load title details');
         }
       }
 
       const modelResponse: ChatMessage = {
         id: Date.now().toString() + '-model',
         role: 'model',
-        content: `✅ Loaded ${selectedAmbiguous.title}.`
+        content: `✅ Loaded ${suggestion.title}.`
       };
       setMessages(prev => [...prev, modelResponse]);
     } catch (err: any) {
       setLoadingProgress('');
-      const errorMsg = err.message || 'Processing failed';
+      const errorMsg = err.message || 'Failed to load selected title';
       const errorMessage: ChatMessage = {
         id: Date.now().toString() + '-error',
         role: 'system',
-        content: `❌ Error: ${errorMsg}. Try another result.`
+        content: `❌ Error: ${errorMsg}. Try another suggestion.`
       };
       setError(errorMsg);
       setMessages(prev => [...prev, errorMessage]);
@@ -414,6 +387,7 @@ const App: React.FC = () => {
           <div className="header-search-slot px-1 sm:px-3">
             <DynamicSearchIsland
               onSearch={handleSendMessage}
+              onSuggestionSelect={handleSuggestionSelect}
               isLoading={isLoading}
             />
           </div>
@@ -502,19 +476,6 @@ const App: React.FC = () => {
         </div>
 
       </div >
-
-
-      {/* Ambiguous Selector Modal */}
-      {
-        ambiguous && (
-          <AmbiguousModal
-            candidates={ambiguous}
-            onSelect={handleSelectResult}
-            onClose={() => setAmbiguous(null)}
-          />
-        )
-      }
-
       {/* Summary Modal */}
       {
         summaryModal && (
