@@ -156,7 +156,11 @@ async function fetchOMDBRatings(imdbId: string): Promise<Rating[]> {
     const response = await fetch(url);
     
     if (!response.ok) {
-      console.warn(`OMDB proxy error: ${response.status}`);
+      // 4xx from OMDB proxy commonly means missing/invalid key in deployment.
+      // Keep UX functional by silently falling back to empty ratings.
+      if (response.status >= 500) {
+        console.warn(`OMDB proxy error: ${response.status}`);
+      }
       return [];
     }
     
