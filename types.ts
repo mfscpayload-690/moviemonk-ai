@@ -17,6 +17,24 @@ export interface WatchOption {
   type: 'subscription' | 'rent' | 'free' | 'buy';
 }
 
+export interface DiscoveryItem {
+  id: number;
+  tmdb_id: string;
+  media_type: 'movie' | 'tv';
+  title: string;
+  year: string;
+  overview: string;
+  poster_url: string;
+  backdrop_url: string;
+  rating: number | null;
+  genre_ids: number[];
+}
+
+export interface DiscoveryGenre {
+  id: number;
+  name: string;
+}
+
 // Related content types for Similar/People Also Search
 export type RelatedTitle = {
   id: number;

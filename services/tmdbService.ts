@@ -1,4 +1,4 @@
-import { MovieData, CastMember, Crew, Rating, WatchOption } from '../types';
+import { MovieData, CastMember, Crew, Rating, WatchOption, DiscoveryItem, DiscoveryGenre } from '../types';
 import { ParsedQuery } from './queryParser';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -23,7 +23,63 @@ function buildImageUrl(path: string | null | undefined, size: 'w500'|'w780'|'ori
   return `${IMG_BASE}/${size}${path}`;
 }
 
-async function tmdbFetch(path: string, params: Record<string, string | number | undefined> = {}): Promise<any> {
+type TMDBFetchOptions = {
+  signal?: AbortSignal;
+};
+
+function normalizeDiscoveryItem(raw: any): DiscoveryItem | null {
+  const mediaType = raw?.media_type === 'tv' || (!raw?.title && raw?.name) ? 'tv' : 'movie';
+  if (raw?.media_type && raw.media_type !== 'movie' && raw.media_type !== 'tv') {
+    return null;
+  }
+
+  const title = typeof raw?.title === 'string' && raw.title.trim()
+    ? raw.title.trim()
+    : typeof raw?.name === 'string'
+      ? raw.name.trim()
+      : '';
+
+  if (!raw?.id || !title) {
+    return null;
+  }
+
+  const releaseDate = mediaType === 'movie' ? raw?.release_date : raw?.first_air_date;
+
+  return {
+    id: raw.id,
+    tmdb_id: String(raw.id),
+    media_type: mediaType,
+    title,
+    year: typeof releaseDate === 'string' ? releaseDate.substring(0, 4) : '',
+    overview: typeof raw?.overview === 'string' ? raw.overview : '',
+    poster_url: buildImageUrl(raw?.poster_path, 'w500'),
+    backdrop_url: buildImageUrl(raw?.backdrop_path, 'w780'),
+    rating: typeof raw?.vote_average === 'number' ? raw.vote_average : null,
+    genre_ids: Array.isArray(raw?.genre_ids)
+      ? raw.genre_ids.filter((id: unknown) => typeof id === 'number')
+      : Array.isArray(raw?.genres)
+        ? raw.genres.map((genre: any) => genre?.id).filter((id: unknown) => typeof id === 'number')
+        : []
+  };
+}
+
+async function fetchDiscoveryList(
+  path: string,
+  params: Record<string, string | number | undefined> = {},
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryItem[]> {
+  const data = await tmdbFetch(path, params, options);
+  if (!Array.isArray(data?.results)) return [];
+  return data.results
+    .map((item: any) => normalizeDiscoveryItem(item))
+    .filter((item: DiscoveryItem | null): item is DiscoveryItem => item !== null);
+}
+
+async function tmdbFetch(
+  path: string,
+  params: Record<string, string | number | undefined> = {},
+  options: TMDBFetchOptions = {}
+): Promise<any> {
   // Build query string for proxy
   const queryParams = new URLSearchParams();
   queryParams.set('endpoint', path.replace(/^\//, '')); // Remove leading slash
@@ -35,9 +91,66 @@ async function tmdbFetch(path: string, params: Record<string, string | number | 
   });
   
   const url = `${TMDB_PROXY}?${queryParams.toString()}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: options.signal });
   if (!res.ok) throw new Error(`TMDB ${path} failed: ${res.status}`);
   return res.json();
+}
+
+export async function fetchTrending(
+  mediaType: 'movie' | 'tv' | 'all',
+  timeWindow: 'day' | 'week',
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryItem[]> {
+  const items = await fetchDiscoveryList(`/trending/${mediaType}/${timeWindow}`, {}, options);
+  return mediaType === 'all' ? items.filter((item) => item.media_type === 'movie' || item.media_type === 'tv') : items;
+}
+
+export async function fetchPopular(
+  mediaType: 'movie' | 'tv',
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList(`/${mediaType}/popular`, {}, options);
+}
+
+export async function fetchTopRated(
+  mediaType: 'movie' | 'tv',
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList(`/${mediaType}/top_rated`, {}, options);
+}
+
+export async function fetchUpcoming(options: TMDBFetchOptions = {}): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList('/movie/upcoming', {}, options);
+}
+
+export async function fetchNowPlaying(options: TMDBFetchOptions = {}): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList('/movie/now_playing', {}, options);
+}
+
+export async function fetchOnTheAir(options: TMDBFetchOptions = {}): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList('/tv/on_the_air', {}, options);
+}
+
+export async function fetchByGenre(
+  genreId: number,
+  mediaType: 'movie' | 'tv',
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList(`/discover/${mediaType}`, { with_genres: genreId }, options);
+}
+
+export async function fetchGenreList(
+  mediaType: 'movie' | 'tv',
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryGenre[]> {
+  const data = await tmdbFetch(`/genre/${mediaType}/list`, {}, options);
+  if (!Array.isArray(data?.genres)) return [];
+  return data.genres
+    .map((genre: any) => ({
+      id: genre?.id,
+      name: typeof genre?.name === 'string' ? genre.name : ''
+    }))
+    .filter((genre: DiscoveryGenre) => typeof genre.id === 'number' && genre.name.length > 0);
 }
 
 async function searchTitle(title: string, year?: string, type?: MovieData['type']): Promise<{ id: number; mediaType: 'movie'|'tv' } | null> {
