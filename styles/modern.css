@@ -1945,7 +1945,7 @@ a:focus-visible {
     scroll-behavior: smooth;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
+    touch-action: pan-x pan-y;
     overscroll-behavior-x: contain;
     padding: 0.1rem 0.05rem 0.5rem;
     scrollbar-width: thin;
