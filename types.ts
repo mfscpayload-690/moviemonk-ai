@@ -241,4 +241,6 @@ export interface SuggestionItem {
   media_type: 'movie' | 'tv' | 'person';
   poster_url?: string;
   confidence: number;
+  known_for_department?: string;
+  known_for_titles?: string[];
 }

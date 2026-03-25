@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Film, User, Star, Lightbulb } from 'lucide-react';
+import { buildPersonCardPresentation, sortPersonShortlist } from '../services/personPresentation';
 
 export interface Candidate {
   id: number;
   title: string;
   type: 'movie' | 'person' | 'review';
   score: number;
+  confidence?: number;
   url?: string;
   snippet?: string;
   image?: string;
   year?: string;
   language?: string;
   media_type?: string;
+  popularity?: number;
   role_match?: 'match' | 'mismatch' | 'neutral';
   known_for_department?: string;
   known_for_titles?: string[];
@@ -32,7 +35,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
 
   // Filter candidates based on selected type
   const filtered = isPersonShortlist
-    ? candidates.filter(c => c.type === 'person')
+    ? sortPersonShortlist(candidates.filter(c => c.type === 'person'))
     : filterType === 'all'
     ? candidates
     : candidates.filter(c => c.type === filterType);
@@ -92,8 +95,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
           <div>
@@ -149,17 +152,27 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 <p className="text-brand-text-dark">No results for this filter</p>
               </div>
             ) : (
-              filtered.map((c, i) => (
-                <button
-                  key={`${c.type}-${c.id}`}
-                  data-idx={i}
-                  onClick={() => onSelect(c)}
-                  className={`w-full text-left px-4 sm:px-6 py-4 transition flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
-                    ? 'border-l-brand-primary bg-brand-primary/10'
-                    : 'border-l-transparent hover:border-l-brand-primary/50'
-                    }`}
-                  aria-selected={focused === i}
-                >
+              filtered.map((c, i) => {
+                const personCard = c.type === 'person'
+                  ? buildPersonCardPresentation({
+                      name: c.title,
+                      profile_url: c.image,
+                      known_for_department: c.known_for_department,
+                      known_for_titles: c.known_for_titles
+                    })
+                  : null;
+
+                return (
+                  <button
+                    key={`${c.type}-${c.id}`}
+                    data-idx={i}
+                    onClick={() => onSelect(c)}
+                    className={`w-full text-left px-4 sm:px-6 py-4 transition flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
+                      ? 'border-l-brand-primary bg-brand-primary/10'
+                      : 'border-l-transparent hover:border-l-brand-primary/50'
+                      }`}
+                    aria-selected={focused === i}
+                  >
                   {/* Thumbnail - larger on mobile */}
                   <div className="flex-shrink-0 w-20 h-28 sm:w-20 sm:h-28 ambiguous-thumb-mobile rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
                     {c.image ? (
@@ -171,8 +184,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     )}
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
                     {/* Title */}
                     <div className="flex items-start gap-2 mb-2">
                       <h3 className="font-semibold text-lg text-brand-text-light leading-tight">{c.title}</h3>
@@ -190,9 +203,9 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                           {c.type.toUpperCase()}
                         </span>
                       )}
-                      {isPersonShortlist && c.known_for_department && (
+                      {isPersonShortlist && personCard && (
                         <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/20 text-violet-200">
-                          {c.known_for_department}
+                          {personCard.roleChip}
                         </span>
                       )}
                       {isPersonShortlist && c.role_match && (
@@ -217,9 +230,9 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     </div>
 
                     {/* Snippet */}
-                    {(c.snippet || (Array.isArray(c.known_for_titles) && c.known_for_titles.length > 0)) && (
+                    {(c.snippet || personCard?.snippet) && (
                       <p className="text-sm text-brand-text-dark line-clamp-2 mb-2">
-                        {c.snippet || c.known_for_titles?.slice(0, 3).join(' • ')}
+                        {c.snippet || personCard?.snippet}
                       </p>
                     )}
 
@@ -235,8 +248,9 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                       Select
                     </div>
                   </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </div>

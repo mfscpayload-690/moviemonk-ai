@@ -319,6 +319,8 @@ const App: React.FC = () => {
               title: item.name,
               type: 'person',
               score: item.score || item.confidence || 0,
+              confidence: item.confidence,
+              popularity: item.popularity,
               image: item.profile_url,
               snippet: item.known_for_titles?.slice?.(0, 3)?.join(' • ') || item.known_for_department || '',
               media_type: 'person',
