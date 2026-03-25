@@ -105,9 +105,9 @@ export function rankSuggestCandidates(query: string, candidates: SuggestCandidat
       const titleScore = getTitleMatchScore(query, candidate.title);
       const popularityBoost = getPopularityBoost(candidate.popularity);
       const yearBoost = getYearBoost(queryYear, candidate.year);
-      const personFocusBoost = getPersonFocusBoost(intent.isPersonFocused, candidate.type);
+      const personFocusBoost = getPersonFocusBoost(intent.is_person_focused, candidate.type);
       const roleMatchBoost = candidate.type === 'person'
-        ? getRoleMatchBoost(intent.requestedRole, candidate.known_for_department)
+        ? getRoleMatchBoost(intent.requested_role, candidate.known_for_department)
         : 0;
       const knownForBoost = candidate.type === 'person'
         ? getKnownForOverlapBoost(intent.tokens, candidate.known_for_titles)

@@ -36,6 +36,7 @@ describe('/api/resolveEntity', () => {
 
     const data = res._getJSONData();
     expect(data.type).toBe('person');
+    expect(data.confidence_band).toBe('confident');
     expect(data.chosen?.name).toBe('Christopher Nolan');
   });
 
@@ -56,6 +57,7 @@ describe('/api/resolveEntity', () => {
 
     const data = res._getJSONData();
     expect(data.type).toBe('movie');
+    expect(data.confidence_band).toBe('confident');
     expect(data.chosen?.name).toBe('Interstellar');
   });
 
@@ -77,6 +79,65 @@ describe('/api/resolveEntity', () => {
     const data = res._getJSONData();
     // Could be movie or ambiguous depending on similarity tie; either acceptable
     expect(['movie', 'ambiguous']).toContain(data.type);
+  });
+
+  it('returns shortlist confidence band for ambiguous person-like query', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ results: [] })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            { id: 10, name: 'Chris Evans', popularity: 80, known_for_department: 'Acting', known_for: [{ title: 'Avengers' }] },
+            { id: 11, name: 'Chris Hemsworth', popularity: 80, known_for_department: 'Acting', known_for: [{ title: 'Thor' }] }
+          ]
+        })
+      });
+
+    const req = createRequest({ method: 'GET', query: { q: 'Chris' } });
+    const res = createResponse();
+    await handler(req as any, res as any);
+
+    const data = res._getJSONData();
+    expect(data.type).toBe('ambiguous');
+    expect(data.confidence_band).toBe('shortlist');
+    expect(Array.isArray(data.shortlisted)).toBe(true);
+    expect(data.shortlisted.length).toBeGreaterThan(0);
+  });
+
+  it('returns confident person for role-qualified query', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ results: [{ id: 100, title: 'Director', popularity: 5 }] })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            {
+              id: 99,
+              name: 'Christopher Nolan',
+              popularity: 150,
+              known_for_department: 'Directing',
+              known_for: [{ title: 'Inception' }, { title: 'Interstellar' }]
+            }
+          ]
+        })
+      });
+
+    const req = createRequest({ method: 'GET', query: { q: 'director christopher nolan' } });
+    const res = createResponse();
+    await handler(req as any, res as any);
+
+    const data = res._getJSONData();
+    expect(data.type).toBe('person');
+    expect(data.confidence_band).toBe('confident');
+    expect(data.chosen).toEqual({ id: 99, name: 'Christopher Nolan', type: 'person' });
+    expect(data.intent).toEqual(expect.objectContaining({ requested_role: 'director', is_person_focused: true }));
   });
 
   it('returns 400 if q is missing', async () => {

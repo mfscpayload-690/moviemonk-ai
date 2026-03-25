@@ -163,7 +163,9 @@ const App: React.FC = () => {
     if (movieData) {
       shareUrl += `?q=${encodeURIComponent(movieData.title)}&type=movie&year=${movieData.year}`;
     } else if (personData) {
-      shareUrl += `?q=${encodeURIComponent(personData.name)}&type=person&id=${personData.id}`;
+      const personName = personData?.person?.name || personData?.name || '';
+      const personId = personData?.person?.id || personData?.id;
+      shareUrl += `?q=${encodeURIComponent(personName)}&type=person&id=${personId}`;
     } else if (currentQuery) {
       shareUrl += `?q=${encodeURIComponent(currentQuery)}`;
     } else {
@@ -177,7 +179,7 @@ const App: React.FC = () => {
 
       track('share_link_copied', {
         type: movieData ? 'movie' : personData ? 'person' : 'query',
-        title: movieData?.title || personData?.name || currentQuery
+        title: movieData?.title || personData?.person?.name || personData?.name || currentQuery
       });
     } catch (err) {
       console.error('Failed to copy:', err);
@@ -503,6 +505,7 @@ const App: React.FC = () => {
               isLoading={isLoading}
               onQuickSearch={handleQuickSearch}
               onBriefMe={handleBriefMe}
+              onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
             />
           ) : (
             <MovieDisplay
