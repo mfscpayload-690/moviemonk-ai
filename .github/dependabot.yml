@@ -10,7 +10,7 @@ updates:
     open-pull-requests-limit: 10
     allow:
       - dependency-type: "all"
-    reviewers:
+    assignees:
       - "mfscpayload-690"
     commit-message:
       prefix: "build(deps):"
@@ -33,7 +33,7 @@ updates:
       day: "monday"
       time: "04:00"
     open-pull-requests-limit: 5
-    reviewers:
+    assignees:
       - "mfscpayload-690"
     commit-message:
       prefix: "ci(deps):"
