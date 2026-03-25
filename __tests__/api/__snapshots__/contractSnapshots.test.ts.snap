@@ -83,15 +83,51 @@ exports[`API contract snapshots api/person/[id] success contract 1`] = `
 {
   "body": {
     "cached": false,
+    "career_span": {
+      "active_years": 1,
+      "end_year": 2010,
+      "start_year": 2010,
+    },
+    "credits_acting": [
+      {
+        "character": "N/A",
+        "id": 1,
+        "media_type": "movie",
+        "poster_url": "https://image.tmdb.org/t/p/w342/inception.jpg",
+        "role": "cast",
+        "role_bucket": "acting",
+        "title": "Inception",
+        "year": 2010,
+      },
+    ],
+    "credits_all": [
+      {
+        "character": "N/A",
+        "id": 1,
+        "media_type": "movie",
+        "poster_url": "https://image.tmdb.org/t/p/w342/inception.jpg",
+        "role": "cast",
+        "role_bucket": "acting",
+        "title": "Inception",
+        "year": 2010,
+      },
+    ],
+    "credits_directing": [],
+    "credits_other": [],
     "filmography": [
       {
         "character": "N/A",
         "id": 1,
+        "media_type": "movie",
         "poster_url": "https://image.tmdb.org/t/p/w342/inception.jpg",
         "role": "cast",
         "title": "Inception",
         "year": 2010,
       },
+    ],
+    "known_for_tags": [
+      "Acting",
+      "Film",
     ],
     "person": {
       "biography": "Director",
@@ -102,10 +138,27 @@ exports[`API contract snapshots api/person/[id] success contract 1`] = `
       "profile_url": "https://image.tmdb.org/t/p/w342/nolan.jpg",
     },
     "related_people": [],
+    "role_distribution": {
+      "acting": 1,
+      "directing": 0,
+      "other": 0,
+    },
     "sources": [
       {
         "name": "TMDB",
         "url": "https://www.themoviedb.org/person/99",
+      },
+    ],
+    "top_work": [
+      {
+        "character": "N/A",
+        "id": 1,
+        "media_type": "movie",
+        "poster_url": "https://image.tmdb.org/t/p/w342/inception.jpg",
+        "role": "cast",
+        "role_bucket": "acting",
+        "title": "Inception",
+        "year": 2010,
       },
     ],
   },
@@ -132,13 +185,13 @@ exports[`API contract snapshots api/resolveEntity success contract 1`] = `
       {
         "id": 11,
         "name": "Inception",
-        "score": 0.81,
+        "score": 0.816,
         "type": "movie",
       },
       {
         "id": 99,
         "name": "Christopher Nolan",
-        "score": 0.225,
+        "score": 0.164,
         "type": "person",
       },
     ],
@@ -147,8 +200,25 @@ exports[`API contract snapshots api/resolveEntity success contract 1`] = `
       "name": "Inception",
       "type": "movie",
     },
+    "confidence_band": "confident",
+    "intent": {
+      "is_person_focused": false,
+      "requested_role": "any",
+    },
     "ok": true,
     "query": "Inception",
+    "shortlisted": [
+      {
+        "confidence": 0.164,
+        "id": 99,
+        "known_for_titles": [],
+        "name": "Christopher Nolan",
+        "popularity": 20,
+        "role_match": "neutral",
+        "score": 0.164,
+        "type": "person",
+      },
+    ],
     "type": "movie",
   },
   "status": 200,

@@ -1,32 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Film, User, Star, Lightbulb } from 'lucide-react';
+import { buildPersonCardPresentation, sortPersonShortlist } from '../services/personPresentation';
 
 export interface Candidate {
   id: number;
   title: string;
   type: 'movie' | 'person' | 'review';
   score: number;
+  confidence?: number;
   url?: string;
   snippet?: string;
   image?: string;
   year?: string;
   language?: string;
   media_type?: string;
+  popularity?: number;
+  role_match?: 'match' | 'mismatch' | 'neutral';
+  known_for_department?: string;
+  known_for_titles?: string[];
 }
 
 interface AmbiguousModalProps {
   candidates: Candidate[];
   onSelect: (c: Candidate) => void;
   onClose: () => void;
+  mode?: 'default' | 'person-shortlist';
 }
 
-const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, onClose }) => {
+const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, onClose, mode = 'default' }) => {
   const [focused, setFocused] = useState(0);
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'person' | 'review'>('all');
   const listRef = useRef<HTMLDivElement>(null);
+  const isPersonShortlist = mode === 'person-shortlist';
 
   // Filter candidates based on selected type
-  const filtered = filterType === 'all'
+  const filtered = isPersonShortlist
+    ? sortPersonShortlist(candidates.filter(c => c.type === 'person'))
+    : filterType === 'all'
     ? candidates
     : candidates.filter(c => c.type === filterType);
 
@@ -35,12 +45,15 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        if (filtered.length === 0) return;
         setFocused((f) => (f + 1) % filtered.length);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
+        if (filtered.length === 0) return;
         setFocused((f) => (f - 1 + filtered.length) % filtered.length);
       } else if (e.key === 'Enter') {
         e.preventDefault();
+        if (filtered.length === 0) return;
         onSelect(filtered[focused]);
       } else if (e.key === 'Escape') {
         e.preventDefault();
@@ -82,13 +95,19 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
+      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-brand-text-light">Search Results</h2>
-            <p className="text-sm text-brand-text-dark mt-1">Found {filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-brand-text-light">
+              {isPersonShortlist ? 'Choose the right person' : 'Search Results'}
+            </h2>
+            <p className="text-sm text-brand-text-dark mt-1">
+              {isPersonShortlist
+                ? `Found ${filtered.length} matching people`
+                : `Found ${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -102,26 +121,28 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-4 sm:px-6 py-3 border-b border-white/5 bg-black/10 flex gap-2 flex-shrink-0 overflow-x-auto">
-          {['all', 'movie', 'person', 'review'].map((type) => (
-            <button
-              key={type}
-              onClick={() => {
-                setFilterType(type as any);
-                setFocused(0);
-              }}
-              className={`px-4 py-2.5 rounded-full font-semibold text-sm transition whitespace-nowrap filter-tab-mobile touch-target ${filterType === type
-                ? 'bg-brand-primary text-white border border-brand-primary'
-                : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
-                }`}
-            >
-              <span className="flex items-center gap-1">
-                {getTypeIcon(type as string)}
-                <span>{typeof type === 'string' && type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : ''} ({typeCount[type as keyof typeof typeCount]})</span>
-              </span>
-            </button>
-          ))}
-        </div>
+        {!isPersonShortlist && (
+          <div className="px-4 sm:px-6 py-3 border-b border-white/5 bg-black/10 flex gap-2 flex-shrink-0 overflow-x-auto">
+            {['all', 'movie', 'person', 'review'].map((type) => (
+              <button
+                key={type}
+                onClick={() => {
+                  setFilterType(type as any);
+                  setFocused(0);
+                }}
+                className={`px-4 py-2.5 rounded-full font-semibold text-sm transition whitespace-nowrap filter-tab-mobile touch-target ${filterType === type
+                  ? 'bg-brand-primary text-white border border-brand-primary'
+                  : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
+                  }`}
+              >
+                <span className="flex items-center gap-1">
+                  {getTypeIcon(type as string)}
+                  <span>{typeof type === 'string' && type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : ''} ({typeCount[type as keyof typeof typeCount]})</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Results List */}
         <div ref={listRef} className="overflow-y-auto flex-1 overscroll-contain">
@@ -131,17 +152,27 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 <p className="text-brand-text-dark">No results for this filter</p>
               </div>
             ) : (
-              filtered.map((c, i) => (
-                <button
-                  key={`${c.type}-${c.id}`}
-                  data-idx={i}
-                  onClick={() => onSelect(c)}
-                  className={`w-full text-left px-4 sm:px-6 py-4 transition flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
-                    ? 'border-l-brand-primary bg-brand-primary/10'
-                    : 'border-l-transparent hover:border-l-brand-primary/50'
-                    }`}
-                  aria-selected={focused === i}
-                >
+              filtered.map((c, i) => {
+                const personCard = c.type === 'person'
+                  ? buildPersonCardPresentation({
+                      name: c.title,
+                      profile_url: c.image,
+                      known_for_department: c.known_for_department,
+                      known_for_titles: c.known_for_titles
+                    })
+                  : null;
+
+                return (
+                  <button
+                    key={`${c.type}-${c.id}`}
+                    data-idx={i}
+                    onClick={() => onSelect(c)}
+                    className={`w-full text-left px-4 sm:px-6 py-4 transition flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
+                      ? 'border-l-brand-primary bg-brand-primary/10'
+                      : 'border-l-transparent hover:border-l-brand-primary/50'
+                      }`}
+                    aria-selected={focused === i}
+                  >
                   {/* Thumbnail - larger on mobile */}
                   <div className="flex-shrink-0 w-20 h-28 sm:w-20 sm:h-28 ambiguous-thumb-mobile rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
                     {c.image ? (
@@ -153,8 +184,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     )}
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
                     {/* Title */}
                     <div className="flex items-start gap-2 mb-2">
                       <h3 className="font-semibold text-lg text-brand-text-light leading-tight">{c.title}</h3>
@@ -167,9 +198,27 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
 
                     {/* Type & Language Badge */}
                     <div className="flex gap-2 mb-3 flex-wrap">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${typeColor[c.type]}`}>
-                        {c.type.toUpperCase()}
-                      </span>
+                      {!isPersonShortlist && (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${typeColor[c.type]}`}>
+                          {c.type.toUpperCase()}
+                        </span>
+                      )}
+                      {isPersonShortlist && personCard && (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/20 text-violet-200">
+                          {personCard.roleChip}
+                        </span>
+                      )}
+                      {isPersonShortlist && c.role_match && (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                          c.role_match === 'match'
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : c.role_match === 'mismatch'
+                              ? 'bg-rose-500/20 text-rose-300'
+                              : 'bg-white/10 text-brand-text-dark'
+                        }`}>
+                          {c.role_match === 'match' ? 'Role match' : c.role_match === 'mismatch' ? 'Role mismatch' : 'Role neutral'}
+                        </span>
+                      )}
                       {c.language && (
                         <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300">
                           {c.language}
@@ -181,8 +230,10 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     </div>
 
                     {/* Snippet */}
-                    {c.snippet && (
-                      <p className="text-sm text-brand-text-dark line-clamp-2 mb-2">{c.snippet}</p>
+                    {(c.snippet || personCard?.snippet) && (
+                      <p className="text-sm text-brand-text-dark line-clamp-2 mb-2">
+                        {c.snippet || personCard?.snippet}
+                      </p>
                     )}
 
                     {/* URL */}
@@ -197,8 +248,9 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                       Select
                     </div>
                   </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
@@ -207,17 +259,21 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         <div className="px-4 sm:px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0 text-center sm:text-left">
           <span className="hidden sm:inline flex items-center gap-2 justify-center sm:justify-start">
             <Lightbulb size={14} className="flex-shrink-0" />
-            Tip: Use
+            {isPersonShortlist ? 'Tip: choose the exact person profile you mean, then continue.' : 'Tip: Use'}
             <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">↑↓</kbd>
-            arrow keys to navigate,
-            <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">⏎</kbd>
-            to select,
-            <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">Esc</kbd>
-            to close
+            {!isPersonShortlist && (
+              <>
+                arrow keys to navigate,
+                <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">⏎</kbd>
+                to select,
+                <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">Esc</kbd>
+                to close
+              </>
+            )}
           </span>
           <span className="sm:hidden flex items-center gap-2 justify-center">
             <Lightbulb size={14} className="flex-shrink-0" />
-            Tap to select a result
+            {isPersonShortlist ? 'Tap the right person to continue' : 'Tap to select a result'}
           </span>
         </div>
       </div>

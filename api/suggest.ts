@@ -34,7 +34,13 @@ function mapTmdbItemToCandidate(item: any): SuggestCandidate | null {
       : item.profile_path
         ? `https://image.tmdb.org/t/p/w154${item.profile_path}`
         : undefined,
-    popularity: typeof item.popularity === 'number' ? item.popularity : undefined
+    popularity: typeof item.popularity === 'number' ? item.popularity : undefined,
+    known_for_department: item.known_for_department,
+    known_for_titles: Array.isArray(item.known_for)
+      ? item.known_for
+          .map((entry: any) => entry?.title || entry?.name)
+          .filter((value: unknown): value is string => typeof value === 'string' && value.length > 0)
+      : undefined
   };
 }
 
@@ -135,7 +141,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         type: item.type,
         media_type: item.media_type,
         poster_url: item.poster_url,
-        confidence: item.confidence
+        confidence: item.confidence,
+        known_for_department: item.type === 'person' ? item.known_for_department : undefined,
+        known_for_titles: item.type === 'person' ? item.known_for_titles : undefined
       }))
     };
 

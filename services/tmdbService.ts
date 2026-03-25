@@ -454,50 +454,87 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
     try {
       const creditsRes = await fetch(`${base}/person/${personId}/combined_credits`, { headers });
       const credits = await creditsRes.json();
-      const coStarsMap = new Map<number, any>();
-      const collect = (arr: any[]) => {
-        arr.forEach((c: any) => {
-          if (Array.isArray(c?.credits?.cast)) {
-            c.credits.cast.forEach((m: any) => {
-              if (Array.isArray(m?.cast)) {
-                m.cast.forEach((p: any) => {
-                  if (p.id !== personId && !coStarsMap.has(p.id)) coStarsMap.set(p.id, p);
-                });
-              }
-            });
-          }
+      const works = ([] as any[])
+        .concat(credits?.cast || [], credits?.crew || [])
+        .filter((work: any) => work?.id && (work?.media_type === 'movie' || work?.media_type === 'tv'))
+        .sort((a: any, b: any) => {
+          const popDiff = (b?.popularity || 0) - (a?.popularity || 0);
+          if (popDiff !== 0) return popDiff;
+          const aDate = (a?.release_date || a?.first_air_date || '').substring(0, 4);
+          const bDate = (b?.release_date || b?.first_air_date || '').substring(0, 4);
+          return Number(bDate || 0) - Number(aDate || 0);
         });
-      };
-      // Fallback simpler: traverse cast of movie/tv credits
-      const fromCast = ([] as any[])
-        .concat(credits?.cast || [])
-        .slice(0, 50)
-        .map((m: any) => m);
-      const coStars: any[] = [];
-      for (const m of fromCast) {
-        // fetch full credits for each title to find co-stars (bounded for perf)
-        // keep within budget: max 6 requests
-        if (coStars.length > 200) break;
-      }
-      // Build output using person known fields only
-      const out: import('../types').RelatedPerson[] = (credits?.cast || [])
-        .slice(0, 60)
-        .map((c: any) => c)
-        .filter((c: any) => Array.isArray(c?.cast))
-        .flatMap((c: any) => c.cast)
-        .filter((p: any) => p && p.id !== personId)
-        .slice(0, 60)
-        .map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          known_for: (p.character || p.known_for_department || '') || undefined,
-          profile_url: p.profile_path ? `https://image.tmdb.org/t/p/w185${p.profile_path}` : undefined,
-          popularity: p.popularity,
-          source: 'tmdb-co-star'
+
+      const seenWorks = new Set<string>();
+      const topWorks = works.filter((work: any) => {
+        const key = `${work.media_type}:${work.id}`;
+        if (seenWorks.has(key)) return false;
+        seenWorks.add(key);
+        return true;
+      }).slice(0, 8);
+
+      const relatedMap = new Map<number, {
+        id: number;
+        name: string;
+        profile_path?: string;
+        popularity?: number;
+        known_for?: string;
+        overlap: number;
+      }>();
+
+      await Promise.all(topWorks.map(async (work: any) => {
+        try {
+          const creditsRes = await fetch(`${base}/${work.media_type}/${work.id}/credits`, { headers });
+          if (!creditsRes.ok) return;
+          const details = await creditsRes.json();
+
+          const castMembers = Array.isArray(details?.cast) ? details.cast.slice(0, 20) : [];
+          const crewMembers = Array.isArray(details?.crew)
+            ? details.crew.filter((member: any) => ['Director', 'Writer', 'Screenplay', 'Producer'].includes(member?.job)).slice(0, 8)
+            : [];
+
+          const participants = [...castMembers, ...crewMembers];
+          participants.forEach((member: any) => {
+            if (!member?.id || member.id === personId || !member?.name) return;
+            const existing = relatedMap.get(member.id);
+            if (existing) {
+              existing.overlap += 1;
+              if ((member?.popularity || 0) > (existing.popularity || 0)) {
+                existing.popularity = member.popularity;
+              }
+              return;
+            }
+
+            relatedMap.set(member.id, {
+              id: member.id,
+              name: member.name,
+              profile_path: member.profile_path,
+              popularity: member.popularity,
+              known_for: member.known_for_department || member.job || member.character,
+              overlap: 1
+            });
+          });
+        } catch {
+          // Skip failed title credits and continue.
+        }
+      }));
+
+      const related = Array.from(relatedMap.values())
+        .sort((a, b) => {
+          if (b.overlap !== a.overlap) return b.overlap - a.overlap;
+          return (b.popularity || 0) - (a.popularity || 0);
+        })
+        .slice(0, 18)
+        .map((person) => ({
+          id: person.id,
+          name: person.name,
+          known_for: person.overlap > 1 ? `${person.known_for || 'Film & TV'} · ${person.overlap} shared credits` : person.known_for,
+          profile_url: person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : undefined,
+          popularity: person.popularity,
+          source: 'tmdb-co-star' as const
         }));
-      // Dedup by id
-      const dedup = dedupeById(out).slice(0, 18);
-      return dedup;
+
+      return related;
     } catch {
       return [];
     }

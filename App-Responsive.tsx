@@ -3,6 +3,7 @@ import MovieDisplay from './components/MovieDisplay';
 import PersonDisplay from './components/PersonDisplay';
 import DiscoveryPage from './components/DiscoveryPage';
 import ErrorBanner from './components/ErrorBanner';
+import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
@@ -38,6 +39,7 @@ const App: React.FC = () => {
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<AppView>('discovery');
   const [isDiscoveryOpening, setIsDiscoveryOpening] = useState(false);
+  const [shortlistCandidates, setShortlistCandidates] = useState<AmbiguousCandidate[] | null>(null);
   const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
@@ -123,19 +125,36 @@ const App: React.FC = () => {
     setDraggedItem(null);
   }, [draggedItem, moveItem]);
 
-  const loadPersonFromShare = async (personId: number) => {
-    try {
+  const openPersonById = useCallback(async (
+    personId: number,
+    titleHint?: string,
+    options: { manageLoading?: boolean } = {}
+  ) => {
+    const manageLoading = options.manageLoading !== false;
+    if (manageLoading) {
       setIsLoading(true);
+      setError(null);
+    }
+    try {
       const data = await fetch(`/api/person/${personId}`).then(r => r.json());
       setPersonData(data);
       setMovieData(null);
       setSources(data?.sources || null);
       setCurrentView('person');
+      if (titleHint || data?.person?.name) {
+        setCurrentQuery(titleHint || data?.person?.name || '');
+      }
     } catch (e) {
-      setError('Failed to load shared person data');
+      setError('Failed to load person details');
     } finally {
-      setIsLoading(false);
+      if (manageLoading) {
+        setIsLoading(false);
+      }
     }
+  }, []);
+
+  const loadPersonFromShare = async (personId: number) => {
+    await openPersonById(personId, undefined, { manageLoading: true });
   };
 
   const handleShare = useCallback(async () => {
@@ -144,7 +163,9 @@ const App: React.FC = () => {
     if (movieData) {
       shareUrl += `?q=${encodeURIComponent(movieData.title)}&type=movie&year=${movieData.year}`;
     } else if (personData) {
-      shareUrl += `?q=${encodeURIComponent(personData.name)}&type=person&id=${personData.id}`;
+      const personName = personData?.person?.name || personData?.name || '';
+      const personId = personData?.person?.id || personData?.id;
+      shareUrl += `?q=${encodeURIComponent(personName)}&type=person&id=${personId}`;
     } else if (currentQuery) {
       shareUrl += `?q=${encodeURIComponent(currentQuery)}`;
     } else {
@@ -158,7 +179,7 @@ const App: React.FC = () => {
 
       track('share_link_copied', {
         type: movieData ? 'movie' : personData ? 'person' : 'query',
-        title: movieData?.title || personData?.name || currentQuery
+        title: movieData?.title || personData?.person?.name || personData?.name || currentQuery
       });
     } catch (err) {
       console.error('Failed to copy:', err);
@@ -288,19 +309,37 @@ const App: React.FC = () => {
 
       debugLog('[search] selected model', selectedModel);
 
-      if (selectedResult.type === 'person') {
-        const personRes = await fetch(`/api/person/${selectedResult.id}`);
-        if (personRes.ok) {
-          const person = await personRes.json();
-          startTransition(() => {
-            setPersonData(person);
-            setMovieData(null);
-            setSources(person.sources);
-            setCurrentView('person');
-          });
-        } else {
-          throw new Error('Failed to load person details');
+      const resolveRes = await fetch(`/api/resolveEntity?q=${encodeURIComponent(message)}`);
+      if (resolveRes.ok) {
+        const resolved = await resolveRes.json();
+        if (resolved?.confidence_band === 'shortlist' && Array.isArray(resolved?.shortlisted) && resolved.shortlisted.length > 0) {
+          setShortlistCandidates(
+            resolved.shortlisted.map((item: any) => ({
+              id: item.id,
+              title: item.name,
+              type: 'person',
+              score: item.score || item.confidence || 0,
+              confidence: item.confidence,
+              popularity: item.popularity,
+              image: item.profile_url,
+              snippet: item.known_for_titles?.slice?.(0, 3)?.join(' • ') || item.known_for_department || '',
+              media_type: 'person',
+              role_match: item.role_match,
+              known_for_department: item.known_for_department,
+              known_for_titles: item.known_for_titles
+            }))
+          );
+          return;
         }
+
+        if (resolved?.confidence_band === 'confident' && resolved?.chosen?.type === 'person' && resolved?.chosen?.id) {
+          await openPersonById(Number(resolved.chosen.id), resolved.chosen.name, { manageLoading: false });
+          return;
+        }
+      }
+
+      if (selectedResult.type === 'person') {
+        await openPersonById(Number(selectedResult.id), selectedResult.title, { manageLoading: false });
       } else {
         const result = await fetchMovieData(
           message,
@@ -328,7 +367,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [openPersonById]);
 
   const handleQuickSearch = useCallback((title: string) => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
@@ -364,18 +403,7 @@ const App: React.FC = () => {
 
     try {
       if (suggestion.type === 'person') {
-        const personRes = await fetch(`/api/person/${suggestion.id}`);
-        if (personRes.ok) {
-          const personData = await personRes.json();
-          startTransition(() => {
-            setPersonData(personData);
-            setMovieData(null);
-            setSources(personData.sources || null);
-            setCurrentView('person');
-          });
-        } else {
-          throw new Error('Failed to load person details');
-        }
+        await openPersonById(Number(suggestion.id), suggestion.title, { manageLoading: false });
       } else {
         const mediaType = suggestion.media_type === 'tv' ? 'tv' : 'movie';
         await handleOpenTitle({ id: suggestion.id, mediaType }, selectedProvider);
@@ -386,7 +414,18 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [handleOpenTitle, selectedProvider]);
+  }, [handleOpenTitle, openPersonById, selectedProvider]);
+
+  const handleShortlistSelect = useCallback(async (candidate: AmbiguousCandidate) => {
+    setShortlistCandidates(null);
+    if (candidate.type === 'person') {
+      await openPersonById(candidate.id, candidate.title);
+      return;
+    }
+
+    const mediaType = candidate.media_type === 'tv' ? 'tv' : 'movie';
+    await handleOpenTitle({ id: candidate.id, mediaType });
+  }, [handleOpenTitle, openPersonById]);
 
   return (
     <>
@@ -468,6 +507,7 @@ const App: React.FC = () => {
               isLoading={isLoading}
               onQuickSearch={handleQuickSearch}
               onBriefMe={handleBriefMe}
+              onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
             />
           ) : (
             <MovieDisplay
@@ -656,6 +696,15 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {shortlistCandidates && shortlistCandidates.length > 0 && (
+        <AmbiguousModal
+          mode="person-shortlist"
+          candidates={shortlistCandidates}
+          onSelect={handleShortlistSelect}
+          onClose={() => setShortlistCandidates(null)}
+        />
       )}
 
     </>

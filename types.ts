@@ -35,6 +35,73 @@ export interface DiscoveryGenre {
   name: string;
 }
 
+export type PersonRoleBucket = 'all' | 'acting' | 'directing' | 'other';
+
+export interface PersonIntent {
+  raw_query: string;
+  normalized_query: string;
+  stripped_query: string;
+  tokens: string[];
+  year?: string;
+  requested_role: 'any' | 'actor' | 'actress' | 'director';
+  is_person_focused: boolean;
+}
+
+export interface PersonCredit {
+  id: number;
+  media_type: 'movie' | 'tv';
+  title: string;
+  year?: number;
+  role: string;
+  role_bucket: PersonRoleBucket;
+  character?: string;
+  job?: string;
+  department?: string;
+  popularity?: number;
+  poster_url?: string;
+}
+
+export interface PersonSearchCandidate {
+  id: number;
+  name: string;
+  type: 'person';
+  score: number;
+  confidence: number;
+  popularity?: number;
+  role_match?: 'match' | 'mismatch' | 'neutral';
+  known_for_department?: string;
+  known_for_titles?: string[];
+  profile_url?: string;
+}
+
+export interface PersonProfile {
+  person: {
+    id: number;
+    name: string;
+    biography?: string;
+    birthday?: string;
+    place_of_birth?: string;
+    profile_url?: string;
+    known_for_department?: string;
+  };
+  top_work: PersonCredit[];
+  credits_all: PersonCredit[];
+  credits_acting: PersonCredit[];
+  credits_directing: PersonCredit[];
+  credits_other: PersonCredit[];
+  role_distribution: {
+    acting: number;
+    directing: number;
+    other: number;
+  };
+  career_span: {
+    start_year?: number;
+    end_year?: number;
+    active_years?: number;
+  };
+  known_for_tags: string[];
+}
+
 // Related content types for Similar/People Also Search
 export type RelatedTitle = {
   id: number;
@@ -174,4 +241,6 @@ export interface SuggestionItem {
   media_type: 'movie' | 'tv' | 'person';
   poster_url?: string;
   confidence: number;
+  known_for_department?: string;
+  known_for_titles?: string[];
 }

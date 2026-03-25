@@ -15,6 +15,7 @@ import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-r
 import { QueryComplexity, SuggestionItem } from '../types';
 import { Logo, SearchIcon, SendIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
+import { buildPersonCardPresentation } from '../services/personPresentation';
 import '../styles/dynamic-search-island.css';
 
 // Helper to get icon component by suggestion type
@@ -411,6 +412,14 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
                 {suggestions.map((suggestion, index) => {
                   const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                  const personCard = suggestion.type === 'person'
+                    ? buildPersonCardPresentation({
+                        name: suggestion.title,
+                        profile_url: suggestion.poster_url,
+                        known_for_department: suggestion.known_for_department,
+                        known_for_titles: suggestion.known_for_titles
+                      })
+                    : null;
                   return (
                     <button
                       type="button"
@@ -423,7 +432,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                       onClick={() => handleSuggestionSelect(suggestion)}
                     >
                       {/* Poster */}
-                      <div className="suggest-poster-wrap">
+                      <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : ''}`}>
                         {suggestion.poster_url ? (
                           <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                         ) : (
@@ -437,13 +446,21 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                       <div className="suggest-meta">
                         <div className="suggest-title-row">
                           <span className="suggest-title">{suggestion.title}</span>
-                          <IconComponent size={18} className="suggest-icon-tag" />
+                          {suggestion.type === 'person' && personCard ? (
+                            <span className="suggest-role-chip">{personCard.roleChip}</span>
+                          ) : (
+                            <IconComponent size={18} className="suggest-icon-tag" />
+                          )}
                         </div>
-                        <div className="suggest-subtitle">
-                          {suggestion.year && <span>{suggestion.year}</span>}
-                          {suggestion.type && <span>•</span>}
-                          <span className="capitalize">{suggestion.type}</span>
-                        </div>
+                        {suggestion.type === 'person' && personCard ? (
+                          <div className="suggest-person-snippet">{personCard.snippet}</div>
+                        ) : (
+                          <div className="suggest-subtitle">
+                            {suggestion.year && <span>{suggestion.year}</span>}
+                            {suggestion.type && <span>•</span>}
+                            <span className="capitalize">{suggestion.type}</span>
+                          </div>
+                        )}
                       </div>
                     </button>
                   );
