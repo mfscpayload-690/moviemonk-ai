@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DiscoveryItem } from '../types';
 import SkeletonCard from './SkeletonCard';
 
@@ -14,8 +14,27 @@ const formatRating = (rating: number | null) => (
 
 const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const goPrev = () => setActiveIndex((current) => (current - 1 + items.length) % items.length);
   const goNext = () => setActiveIndex((current) => (current + 1) % items.length);
+  const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    const touch = event.changedTouches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+  const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    if (!touchStartRef.current || items.length <= 1) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+
+    if (Math.abs(dx) < 42 || Math.abs(dx) <= Math.abs(dy)) return;
+    if (dx < 0) {
+      goNext();
+    } else {
+      goPrev();
+    }
+  };
 
   useEffect(() => {
     setActiveIndex(0);
@@ -51,7 +70,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   const activeItem = items[Math.min(activeIndex, items.length - 1)];
 
   return (
-    <section className="discovery-hero">
+    <section className="discovery-hero" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {activeItem.backdrop_url && (
         <img
           src={activeItem.backdrop_url}
@@ -87,34 +106,16 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
           </button>
         </div>
         {items.length > 1 && (
-          <div className="discovery-hero-nav">
-            <button
-              type="button"
-              className="discovery-hero-arrow"
-              onClick={goPrev}
-              aria-label="Show previous featured title"
-            >
-              ‹
-            </button>
-            <div className="discovery-hero-dots" aria-label="Featured titles">
-              {items.map((item, index) => (
-                <button
-                  key={`${item.id}-${index}`}
-                  type="button"
-                  className={`discovery-hero-dot ${index === activeIndex ? 'is-active' : ''}`}
-                  onClick={() => setActiveIndex(index)}
-                  aria-label={`Show ${item.title}`}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              className="discovery-hero-arrow"
-              onClick={goNext}
-              aria-label="Show next featured title"
-            >
-              ›
-            </button>
+          <div className="discovery-hero-dots" aria-label="Featured titles">
+            {items.map((item, index) => (
+              <button
+                key={`${item.id}-${index}`}
+                type="button"
+                className={`discovery-hero-dot ${index === activeIndex ? 'is-active' : ''}`}
+                onClick={() => setActiveIndex(index)}
+                aria-label={`Show ${item.title}`}
+              />
+            ))}
           </div>
         )}
       </div>

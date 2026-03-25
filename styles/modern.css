@@ -1819,6 +1819,7 @@ a:focus-visible {
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: var(--discovery-shadow);
     background: linear-gradient(125deg, #131313 0%, #080808 45%, #050505 100%);
+    touch-action: pan-y;
 }
 
 .discovery-hero-backdrop {
@@ -1918,32 +1919,6 @@ a:focus-visible {
 .discovery-hero-dots {
     display: flex;
     gap: 0.45rem;
-}
-
-.discovery-hero-nav {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.discovery-hero-arrow {
-    width: 1.4rem;
-    height: 1.4rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(0, 0, 0, 0.35);
-    color: #ffffff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    line-height: 1;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-
-.discovery-hero-arrow:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.5);
 }
 
 .discovery-hero-dot {
@@ -2327,7 +2302,7 @@ a:focus-visible {
     }
 
     .discovery-carousel-controls {
-        display: flex;
+        display: none;
     }
 
     .discovery-error {
