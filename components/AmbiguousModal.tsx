@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Film, User, Star, Lightbulb } from 'lucide-react';
 
 export interface Candidate {
   id: number;
@@ -58,10 +59,13 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
     }
   }, [focused]);
 
-  const typeIcon: Record<string, string> = {
-    movie: '🎬',
-    person: '👤',
-    review: '⭐'
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'movie': return <Film size={24} />;
+      case 'person': return <User size={24} />;
+      case 'review': return <Star size={24} />;
+      default: return <Film size={24} />;
+    }
   };
 
   const typeColor: Record<string, string> = {
@@ -111,7 +115,10 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 : 'bg-white/5 text-brand-text-dark border border-white/10 hover:border-brand-primary/50 hover:bg-white/10'
                 }`}
             >
-              {typeIcon[type as string] || '\u2728'} {typeof type === 'string' && type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : ''} ({typeCount[type as keyof typeof typeCount]})
+              <span className="flex items-center gap-1">
+                {getTypeIcon(type as string)}
+                <span>{typeof type === 'string' && type.length > 0 ? type.charAt(0).toUpperCase() + type.slice(1) : ''} ({typeCount[type as keyof typeof typeCount]})</span>
+              </span>
             </button>
           ))}
         </div>
@@ -140,7 +147,9 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     {c.image ? (
                       <img src={c.image} alt={c.title} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <span className="text-2xl sm:text-3xl">{typeIcon[c.type]}</span>
+                      <div className="text-brand-primary/60">
+                        {getTypeIcon(c.type)}
+                      </div>
                     )}
                   </div>
 
@@ -196,8 +205,20 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
 
         {/* Footer */}
         <div className="px-4 sm:px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0 text-center sm:text-left">
-          <span className="hidden sm:inline">💡 Tip: Use ↑ ↓ arrow keys to navigate, Enter to select, Esc to close</span>
-          <span className="sm:hidden">💡 Tap to select a result</span>
+          <span className="hidden sm:inline flex items-center gap-2 justify-center sm:justify-start">
+            <Lightbulb size={14} className="flex-shrink-0" />
+            Tip: Use
+            <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">↑↓</kbd>
+            arrow keys to navigate,
+            <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">⏎</kbd>
+            to select,
+            <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">Esc</kbd>
+            to close
+          </span>
+          <span className="sm:hidden flex items-center gap-2 justify-center">
+            <Lightbulb size={14} className="flex-shrink-0" />
+            Tap to select a result
+          </span>
         </div>
       </div>
     </div>

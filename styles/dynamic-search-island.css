@@ -289,8 +289,14 @@
 }
 
 .suggest-poster.placeholder {
-  font-size: 1.5rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poster-icon {
+  color: #a78bfa;
+  opacity: 0.6;
 }
 
 .suggest-meta {
@@ -319,8 +325,10 @@
 }
 
 .suggest-icon-tag {
-  font-size: 1rem;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
+  color: #a78bfa;
 }
 
 .suggest-subtitle {
@@ -378,8 +386,10 @@
 }
 
 .mode-icon {
-  font-size: 1.5rem;
-  line-height: 1;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: inherit;
 }
 
 .mode-content {

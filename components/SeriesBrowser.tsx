@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Lightbulb } from 'lucide-react';
 import { TvIcon, StarIcon, CalendarIcon, FilterIcon, SearchIcon, XMarkIcon } from './icons';
 import '../styles/series-browser.css';
 
@@ -318,8 +319,9 @@ const SeriesBrowser: React.FC<SeriesBrowserProps> = ({ onClose, onSelectSeries }
 
                 {/* Footer Info */}
                 <div className="series-browser-footer">
-                    <p className="series-browser-hint">
-                        💡 Tip: Click on any series to see full details, episodes, and cast information
+                    <p className="series-browser-hint flex items-center gap-2">
+                        <Lightbulb size={16} className="flex-shrink-0" />
+                        <span>Tip: Click on any series to see full details, episodes, and cast information</span>
                     </p>
                 </div>
             </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { track } from '@vercel/analytics/react';
 
 interface FilmItem {
@@ -74,10 +75,13 @@ const PersonDisplay: React.FC<{ data: PersonPayload; isLoading?: boolean; onQuic
                 </>
               )}
               {onBriefMe && (
-                <button className="btn-glass text-sm border-violet-500/30 text-violet-300 touch-target" onClick={() => {
+                <button className="btn-glass text-sm border-violet-500/30 text-violet-300 touch-target flex items-center gap-2" onClick={() => {
                   track('brief_me_clicked', { person_name: person.name });
                   onBriefMe(person.name);
-                }} aria-label="Brief Me">✨ Brief Me</button>
+                }} aria-label="Brief Me">
+                  <Sparkles size={16} />
+                  Brief Me
+                </button>
               )}
             </div>
           )}
