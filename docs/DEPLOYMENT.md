@@ -4,176 +4,47 @@ How to deploy MovieMonk to production.
 
 ---
 
-## Deploy to Vercel (Easiest)
+## Recommended: Vercel
+1. Install and log in:
+   ```bash
+   npm i -g vercel
+   vercel login
+   ```
+2. Add environment variables (repeat for each key you use):
+   ```bash
+   vercel env add TMDB_API_KEY
+   vercel env add TMDB_READ_TOKEN
+   vercel env add OMDB_API_KEY
+   vercel env add GROQ_API_KEY
+   vercel env add MISTRAL_API_KEY
+   vercel env add OPENROUTER_API_KEY
+   vercel env add PERPLEXITY_API_KEY   # optional
+   vercel env add SERPAPI_KEY          # optional
+   vercel env add REDIS_URL            # optional
+   ```
+3. Deploy:
+   ```bash
+   npm run build       # confirm it succeeds locally
+   vercel --prod
+   ```
+Your app is live at the URL Vercel prints. Re-run `vercel --prod` after future changes.
 
-### 1. Install Vercel CLI
+## Other hosting options
 
-```bash
-npm i -g vercel
-```
+### Railway
+1. Create a Railway project from this repo.
+2. Build command: `npm run build`; Start command: `npm run preview`.
+3. Add the same environment variables listed above (including `REDIS_URL` if you want server caching).
+4. Deploy from the Railway dashboard.
 
-### 2. Login
+### Netlify
+1. Import from Git and set:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+2. Add required environment variables.
+3. Deploy from the Netlify UI or CLI.
 
-```bash
-vercel login
-```
-
-### 3. Add Your API Keys
-
-```bash
-vercel env add GROQ_API_KEY
-vercel env add TMDB_API_KEY
-vercel env add TMDB_READ_TOKEN
-vercel env add OMDB_API_KEY
-```
-
-Paste each key when prompted.
-
-### 4. Deploy
-
-```bash
-vercel --prod
-```
-
-Your app will be live at `https://your-project.vercel.app`
-
----
-
-## Update After Changes
-
-```bash
-npm run build  # Test locally first
-vercel --prod  # Deploy to production
-```
-
----
-
-## Custom Domain (Optional)
-
-1. Go to your Vercel dashboard
-2. Click on your project
-3. Go to Settings → Domains
-4. Add your custom domain
-5. Update your DNS records as shown
-
----
-
-## Troubleshooting
-
-**Build fails**
-- Check `npm run build` works locally
-- Verify all API keys are added
-
-**Site loads but doesn't work**
-- Check browser console for errors
-- Verify environment variables in Vercel dashboard
-
----
-
-Need help? Check [Vercel Docs](https://vercel.com/docs) or the main [README](../README.md).
-
-**Issue: Blank page after deployment**
-- Check browser console for errors
-- Verify build completed successfully in Actions
-- Try hard refresh (Ctrl+Shift+R)
-
----
-
-## Railway
-
-### Quick Deploy
-
-1. **Sign up**: [railway.app](https://railway.app)
-2. **New Project** → **Deploy from GitHub repo**
-3. **Connect**: Select `moviemonk-ai` repository
-4. **Configure**:
-   - Build Command: `npm run build`
-   - Start Command: `npm run preview`
-5. **Add Environment Variables**:
-   - `GROQ_API_KEY`
-   - `MISTRAL_API_KEY`
-   - `OPENROUTER_API_KEY`
-   - `TMDB_READ_TOKEN`
-   - `TMDB_API_KEY`
-   - `OMDB_API_KEY`
-   - `PERPLEXITY_API_KEY` (optional)
-6. **Deploy**: Railway auto-deploys
-
-### Railway Configuration
-
-Railway auto-detects Node.js projects. No additional configuration needed.
-
-**Environment Variables to Add:**
-- `GROQ_API_KEY`
-- `MISTRAL_API_KEY` (optional but recommended)
-- `OPENROUTER_API_KEY` (optional but recommended)
-- `TMDB_READ_TOKEN`
-- `TMDB_API_KEY`
-- `OMDB_API_KEY`
-
-**Custom Domain (Optional):**
-- Go to project settings
-- Add custom domain
-- Update DNS records as instructed
-
----
-
-## Vercel
-
-### Deploy via GitHub
-
-1. **Sign up**: [vercel.com](https://vercel.com)
-2. **New Project** → **Import Git Repository**
-3. **Select**: `moviemonk-ai` repository
-4. **Configure**:
-   - Framework Preset: **Vite**
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-5. **Environment Variables**:
-   - Add `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`
-   - Add `TMDB_READ_TOKEN`, `TMDB_API_KEY`, `OMDB_API_KEY`
-   - Add `PERPLEXITY_API_KEY` (optional)
-6. **Deploy**
-
-### Vercel CLI (Alternative)
-
-```bash
-npm install -g vercel
-vercel login
-vercel
-```
-
-Follow prompts and add environment variables when asked.
-
----
-
-## Netlify
-
-### Deploy via GitHub
-
-1. **Sign up**: [netlify.com](https://netlify.com)
-2. **Add new site** → **Import from Git**
-3. **Connect**: Select `moviemonk-ai` repository
-4. **Build Settings**:
-   - Build Command: `npm run build`
-   - Publish Directory: `dist`
-5. **Environment Variables**:
-   - Add `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`
-   - Add `TMDB_READ_TOKEN`, `TMDB_API_KEY`, `OMDB_API_KEY`
-   - Add `PERPLEXITY_API_KEY` (optional)
-6. **Deploy**
-
-### Netlify CLI (Alternative)
-
-```bash
-npm install -g netlify-cli
-netlify login
-netlify deploy --prod
-```
-
----
-
-## Self-Hosting (VPS/Docker)
+## Self-host (VPS / Docker)
 
 ### Using Node + PM2
 
@@ -235,6 +106,8 @@ server {
 | `TMDB_READ_TOKEN` | Recommended | TMDB v4 Read Access Token (preferred over v3) |
 | `OMDB_API_KEY` | **Yes** | OMDB API key for IMDB ratings |
 | `PERPLEXITY_API_KEY` | Optional | Perplexity API for web search (recent releases) |
+| `SERPAPI_KEY` | Optional | Suggestion/search enrichment |
+| `REDIS_URL` | Optional | Redis endpoint for shared server caching |
 
 **Note**: You need at least Groq, TMDB, and OMDB credentials to run the app. Mistral and OpenRouter provide backup/fallback functionality.
 
@@ -251,46 +124,6 @@ server {
 - [ ] Mobile responsive design works
 - [ ] Favicon displays
 - [ ] Console has no critical errors
-
----
-
-## Continuous Deployment
-
-### GitHub Actions (Automatic)
-
-The included workflow (`.github/workflows/deploy.yml`) automatically:
-1. Builds on every push to `main`
-2. Runs tests (if added)
-3. Deploys to GitHub Pages
-4. Takes ~2-3 minutes per deployment
-
-### Manual Trigger
-
-You can manually trigger deployment from GitHub:
-1. Go to **Actions** tab
-2. Select "Deploy to GitHub Pages"
-3. Click **Run workflow**
-
----
-
-## Custom Domain Setup
-
-### GitHub Pages
-
-1. Add `CNAME` file to `public/` with your domain:
-   ```
-   moviemonk.yourdomain.com
-   ```
-2. In GitHub repo settings → Pages → Custom domain
-3. Add your domain and enforce HTTPS
-4. Update DNS:
-   ```
-   CNAME  moviemonk  YOUR_USERNAME.github.io
-   ```
-
-### Railway/Vercel/Netlify
-
-Follow platform-specific custom domain instructions in their dashboards.
 
 ---
 
