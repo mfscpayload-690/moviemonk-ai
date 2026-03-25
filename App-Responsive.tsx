@@ -379,19 +379,19 @@ const App: React.FC = () => {
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="flex-shrink-0 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-6 py-4 glass-panel border-b-0 z-50">
+        <header className="flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 glass-panel border-b-0 z-50">
           <div className="flex items-center gap-3">
             <Logo className="w-10 h-10 text-primary drop-shadow-glow" />
-            <h1 className="text-2xl font-bold text-gradient tracking-tight">MovieMonk</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gradient tracking-tight">MovieMonk</h1>
           </div>
-          <div className="header-search-slot px-1 sm:px-3">
+          <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-3">
             <DynamicSearchIsland
               onSearch={handleSendMessage}
               onSuggestionSelect={handleSuggestionSelect}
               isLoading={isLoading}
             />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
             <button
               onClick={() => setShowSeriesBrowser(true)}
               className="btn-glass flex items-center gap-2"

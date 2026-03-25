@@ -12,6 +12,7 @@
   min-width: 0;
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .header-search-slot .search-island {
@@ -42,7 +43,8 @@
 
 @media (max-width: 767px) {
   .header-search-slot .search-island.collapsed {
-    width: min(300px, 100%);
+    width: 100%;
+    max-width: 100%;
     padding: 0 0.875rem;
   }
 
@@ -51,7 +53,10 @@
   }
 
   .header-search-slot .search-island.expanded {
-    width: min(340px, calc(100vw - 1rem));
+    left: 0;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
   }
 }
 
