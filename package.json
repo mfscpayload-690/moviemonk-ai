@@ -8,6 +8,7 @@
     "preview": "vite preview",
     "test": "jest",
     "lint": "tsc --noEmit",
+    "check:no-emoji": "node ./scripts/check-no-emoji.js",
     "audit": "npm audit",
     "audit:fix": "npm audit fix",
     "security-check": "npm audit && npm run lint && npm run build"
@@ -20,11 +21,13 @@
     "lucide-react": "^1.6.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.4",
+    "react-window": "^2.2.7",
     "redis": "^5.11.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
+    "@types/react-window": "^1.8.8",
     "@vercel/node": "^5.6.20",
     "@vitejs/plugin-react": "^5.1.4",
     "jest": "^30.3.0",

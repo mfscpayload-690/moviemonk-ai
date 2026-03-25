@@ -40,6 +40,11 @@
     --glow-primary: 0 0 20px var(--color-primary-glow);
 }
 
+.content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 600px 800px;
+}
+
 /* Global Reset & Base */
 *,
 *::before,

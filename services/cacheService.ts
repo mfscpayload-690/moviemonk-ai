@@ -45,7 +45,7 @@ export function getCachedResponse(query: string, provider: string): { movieData:
       return null;
     }
     
-    console.log(`✅ Cache HIT for "${query}" with ${provider}`);
+    console.log(`[cache] hit for "${query}" with ${provider}`);
     return {
       movieData: parsedCache.movieData,
       sources: parsedCache.sources
@@ -76,7 +76,7 @@ export function cacheResponse(
     };
     
     localStorage.setItem(key, JSON.stringify(cacheEntry));
-    console.log(`💾 Cached response for "${query}" with ${provider}`);
+    console.log(`[cache] stored response for "${query}" with ${provider}`);
   } catch (error) {
     console.warn('Cache write error (storage might be full):', error);
     // Try to clear old cache entries
@@ -113,7 +113,7 @@ export function clearOldCacheEntries(): void {
     keysToRemove.forEach(key => localStorage.removeItem(key));
     
     if (keysToRemove.length > 0) {
-      console.log(`🗑️  Cleared ${keysToRemove.length} expired cache entries`);
+      console.log(`[cache] cleared ${keysToRemove.length} expired cache entries`);
     }
   } catch (error) {
     console.warn('Failed to clear old cache entries:', error);
@@ -135,7 +135,7 @@ export function clearAllCache(): void {
     }
     
     keysToRemove.forEach(key => localStorage.removeItem(key));
-    console.log(`🗑️  Cleared all cache (${keysToRemove.length} entries)`);
+    console.log(`[cache] cleared all cache (${keysToRemove.length} entries)`);
   } catch (error) {
     console.warn('Failed to clear cache:', error);
   }

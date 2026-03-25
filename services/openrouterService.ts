@@ -46,7 +46,7 @@ const parseJsonResponse = (text: string): MovieData | null => {
       
       console.warn('Attempting to parse repaired JSON...');
       const parsed = JSON.parse(repaired) as MovieData;
-      console.log('✅ JSON repair successful!');
+      console.log('[openrouter] JSON repair successful');
       return parsed;
     } catch (repairError) {
       console.error('JSON repair also failed:', repairError);

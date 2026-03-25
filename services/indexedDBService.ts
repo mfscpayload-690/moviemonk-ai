@@ -77,7 +77,7 @@ export async function getFromIndexedDB(
           return;
         }
 
-        console.log(`✅ IndexedDB HIT for "${query}" with ${provider}`);
+        console.log(`[indexeddb] hit for "${query}" with ${provider}`);
         resolve({
           movieData: cached.movieData,
           sources: cached.sources
@@ -119,7 +119,7 @@ export async function saveToIndexedDB(
       const request = store.put(cached);
 
       request.onsuccess = () => {
-        console.log(`💾 Saved to IndexedDB: "${query}" with ${provider}`);
+        console.log(`[indexeddb] saved "${query}" with ${provider}`);
         resolve();
       };
 
@@ -178,7 +178,7 @@ export async function clearOldIndexedDBEntries(): Promise<void> {
           cursor.continue();
         } else {
           if (deletedCount > 0) {
-            console.log(`🗑️  Cleared ${deletedCount} old IndexedDB entries`);
+            console.log(`[indexeddb] cleared ${deletedCount} old entries`);
           }
           resolve();
         }
@@ -225,7 +225,7 @@ export async function clearAllIndexedDB(): Promise<void> {
       const request = store.clear();
 
       request.onsuccess = () => {
-        console.log('🗑️  Cleared all IndexedDB cache');
+        console.log('[indexeddb] cleared all cache entries');
         resolve();
       };
 

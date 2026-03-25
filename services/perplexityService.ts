@@ -74,7 +74,7 @@ export async function fetchMovieData(
       };
     }
 
-    console.log(`🔍 Perplexity: Fetching data for "${query}"`);
+    console.log(`[perplexity] fetching data for "${query}"`);
 
     // Build comprehensive prompt
     const prompt = `Search the web and provide comprehensive information about: ${query}
@@ -133,7 +133,7 @@ Return ONLY valid JSON with this structure:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ Perplexity API error ${response.status}:`, errorText);
+      console.error(`[perplexity] API error ${response.status}:`, errorText);
       return {
         movieData: null,
         sources: null,
@@ -170,7 +170,7 @@ Return ONLY valid JSON with this structure:
       };
     }
 
-    console.log(`✅ Perplexity: Successfully fetched "${movieData.title}"`);
+    console.log(`[perplexity] successfully fetched "${movieData.title}"`);
 
     // Extract sources from citations
     const sources = data.citations?.map((cite: any) => ({
@@ -185,7 +185,7 @@ Return ONLY valid JSON with this structure:
     };
 
   } catch (error: any) {
-    console.error('❌ Perplexity error:', error);
+    console.error('[perplexity] error:', error);
     return {
       movieData: null,
       sources: null,
@@ -205,11 +205,11 @@ export async function searchWithPerplexity(parsed: ParsedQuery): Promise<MovieDa
   try {
     const apiKey = process.env.PERPLEXITY_API_KEY;
     if (!apiKey) {
-      console.warn('⚠️  PERPLEXITY_API_KEY not configured - skipping web search');
+      console.warn('[perplexity] PERPLEXITY_API_KEY not configured - skipping web search');
       return null;
     }
 
-    console.log(`🔍 Perplexity: Searching web for "${parsed.title}"`);
+    console.log(`[perplexity] searching web for "${parsed.title}"`);
 
     const searchPrompt = `Find comprehensive information about the ${parsed.type === 'show' ? 'TV show' : 'movie'}: ${formatForAIPrompt(parsed)}
 
@@ -273,7 +273,7 @@ If not found, return: {"error": "not_found"}`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ Perplexity API error ${response.status}:`, errorText);
+      console.error(`[perplexity] API error ${response.status}:`, errorText);
       return null;
     }
 
@@ -281,14 +281,14 @@ If not found, return: {"error": "not_found"}`;
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.warn('⚠️  Perplexity returned empty response');
+      console.warn('[perplexity] empty response');
       return null;
     }
 
     // Parse JSON response (avoid shadowing function parameter "parsed")
     const rawParsedResponse = parsePerplexityResponse(content);
     if (!rawParsedResponse || rawParsedResponse.error === 'not_found') {
-      console.log(`❌ Perplexity: "${rawParsedResponse?.title || parsed.title}" not found on web`);
+      console.log(`[perplexity] "${rawParsedResponse?.title || parsed.title}" not found on web`);
       return null;
     }
 
@@ -297,7 +297,7 @@ If not found, return: {"error": "not_found"}`;
       return null;
     }
 
-    console.log(`✅ Perplexity: Found data for "${parsedResponse.title}"`);
+    console.log(`[perplexity] found data for "${parsedResponse.title}"`);
 
     // Fill in missing fields with empty values
     return {
@@ -309,7 +309,7 @@ If not found, return: {"error": "not_found"}`;
     };
 
   } catch (error) {
-    console.error('❌ Perplexity search error:', error);
+    console.error('[perplexity] search error:', error);
     return null;
   }
 }

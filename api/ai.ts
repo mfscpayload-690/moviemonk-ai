@@ -120,7 +120,7 @@ async function searchTMDB(title: string, limit = 6): Promise<SearchResult[]> {
   try {
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
     if (!TMDB_API_KEY) {
-      console.warn('⚠️ TMDB_API_KEY not set, using DuckDuckGo fallback');
+      console.warn('[api] TMDB_API_KEY not set, using DuckDuckGo fallback');
       return [];
     }
 
@@ -129,7 +129,7 @@ async function searchTMDB(title: string, limit = 6): Promise<SearchResult[]> {
     const data: any = await response.json();
 
     if (!data.results || !Array.isArray(data.results)) {
-      console.log('⚠️ No TMDB results');
+      console.log('[api] no TMDB results');
       return [];
     }
 
@@ -452,7 +452,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const cacheKey = withCacheKey('duckduckgo_search', { q: q.trim().toLowerCase() });
         const cached = await getCache(cacheKey);
         if (cached) {
-          console.log('✅ Returning cached search results');
+          console.log('[api] returning cached search results');
           obs.finish(200, { action, cached: true, total: cached.total || 0 });
           return res.status(200).json({ ...cached, cached: true });
         }
@@ -460,16 +460,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const parsed = parseComplexQuery(q);
         const searchQuery = buildSearchQuery(parsed);
 
-        console.log('🔍 Parsed Query:', parsed);
-        console.log('🔍 Search Query:', searchQuery);
+        console.log('[api] parsed query:', parsed);
+        console.log('[api] search query:', searchQuery);
 
         // Try TMDB first (more reliable)
         let results = await searchTMDB(parsed.title, 6);
-        console.log(`📺 TMDB returned ${results.length} results`);
+        console.log(`[api] TMDB returned ${results.length} results`);
 
         // Fallback or Enrichment with SerpApi
         if (results.length === 0 || parsed.language) {
-          console.log('🔄 Searching SerpApi for better results...');
+          console.log('[api] searching SerpApi for better results...');
           const serpResults = await searchWeb(searchQuery, 6);
 
           // Merge results, preferring SerpApi for regional content if TMDB failed
@@ -488,7 +488,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Final Fallback to Perplexity if EVERYTHING fails
         if (results.length === 0) {
-          console.log('🔄 Falling back to Perplexity as last resort...');
+          console.log('[api] falling back to Perplexity as last resort...');
           results = await searchPerplexity(searchQuery, 6);
         }
 
@@ -523,7 +523,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         obs.finish(200, { action, cached: false, total: response.total });
         return res.status(200).json(response);
       } catch (searchError: any) {
-        console.error('❌ Search error:', searchError);
+        console.error('[api] search error:', searchError);
         obs.log('search_failed', 'error', { action, error: searchError.message || 'Search failed' });
         obs.finish(500, { action, error_code: 'search_failed' });
         return sendApiError(res, 500, 'search_failed', searchError.message || 'Search failed', { query: q });
@@ -727,10 +727,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const selectedModel = availableModels[0] || preferences[0];
 
       const reasons: Record<string, string> = {
-        movie: '🎬 Movie query - using Groq for fast, accurate summaries',
-        person: '👤 Person query - using Mistral for detailed biographical information',
-        review: '⭐ Review query - using Perplexity for web-aware opinions and analysis',
-        complex: '🧠 Complex query - using OpenRouter for comprehensive analysis'
+        movie: 'Movie query - using Groq for fast, accurate summaries',
+        person: 'Person query - using Mistral for detailed biographical information',
+        review: 'Review query - using Perplexity for web-aware opinions and analysis',
+        complex: 'Complex query - using OpenRouter for comprehensive analysis'
       };
 
       obs.finish(200, { action, selected_model: selectedModel, query_type: queryType });
@@ -784,7 +784,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         obs.finish(200, { action, cached: false });
         return res.status(200).json(response);
       } catch (parseError: any) {
-        console.error('❌ Parse error:', parseError);
+        console.error('[api] parse error:', parseError);
         obs.log('parse_failed', 'error', { action, error: parseError.message || 'Parsing failed' });
         obs.finish(500, { action, error_code: 'parse_failed' });
         return sendApiError(res, 500, 'parse_failed', parseError.message || 'Parsing failed', {

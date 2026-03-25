@@ -26,6 +26,15 @@ const debugLog = (...args: any[]) => {
   }
 };
 
+const scheduleIdle = (fn: () => void) => {
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    // @ts-ignore requestIdleCallback exists in modern browsers
+    window.requestIdleCallback(fn, { timeout: 500 });
+  } else {
+    setTimeout(fn, 50);
+  }
+};
+
 // AIProvider is declared in types.ts
 
 // Track last error times for availability checking
@@ -141,11 +150,11 @@ export async function fetchMovieData(
 
   // Step 1: Parse query
   const parsed = parseQuery(query);
-  debugLog('📝 Parsed query:', parsed);
+  debugLog('[ai] parsed query:', parsed);
 
   // Step 2: Auto-detect complexity
   const autoComplexity = shouldUseComplexModel(parsed) ? QueryComplexity.COMPLEX : complexity;
-  debugLog(`🎯 Complexity: ${autoComplexity} (user: ${complexity}, auto: ${shouldUseComplexModel(parsed)})`);
+  debugLog(`[ai] complexity: ${autoComplexity} (user: ${complexity}, auto: ${shouldUseComplexModel(parsed)})`);
 
   // Step 3: Check cache (only for fresh searches without chat history)
   const shouldCache = !chatHistory || chatHistory.length === 0;
@@ -154,7 +163,7 @@ export async function fetchMovieData(
     // Check IndexedDB first
     const indexedDBResult = await getFromIndexedDB(query, provider);
     if (indexedDBResult) {
-      debugLog('✅ Cache hit from IndexedDB');
+      debugLog('[ai] cache hit from IndexedDB');
       return {
         ...indexedDBResult,
         error: undefined
@@ -164,7 +173,7 @@ export async function fetchMovieData(
     // Check localStorage second
     const cached = getCachedResponse(query, provider);
     if (cached) {
-      debugLog('✅ Cache hit from localStorage');
+      debugLog('[ai] cache hit from localStorage');
       // Also save to IndexedDB for longer persistence
       saveToIndexedDB(query, provider, cached.movieData, cached.sources);
       return {
@@ -176,17 +185,19 @@ export async function fetchMovieData(
 
   // Clear old cache entries periodically
   if (Math.random() < 0.1) {
-    clearOldCacheEntries();
-    clearOldIndexedDBEntries();
+    scheduleIdle(() => {
+      clearOldCacheEntries();
+      clearOldIndexedDBEntries();
+    });
   }
 
   try {
     // Step 4: Try HYBRID source (TVMaze for TV, TMDB for movies) - IMPROVED!
-    debugLog('🔍 Searching best data source (TVMaze for TV, TMDB for movies)...');
+    debugLog('[ai] searching best data source (TVMaze for TV, TMDB for movies)...');
     const hybridResult = await fetchFromBestSource(parsed);
 
     if (hybridResult.data) {
-      debugLog(`✅ ${hybridResult.source.toUpperCase()}: Found factual data (confidence: ${(hybridResult.confidence * 100).toFixed(0)}%), requesting AI summaries...`);
+      debugLog(`[ai] ${hybridResult.source.toUpperCase()}: Found factual data (confidence: ${(hybridResult.confidence * 100).toFixed(0)}%), requesting AI summaries...`);
 
       // Use AI to fill in creative content only
       const enriched = await enrichWithAIContent(hybridResult.data, autoComplexity, provider, requestId, chatHistory);
@@ -215,15 +226,15 @@ export async function fetchMovieData(
         };
       }
     } else if (hybridResult.error) {
-      console.warn(`⚠️  Hybrid search failed: ${hybridResult.error}`);
+      console.warn(`[ai] Hybrid search failed: ${hybridResult.error}`);
     }
 
     // Step 5: TMDB not found, try Perplexity web search
-    debugLog('🔍 TMDB not found, trying Perplexity web search...');
+    debugLog('[ai] TMDB not found, trying Perplexity web search...');
     const perplexityData = await searchWithPerplexity(parsed);
 
     if (perplexityData) {
-      debugLog('✅ Perplexity: Found data from web, requesting AI summaries...');
+      debugLog('[ai] Perplexity: Found data from web, requesting AI summaries...');
 
       // Use AI to fill in creative content
       const enriched = await enrichWithAIContent(perplexityData, autoComplexity, provider, requestId, chatHistory);
@@ -243,7 +254,7 @@ export async function fetchMovieData(
     }
 
     // Step 6: Last resort - full AI generation (legacy fallback)
-    debugLog('⚠️  No TMDB/Perplexity data, falling back to pure AI...');
+    debugLog('[ai] no TMDB/Perplexity data, falling back to pure AI...');
     const result = await fallbackToAI(query, autoComplexity, provider, requestId, chatHistory);
 
     // Track errors

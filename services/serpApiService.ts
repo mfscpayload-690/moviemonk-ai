@@ -27,7 +27,7 @@ export async function searchSerpApi(query: string, limit: number = 6): Promise<S
     const apiKey = process.env.SERPAPI_KEY || process.env.SERPAPI_API_KEY;
 
     if (!apiKey) {
-        console.warn('⚠️ SERPAPI_KEY not configured');
+        console.warn('[serpapi] SERPAPI_KEY not configured');
         return [];
     }
 
@@ -40,12 +40,12 @@ export async function searchSerpApi(query: string, limit: number = 6): Promise<S
         url.searchParams.append('hl', 'en');
         url.searchParams.append('gl', 'in'); // bias towards India as user mentioned regional cinema
 
-        console.log(`🔍 SerpApi: Searching for "${query}"`);
+        console.log(`[serpapi] searching for "${query}"`);
 
         const response = await fetch(url.toString());
 
         if (!response.ok) {
-            console.error(`❌ SerpApi request failed: ${response.status}`);
+            console.error(`[serpapi] request failed: ${response.status}`);
             return [];
         }
 
@@ -90,7 +90,7 @@ export async function searchSerpApi(query: string, limit: number = 6): Promise<S
         return results;
 
     } catch (error) {
-        console.error('❌ SerpApi search error:', error);
+        console.error('[serpapi] search error:', error);
         return [];
     }
 }
