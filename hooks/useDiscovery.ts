@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DiscoveryGenre, DiscoveryItem } from '../types';
 import {
   fetchByGenre,
@@ -87,6 +87,7 @@ export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<Disco
 }
 
 export function useDiscovery() {
+  const genreRequestRef = useRef<AbortController | null>(null);
   const [heroItems, setHeroItems] = useState<DiscoveryItem[]>([]);
   const [sections, setSections] = useState<DiscoverySection[]>([]);
   const [movieGenres, setMovieGenres] = useState<DiscoveryGenre[]>([]);
@@ -132,22 +133,24 @@ export function useDiscovery() {
 
   const selectGenre = useCallback(async (genre: DiscoveryGenre) => {
     if (!genre) return;
+    genreRequestRef.current?.abort();
+    const controller = new AbortController();
+    genreRequestRef.current = controller;
     setSelectedGenre(genre);
     setIsGenreLoading(true);
-
-    const controller = new AbortController();
     try {
       const items = await fetchByGenre(genre.id, 'movie', { signal: controller.signal });
+      if (controller.signal.aborted) return;
       setSelectedGenreItems(items);
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
         setError(err?.message || 'Failed to load genre titles.');
       }
     } finally {
-      setIsGenreLoading(false);
+      if (!controller.signal.aborted) {
+        setIsGenreLoading(false);
+      }
     }
-
-    return () => controller.abort();
   }, []);
 
   const retry = useCallback(() => {
