@@ -1,11 +1,12 @@
 /**
  * DynamicSearchIsland Component
  * 
- * A floating search interface for MovieMonk queries.
- * - Auto-selects best AI model based on query type
- * - Supports SIMPLE/COMPLEX query modes for search scope
- * - Keyboard shortcuts: / or K to focus, Enter to search, Esc to collapse
- * - Accessibility: Full ARIA labels, focus management
+ * Modern header-integrated search interface for MovieMonk.
+ * - Two search modes: 🚀 Quick Search (fast) vs 🔬 Deep Dive (detailed)
+ * - Auto-completes with icon-tagged suggestions
+ * - Keyboard shortcuts: Cmd+K / Ctrl+K to focus, / or K as fallbacks
+ * - Accessibility: ARIA labels, keyboard navigation, focus management
+ * - Responsive: Header slot on all breakpoints
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -14,6 +15,14 @@ import { QueryComplexity, SuggestionItem } from '../types';
 import { Logo, SearchIcon, SendIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
 import '../styles/dynamic-search-island.css';
+
+// Helper to get icon by suggestion type
+const getSuggestionIcon = (type: string, media_type?: string) => {
+  if (type === 'movie' || media_type === 'movie') return '🎬';
+  if (type === 'show' || media_type === 'tv') return '📺';
+  if (type === 'person') return '🎭';
+  return '✨';
+};
 
 interface DynamicSearchIslandProps {
   onSearch: (query: string, complexity: QueryComplexity) => void;
@@ -62,8 +71,16 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   // Keyboard shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // "/" or "k" to focus search (when not already focused on input)
-      if ((e.key === '/' || e.key === 'k') && 
+      // Cmd+K or Ctrl+K to focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsExpanded(true);
+        track('search_island_opened', { trigger: 'keyboard_shortcut', key: 'cmd+k' });
+        return;
+      }
+
+      // "/" or "k" to focus search (legacy shortcuts)
+      if ((e.key === '/' || (e.key === 'k' && !e.ctrlKey && !e.metaKey)) && 
           !isExpanded && 
           document.activeElement?.tagName !== 'INPUT' &&
           document.activeElement?.tagName !== 'TEXTAREA') {
@@ -118,13 +135,6 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
       triggerButtonRef.current.focus();
     }
     track('search_island_closed', {});
-  };
-
-  const handleAnalysisModeToggle = () => {
-    const newMode = analysisMode === 'quick' ? 'complex' : 'quick';
-    setAnalysisMode(newMode);
-    localStorage.setItem(STORAGE_KEY_ANALYSIS, newMode);
-    track('analysis_mode_toggled', { from: analysisMode, to: newMode, source: 'search_island' });
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -313,14 +323,14 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   };
 
   if (!isExpanded) {
-    // Collapsed state: search bar with placeholder text
+    // Collapsed state: minimal search pill with hint
     return (
       <div
         ref={islandRef}
         className="search-island collapsed"
         role="button"
         tabIndex={0}
-        aria-label="Open search (press / or k)"
+        aria-label="Open search"
         aria-expanded="false"
         aria-controls="search-island-content"
         onClick={handleExpand}
@@ -331,16 +341,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
           }
         }}
       >
-        <div className="island-icon">
-          <SearchIcon />
-        </div>
-        <span className="collapsed-text">
-          Search movies, shows, actors...
-        </span>
+        <SearchIcon className="search-icon" />
+        <span className="collapsed-text">Find a movie...</span>
         <div className="collapsed-kbd">
-          <span className="kbd-tag">/</span>
-          <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>or</span>
-          <span className="kbd-tag">K</span>
+          <span className="kbd-tag">⌘K</span>
         </div>
       </div>
     );
@@ -357,26 +361,24 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
       id="search-island-content"
     >
       <div className="island-content">
-        {/* Header */}
+        {/* Header with close button */}
         <div className="island-header">
-          <h3>
-            <Logo className="w-5 h-5" />
-            Search MovieMonk
-          </h3>
+          <div className="header-title">
+            <SearchIcon className="w-5 h-5" />
+            <span>Find Your Next Watch</span>
+          </div>
           <button
             className="close-btn"
             onClick={handleCollapse}
             aria-label="Close search (Esc)"
             title="Close (Esc)"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            ✕
           </button>
         </div>
 
         {/* Search Input */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="search-form">
           <div className="search-input-wrapper">
             <input
               ref={searchInputRef}
@@ -392,7 +394,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 }
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search for movies, shows, actors..."
+              placeholder="Search movies, shows, actors, directors..."
               disabled={isLoading}
               aria-label="Search query"
               aria-autocomplete="list"
@@ -403,6 +405,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             />
             {isSuggesting && <div className="suggest-loading">Searching...</div>}
 
+            {/* Suggestions Dropdown with Icons */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
                 {suggestions.map((suggestion, index) => (
@@ -416,18 +419,26 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => handleSuggestionSelect(suggestion)}
                   >
+                    {/* Poster */}
                     <div className="suggest-poster-wrap">
                       {suggestion.poster_url ? (
                         <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : (
-                        <div className="suggest-poster placeholder">•</div>
+                        <div className="suggest-poster placeholder">{getSuggestionIcon(suggestion.type, suggestion.media_type)}</div>
                       )}
                     </div>
+                    
+                    {/* Title and Metadata */}
                     <div className="suggest-meta">
-                      <span className="suggest-title">{suggestion.title}</span>
-                      <span className="suggest-subtitle">
-                        {suggestion.year || 'Year N/A'} · {suggestion.type}
-                      </span>
+                      <div className="suggest-title-row">
+                        <span className="suggest-title">{suggestion.title}</span>
+                        <span className="suggest-icon-tag">{getSuggestionIcon(suggestion.type, suggestion.media_type)}</span>
+                      </div>
+                      <div className="suggest-subtitle">
+                        {suggestion.year && <span>{suggestion.year}</span>}
+                        {suggestion.type && <span>•</span>}
+                        <span className="capitalize">{suggestion.type}</span>
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -435,34 +446,54 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             )}
           </div>
 
-          {inlinePrompt && <div className="suggest-inline-hint">{inlinePrompt}</div>}
+          {inlinePrompt && <div className="suggest-inline-hint">💡 {inlinePrompt}</div>}
 
-          {/* Controls: Analysis Mode Only */}
-          <div className="controls-row" style={{ marginTop: '1rem' }}>
-            {/* Analysis Mode Toggle */}
-            <div className="analysis-toggle">
-              <div
-                className="toggle-wrapper"
-                onClick={handleAnalysisModeToggle}
-                role="switch"
-                aria-checked={analysisMode === 'complex'}
-                aria-label="Analysis mode"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleAnalysisModeToggle();
-                  }
-                }}
-              >
-                <span className="toggle-label">
-                  {analysisMode === 'complex' ? 'Deep' : 'Quick'}
-                </span>
-                <div className={`toggle-switch ${analysisMode === 'complex' ? 'active' : ''}`}>
-                  <div className="toggle-switch-thumb" />
-                </div>
+          {/* Mode Selector: Two Button Tabs */}
+          <div className="mode-selector">
+            <button
+              type="button"
+              onClick={() => {
+                setAnalysisMode('quick');
+                localStorage.setItem(STORAGE_KEY_ANALYSIS, 'quick');
+                track('analysis_mode_toggled', { from: analysisMode, to: 'quick', source: 'search_island' });
+              }}
+              className={`mode-btn ${analysisMode === 'quick' ? 'active' : ''}`}
+              aria-pressed={analysisMode === 'quick'}
+              title="Fast results with summary"
+            >
+              <span className="mode-icon">🚀</span>
+              <div className="mode-content">
+                <span className="mode-label">Quick Search</span>
+                <span className="mode-desc">Find a movie fast</span>
               </div>
-            </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setAnalysisMode('complex');
+                localStorage.setItem(STORAGE_KEY_ANALYSIS, 'complex');
+                track('analysis_mode_toggled', { from: analysisMode, to: 'complex', source: 'search_island' });
+              }}
+              className={`mode-btn ${analysisMode === 'complex' ? 'active' : ''}`}
+              aria-pressed={analysisMode === 'complex'}
+              title="Detailed analysis with cast, crew, ratings"
+            >
+              <span className="mode-icon">🔬</span>
+              <div className="mode-content">
+                <span className="mode-label">Deep Dive</span>
+                <span className="mode-desc">Analyze in detail</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Helper text */}
+          <div className="mode-helper-text">
+            {analysisMode === 'quick' ? (
+              <span>⚡ Get instant results with key details and summaries</span>
+            ) : (
+              <span>🔍 Full analysis with cast, crew, ratings, and web context</span>
+            )}
           </div>
 
           {/* Search Button */}
@@ -470,8 +501,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             type="submit"
             className="search-action-btn"
             disabled={!query.trim() || isLoading}
-            aria-label="Search"
-            style={{ marginTop: '1rem' }}
+            aria-label={isLoading ? 'Searching' : 'Search'}
           >
             {isLoading ? (
               <>
@@ -490,13 +520,11 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
           </button>
         </form>
 
-        {/* Keyboard hint */}
-        <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
-          <kbd style={{ padding: '0.125rem 0.375rem', background: 'rgba(255,255,255,0.1)', borderRadius: '0.25rem', fontFamily: 'monospace' }}>
-            Enter
-          </kbd> to search · <kbd style={{ padding: '0.125rem 0.375rem', background: 'rgba(255,255,255,0.1)', borderRadius: '0.25rem', fontFamily: 'monospace' }}>
-            Esc
-          </kbd> to close
+        {/* Keyboard hints at bottom */}
+        <div className="search-hints">
+          <span><kbd>↑↓</kbd> navigate</span>
+          <span><kbd>⏎</kbd> select</span>
+          <span><kbd>Esc</kbd> close</span>
         </div>
       </div>
     </div>
