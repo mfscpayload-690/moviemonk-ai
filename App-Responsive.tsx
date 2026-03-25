@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MovieDisplay from './components/MovieDisplay';
 import PersonDisplay from './components/PersonDisplay';
-import SeriesBrowser from './components/SeriesBrowser';
 import ErrorBanner from './components/ErrorBanner';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import { ChatMessage, MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
@@ -36,7 +35,6 @@ const App: React.FC = () => {
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
   const [draggedItem, setDraggedItem] = useState<{ folderId: string; itemId: string } | null>(null);
-  const [showSeriesBrowser, setShowSeriesBrowser] = useState(false);
 
   const handleLoadSavedItem = (folderId: string, itemId: string) => {
     const found = findItem(folderId, itemId);
@@ -393,17 +391,6 @@ const App: React.FC = () => {
           </div>
           <div className="flex items-center justify-end gap-2 sm:gap-3">
             <button
-              onClick={() => setShowSeriesBrowser(true)}
-              className="btn-glass flex items-center gap-2"
-              aria-label="Browse TV Series"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect x="2" y="7" width="20" height="15" rx="2" ry="2" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                <polyline points="17 2 12 7 7 2" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="hidden sm:inline">Series</span>
-            </button>
-            <button
               onClick={() => setShowWatchlistsModal(true)}
               className="btn-glass flex items-center gap-2"
               aria-label="Open watch later"
@@ -604,15 +591,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Series Browser */}
-      {showSeriesBrowser && (
-        <SeriesBrowser
-          onClose={() => setShowSeriesBrowser(false)}
-          onSelectSeries={(title: string) => {
-            handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
-          }}
-        />
-      )}
     </>
   );
 };
