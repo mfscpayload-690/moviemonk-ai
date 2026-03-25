@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { applyCors } from './_utils/cors';
 import { sendApiError } from './_utils/http';
+import { beginRequestObservation } from './_utils/observability';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -59,19 +60,33 @@ async function tmdb(path: string, params: Record<string, string | number | undef
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const obs = beginRequestObservation(req, res, '/api/resolveEntity');
   const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
   if (req.headers.origin && !originAllowed) {
+    obs.finish(403, { reason: 'forbidden_origin' });
     return sendApiError(res, 403, 'forbidden_origin', 'Origin is not allowed');
   }
-  if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'GET') return sendApiError(res, 405, 'method_not_allowed', 'Only GET supported');
+  if (req.method === 'OPTIONS') {
+    obs.finish(204, { reason: 'preflight' });
+    return res.status(204).end();
+  }
+  if (req.method !== 'GET') {
+    obs.finish(405, { error_code: 'method_not_allowed' });
+    return sendApiError(res, 405, 'method_not_allowed', 'Only GET supported');
+  }
 
   const q = (req.query.q as string) || '';
-  if (!q.trim()) return sendApiError(res, 400, 'missing_query', 'Missing q');
+  if (!q.trim()) {
+    obs.finish(400, { error_code: 'missing_query' });
+    return sendApiError(res, 400, 'missing_query', 'Missing q');
+  }
 
   const cacheKey = withCacheKey('resolveEntity', { q: q.trim().toLowerCase() });
   const cached = await getCache(cacheKey);
-  if (cached) return res.status(200).json({ ...cached, cached: true });
+  if (cached) {
+    obs.finish(200, { cached: true });
+    return res.status(200).json({ ...cached, cached: true });
+  }
 
   try {
     // Detect regional queries and search in original language too
@@ -151,8 +166,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     await setCache(cacheKey, response, 60 * 60); // 1 hour
+    obs.finish(200, { cached: false, candidates: response.candidates.length, type: response.type });
     return res.status(200).json(response);
   } catch (e: any) {
+    obs.log('resolve_entity_failed', 'error', { error: e.message || 'Resolve entity failed' });
+    obs.finish(500, { error_code: 'resolve_entity_failed' });
     return sendApiError(res, 500, 'resolve_entity_failed', e.message || 'Resolve entity failed');
   }
 }

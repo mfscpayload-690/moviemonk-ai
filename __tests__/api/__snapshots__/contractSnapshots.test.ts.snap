@@ -1,0 +1,190 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`API contract snapshots api/ai search success contract 1`] = `
+{
+  "body": {
+    "ok": true,
+    "parsedQuery": {
+      "title": "Inception",
+    },
+    "query": "Inception",
+    "results": [
+      {
+        "confidence": 0.87,
+        "id": 1,
+        "image": "https://image.tmdb.org/t/p/w500/inception.jpg",
+        "media_type": "movie",
+        "snippet": "Dream thriller",
+        "title": "Inception",
+        "type": "movie",
+        "url": "https://www.tmdb.org/movie/1",
+        "year": "2010",
+      },
+    ],
+    "total": 1,
+  },
+  "status": 200,
+}
+`;
+
+exports[`API contract snapshots api/groq missing key contract 1`] = `
+{
+  "body": {
+    "error": {
+      "code": "missing_api_key",
+      "message": "Groq API key not configured",
+      "provider": "groq",
+    },
+  },
+  "status": 400,
+}
+`;
+
+exports[`API contract snapshots api/mistral missing key contract 1`] = `
+{
+  "body": {
+    "error": {
+      "code": "missing_api_key",
+      "message": "Mistral API key not configured",
+      "provider": "mistral",
+    },
+  },
+  "status": 400,
+}
+`;
+
+exports[`API contract snapshots api/omdb missing id contract 1`] = `
+{
+  "body": {
+    "error": {
+      "code": "missing_imdb_id",
+      "message": "Missing IMDB ID parameter (i)",
+      "provider": "omdb",
+    },
+  },
+  "status": 400,
+}
+`;
+
+exports[`API contract snapshots api/openrouter missing key contract 1`] = `
+{
+  "body": {
+    "error": {
+      "code": "missing_api_key",
+      "message": "OpenRouter API key not configured",
+      "provider": "openrouter",
+    },
+  },
+  "status": 400,
+}
+`;
+
+exports[`API contract snapshots api/person/[id] success contract 1`] = `
+{
+  "body": {
+    "cached": false,
+    "filmography": [
+      {
+        "character": "N/A",
+        "id": 1,
+        "poster_url": "https://image.tmdb.org/t/p/w342/inception.jpg",
+        "role": "cast",
+        "title": "Inception",
+        "year": 2010,
+      },
+    ],
+    "person": {
+      "biography": "Director",
+      "birthday": "1970-07-30",
+      "id": 99,
+      "name": "Christopher Nolan",
+      "place_of_birth": "London",
+      "profile_url": "https://image.tmdb.org/t/p/w342/nolan.jpg",
+    },
+    "related_people": [],
+    "sources": [
+      {
+        "name": "TMDB",
+        "url": "https://www.themoviedb.org/person/99",
+      },
+    ],
+  },
+  "status": 200,
+}
+`;
+
+exports[`API contract snapshots api/query missing query contract 1`] = `
+{
+  "body": {
+    "error": "Missing q",
+    "error_code": "missing_query",
+    "ok": false,
+  },
+  "status": 400,
+}
+`;
+
+exports[`API contract snapshots api/resolveEntity success contract 1`] = `
+{
+  "body": {
+    "cached": false,
+    "candidates": [
+      {
+        "id": 11,
+        "name": "Inception",
+        "score": 0.81,
+        "type": "movie",
+      },
+      {
+        "id": 99,
+        "name": "Christopher Nolan",
+        "score": 0.225,
+        "type": "person",
+      },
+    ],
+    "chosen": {
+      "id": 11,
+      "name": "Inception",
+      "type": "movie",
+    },
+    "ok": true,
+    "query": "Inception",
+    "type": "movie",
+  },
+  "status": 200,
+}
+`;
+
+exports[`API contract snapshots api/tmdb missing endpoint contract 1`] = `
+{
+  "body": {
+    "error": {
+      "code": "missing_endpoint",
+      "message": "Missing endpoint parameter",
+      "provider": "tmdb",
+    },
+  },
+  "status": 400,
+}
+`;
+
+exports[`API contract snapshots api/websearch success contract 1`] = `
+{
+  "body": {
+    "cached": false,
+    "ok": true,
+    "query": "Inception",
+    "results": {
+      "web": [
+        {
+          "snippet": "Great movie",
+          "title": "Inception review",
+          "url": "https://example.com/inception",
+        },
+      ],
+    },
+    "total": 1,
+  },
+  "status": 200,
+}
+`;

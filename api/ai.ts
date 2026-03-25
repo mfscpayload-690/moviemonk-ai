@@ -7,6 +7,7 @@ import { MovieData } from '../types';
 import { fetchSimilarTitles } from '../services/tmdbService';
 import { applyCors } from './_utils/cors';
 import { sendApiError } from './_utils/http';
+import { beginRequestObservation } from './_utils/observability';
 // Note: generateSummary is client-side code, cannot be imported in serverless functions
 // import { generateSummary } from '../services/ai';
 
@@ -421,13 +422,16 @@ const modelMatrix: Record<string, string[]> = {
 // ============================================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const obs = beginRequestObservation(req, res, '/api/ai');
   const { originAllowed } = applyCors(req, res, 'GET, POST, OPTIONS');
 
   if (req.headers.origin && !originAllowed) {
+    obs.finish(403, { reason: 'forbidden_origin' });
     return res.status(403).json({ ok: false, error: 'Origin is not allowed' });
   }
 
   if (req.method === 'OPTIONS') {
+    obs.finish(204, { reason: 'preflight' });
     return res.status(204).end();
   }
 
@@ -440,6 +444,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const q = (req.query.q as string) || '';
 
       if (!q.trim()) {
+        obs.finish(400, { action, error_code: 'missing_search_query' });
         return sendApiError(res, 400, 'missing_search_query', 'Missing search query', { query: q });
       }
 
@@ -448,6 +453,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const cached = await getCache(cacheKey);
         if (cached) {
           console.log('✅ Returning cached search results');
+          obs.finish(200, { action, cached: true, total: cached.total || 0 });
           return res.status(200).json({ ...cached, cached: true });
         }
 
@@ -514,9 +520,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         await setCache(cacheKey, response, 6 * 60 * 60);
 
+        obs.finish(200, { action, cached: false, total: response.total });
         return res.status(200).json(response);
       } catch (searchError: any) {
         console.error('❌ Search error:', searchError);
+        obs.log('search_failed', 'error', { action, error: searchError.message || 'Search failed' });
+        obs.finish(500, { action, error_code: 'search_failed' });
         return sendApiError(res, 500, 'search_failed', searchError.message || 'Search failed', { query: q });
       }
     }
@@ -528,12 +537,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const preferredProvider = ((req.query.provider as string) || 'groq').toLowerCase() as ProviderChoice;
 
       if (!id) {
+        obs.finish(400, { action, error_code: 'missing_id' });
         return sendApiError(res, 400, 'missing_id', 'Missing id');
       }
 
       const cacheKey = `details_${mediaType}_${id}_${preferredProvider}`;
       const cached = await getCache(cacheKey);
-      if (cached) return res.status(200).json(cached);
+      if (cached) {
+        obs.finish(200, { action, cached: true });
+        return res.status(200).json(cached);
+      }
 
       try {
         const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -685,10 +698,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         (enriched as any).related = related || [];
 
         await setCache(cacheKey, enriched, 24 * 60 * 60);
+        obs.finish(200, { action, cached: false, media_type: mediaType, final_provider: preferredProvider });
         return res.status(200).json(enriched);
 
       } catch (e: any) {
         console.error('Details fetch error:', e);
+        obs.log('details_fetch_failed', 'error', { action, error: e.message || 'Details fetch failed' });
+        obs.finish(500, { action, error_code: 'details_fetch_failed' });
         return sendApiError(res, 500, 'details_fetch_failed', e.message || 'Details fetch failed');
       }
     }
@@ -717,6 +733,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         complex: '🧠 Complex query - using OpenRouter for comprehensive analysis'
       };
 
+      obs.finish(200, { action, selected_model: selectedModel, query_type: queryType });
       return res.status(200).json({
         ok: true,
         selectedModel,
@@ -731,6 +748,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { url, title, snippet, type, selectedModel } = req.body;
 
       if (!url || !title || !snippet || !type) {
+        obs.finish(400, { action, error_code: 'missing_parse_fields' });
         return sendApiError(
           res,
           400,
@@ -742,6 +760,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const cacheKey = withCacheKey('parse_result', { url, type, model: selectedModel });
       const cached = await getCache(cacheKey);
       if (cached) {
+        obs.finish(200, { action, cached: true });
         return res.status(200).json({ ...cached, cached: true });
       }
 
@@ -762,9 +781,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         await setCache(cacheKey, response, 24 * 60 * 60);
+        obs.finish(200, { action, cached: false });
         return res.status(200).json(response);
       } catch (parseError: any) {
         console.error('❌ Parse error:', parseError);
+        obs.log('parse_failed', 'error', { action, error: parseError.message || 'Parsing failed' });
+        obs.finish(500, { action, error_code: 'parse_failed' });
         return sendApiError(res, 500, 'parse_failed', parseError.message || 'Parsing failed', {
           title,
           type
@@ -773,10 +795,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Fallback
+    obs.finish(400, { action, error_code: 'unknown_action' });
     return sendApiError(res, 400, 'unknown_action', `Unknown action: ${action}`);
   } catch (error: any) {
     console.error(`[API ERROR] action='${action}':`, error);
     console.error(`Stack:`, error.stack);
+    obs.log('unhandled_server_error', 'error', { action, error: error.message || 'Server error' });
+    obs.finish(500, { action, error_code: 'server_error' });
     return sendApiError(res, 500, 'server_error', error.message || 'Server error', {
       action,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
