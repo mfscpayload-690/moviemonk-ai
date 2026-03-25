@@ -147,3 +147,13 @@ export interface FetchResult {
   error?: string;
   provider?: AIProvider;
 }
+
+export interface SuggestionItem {
+  id: number;
+  title: string;
+  year?: string;
+  type: 'movie' | 'show' | 'person';
+  media_type: 'movie' | 'tv' | 'person';
+  poster_url?: string;
+  confidence: number;
+}
