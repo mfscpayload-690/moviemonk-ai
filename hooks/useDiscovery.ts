@@ -24,7 +24,7 @@ export type DiscoverySnapshot = {
   selectedGenreItems: DiscoveryItem[];
 };
 
-const CURATED_GENRE_NAMES = [
+const CURATED_GENRE_NAMES: string[] = [
   'Action',
   'Comedy',
   'Drama',
@@ -33,7 +33,7 @@ const CURATED_GENRE_NAMES = [
   'Romance',
   'Documentary',
   'Animation'
-] as const;
+];
 
 export function getCuratedMovieGenres(genres: DiscoveryGenre[]): DiscoveryGenre[] {
   const order = new Map(CURATED_GENRE_NAMES.map((name, index) => [name, index]));
