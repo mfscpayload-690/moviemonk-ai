@@ -1,3 +1,5 @@
+import { parsePersonIntent, resolveRoleMatch } from './personIntent';
+
 export type SuggestEntityType = 'movie' | 'show' | 'person';
 
 export interface SuggestCandidate {
@@ -8,6 +10,8 @@ export interface SuggestCandidate {
   media_type: 'movie' | 'tv' | 'person';
   poster_url?: string;
   popularity?: number;
+  known_for_department?: string;
+  known_for_titles?: string[];
 }
 
 export interface RankedSuggestCandidate extends SuggestCandidate {
@@ -54,6 +58,33 @@ function getPopularityBoost(popularity?: number): number {
   return Math.min(12, Math.log10(popularity + 1) * 4);
 }
 
+function getRoleMatchBoost(
+  requestedRole: 'any' | 'actor' | 'actress' | 'director',
+  knownForDepartment: string | undefined
+): number {
+  if (requestedRole === 'any') return 0;
+  const roleMatch = resolveRoleMatch(requestedRole, knownForDepartment);
+  if (roleMatch === 'match') {
+    return requestedRole === 'director' ? 30 : 26;
+  }
+  if (roleMatch === 'mismatch') return -10;
+  return 0;
+}
+
+function getKnownForOverlapBoost(tokens: string[], knownForTitles?: string[]): number {
+  if (!tokens.length || !Array.isArray(knownForTitles) || knownForTitles.length === 0) return 0;
+  const haystack = normalizeText(knownForTitles.join(' '));
+  if (!haystack) return 0;
+
+  const matches = tokens.reduce((count, token) => count + (haystack.includes(token) ? 1 : 0), 0);
+  return Math.min(14, matches * 5);
+}
+
+function getPersonFocusBoost(isPersonFocused: boolean, type: SuggestEntityType): number {
+  if (!isPersonFocused) return 0;
+  return type === 'person' ? 22 : -6;
+}
+
 function getYearBoost(queryYear: string | undefined, candidateYear: string | undefined): number {
   if (!queryYear || !candidateYear) return 0;
   return queryYear === candidateYear ? 10 : 0;
@@ -67,13 +98,21 @@ function toConfidence(score: number): number {
 
 export function rankSuggestCandidates(query: string, candidates: SuggestCandidate[]): RankedSuggestCandidate[] {
   const queryYear = extractYear(query);
+  const intent = parsePersonIntent(query);
 
   return candidates
     .map((candidate) => {
       const titleScore = getTitleMatchScore(query, candidate.title);
       const popularityBoost = getPopularityBoost(candidate.popularity);
       const yearBoost = getYearBoost(queryYear, candidate.year);
-      const score = titleScore + popularityBoost + yearBoost;
+      const personFocusBoost = getPersonFocusBoost(intent.isPersonFocused, candidate.type);
+      const roleMatchBoost = candidate.type === 'person'
+        ? getRoleMatchBoost(intent.requestedRole, candidate.known_for_department)
+        : 0;
+      const knownForBoost = candidate.type === 'person'
+        ? getKnownForOverlapBoost(intent.tokens, candidate.known_for_titles)
+        : 0;
+      const score = titleScore + popularityBoost + yearBoost + personFocusBoost + roleMatchBoost + knownForBoost;
 
       return {
         ...candidate,
