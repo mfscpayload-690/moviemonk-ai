@@ -259,6 +259,8 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
   genres: string[];
   overview: string;
   trailer?: string;
+  poster?: string;
+  backdrop?: string;
 }> {
   try {
     const data = await tmdbFetch(`/${mediaType}/${id}`);
@@ -268,6 +270,8 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
     const year = releaseDate ? new Date(releaseDate).getFullYear().toString() : '';
     const genres = (data.genres || []).map((g: any) => g.name);
     const overview = data.overview || '';
+    const poster = buildImageUrl(data.poster_path, 'w500');
+    const backdrop = buildImageUrl(data.backdrop_path, 'w780');
     
     // Try to get trailer from videos
     let trailer = '';
@@ -289,7 +293,9 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
       type: mediaType === 'tv' ? 'show' : 'movie',
       genres,
       overview,
-      trailer
+      trailer,
+      poster,
+      backdrop
     };
   } catch (e) {
     console.warn('TMDB details fetch error:', e);
@@ -444,8 +450,8 @@ export async function getFromTMDB(parsed: ParsedQuery): Promise<MovieData | null
       year: details.year,
       type: details.type,
       genres: details.genres,
-      poster_url: images.poster || '',
-      backdrop_url: images.backdrop || '',
+      poster_url: images.poster || details.poster || images.backdrop || details.backdrop || '',
+      backdrop_url: images.backdrop || details.backdrop || images.poster || details.poster || '',
       trailer_url: details.trailer || '',
       ratings,
       cast,
