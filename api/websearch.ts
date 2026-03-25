@@ -5,6 +5,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { applyCors } from './_utils/cors';
+import { sendApiError } from './_utils/http';
 
 interface SearchResult {
   title: string;
@@ -94,7 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
 
   if (req.headers.origin && !originAllowed) {
-    return res.status(403).json({ ok: false, error: 'Origin is not allowed' });
+    return sendApiError(res, 403, 'forbidden_origin', 'Origin is not allowed');
   }
 
   if (req.method === 'OPTIONS') {
@@ -102,18 +103,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ ok: false, error: 'Only GET supported' });
+    return sendApiError(res, 405, 'method_not_allowed', 'Only GET supported');
   }
 
   const { q, sources = 'all' } = req.query;
 
   if (!q || typeof q !== 'string') {
-    return res.status(400).json({ ok: false, error: 'Missing query parameter "q"' });
+    return sendApiError(res, 400, 'missing_query', 'Missing query parameter "q"');
   }
 
   const query = q.trim();
   if (query.length < 2) {
-    return res.status(400).json({ ok: false, error: 'Query too short' });
+    return sendApiError(res, 400, 'query_too_short', 'Query too short');
   }
 
   // Check cache
@@ -164,10 +165,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(response);
   } catch (error: any) {
     console.error('Web search error:', error);
-    return res.status(500).json({
-      ok: false,
-      error: 'Search failed',
-      details: error.message
-    });
+    return sendApiError(res, 500, 'web_search_failed', 'Search failed', error.message);
   }
 }

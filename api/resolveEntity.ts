@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { applyCors } from './_utils/cors';
+import { sendApiError } from './_utils/http';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -60,13 +61,13 @@ async function tmdb(path: string, params: Record<string, string | number | undef
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
   if (req.headers.origin && !originAllowed) {
-    return res.status(403).json({ ok: false, error: 'Origin is not allowed' });
+    return sendApiError(res, 403, 'forbidden_origin', 'Origin is not allowed');
   }
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Only GET supported' });
+  if (req.method !== 'GET') return sendApiError(res, 405, 'method_not_allowed', 'Only GET supported');
 
   const q = (req.query.q as string) || '';
-  if (!q.trim()) return res.status(400).json({ error: 'Missing q' });
+  if (!q.trim()) return sendApiError(res, 400, 'missing_query', 'Missing q');
 
   const cacheKey = withCacheKey('resolveEntity', { q: q.trim().toLowerCase() });
   const cached = await getCache(cacheKey);
@@ -152,6 +153,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await setCache(cacheKey, response, 60 * 60); // 1 hour
     return res.status(200).json(response);
   } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e.message });
+    return sendApiError(res, 500, 'resolve_entity_failed', e.message || 'Resolve entity failed');
   }
 }

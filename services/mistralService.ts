@@ -1,6 +1,7 @@
 import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
+import { sanitizeMovieData } from './movieDataValidation';
 
 // Use proxy for Mistral calls (API key stays server-side)
 const MISTRAL_PROXY = import.meta.env.DEV
@@ -94,7 +95,7 @@ export async function fetchMovieData(
       return { movieData: null, sources: null, error: 'Mistral returned empty response' };
     }
 
-    const movieData = parseJsonResponse(content);
+    const movieData = sanitizeMovieData(parseJsonResponse(content));
 
     if (!movieData) {
       console.error('Failed to parse Mistral response:', content);
@@ -102,7 +103,7 @@ export async function fetchMovieData(
     }
 
     // Enrich with TMDB data
-    const enriched = await enrichWithTMDB(movieData);
+    const enriched = sanitizeMovieData(await enrichWithTMDB(movieData));
 
     return {
       movieData: enriched || movieData,

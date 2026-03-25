@@ -6,6 +6,7 @@ import { CREATIVE_ONLY_PROMPT } from '../constants';
 import { MovieData } from '../types';
 import { fetchSimilarTitles } from '../services/tmdbService';
 import { applyCors } from './_utils/cors';
+import { sendApiError } from './_utils/http';
 // Note: generateSummary is client-side code, cannot be imported in serverless functions
 // import { generateSummary } from '../services/ai';
 
@@ -439,13 +440,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const q = (req.query.q as string) || '';
 
       if (!q.trim()) {
-        return res.status(400).json({
-          ok: false,
-          query: q,
-          total: 0,
-          results: [],
-          error: 'Missing search query'
-        });
+        return sendApiError(res, 400, 'missing_search_query', 'Missing search query', { query: q });
       }
 
       try {
@@ -522,13 +517,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json(response);
       } catch (searchError: any) {
         console.error('❌ Search error:', searchError);
-        return res.status(500).json({
-          ok: false,
-          query: q,
-          total: 0,
-          results: [],
-          error: searchError.message || 'Search failed'
-        });
+        return sendApiError(res, 500, 'search_failed', searchError.message || 'Search failed', { query: q });
       }
     }
 
@@ -539,7 +528,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const preferredProvider = ((req.query.provider as string) || 'groq').toLowerCase() as ProviderChoice;
 
       if (!id) {
-        return res.status(400).json({ ok: false, error: 'Missing id' });
+        return sendApiError(res, 400, 'missing_id', 'Missing id');
       }
 
       const cacheKey = `details_${mediaType}_${id}_${preferredProvider}`;
@@ -700,7 +689,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       } catch (e: any) {
         console.error('Details fetch error:', e);
-        return res.status(500).json({ ok: false, error: e.message });
+        return sendApiError(res, 500, 'details_fetch_failed', e.message || 'Details fetch failed');
       }
     }
 
@@ -742,13 +731,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { url, title, snippet, type, selectedModel } = req.body;
 
       if (!url || !title || !snippet || !type) {
-        return res.status(400).json({
-          ok: false,
-          title,
-          type,
-          summary: { short: '', long: '' },
-          error: 'Missing required fields: url, title, snippet, type'
-        });
+        return sendApiError(
+          res,
+          400,
+          'missing_parse_fields',
+          'Missing required fields: url, title, snippet, type'
+        );
       }
 
       const cacheKey = withCacheKey('parse_result', { url, type, model: selectedModel });
@@ -777,27 +765,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json(response);
       } catch (parseError: any) {
         console.error('❌ Parse error:', parseError);
-        return res.status(500).json({
-          ok: false,
+        return sendApiError(res, 500, 'parse_failed', parseError.message || 'Parsing failed', {
           title,
-          type,
-          summary: { short: '', long: '' },
-          error: parseError.message || 'Parsing failed'
+          type
         });
       }
     }
 
     // Fallback
-    return res.status(400).json({
-      ok: false,
-      error: `Unknown action: ${action}`
-    });
+    return sendApiError(res, 400, 'unknown_action', `Unknown action: ${action}`);
   } catch (error: any) {
     console.error(`[API ERROR] action='${action}':`, error);
     console.error(`Stack:`, error.stack);
-    return res.status(500).json({
-      ok: false,
-      error: error.message || 'Server error',
+    return sendApiError(res, 500, 'server_error', error.message || 'Server error', {
       action,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });

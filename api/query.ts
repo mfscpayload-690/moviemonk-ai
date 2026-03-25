@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { generateSummary } from '../services/ai';
 import { applyCors } from './_utils/cors';
+import { sendApiError } from './_utils/http';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -26,19 +27,19 @@ function buildBaseUrl(req: VercelRequest) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { originAllowed } = applyCors(req, res, 'GET, POST, OPTIONS');
   if (req.headers.origin && !originAllowed) {
-    return res.status(403).json({ ok: false, error: 'Origin is not allowed' });
+    return sendApiError(res, 403, 'forbidden_origin', 'Origin is not allowed');
   }
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   if (!['GET', 'POST'].includes(req.method || '')) {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    return sendApiError(res, 405, 'method_not_allowed', 'Method not allowed');
   }
 
   const body = req.method === 'POST' ? (req.body || {}) : {};
   const q = (req.query.q as string) || body.q || '';
   const mode = ((req.query.mode as string) || body.mode || 'detailed') as 'short' | 'detailed';
 
-  if (!q.trim()) return res.status(400).json({ ok: false, error: 'Missing q' });
+  if (!q.trim()) return sendApiError(res, 400, 'missing_query', 'Missing q');
 
   const cacheKey = withCacheKey('hybridQuery', { q: q.trim().toLowerCase(), mode });
   const cached = await getCache(cacheKey);
@@ -168,6 +169,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Ambiguous or none
     return res.status(200).json({ ok: true, type: resolved?.type || 'none', data: null, summary: { summary_short: '', summary_long: '' }, sources: [], cached: false });
   } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || 'Unknown error' });
+    return sendApiError(res, 500, 'query_handler_failed', e?.message || 'Unknown error');
   }
 }

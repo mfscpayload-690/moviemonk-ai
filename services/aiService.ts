@@ -10,6 +10,7 @@ import { getFromTMDB } from './tmdbService';
 import { fetchFromBestSource } from './hybridDataService'; // NEW: Multi-source data fetcher
 import { searchWithPerplexity } from './perplexityService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
+import { hasDisplayableTitle } from './movieDataValidation';
 
 const debugLog = (...args: any[]) => {
   if (typeof window !== 'undefined' && import.meta.env.DEV) {
@@ -223,6 +224,14 @@ export async function fetchMovieData(
     if (result.error) {
       lastErrors[provider] = Date.now();
     } else if (result.movieData) {
+      if (!hasDisplayableTitle(result.movieData)) {
+        return {
+          movieData: null,
+          sources: null,
+          error: 'AI response missing required title field'
+        };
+      }
+
       lastErrors[provider] = null;
 
       // Cache AI-only results (shorter TTL would be ideal)
