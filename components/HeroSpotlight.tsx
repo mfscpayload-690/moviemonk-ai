@@ -14,6 +14,8 @@ const formatRating = (rating: number | null) => (
 
 const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const goPrev = () => setActiveIndex((current) => (current - 1 + items.length) % items.length);
+  const goNext = () => setActiveIndex((current) => (current + 1) % items.length);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -85,16 +87,34 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
           </button>
         </div>
         {items.length > 1 && (
-          <div className="discovery-hero-dots" aria-label="Featured titles">
-            {items.map((item, index) => (
-              <button
-                key={`${item.id}-${index}`}
-                type="button"
-                className={`discovery-hero-dot ${index === activeIndex ? 'is-active' : ''}`}
-                onClick={() => setActiveIndex(index)}
-                aria-label={`Show ${item.title}`}
-              />
-            ))}
+          <div className="discovery-hero-nav">
+            <button
+              type="button"
+              className="discovery-hero-arrow"
+              onClick={goPrev}
+              aria-label="Show previous featured title"
+            >
+              ‹
+            </button>
+            <div className="discovery-hero-dots" aria-label="Featured titles">
+              {items.map((item, index) => (
+                <button
+                  key={`${item.id}-${index}`}
+                  type="button"
+                  className={`discovery-hero-dot ${index === activeIndex ? 'is-active' : ''}`}
+                  onClick={() => setActiveIndex(index)}
+                  aria-label={`Show ${item.title}`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              className="discovery-hero-arrow"
+              onClick={goNext}
+              aria-label="Show next featured title"
+            >
+              ›
+            </button>
           </div>
         )}
       </div>

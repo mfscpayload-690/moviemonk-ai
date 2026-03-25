@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<AppView>('discovery');
+  const [isDiscoveryOpening, setIsDiscoveryOpening] = useState(false);
   const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
@@ -186,6 +187,7 @@ const App: React.FC = () => {
       setPersonData(null);
       setSources(null);
       setCurrentQuery('');
+      setIsDiscoveryOpening(false);
     });
     const main = document.querySelector('.main-content');
     if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
@@ -193,8 +195,13 @@ const App: React.FC = () => {
 
   const handleOpenTitle = useCallback(async (
     item: { id: number; mediaType: 'movie' | 'tv' },
-    provider?: AIProvider
+    provider?: AIProvider,
+    options?: { showDiscoveryLoader?: boolean }
   ) => {
+    const showDiscoveryLoader = options?.showDiscoveryLoader === true;
+    if (showDiscoveryLoader) {
+      setIsDiscoveryOpening(true);
+    }
     setIsLoading(true);
     setError(null);
 
@@ -227,6 +234,9 @@ const App: React.FC = () => {
     } catch (err: any) {
       setError(err?.message || 'Failed to open title');
     } finally {
+      if (showDiscoveryLoader) {
+        setIsDiscoveryOpening(false);
+      }
       setIsLoading(false);
     }
   }, [selectedProvider]);
@@ -440,7 +450,18 @@ const App: React.FC = () => {
         {/* Main Content Area - Full width Featured UI */}
         <div className="main-content pb-24">
           {currentView === 'discovery' ? (
-            <DiscoveryPage onOpenTitle={handleOpenTitle} />
+            <>
+              <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item, undefined, { showDiscoveryLoader: true })} />
+              {isDiscoveryOpening && (
+                <div className="discovery-transition-loading" role="status" aria-live="polite">
+                  <div className="discovery-transition-card">
+                    <div className="discovery-transition-spinner" />
+                    <p className="discovery-transition-title">Loading title details</p>
+                    <p className="discovery-transition-subtitle">Fetching cast, ratings, and watch options...</p>
+                  </div>
+                </div>
+              )}
+            </>
           ) : currentView === 'person' && personData ? (
             <PersonDisplay
               data={personData}

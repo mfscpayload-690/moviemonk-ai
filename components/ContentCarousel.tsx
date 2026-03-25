@@ -48,6 +48,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, items, isLoadi
             className="discovery-carousel-arrow"
             onClick={() => scrollByAmount('left')}
             aria-label={`Scroll ${title} left`}
+            disabled={isLoading}
           >
             <ArrowLeftIcon className="w-4 h-4" />
           </button>
@@ -56,6 +57,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({ title, items, isLoadi
             className="discovery-carousel-arrow"
             onClick={() => scrollByAmount('right')}
             aria-label={`Scroll ${title} right`}
+            disabled={isLoading}
           >
             <ArrowRightIcon className="w-4 h-4" />
           </button>

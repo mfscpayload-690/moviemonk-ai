@@ -1920,6 +1920,32 @@ a:focus-visible {
     gap: 0.45rem;
 }
 
+.discovery-hero-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discovery-hero-arrow {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.discovery-hero-arrow:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
 .discovery-hero-dot {
     width: 0.52rem;
     height: 0.52rem;
@@ -1937,11 +1963,15 @@ a:focus-visible {
 .discovery-carousel {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(130px, 1fr);
+    grid-auto-columns: clamp(140px, 42vw, 190px);
     gap: 0.8rem;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
     padding: 0.1rem 0.05rem 0.5rem;
     scrollbar-width: thin;
 }
@@ -1976,6 +2006,11 @@ a:focus-visible {
     background: rgba(255, 255, 255, 0.09);
 }
 
+.discovery-carousel-arrow:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .discovery-poster-card {
     display: inline-flex;
     flex-direction: column;
@@ -1984,6 +2019,7 @@ a:focus-visible {
     border: 0;
     background: transparent;
     gap: 0.42rem;
+    scroll-snap-align: start;
 }
 
 .discovery-poster-frame {
@@ -2117,6 +2153,51 @@ a:focus-visible {
     font-size: 0.88rem;
 }
 
+.discovery-transition-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 180ms ease;
+}
+
+.discovery-transition-card {
+    width: min(90vw, 22rem);
+    background: rgba(12, 12, 12, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
+    padding: 1.15rem 1rem;
+    text-align: center;
+}
+
+.discovery-transition-spinner {
+    width: 2.4rem;
+    height: 2.4rem;
+    margin: 0 auto 0.8rem;
+    border-radius: 999px;
+    border: 3px solid rgba(124, 58, 237, 0.25);
+    border-top-color: rgba(124, 58, 237, 0.92);
+    animation: discoverySpin 780ms linear infinite;
+}
+
+.discovery-transition-title {
+    font-size: 0.98rem;
+    font-weight: 640;
+    color: var(--discovery-text-primary);
+}
+
+.discovery-transition-subtitle {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--discovery-text-secondary);
+}
+
 .discovery-skeleton {
     background: linear-gradient(90deg, #171717 25%, #242424 50%, #171717 75%);
     background-size: 230% 100%;
@@ -2214,6 +2295,16 @@ a:focus-visible {
     }
 }
 
+@keyframes discoverySpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 @media (max-width: 767px) {
     .discovery-section {
         margin-top: 1.5rem;
@@ -2236,7 +2327,7 @@ a:focus-visible {
     }
 
     .discovery-carousel-controls {
-        display: none;
+        display: flex;
     }
 
     .discovery-error {
@@ -2261,7 +2352,7 @@ a:focus-visible {
     }
 
     .discovery-carousel {
-        grid-auto-columns: minmax(165px, 1fr);
+        grid-auto-columns: clamp(165px, 18vw, 220px);
         gap: 0.95rem;
     }
 }
