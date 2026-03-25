@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../../lib/cache';
 import { fetchRelatedPeopleForPerson } from '../../services/tmdbService';
+import { applyCors } from '../_utils/cors';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -17,10 +18,11 @@ async function tmdb(path: string, params: Record<string, string | number | undef
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
+  if (req.headers.origin && !originAllowed) {
+    return res.status(403).json({ ok: false, error: 'Origin is not allowed' });
+  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Only GET supported' });
 
   const { id } = req.query as { id?: string };

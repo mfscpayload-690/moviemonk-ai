@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { generateSummary } from '../services/ai';
+import { applyCors } from './_utils/cors';
+import { sendApiError } from './_utils/http';
+import { beginRequestObservation } from './_utils/observability';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -23,24 +26,37 @@ function buildBaseUrl(req: VercelRequest) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  const obs = beginRequestObservation(req, res, '/api/query');
+  const { originAllowed } = applyCors(req, res, 'GET, POST, OPTIONS');
+  if (req.headers.origin && !originAllowed) {
+    obs.finish(403, { reason: 'forbidden_origin' });
+    return sendApiError(res, 403, 'forbidden_origin', 'Origin is not allowed');
+  }
+  if (req.method === 'OPTIONS') {
+    obs.finish(204, { reason: 'preflight' });
+    return res.status(204).end();
+  }
 
   if (!['GET', 'POST'].includes(req.method || '')) {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    obs.finish(405, { error_code: 'method_not_allowed' });
+    return sendApiError(res, 405, 'method_not_allowed', 'Method not allowed');
   }
 
   const body = req.method === 'POST' ? (req.body || {}) : {};
   const q = (req.query.q as string) || body.q || '';
   const mode = ((req.query.mode as string) || body.mode || 'detailed') as 'short' | 'detailed';
 
-  if (!q.trim()) return res.status(400).json({ ok: false, error: 'Missing q' });
+  if (!q.trim()) {
+    obs.finish(400, { error_code: 'missing_query' });
+    return sendApiError(res, 400, 'missing_query', 'Missing q');
+  }
 
   const cacheKey = withCacheKey('hybridQuery', { q: q.trim().toLowerCase(), mode });
   const cached = await getCache(cacheKey);
-  if (cached) return res.status(200).json({ ...cached, cached: true });
+  if (cached) {
+    obs.finish(200, { cached: true });
+    return res.status(200).json({ ...cached, cached: true });
+  }
 
   try {
     const base = buildBaseUrl(req);
@@ -104,6 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cached: false
       };
       await setCache(cacheKey, response, 60 * 60);
+      obs.finish(200, { entity_type: 'person', cached: false });
       return res.status(200).json(response);
     }
 
@@ -160,12 +177,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cached: false
       };
       await setCache(cacheKey, response, 60 * 60);
+      obs.finish(200, { entity_type: 'movie', cached: false });
       return res.status(200).json(response);
     }
 
     // Ambiguous or none
+    obs.finish(200, { entity_type: resolved?.type || 'none', cached: false });
     return res.status(200).json({ ok: true, type: resolved?.type || 'none', data: null, summary: { summary_short: '', summary_long: '' }, sources: [], cached: false });
   } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || 'Unknown error' });
+    obs.log('query_handler_failed', 'error', { error: e?.message || 'Unknown error' });
+    obs.finish(500, { error_code: 'query_handler_failed' });
+    return sendApiError(res, 500, 'query_handler_failed', e?.message || 'Unknown error');
   }
 }

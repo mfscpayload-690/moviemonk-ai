@@ -10,6 +10,21 @@ import { getFromTMDB } from './tmdbService';
 import { fetchFromBestSource } from './hybridDataService'; // NEW: Multi-source data fetcher
 import { searchWithPerplexity } from './perplexityService';
 import { CREATIVE_ONLY_PROMPT } from '../constants';
+import { hasDisplayableTitle } from './movieDataValidation';
+import {
+  startProviderTimer,
+  recordProviderSuccess,
+  recordProviderError,
+  recordFallback,
+  recordFinalProvider
+} from './observability';
+
+const debugLog = (...args: any[]) => {
+  const isDev = typeof process !== 'undefined' ? process.env.NODE_ENV !== 'production' : false;
+  if (typeof window !== 'undefined' && isDev) {
+    console.log(...args);
+  }
+};
 
 // AIProvider is declared in types.ts
 
@@ -39,7 +54,8 @@ async function tryProvidersInOrder(
   complexity: QueryComplexity,
   chatHistory: ChatMessage[] | undefined,
   order: AIProvider[] = ['groq', 'mistral', 'openrouter'],
-  totalBudgetMs = 10000
+  totalBudgetMs = 10000,
+  requestId = 'unknown'
 ): Promise<FetchResult> {
   const start = Date.now();
   for (const prov of order) {
@@ -49,6 +65,7 @@ async function tryProvidersInOrder(
       return { movieData: null, sources: null, error: 'Timeout: no provider responded in time' };
     }
 
+    const timer = startProviderTimer();
     try {
       let call: Promise<FetchResult>;
       if (prov === 'groq') call = fetchFromGroq(prompt, complexity, chatHistory);
@@ -59,16 +76,29 @@ async function tryProvidersInOrder(
       const result = await withTimeout(call, Math.max(1000, remaining), `${prov} summarization`);
       if (result.movieData) {
         // success
+        recordProviderSuccess(prov, timer, requestId);
+        recordFinalProvider(prov, requestId);
         return { ...result, provider: prov };
       }
+      recordProviderError(prov, timer, requestId, result.error || 'empty_response');
       // If provider returned error, continue to next
     } catch (e: any) {
       // Continue to next provider on timeout/network errors
       lastErrors[prov] = Date.now();
+      recordProviderError(prov, timer, requestId, e?.message || 'provider_call_failed');
+
+      const nextProvider = order[order.indexOf(prov) + 1];
+      if (nextProvider) {
+        recordFallback(prov, nextProvider, requestId, e?.message || 'provider_failure');
+      }
       continue;
     }
   }
   return { movieData: null, sources: null, error: 'All providers failed during summarization' };
+}
+
+function createRequestId(): string {
+  return `ui_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 /**
@@ -106,13 +136,16 @@ export async function fetchMovieData(
   provider: AIProvider,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
+  const requestId = createRequestId();
+  debugLog(JSON.stringify({ event: 'user_request_start', request_id: requestId, provider, complexity, query }));
+
   // Step 1: Parse query
   const parsed = parseQuery(query);
-  console.log('📝 Parsed query:', parsed);
+  debugLog('📝 Parsed query:', parsed);
 
   // Step 2: Auto-detect complexity
   const autoComplexity = shouldUseComplexModel(parsed) ? QueryComplexity.COMPLEX : complexity;
-  console.log(`🎯 Complexity: ${autoComplexity} (user: ${complexity}, auto: ${shouldUseComplexModel(parsed)})`);
+  debugLog(`🎯 Complexity: ${autoComplexity} (user: ${complexity}, auto: ${shouldUseComplexModel(parsed)})`);
 
   // Step 3: Check cache (only for fresh searches without chat history)
   const shouldCache = !chatHistory || chatHistory.length === 0;
@@ -121,7 +154,7 @@ export async function fetchMovieData(
     // Check IndexedDB first
     const indexedDBResult = await getFromIndexedDB(query, provider);
     if (indexedDBResult) {
-      console.log('✅ Cache hit from IndexedDB');
+      debugLog('✅ Cache hit from IndexedDB');
       return {
         ...indexedDBResult,
         error: undefined
@@ -131,7 +164,7 @@ export async function fetchMovieData(
     // Check localStorage second
     const cached = getCachedResponse(query, provider);
     if (cached) {
-      console.log('✅ Cache hit from localStorage');
+      debugLog('✅ Cache hit from localStorage');
       // Also save to IndexedDB for longer persistence
       saveToIndexedDB(query, provider, cached.movieData, cached.sources);
       return {
@@ -149,14 +182,14 @@ export async function fetchMovieData(
 
   try {
     // Step 4: Try HYBRID source (TVMaze for TV, TMDB for movies) - IMPROVED!
-    console.log('🔍 Searching best data source (TVMaze for TV, TMDB for movies)...');
+    debugLog('🔍 Searching best data source (TVMaze for TV, TMDB for movies)...');
     const hybridResult = await fetchFromBestSource(parsed);
 
     if (hybridResult.data) {
-      console.log(`✅ ${hybridResult.source.toUpperCase()}: Found factual data (confidence: ${(hybridResult.confidence * 100).toFixed(0)}%), requesting AI summaries...`);
+      debugLog(`✅ ${hybridResult.source.toUpperCase()}: Found factual data (confidence: ${(hybridResult.confidence * 100).toFixed(0)}%), requesting AI summaries...`);
 
       // Use AI to fill in creative content only
-      const enriched = await enrichWithAIContent(hybridResult.data, autoComplexity, provider, chatHistory);
+      const enriched = await enrichWithAIContent(hybridResult.data, autoComplexity, provider, requestId, chatHistory);
 
       if (enriched.movieData) {
         // Add data source info to AI notes
@@ -186,14 +219,14 @@ export async function fetchMovieData(
     }
 
     // Step 5: TMDB not found, try Perplexity web search
-    console.log('🔍 TMDB not found, trying Perplexity web search...');
+    debugLog('🔍 TMDB not found, trying Perplexity web search...');
     const perplexityData = await searchWithPerplexity(parsed);
 
     if (perplexityData) {
-      console.log('✅ Perplexity: Found data from web, requesting AI summaries...');
+      debugLog('✅ Perplexity: Found data from web, requesting AI summaries...');
 
       // Use AI to fill in creative content
-      const enriched = await enrichWithAIContent(perplexityData, autoComplexity, provider, chatHistory);
+      const enriched = await enrichWithAIContent(perplexityData, autoComplexity, provider, requestId, chatHistory);
 
       if (enriched.movieData) {
         // Cache web search + AI results
@@ -210,13 +243,21 @@ export async function fetchMovieData(
     }
 
     // Step 6: Last resort - full AI generation (legacy fallback)
-    console.log('⚠️  No TMDB/Perplexity data, falling back to pure AI...');
-    const result = await fallbackToAI(query, autoComplexity, provider, chatHistory);
+    debugLog('⚠️  No TMDB/Perplexity data, falling back to pure AI...');
+    const result = await fallbackToAI(query, autoComplexity, provider, requestId, chatHistory);
 
     // Track errors
     if (result.error) {
       lastErrors[provider] = Date.now();
     } else if (result.movieData) {
+      if (!hasDisplayableTitle(result.movieData)) {
+        return {
+          movieData: null,
+          sources: null,
+          error: 'AI response missing required title field'
+        };
+      }
+
       lastErrors[provider] = null;
 
       // Cache AI-only results (shorter TTL would be ideal)
@@ -246,6 +287,7 @@ async function enrichWithAIContent(
   factualData: MovieData,
   complexity: QueryComplexity,
   provider: AIProvider,
+  requestId: string,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
   try {
@@ -266,7 +308,7 @@ Provide engaging creative content (summaries, spoilers, trivia) for this title.`
       ? [provider, ...preferredOrder.filter((p) => p !== provider)]
       : preferredOrder;
 
-    aiResult = await tryProvidersInOrder(creativePrompt, complexity, chatHistory, order, 10000);
+    aiResult = await tryProvidersInOrder(creativePrompt, complexity, chatHistory, order, 10000, requestId);
 
     if (aiResult.movieData) {
       // Merge: Keep factual data from TMDB/Perplexity, add AI creative content
@@ -311,6 +353,7 @@ async function fallbackToAI(
   query: string,
   complexity: QueryComplexity,
   provider: AIProvider,
+  requestId: string,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
   let result: FetchResult;
@@ -327,23 +370,31 @@ async function fallbackToAI(
     // OpenRouter fallback chain
     if (!result.movieData) {
       lastErrors[provider] = Date.now();
+      recordFallback('openrouter', 'mistral', requestId, result.error || 'openrouter_failed');
 
       const mistral = await fetchFromMistral(query, complexity, chatHistory);
       if (mistral.movieData) {
+        recordFinalProvider('mistral', requestId);
         return {
           ...mistral,
           error: `OpenRouter failed, used Mistral: ${result.error || 'unknown'}`
         };
       }
 
+      recordFallback('mistral', 'groq', requestId, mistral.error || 'mistral_failed');
       const groq = await fetchFromGroq(query, complexity, chatHistory);
       if (groq.movieData) {
+        recordFinalProvider('groq', requestId);
         return {
           ...groq,
           error: `OpenRouter & Mistral failed, used Groq: ${result.error || 'unknown'}`
         };
       }
     }
+  }
+
+  if (result.movieData && result.provider) {
+    recordFinalProvider(result.provider, requestId);
   }
 
   return result;

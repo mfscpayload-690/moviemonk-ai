@@ -11,6 +11,12 @@ import { Logo } from './components/icons';
 import { track } from '@vercel/analytics/react';
 import { useWatchlists } from './hooks/useWatchlists';
 
+const debugLog = (...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.log(...args);
+  }
+};
+
 const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: 'system-1', role: 'system', content: 'Ready to explore! Ask about any movie or show.' }
@@ -198,7 +204,7 @@ const App: React.FC = () => {
 
     try {
       // STEP 1: Search using TMDB (primary) and Perplexity (fallback)
-      console.log('📡 Fetching search results from TMDB/Perplexity...');
+      debugLog('📡 Fetching search results from TMDB/Perplexity...');
       const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(message)}`);
       const searchData = await searchRes.json();
 
@@ -210,7 +216,7 @@ const App: React.FC = () => {
 
       // STEP 2: If multiple results, show disambiguation modal
       if (searchData.results.length > 1) {
-        console.log('📋 Multiple results found, showing disambiguation modal');
+        debugLog('📋 Multiple results found, showing disambiguation modal');
         setAmbiguous(
           searchData.results.map((r: any) => ({
             id: r.id,
@@ -230,7 +236,7 @@ const App: React.FC = () => {
 
       // STEP 3: If single result, proceed to fetch data using hybrid service
       const selectedResult = searchData.results[0];
-      console.log('✅ Single clear match found:', selectedResult.title);
+      debugLog('✅ Single clear match found:', selectedResult.title);
 
       // Select best model for this query type
       setLoadingProgress('🤖 Selecting best AI model...');
@@ -241,7 +247,7 @@ const App: React.FC = () => {
       const selectedModel: AIProvider = (modelData.selectedModel as AIProvider) || provider;
       setSelectedProvider(selectedModel);
 
-      console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
+      debugLog(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
 
       // Check if it's a person query - use dedicated endpoint
       if (selectedResult.type === 'person') {
@@ -341,7 +347,7 @@ const App: React.FC = () => {
       const modelData = await modelRes.json();
       const selectedModel = modelData.selectedModel || 'groq';
 
-      console.log(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
+      debugLog(`🧠 Selected model: ${selectedModel} (${modelData.reason})`);
       setSelectedProvider(selectedModel as AIProvider);
 
       setLoadingProgress('🔍 Fetching full details...');

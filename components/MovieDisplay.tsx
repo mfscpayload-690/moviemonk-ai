@@ -146,7 +146,6 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
                 className={`w-full h-full object-cover transition-opacity duration-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                 onError={handleError}
                 onLoad={handleLoad}
-                crossOrigin="anonymous"
             />
         </div>
     );
@@ -212,6 +211,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
     const [customSavedTitle, setCustomSavedTitle] = useState('');
     const [showRelatedModal, setShowRelatedModal] = useState(false);
+    const heroPosterSrc = movie?.poster_url || movie?.backdrop_url || movie?.extra_images?.[0] || '';
     const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
     const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
 
@@ -393,7 +393,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         {/* Poster Card - Shows Above text on mobile now */}
                         <div className="flex-shrink-0 animate-fade-in will-change-transform" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
                             <ImageWithFallback
-                                src={movie.poster_url}
+                                src={heroPosterSrc}
                                 alt={`${movie.title} poster`}
                                 className="w-40 sm:w-40 md:w-56 lg:w-64 rounded-lg md:rounded-xl shadow-2xl border-2 md:border-4 border-white/20 aspect-[2/3] poster-hover-effect"
                             />

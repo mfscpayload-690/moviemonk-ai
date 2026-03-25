@@ -1,6 +1,7 @@
 import { ChatMessage, MovieData, QueryComplexity, FetchResult } from '../types';
 import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
+import { sanitizeMovieData } from './movieDataValidation';
 
 // Use serverless proxy endpoint instead of direct API call
 const PROXY_URL = import.meta.env.DEV 
@@ -124,12 +125,12 @@ export async function fetchMovieData(
     const json = await res.json();
     const text: string = json?.choices?.[0]?.message?.content ?? '';
 
-    const parsed = parseJsonResponse(text);
+    const parsed = sanitizeMovieData(parseJsonResponse(text));
     if (!parsed) return { movieData: null, sources: null, error: 'Failed to parse OpenRouter JSON response' };
 
     try {
       if (!parsed.poster_url || !parsed.backdrop_url || !parsed.extra_images || parsed.extra_images.length === 0) {
-        const enriched = await enrichWithTMDB(parsed);
+        const enriched = sanitizeMovieData(await enrichWithTMDB(parsed));
         return { movieData: enriched, sources: null };
       }
     } catch (e) {

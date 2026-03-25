@@ -6,8 +6,36 @@
 
 import { MovieData, ChatMessage, QueryComplexity, FetchResult } from '../types';
 import { ParsedQuery, formatForAIPrompt, parseQuery } from './queryParser';
+import { sanitizeMovieData } from './movieDataValidation';
 
 const PERPLEXITY_API = 'https://api.perplexity.ai/chat/completions';
+
+async function fetchViaServerDetails(parsed: ParsedQuery): Promise<MovieData | null> {
+  try {
+    const query = parsed.originalQuery || parsed.title;
+    const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(query)}`);
+    if (!searchRes.ok) return null;
+
+    const searchJson: any = await searchRes.json();
+    const best = (searchJson?.results || []).find(
+      (item: any) => item && item.type === 'movie' && Number.isFinite(item.id)
+    );
+
+    if (!best) return null;
+
+    const mediaType = best.media_type === 'tv' ? 'tv' : 'movie';
+    const detailsRes = await fetch(
+      `/api/ai?action=details&id=${best.id}&media_type=${mediaType}&provider=perplexity`
+    );
+
+    if (!detailsRes.ok) return null;
+
+    const details: any = await detailsRes.json();
+    return sanitizeMovieData(details);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Fetch movie data using Perplexity (matches interface of other services)
@@ -17,6 +45,25 @@ export async function fetchMovieData(
   complexity: QueryComplexity,
   chatHistory?: ChatMessage[]
 ): Promise<FetchResult> {
+  if (typeof window !== 'undefined') {
+    const parsed = parseQuery(query);
+    const movieData = await fetchViaServerDetails(parsed);
+
+    if (!movieData) {
+      return {
+        movieData: null,
+        sources: null,
+        error: 'Perplexity fallback did not return a result'
+      };
+    }
+
+    return {
+      movieData,
+      sources: null,
+      provider: 'perplexity'
+    };
+  }
+
   try {
     const apiKey = process.env.PERPLEXITY_API_KEY;
     if (!apiKey) {
@@ -105,13 +152,21 @@ Return ONLY valid JSON with this structure:
       };
     }
 
-    const movieData = parsePerplexityResponse(content);
-
-    if (!movieData || movieData.error) {
+    const rawMovieData = parsePerplexityResponse(content);
+    if (!rawMovieData || rawMovieData.error) {
       return {
         movieData: null,
         sources: null,
         error: 'Movie not found or parsing failed'
+      };
+    }
+
+    const movieData = sanitizeMovieData(rawMovieData);
+    if (!movieData) {
+      return {
+        movieData: null,
+        sources: null,
+        error: 'Movie response was invalid after normalization'
       };
     }
 
@@ -143,6 +198,10 @@ Return ONLY valid JSON with this structure:
  * Search web using Perplexity for movie/show information
  */
 export async function searchWithPerplexity(parsed: ParsedQuery): Promise<MovieData | null> {
+  if (typeof window !== 'undefined') {
+    return fetchViaServerDetails(parsed);
+  }
+
   try {
     const apiKey = process.env.PERPLEXITY_API_KEY;
     if (!apiKey) {
@@ -227,10 +286,14 @@ If not found, return: {"error": "not_found"}`;
     }
 
     // Parse JSON response (avoid shadowing function parameter "parsed")
-    const parsedResponse = parsePerplexityResponse(content);
+    const rawParsedResponse = parsePerplexityResponse(content);
+    if (!rawParsedResponse || rawParsedResponse.error === 'not_found') {
+      console.log(`❌ Perplexity: "${rawParsedResponse?.title || parsed.title}" not found on web`);
+      return null;
+    }
 
-    if (!parsedResponse || parsedResponse.error === 'not_found') {
-      console.log(`❌ Perplexity: "${parsedResponse?.title || parsed.title}" not found on web`);
+    const parsedResponse = sanitizeMovieData(rawParsedResponse);
+    if (!parsedResponse) {
       return null;
     }
 

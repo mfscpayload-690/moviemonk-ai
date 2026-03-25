@@ -4,6 +4,9 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
+import { applyCors } from './_utils/cors';
+import { sendApiError } from './_utils/http';
+import { beginRequestObservation } from './_utils/observability';
 
 interface SearchResult {
   title: string;
@@ -90,33 +93,42 @@ async function searchIMDB(query: string): Promise<SearchResult[]> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const obs = beginRequestObservation(req, res, '/api/websearch');
+  const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
+
+  if (req.headers.origin && !originAllowed) {
+    obs.finish(403, { reason: 'forbidden_origin' });
+    return sendApiError(res, 403, 'forbidden_origin', 'Origin is not allowed');
+  }
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    obs.finish(204, { reason: 'preflight' });
+    return res.status(204).end();
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ ok: false, error: 'Only GET supported' });
+    obs.finish(405, { error_code: 'method_not_allowed' });
+    return sendApiError(res, 405, 'method_not_allowed', 'Only GET supported');
   }
 
   const { q, sources = 'all' } = req.query;
 
   if (!q || typeof q !== 'string') {
-    return res.status(400).json({ ok: false, error: 'Missing query parameter "q"' });
+    obs.finish(400, { error_code: 'missing_query' });
+    return sendApiError(res, 400, 'missing_query', 'Missing query parameter "q"');
   }
 
   const query = q.trim();
   if (query.length < 2) {
-    return res.status(400).json({ ok: false, error: 'Query too short' });
+    obs.finish(400, { error_code: 'query_too_short' });
+    return sendApiError(res, 400, 'query_too_short', 'Query too short');
   }
 
   // Check cache
   const cacheKey = withCacheKey('websearch', { q: query.toLowerCase(), sources: String(sources) });
   const cached = await getCache<any>(cacheKey);
   if (cached) {
+    obs.finish(200, { cached: true, total: cached.total || 0 });
     return res.status(200).json({ ...cached, cached: true });
   }
 
@@ -158,13 +170,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Cache for 1 hour
     await setCache(cacheKey, response, 3600);
 
+    obs.finish(200, { cached: false, total: response.total });
     return res.status(200).json(response);
   } catch (error: any) {
     console.error('Web search error:', error);
-    return res.status(500).json({
-      ok: false,
-      error: 'Search failed',
-      details: error.message
-    });
+    obs.log('web_search_failed', 'error', { error: error?.message || 'Search failed' });
+    obs.finish(500, { error_code: 'web_search_failed' });
+    return sendApiError(res, 500, 'web_search_failed', 'Search failed', error.message);
   }
 }
