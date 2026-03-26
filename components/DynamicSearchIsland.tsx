@@ -13,7 +13,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
 import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-react';
 import { QueryComplexity, SuggestionItem } from '../types';
-import { Logo, SearchIcon, SendIcon } from './icons';
+import { Logo, SearchIcon, SendIcon, XMarkIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import '../styles/dynamic-search-island.css';
@@ -363,19 +363,15 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
       id="search-island-content"
     >
       <div className="island-content">
-        {/* Header with close button */}
-        <div className="island-header">
-          <div className="header-title">
-            <SearchIcon className="w-5 h-5" />
-            <span>Find Your Next Watch</span>
-          </div>
+        {/* Minimal header with just the close button */}
+        <div className="island-header-minimal">
           <button
             className="close-btn"
             onClick={handleCollapse}
             aria-label="Close search (Esc)"
             title="Close (Esc)"
           >
-            ✕
+            <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
@@ -495,8 +491,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             </div>
           )}
 
-          {/* Mode Selector: Two Button Tabs */}
-          <div className="mode-selector">
+          {/* Mode Selector: Single-line pill toggle */}
+          <div className="mode-selector-pill">
             <button
               type="button"
               onClick={() => {
@@ -504,15 +500,12 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 localStorage.setItem(STORAGE_KEY_ANALYSIS, 'quick');
                 track('analysis_mode_toggled', { from: analysisMode, to: 'quick', source: 'search_island' });
               }}
-              className={`mode-btn ${analysisMode === 'quick' ? 'active' : ''}`}
+              className={`mode-pill-btn ${analysisMode === 'quick' ? 'active' : ''}`}
               aria-pressed={analysisMode === 'quick'}
               title="Fast results with summary"
             >
-              <Zap size={20} className="mode-icon" />
-              <div className="mode-content">
-                <span className="mode-label">Quick Search</span>
-                <span className="mode-desc">Find a movie fast</span>
-              </div>
+              <Zap size={14} className="mode-icon-inline" />
+              <span>Quick Search</span>
             </button>
 
             <button
@@ -522,31 +515,13 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 localStorage.setItem(STORAGE_KEY_ANALYSIS, 'complex');
                 track('analysis_mode_toggled', { from: analysisMode, to: 'complex', source: 'search_island' });
               }}
-              className={`mode-btn ${analysisMode === 'complex' ? 'active' : ''}`}
+              className={`mode-pill-btn ${analysisMode === 'complex' ? 'active' : ''}`}
               aria-pressed={analysisMode === 'complex'}
               title="Detailed analysis with cast, crew, ratings"
             >
-              <FlaskConical size={20} className="mode-icon" />
-              <div className="mode-content">
-                <span className="mode-label">Deep Dive</span>
-                <span className="mode-desc">Analyze in detail</span>
-              </div>
+              <FlaskConical size={14} className="mode-icon-inline" />
+              <span>Deep Dive</span>
             </button>
-          </div>
-
-          {/* Helper text */}
-          <div className="mode-helper-text">
-            {analysisMode === 'quick' ? (
-              <span className="mode-helper-row">
-                <Zap size={14} className="mode-helper-icon" />
-                <span>Get instant results with key details and summaries</span>
-              </span>
-            ) : (
-              <span className="mode-helper-row">
-                <FlaskConical size={14} className="mode-helper-icon" />
-                <span>Full analysis with cast, crew, ratings, and web context</span>
-              </span>
-            )}
           </div>
 
 
