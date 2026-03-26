@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DiscoveryGenre, DiscoveryItem } from '../types';
 import {
   fetchByGenre,
+  fetchDiscoverMovie,
+  fetchDiscoverTv,
   fetchGenreList,
+  fetchOnTheAir,
   fetchNowPlaying,
   fetchPopular,
   fetchTopRated,
@@ -46,24 +49,87 @@ export function pickHeroItems(items: DiscoveryItem[], limit = 5): DiscoveryItem[
   return items.filter((item) => item.backdrop_url).slice(0, limit);
 }
 
+function mergeUniqueDiscoveryItems(...groups: DiscoveryItem[][]): DiscoveryItem[] {
+  const seen = new Set<string>();
+  const merged: DiscoveryItem[] = [];
+
+  groups.flat().forEach((item) => {
+    const key = `${item.media_type}-${item.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(item);
+  });
+
+  return merged;
+}
+
 export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<DiscoverySnapshot> {
   const [
     trendingAll,
     trendingMovies,
-    popularTv,
-    topRatedMovies,
-    nowPlaying,
+    trendingTv,
     upcoming,
-    movieGenres
+    nowPlaying,
+    popularTv,
+    onTheAir,
+    topRatedMovies,
+    topRatedTv,
+    movieGenres,
+    tvGenres
   ] = await Promise.all([
     fetchTrending('all', 'week', { signal }),
     fetchTrending('movie', 'week', { signal }),
-    fetchPopular('tv', { signal }),
-    fetchTopRated('movie', { signal }),
-    fetchNowPlaying({ signal }),
+    fetchTrending('tv', 'week', { signal }),
     fetchUpcoming({ signal }),
-    fetchGenreList('movie', { signal })
+    fetchNowPlaying({ signal }),
+    fetchPopular('tv', { signal }),
+    fetchOnTheAir({ signal }),
+    fetchTopRated('movie', { signal }),
+    fetchTopRated('tv', { signal }),
+    fetchGenreList('movie', { signal }),
+    fetchGenreList('tv', { signal })
   ]);
+
+  const dramaGenreId = tvGenres.find((genre) => genre.name === 'Drama')?.id;
+
+  const [bollywoodMovies, asianMovies] = await Promise.all([
+    fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal }),
+    fetchDiscoverMovie({ withOriginalLanguage: 'ja' }, { signal })
+  ]);
+
+  const [asianNowPlayingCandidates, bollywoodNowPlayingCandidates] = await Promise.all([
+    fetchDiscoverMovie({ withOriginalLanguage: 'ko' }, { signal }),
+    fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal })
+  ]);
+
+  const [koreanSeries, japaneseSeries, chineseSeries, thaiSeries] = await Promise.all([
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ko' }, { signal }),
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ja' }, { signal }),
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'zh' }, { signal }),
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'th' }, { signal })
+  ]);
+
+  const kDramaAndAsianSeries = mergeUniqueDiscoveryItems(
+    koreanSeries,
+    japaneseSeries,
+    chineseSeries,
+    thaiSeries
+  ).slice(0, 24);
+
+  const globalWebSeriesAndTv = mergeUniqueDiscoveryItems(onTheAir, topRatedTv, popularTv, trendingTv).slice(0, 24);
+  const trendingMoviesMixed = mergeUniqueDiscoveryItems(
+    trendingMovies.slice(0, 18),
+    bollywoodMovies.slice(0, 1),
+    asianMovies.slice(0, 1)
+  ).slice(0, 20);
+
+  const nowPlayingMixed = mergeUniqueDiscoveryItems(
+    nowPlaying.slice(0, 16),
+    bollywoodNowPlayingCandidates.slice(0, 2),
+    asianNowPlayingCandidates.slice(0, 2)
+  ).slice(0, 20);
+
+  const topRatedMoviesAndSeries = mergeUniqueDiscoveryItems(topRatedMovies, topRatedTv).slice(0, 24);
 
   const curatedGenres = getCuratedMovieGenres(movieGenres);
   const selectedGenre = curatedGenres[0] || movieGenres[0] || null;
@@ -74,11 +140,12 @@ export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<Disco
   return {
     heroItems: pickHeroItems(trendingAll),
     sections: [
-      { key: 'trending-movies', title: 'Trending Movies', items: trendingMovies },
-      { key: 'popular-tv', title: 'Popular TV Shows', items: popularTv },
-      { key: 'top-rated-movies', title: 'Top Rated Movies', items: topRatedMovies },
-      { key: 'now-playing', title: 'Now Playing', items: nowPlaying },
-      { key: 'upcoming', title: 'Upcoming', items: upcoming }
+      { key: 'trending-movies', title: 'Trending Movies', items: trendingMoviesMixed },
+      { key: 'upcoming', title: 'Upcoming', items: upcoming },
+      { key: 'now-playing-mix', title: 'Now Playing', items: nowPlayingMixed },
+      { key: 'top-rated-movies-series', title: 'Top Rated Movies & Series', items: topRatedMoviesAndSeries },
+      { key: 'global-web-series-tv', title: 'Global Web Series and TV Shows', items: globalWebSeriesAndTv },
+      { key: 'kdrama-asian-series', title: 'K-Drama and Asian Series', items: kDramaAndAsianSeries }
     ],
     movieGenres: curatedGenres,
     selectedGenre,

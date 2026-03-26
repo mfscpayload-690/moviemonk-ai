@@ -16,6 +16,7 @@ import { QueryComplexity, SuggestionItem } from '../types';
 import { SearchIcon, SendIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
+import { useDebounce } from '../hooks/useDebounce';
 import '../styles/dynamic-search-island.css';
 
 // Helper to get icon component by suggestion type
@@ -46,7 +47,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [inlinePrompt, setInlinePrompt] = useState<string | null>(null);
-  
+
+  const debouncedQuery = useDebounce(query, SUGGEST_DEBOUNCE_MS);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
@@ -232,7 +235,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   useEffect(() => {
     if (!isExpanded) return;
 
-    const trimmed = query.trim();
+    const trimmed = debouncedQuery.trim();
     latestQueryRef.current = trimmed;
 
     if (trimmed.length < 2) {
@@ -243,10 +246,12 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
       return;
     }
 
-    const timer = window.setTimeout(async () => {
+    let isCancelled = false;
+
+    const loadSuggestions = async () => {
       setIsSuggesting(true);
       const next = await fetchSuggestions(trimmed);
-      if (latestQueryRef.current !== trimmed) {
+      if (isCancelled || latestQueryRef.current !== trimmed) {
         setIsSuggesting(false);
         return;
       }
@@ -255,12 +260,14 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
       setShowSuggestions(next.length > 0);
       setHighlightedIndex(next.length > 0 ? 0 : -1);
       setIsSuggesting(false);
-    }, SUGGEST_DEBOUNCE_MS);
+    };
+
+    loadSuggestions();
 
     return () => {
-      window.clearTimeout(timer);
+      isCancelled = true;
     };
-  }, [query, isExpanded]);
+  }, [debouncedQuery, isExpanded]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {

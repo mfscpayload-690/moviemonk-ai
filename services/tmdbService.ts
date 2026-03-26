@@ -139,6 +139,52 @@ export async function fetchByGenre(
   return fetchDiscoveryList(`/discover/${mediaType}`, { with_genres: genreId }, options);
 }
 
+type DiscoverTvOptions = {
+  withGenres?: number[];
+  withOriginalLanguage?: string;
+  sortBy?: 'popularity.desc' | 'vote_average.desc' | 'first_air_date.desc';
+  includeAdult?: boolean;
+};
+
+type DiscoverMovieOptions = {
+  withGenres?: number[];
+  withOriginalLanguage?: string;
+  sortBy?: 'popularity.desc' | 'vote_average.desc' | 'release_date.desc';
+  includeAdult?: boolean;
+};
+
+export async function fetchDiscoverMovie(
+  discoverOptions: DiscoverMovieOptions = {},
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList(
+    '/discover/movie',
+    {
+      with_genres: discoverOptions.withGenres?.length ? discoverOptions.withGenres.join(',') : undefined,
+      with_original_language: discoverOptions.withOriginalLanguage,
+      sort_by: discoverOptions.sortBy || 'popularity.desc',
+      include_adult: discoverOptions.includeAdult ? 'true' : 'false'
+    },
+    options
+  );
+}
+
+export async function fetchDiscoverTv(
+  discoverOptions: DiscoverTvOptions = {},
+  options: TMDBFetchOptions = {}
+): Promise<DiscoveryItem[]> {
+  return fetchDiscoveryList(
+    '/discover/tv',
+    {
+      with_genres: discoverOptions.withGenres?.length ? discoverOptions.withGenres.join(',') : undefined,
+      with_original_language: discoverOptions.withOriginalLanguage,
+      sort_by: discoverOptions.sortBy || 'popularity.desc',
+      include_adult: discoverOptions.includeAdult ? 'true' : 'false'
+    },
+    options
+  );
+}
+
 export async function fetchGenreList(
   mediaType: 'movie' | 'tv',
   options: TMDBFetchOptions = {}

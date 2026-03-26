@@ -5,6 +5,7 @@ import DiscoveryPage from './components/DiscoveryPage';
 import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
+import LoadingScreen from './components/LoadingScreen';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { ClipboardIcon, EditIcon, FolderIcon, Logo, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
@@ -50,10 +51,20 @@ const App: React.FC = () => {
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
   const [draggedItem, setDraggedItem] = useState<{ folderId: string; itemId: string } | null>(null);
 
-  const scrollMainContentToTop = useCallback((behavior: ScrollBehavior = 'smooth') => {
+  const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
     if (main instanceof HTMLElement) {
-      main.scrollTo({ top: 0, behavior });
+      let resolvedBehavior: ScrollBehavior;
+      if (behavior === 'contextual') {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isMobileViewport = window.matchMedia('(max-width: 767px)').matches;
+        const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+        resolvedBehavior = prefersReducedMotion || isMobileViewport || isCoarsePointer ? 'auto' : 'smooth';
+      } else {
+        resolvedBehavior = behavior;
+      }
+
+      main.scrollTo({ top: 0, behavior: resolvedBehavior });
     }
   }, []);
 
@@ -186,7 +197,7 @@ const App: React.FC = () => {
       if (titleHint || data?.person?.name) {
         setCurrentQuery(titleHint || data?.person?.name || '');
       }
-      scrollMainContentToTop('auto');
+      scrollMainContentToTop();
     } catch (e) {
       setError('Failed to load person details');
     } finally {
@@ -261,7 +272,7 @@ const App: React.FC = () => {
   ) => {
     setIsLoading(true);
     setError(null);
-    scrollMainContentToTop('auto');
+    scrollMainContentToTop();
 
     const activeProvider = provider || selectedProvider || 'groq';
     setSelectedProvider(activeProvider);
@@ -388,7 +399,7 @@ const App: React.FC = () => {
             setSources(result.sources || []);
             setCurrentView('movie');
           });
-          scrollMainContentToTop('auto');
+          scrollMainContentToTop();
         } else {
           throw new Error(result.error || 'Failed to load data');
         }
@@ -549,21 +560,16 @@ const App: React.FC = () => {
         </div>
 
       </div >
+      {/* Determine loading screen type based on current view and data */}
       {globalLoadingVisible && (
-        <div
-          className="fixed inset-0 z-[3500] bg-brand-bg/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading movie details"
-        >
-          <div className="glass-panel px-6 py-5 rounded-2xl shadow-2xl border border-white/15 flex flex-col items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
-              <div className="w-14 h-14 rounded-full border-4 border-brand-primary/25 border-t-brand-primary animate-spin" />
-            </div>
-            <p className="text-sm sm:text-base font-semibold text-brand-text-light">Loading title details...</p>
-          </div>
-        </div>
+        <LoadingScreen
+          visible={globalLoadingVisible}
+          type={
+            personData ? 'person' : 
+            movieData?.tvShow ? 'tv' : 
+            'movie'
+          }
+        />
       )}
       {/* Summary Modal */}
       {
