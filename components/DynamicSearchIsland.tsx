@@ -13,7 +13,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
 import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-react';
 import { QueryComplexity, SuggestionItem } from '../types';
-import { Logo, SearchIcon, SendIcon } from './icons';
+import { SearchIcon, SendIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import '../styles/dynamic-search-island.css';
@@ -354,15 +354,17 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
   // Expanded panel state
   return (
-    <div
-      ref={islandRef}
-      className="search-island expanded"
-      role="dialog"
-      aria-label="Search movies and shows"
-      aria-modal="false"
-      id="search-island-content"
-    >
-      <div className="island-content">
+    <>
+      <div className="search-island-backdrop" onClick={handleCollapse} aria-hidden="true" />
+      <div
+        ref={islandRef}
+        className="search-island expanded"
+        role="dialog"
+        aria-label="Search movies and shows"
+        aria-modal="false"
+        id="search-island-content"
+      >
+        <div className="island-content">
         {/* Search Input */}
         <form onSubmit={handleSubmit} className="search-form">
           <div className="search-input-wrapper">
@@ -480,7 +482,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
           )}
 
           {/* Mode Selector: Single-line pill toggle */}
-          <div className="mode-selector-pill">
+          <div className="mode-selector-pill" role="tablist" aria-label="Search mode">
             <button
               type="button"
               onClick={() => {
@@ -489,11 +491,17 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 track('analysis_mode_toggled', { from: analysisMode, to: 'quick', source: 'search_island' });
               }}
               className={`mode-pill-btn ${analysisMode === 'quick' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={analysisMode === 'quick'}
               aria-pressed={analysisMode === 'quick'}
               title="Fast results with summary"
+              aria-label="Quick Search"
             >
               <Zap size={14} className="mode-icon-inline" />
-              <span>Quick Search</span>
+              <span className="mode-label-group">
+                <span className="mode-label-inline">Quick</span>
+                <span className="mode-desc-inline">Fast summary</span>
+              </span>
             </button>
 
             <button
@@ -504,25 +512,23 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 track('analysis_mode_toggled', { from: analysisMode, to: 'complex', source: 'search_island' });
               }}
               className={`mode-pill-btn ${analysisMode === 'complex' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={analysisMode === 'complex'}
               aria-pressed={analysisMode === 'complex'}
               title="Detailed analysis with cast, crew, ratings"
+              aria-label="Deep Dive"
             >
               <FlaskConical size={14} className="mode-icon-inline" />
-              <span>Deep Dive</span>
+              <span className="mode-label-group">
+                <span className="mode-label-inline">Deep</span>
+                <span className="mode-desc-inline">Richer analysis</span>
+              </span>
             </button>
           </div>
-
-
         </form>
-
-        {/* Keyboard hints at bottom */}
-        <div className="search-hints">
-          <span><kbd>↑↓</kbd> navigate</span>
-          <span><kbd>⏎</kbd> select</span>
-          <span><kbd>Esc</kbd> close</span>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
