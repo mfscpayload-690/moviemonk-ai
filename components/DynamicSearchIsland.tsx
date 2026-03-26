@@ -352,13 +352,15 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     );
   }
 
+  const shouldExpandForResults = query.trim().length >= 2 || isSuggesting || (showSuggestions && suggestions.length > 0);
+
   // Expanded panel state
   return (
     <>
       <div className="search-island-backdrop" onClick={handleCollapse} aria-hidden="true" />
       <div
         ref={islandRef}
-        className="search-island expanded"
+        className={`search-island expanded ${shouldExpandForResults ? 'has-results' : 'is-compact'}`}
         role="dialog"
         aria-label="Search movies and shows"
         aria-modal="false"
