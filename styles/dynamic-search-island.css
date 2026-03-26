@@ -114,7 +114,8 @@
   left: 50%;
   transform: translateX(-50%);
   width: min(540px, calc(100vw - 1.5rem));
-  max-height: 85vh;
+  min-height: 26rem;
+  max-height: 90vh;
   border-radius: 1.125rem;
   background: linear-gradient(135deg, rgba(17, 17, 27, 0.98) 0%, rgba(30, 30, 45, 0.98) 100%);
   backdrop-filter: blur(24px);
@@ -133,7 +134,8 @@
     right: 0;
     width: 100%;
     transform: none;
-    max-height: min(68vh, 560px);
+    min-height: 22rem;
+    max-height: min(78vh, 640px);
     border-radius: 1rem;
     animation: search-expand-mobile 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
@@ -254,16 +256,13 @@
 
 /* Suggestions Dropdown */
 .suggest-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 0.5rem;
+  position: relative;
+  margin-top: 0.625rem;
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(139, 92, 246, 0.2);
   backdrop-filter: blur(8px);
-  max-height: min(56vh, 460px);
+  max-height: min(58vh, 520px);
   overflow-y: auto;
   z-index: 100;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -271,7 +270,7 @@
 
 @media (max-width: 639px) {
   .suggest-dropdown {
-    max-height: min(48vh, 420px);
+    max-height: min(52vh, 500px);
   }
 }
 
