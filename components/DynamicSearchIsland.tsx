@@ -13,7 +13,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
 import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-react';
 import { QueryComplexity, SuggestionItem } from '../types';
-import { Logo, SearchIcon, SendIcon, XMarkIcon } from './icons';
+import { Logo, SearchIcon, SendIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import '../styles/dynamic-search-island.css';
@@ -363,18 +363,6 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
       id="search-island-content"
     >
       <div className="island-content">
-        {/* Minimal header with just the close button */}
-        <div className="island-header-minimal">
-          <button
-            className="close-btn"
-            onClick={handleCollapse}
-            aria-label="Close search (Esc)"
-            title="Close (Esc)"
-          >
-            <XMarkIcon className="w-5 h-5" />
-          </button>
-        </div>
-
         {/* Search Input */}
         <form onSubmit={handleSubmit} className="search-form">
           <div className="search-input-wrapper">
