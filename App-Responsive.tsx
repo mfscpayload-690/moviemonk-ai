@@ -50,6 +50,13 @@ const App: React.FC = () => {
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
   const [draggedItem, setDraggedItem] = useState<{ folderId: string; itemId: string } | null>(null);
 
+  const scrollMainContentToTop = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const main = document.querySelector('.main-content');
+    if (main instanceof HTMLElement) {
+      main.scrollTo({ top: 0, behavior });
+    }
+  }, []);
+
   const handleLoadSavedItem = useCallback((folderId: string, itemId: string) => {
     const found = findItem(folderId, itemId);
     if (!found) return;
@@ -63,9 +70,8 @@ const App: React.FC = () => {
     });
     debugLog('[watchlists] loaded saved item', item.saved_title);
     setShowWatchlistsModal(false);
-    const main = document.querySelector('.main-content');
-    if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [findItem]);
+    scrollMainContentToTop();
+  }, [findItem, scrollMainContentToTop]);
 
   // Load shared link on mount
   useEffect(() => {
@@ -180,6 +186,7 @@ const App: React.FC = () => {
       if (titleHint || data?.person?.name) {
         setCurrentQuery(titleHint || data?.person?.name || '');
       }
+      scrollMainContentToTop('auto');
     } catch (e) {
       setError('Failed to load person details');
     } finally {
@@ -187,7 +194,7 @@ const App: React.FC = () => {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [scrollMainContentToTop]);
 
   const loadPersonFromShare = async (personId: number) => {
     await openPersonById(personId, undefined, { manageLoading: true });
@@ -245,9 +252,8 @@ const App: React.FC = () => {
       setSources(null);
       setCurrentQuery('');
     });
-    const main = document.querySelector('.main-content');
-    if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    scrollMainContentToTop();
+  }, [scrollMainContentToTop]);
 
   const handleOpenTitle = useCallback(async (
     item: { id: number; mediaType: 'movie' | 'tv' },
@@ -255,6 +261,7 @@ const App: React.FC = () => {
   ) => {
     setIsLoading(true);
     setError(null);
+    scrollMainContentToTop('auto');
 
     const activeProvider = provider || selectedProvider || 'groq';
     setSelectedProvider(activeProvider);
@@ -287,7 +294,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProvider]);
+  }, [scrollMainContentToTop, selectedProvider]);
 
   const classifyError = (raw: string | undefined, provider: 'groq' | 'mistral'): string => {
     if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
@@ -381,6 +388,7 @@ const App: React.FC = () => {
             setSources(result.sources || []);
             setCurrentView('movie');
           });
+          scrollMainContentToTop('auto');
         } else {
           throw new Error(result.error || 'Failed to load data');
         }
@@ -394,7 +402,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [openPersonById]);
+  }, [openPersonById, scrollMainContentToTop]);
 
   const handleQuickSearch = useCallback((title: string) => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
