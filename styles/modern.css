@@ -1810,9 +1810,8 @@ a:focus-visible {
     line-height: 1.2;
 }
 
-.discovery-hero {
+.discovery-hero-wrapper {
     position: relative;
-    min-height: clamp(22rem, 58vw, 31rem);
     margin: 0 1rem;
     border-radius: 18px;
     overflow: hidden;
@@ -1820,6 +1819,21 @@ a:focus-visible {
     box-shadow: var(--discovery-shadow);
     background: linear-gradient(125deg, #131313 0%, #080808 45%, #050505 100%);
     touch-action: pan-y;
+    transform: translateZ(0);
+}
+
+.discovery-hero-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.65s cubic-bezier(0.25, 1, 0.4, 1);
+    will-change: transform;
+}
+
+.discovery-hero-slide {
+    position: relative;
+    flex: 0 0 100%;
+    width: 100%;
+    min-height: clamp(22rem, 58vw, 31rem);
 }
 
 .discovery-hero-backdrop {
@@ -1914,6 +1928,13 @@ a:focus-visible {
     background: rgba(255, 255, 255, 0.09);
     color: var(--discovery-text-primary);
     border-color: rgba(255, 255, 255, 0.22);
+}
+
+.discovery-hero-dots-global {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 10;
 }
 
 .discovery-hero-dots {
