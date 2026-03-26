@@ -369,7 +369,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     // Otherwise, use the standard movie display
     return (
-        <div className="h-full overflow-y-auto relative">
+        <div className="relative min-h-full">
             {/* Hero Section with Poster Card */}
             <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">
                 {/* Backdrop Image Layer */}
