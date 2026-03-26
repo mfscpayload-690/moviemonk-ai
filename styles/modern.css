@@ -2938,3 +2938,74 @@ a:focus-visible {
         grid-auto-columns: minmax(150px, 150px);
     }
 }
+
+/* ============================================================================
+   LOADING SCREEN ANIMATIONS - Movie / TV / Person
+   ============================================================================ */
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes scanlines {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 0 100%;
+    }
+}
+
+@keyframes flicker {
+    0%, 49%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+@keyframes signalBounce {
+    0%, 100% {
+        transform: scaleY(0.4);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+@keyframes innerPulse {
+    0%, 100% {
+        box-shadow: inset 0 0 10px rgba(219, 39, 119, 0.15);
+    }
+    50% {
+        box-shadow: inset 0 0 25px rgba(219, 39, 119, 0.25);
+    }
+}
+
+@keyframes dotPulse {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}

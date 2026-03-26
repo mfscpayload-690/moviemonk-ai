@@ -5,6 +5,7 @@ import DiscoveryPage from './components/DiscoveryPage';
 import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
+import LoadingScreen from './components/LoadingScreen';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { ClipboardIcon, EditIcon, FolderIcon, Logo, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
@@ -559,21 +560,16 @@ const App: React.FC = () => {
         </div>
 
       </div >
+      {/* Determine loading screen type based on current view and data */}
       {globalLoadingVisible && (
-        <div
-          className="fixed inset-0 z-[3500] bg-brand-bg/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading movie details"
-        >
-          <div className="glass-panel px-6 py-5 rounded-2xl shadow-2xl border border-white/15 flex flex-col items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
-              <div className="w-14 h-14 rounded-full border-4 border-brand-primary/25 border-t-brand-primary animate-spin" />
-            </div>
-            <p className="text-sm sm:text-base font-semibold text-brand-text-light">Loading title details...</p>
-          </div>
-        </div>
+        <LoadingScreen
+          visible={globalLoadingVisible}
+          type={
+            personData ? 'person' : 
+            movieData?.tvShow ? 'tv' : 
+            'movie'
+          }
+        />
       )}
       {/* Summary Modal */}
       {
