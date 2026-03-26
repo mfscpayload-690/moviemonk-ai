@@ -370,17 +370,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     // Otherwise, use the standard movie display
     return (
         <div className="h-full overflow-y-auto relative">
-            {isLoading && (
-                <div className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-fade-in">
-                    <div className="relative">
-                        <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
-                        <FilmIcon className="w-20 h-20 text-brand-primary animate-spin" />
-                    </div>
-                    <p className="mt-6 text-lg font-semibold text-brand-text-light flex items-center gap-2">
-                        <span className="inline-flex w-2 h-2 bg-brand-secondary rounded-full animate-pulse" /> Loading cinematic data...
-                    </p>
-                </div>
-            )}
             {/* Hero Section with Poster Card */}
             <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">
                 {/* Backdrop Image Layer */}

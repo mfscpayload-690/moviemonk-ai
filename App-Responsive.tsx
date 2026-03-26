@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, startTransition } from 'react';
+import React, { useCallback, useEffect, useRef, useState, startTransition } from 'react';
 import MovieDisplay from './components/MovieDisplay';
 import PersonDisplay from './components/PersonDisplay';
 import DiscoveryPage from './components/DiscoveryPage';
@@ -21,6 +21,7 @@ const debugLog = (...args: any[]) => {
 
 const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 type AppView = 'discovery' | 'movie' | 'person';
+const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 
 const App: React.FC = () => {
   useRenderCounter('App');
@@ -38,8 +39,10 @@ const App: React.FC = () => {
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<AppView>('discovery');
-  const [isDiscoveryOpening, setIsDiscoveryOpening] = useState(false);
+  const [globalLoadingVisible, setGlobalLoadingVisible] = useState(false);
   const [shortlistCandidates, setShortlistCandidates] = useState<AmbiguousCandidate[] | null>(null);
+  const loadingStartedAtRef = useRef<number | null>(null);
+  const loadingHideTimeoutRef = useRef<number | null>(null);
   const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
@@ -91,6 +94,39 @@ const App: React.FC = () => {
       refresh();
     }
   }, [showWatchlistsModal, refresh]);
+
+  useEffect(() => {
+    if (isLoading) {
+      if (loadingHideTimeoutRef.current !== null) {
+        window.clearTimeout(loadingHideTimeoutRef.current);
+        loadingHideTimeoutRef.current = null;
+      }
+      loadingStartedAtRef.current = Date.now();
+      setGlobalLoadingVisible(true);
+      return;
+    }
+
+    if (!globalLoadingVisible) {
+      return;
+    }
+
+    const elapsed = loadingStartedAtRef.current ? Date.now() - loadingStartedAtRef.current : GLOBAL_LOADING_MIN_VISIBLE_MS;
+    const remaining = Math.max(0, GLOBAL_LOADING_MIN_VISIBLE_MS - elapsed);
+
+    loadingHideTimeoutRef.current = window.setTimeout(() => {
+      setGlobalLoadingVisible(false);
+      loadingHideTimeoutRef.current = null;
+      loadingStartedAtRef.current = null;
+    }, remaining);
+  }, [isLoading, globalLoadingVisible]);
+
+  useEffect(() => {
+    return () => {
+      if (loadingHideTimeoutRef.current !== null) {
+        window.clearTimeout(loadingHideTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const startEditFolder = useCallback((folder: any) => {
     setEditingFolderId(folder.id);
@@ -208,7 +244,6 @@ const App: React.FC = () => {
       setPersonData(null);
       setSources(null);
       setCurrentQuery('');
-      setIsDiscoveryOpening(false);
     });
     const main = document.querySelector('.main-content');
     if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
@@ -216,13 +251,8 @@ const App: React.FC = () => {
 
   const handleOpenTitle = useCallback(async (
     item: { id: number; mediaType: 'movie' | 'tv' },
-    provider?: AIProvider,
-    options?: { showDiscoveryLoader?: boolean }
+    provider?: AIProvider
   ) => {
-    const showDiscoveryLoader = options?.showDiscoveryLoader === true;
-    if (showDiscoveryLoader) {
-      setIsDiscoveryOpening(true);
-    }
     setIsLoading(true);
     setError(null);
 
@@ -255,9 +285,6 @@ const App: React.FC = () => {
     } catch (err: any) {
       setError(err?.message || 'Failed to open title');
     } finally {
-      if (showDiscoveryLoader) {
-        setIsDiscoveryOpening(false);
-      }
       setIsLoading(false);
     }
   }, [selectedProvider]);
@@ -489,18 +516,7 @@ const App: React.FC = () => {
         {/* Main Content Area - Full width Featured UI */}
         <div className="main-content pb-24">
           {currentView === 'discovery' ? (
-            <>
-              <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item, undefined, { showDiscoveryLoader: true })} />
-              {isDiscoveryOpening && (
-                <div className="discovery-transition-loading" role="status" aria-live="polite">
-                  <div className="discovery-transition-card">
-                    <div className="discovery-transition-spinner" />
-                    <p className="discovery-transition-title">Loading title details</p>
-                    <p className="discovery-transition-subtitle">Fetching cast, ratings, and watch options...</p>
-                  </div>
-                </div>
-              )}
-            </>
+            <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item)} />
           ) : currentView === 'person' && personData ? (
             <PersonDisplay
               data={personData}
@@ -525,6 +541,22 @@ const App: React.FC = () => {
         </div>
 
       </div >
+      {globalLoadingVisible && (
+        <div
+          className="fixed inset-0 z-[3500] bg-brand-bg/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading movie details"
+        >
+          <div className="glass-panel px-6 py-5 rounded-2xl shadow-2xl border border-white/15 flex flex-col items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
+              <div className="w-14 h-14 rounded-full border-4 border-brand-primary/25 border-t-brand-primary animate-spin" />
+            </div>
+            <p className="text-sm sm:text-base font-semibold text-brand-text-light">Loading title details...</p>
+          </div>
+        </div>
+      )}
       {/* Summary Modal */}
       {
         summaryModal && (
