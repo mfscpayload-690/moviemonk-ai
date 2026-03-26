@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DiscoveryGenre, DiscoveryItem } from '../types';
 import {
   fetchByGenre,
+  fetchDiscoverTv,
   fetchGenreList,
-  fetchNowPlaying,
+  fetchOnTheAir,
   fetchPopular,
   fetchTopRated,
   fetchTrending,
@@ -46,24 +47,62 @@ export function pickHeroItems(items: DiscoveryItem[], limit = 5): DiscoveryItem[
   return items.filter((item) => item.backdrop_url).slice(0, limit);
 }
 
+function mergeUniqueDiscoveryItems(...groups: DiscoveryItem[][]): DiscoveryItem[] {
+  const seen = new Set<string>();
+  const merged: DiscoveryItem[] = [];
+
+  groups.flat().forEach((item) => {
+    const key = `${item.media_type}-${item.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(item);
+  });
+
+  return merged;
+}
+
 export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<DiscoverySnapshot> {
   const [
     trendingAll,
     trendingMovies,
+    trendingTv,
     popularTv,
+    onTheAir,
     topRatedMovies,
-    nowPlaying,
+    topRatedTv,
     upcoming,
-    movieGenres
+    movieGenres,
+    tvGenres
   ] = await Promise.all([
     fetchTrending('all', 'week', { signal }),
     fetchTrending('movie', 'week', { signal }),
+    fetchTrending('tv', 'week', { signal }),
     fetchPopular('tv', { signal }),
+    fetchOnTheAir({ signal }),
     fetchTopRated('movie', { signal }),
-    fetchNowPlaying({ signal }),
+    fetchTopRated('tv', { signal }),
     fetchUpcoming({ signal }),
-    fetchGenreList('movie', { signal })
+    fetchGenreList('movie', { signal }),
+    fetchGenreList('tv', { signal })
   ]);
+
+  const dramaGenreId = tvGenres.find((genre) => genre.name === 'Drama')?.id;
+
+  const [koreanSeries, japaneseSeries, chineseSeries, thaiSeries] = await Promise.all([
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ko' }, { signal }),
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ja' }, { signal }),
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'zh' }, { signal }),
+    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'th' }, { signal })
+  ]);
+
+  const kDramaAndAsianSeries = mergeUniqueDiscoveryItems(
+    koreanSeries,
+    japaneseSeries,
+    chineseSeries,
+    thaiSeries
+  ).slice(0, 24);
+
+  const globalWebSeriesAndTv = mergeUniqueDiscoveryItems(onTheAir, topRatedTv, popularTv, trendingTv).slice(0, 24);
 
   const curatedGenres = getCuratedMovieGenres(movieGenres);
   const selectedGenre = curatedGenres[0] || movieGenres[0] || null;
@@ -75,9 +114,9 @@ export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<Disco
     heroItems: pickHeroItems(trendingAll),
     sections: [
       { key: 'trending-movies', title: 'Trending Movies', items: trendingMovies },
-      { key: 'popular-tv', title: 'Popular TV Shows', items: popularTv },
+      { key: 'kdrama-asian-series', title: 'K-Drama and Asian Series', items: kDramaAndAsianSeries },
+      { key: 'global-web-series-tv', title: 'Global Web Series and TV Shows', items: globalWebSeriesAndTv },
       { key: 'top-rated-movies', title: 'Top Rated Movies', items: topRatedMovies },
-      { key: 'now-playing', title: 'Now Playing', items: nowPlaying },
       { key: 'upcoming', title: 'Upcoming', items: upcoming }
     ],
     movieGenres: curatedGenres,
