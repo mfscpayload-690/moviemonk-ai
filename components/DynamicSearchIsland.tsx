@@ -382,6 +382,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
         {/* Search Input */}
         <form onSubmit={handleSubmit} className="search-form">
           <div className="search-input-wrapper">
+            <SearchIcon className="search-input-left-icon" />
             <input
               ref={searchInputRef}
               type="text"
@@ -403,9 +404,27 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               aria-controls="search-suggestion-list"
               aria-expanded={showSuggestions}
               aria-activedescendant={highlightedIndex >= 0 ? `search-suggestion-${highlightedIndex}` : undefined}
-              className="search-input"
+              className="search-input has-icons"
             />
-            {isSuggesting && <div className="suggest-loading">Searching...</div>}
+            {isLoading ? (
+              <button type="button" className="search-input-action" disabled aria-label="Searching">
+                <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="search-input-action"
+                disabled={!query.trim()}
+                aria-label="Search"
+                title="Search"
+              >
+                <SendIcon className="w-4 h-4" />
+              </button>
+            )}
+            {isSuggesting && !isLoading && <div className="suggest-loading">Searching...</div>}
 
             {/* Suggestions Dropdown with Icons */}
             {showSuggestions && suggestions.length > 0 && (
@@ -530,28 +549,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             )}
           </div>
 
-          {/* Search Button */}
-          <button
-            type="submit"
-            className="search-action-btn"
-            disabled={!query.trim() || isLoading}
-            aria-label={isLoading ? 'Searching' : 'Search'}
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25" />
-                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75" />
-                </svg>
-                Searching...
-              </>
-            ) : (
-              <>
-                <SendIcon className="w-5 h-5" />
-                Search
-              </>
-            )}
-          </button>
+
         </form>
 
         {/* Keyboard hints at bottom */}

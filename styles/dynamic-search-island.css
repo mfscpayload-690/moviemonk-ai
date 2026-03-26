@@ -22,8 +22,8 @@
 /* ===== Collapsed State: Minimal Pill ===== */
 .search-island.collapsed {
   width: min(400px, 100%);
-  height: 44px;
-  border-radius: 22px;
+  height: 38px;
+  border-radius: 19px;
   background: linear-gradient(135deg, rgba(30, 30, 45, 0.8) 0%, rgba(45, 45, 65, 0.8) 100%);
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15),
@@ -236,14 +236,66 @@
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-.suggest-loading {
+/* Input with embedded icons */
+.search-input.has-icons {
+  padding-left: 2.75rem;
+  padding-right: 3rem;
+}
+
+.search-input-left-icon {
   position: absolute;
-  right: 1rem;
+  left: 0.875rem;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 0.8125rem;
+  width: 18px;
+  height: 18px;
+  color: #a78bfa;
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.search-input-action {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #c4b5fd;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+  padding: 0;
+}
+
+.search-input-action:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.45);
+  color: white;
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.search-input-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.suggest-loading {
+  position: absolute;
+  right: 3.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
   color: #9ca3af;
   animation: pulse 1.5s ease-in-out infinite;
+  z-index: 2;
 }
 
 /* Suggestions Dropdown */

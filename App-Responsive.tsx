@@ -431,10 +431,10 @@ const App: React.FC = () => {
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 glass-panel border-b-0 z-50">
-          <button type="button" className="flex items-center gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
-            <Logo className="w-10 h-10 text-primary drop-shadow-glow" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gradient tracking-tight">MovieMonk</h1>
+        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 glass-panel border-b-0 z-50">
+          <button type="button" className="flex items-center gap-2 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
+            <Logo className="w-8 h-8 text-primary drop-shadow-glow" />
+            <h1 className="text-lg sm:text-xl font-bold text-gradient tracking-tight">MovieMonk</h1>
           </button>
           <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-3">
             <DynamicSearchIsland
