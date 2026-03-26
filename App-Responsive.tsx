@@ -50,10 +50,20 @@ const App: React.FC = () => {
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
   const [draggedItem, setDraggedItem] = useState<{ folderId: string; itemId: string } | null>(null);
 
-  const scrollMainContentToTop = useCallback((behavior: ScrollBehavior = 'smooth') => {
+  const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
     if (main instanceof HTMLElement) {
-      main.scrollTo({ top: 0, behavior });
+      let resolvedBehavior: ScrollBehavior;
+      if (behavior === 'contextual') {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isMobileViewport = window.matchMedia('(max-width: 767px)').matches;
+        const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+        resolvedBehavior = prefersReducedMotion || isMobileViewport || isCoarsePointer ? 'auto' : 'smooth';
+      } else {
+        resolvedBehavior = behavior;
+      }
+
+      main.scrollTo({ top: 0, behavior: resolvedBehavior });
     }
   }, []);
 
@@ -186,7 +196,7 @@ const App: React.FC = () => {
       if (titleHint || data?.person?.name) {
         setCurrentQuery(titleHint || data?.person?.name || '');
       }
-      scrollMainContentToTop('auto');
+      scrollMainContentToTop();
     } catch (e) {
       setError('Failed to load person details');
     } finally {
@@ -261,7 +271,7 @@ const App: React.FC = () => {
   ) => {
     setIsLoading(true);
     setError(null);
-    scrollMainContentToTop('auto');
+    scrollMainContentToTop();
 
     const activeProvider = provider || selectedProvider || 'groq';
     setSelectedProvider(activeProvider);
@@ -388,7 +398,7 @@ const App: React.FC = () => {
             setSources(result.sources || []);
             setCurrentView('movie');
           });
-          scrollMainContentToTop('auto');
+          scrollMainContentToTop();
         } else {
           throw new Error(result.error || 'Failed to load data');
         }
