@@ -416,36 +416,163 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
   }
 }
 
-  export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'): Promise<import('../types').RelatedTitle[]> {
-    const token = getTMDBToken();
-    const base = 'https://api.themoviedb.org/3';
-    const headers = { Authorization: `Bearer ${token}` } as any;
-    try {
-      const [similarRes, recRes] = await Promise.all([
-        fetch(`${base}/${mediaType}/${id}/similar`, { headers }),
-        fetch(`${base}/${mediaType}/${id}/recommendations`, { headers })
-      ]);
-      const similarJson = await similarRes.json();
-      const recJson = await recRes.json();
-      const mapItem = (it: any, source: 'tmdb-similar' | 'tmdb-recommendations') => ({
-        id: it.id,
-        title: it.title || it.name,
-        year: (it.release_date || it.first_air_date || '').substring(0, 4) || undefined,
-        media_type: it.title ? 'movie' : 'tv',
-        poster_url: it.poster_path ? `https://image.tmdb.org/t/p/w342${it.poster_path}` : undefined,
-        popularity: it.popularity,
-        source
-      });
-      const combined = [
-        ...(Array.isArray(similarJson?.results) ? similarJson.results.map((r: any) => mapItem(r, 'tmdb-similar')) : []),
-        ...(Array.isArray(recJson?.results) ? recJson.results.map((r: any) => mapItem(r, 'tmdb-recommendations')) : [])
-      ];
-      const dedup = dedupeById(combined).slice(0, 18);
-      return dedup;
-    } catch {
-      return [];
-    }
+type RecommendationCandidate = {
+  id: number;
+  title: string;
+  year?: string;
+  media_type: 'movie' | 'tv';
+  poster_url?: string;
+  popularity?: number;
+  source: 'tmdb-similar' | 'tmdb-recommendations';
+  vote_average?: number;
+  vote_count?: number;
+  genre_ids?: number[];
+};
+
+type RecommendationSeed = {
+  year?: number;
+  genre_ids: number[];
+};
+
+async function tmdbDirectFetch(path: string): Promise<any> {
+  const base = 'https://api.themoviedb.org/3';
+  const readToken = process.env.TMDB_READ_TOKEN;
+  const apiKey = process.env.TMDB_API_KEY;
+
+  if (!readToken && !apiKey) {
+    throw new Error('TMDB credentials missing');
   }
+
+  if (readToken) {
+    const res = await fetch(`${base}${path}`, {
+      headers: {
+        Authorization: `Bearer ${readToken}`
+      }
+    });
+    if (!res.ok) {
+      throw new Error(`TMDB ${path} failed: ${res.status}`);
+    }
+    return res.json();
+  }
+
+  const separator = path.includes('?') ? '&' : '?';
+  const res = await fetch(`${base}${path}${separator}api_key=${encodeURIComponent(apiKey as string)}`);
+  if (!res.ok) {
+    throw new Error(`TMDB ${path} failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+function mapRecommendationItem(it: any, source: 'tmdb-similar' | 'tmdb-recommendations'): RecommendationCandidate | null {
+  const title = it?.title || it?.name;
+  if (!it?.id || !title) return null;
+
+  return {
+    id: it.id,
+    title,
+    year: (it.release_date || it.first_air_date || '').substring(0, 4) || undefined,
+    media_type: it.title ? 'movie' : 'tv',
+    poster_url: it.poster_path ? `https://image.tmdb.org/t/p/w342${it.poster_path}` : undefined,
+    popularity: typeof it.popularity === 'number' ? it.popularity : undefined,
+    source,
+    vote_average: typeof it.vote_average === 'number' ? it.vote_average : undefined,
+    vote_count: typeof it.vote_count === 'number' ? it.vote_count : undefined,
+    genre_ids: Array.isArray(it.genre_ids)
+      ? it.genre_ids.filter((genreId: unknown): genreId is number => typeof genreId === 'number')
+      : []
+  };
+}
+
+function computeRecommendationScore(candidate: RecommendationCandidate, seed: RecommendationSeed): number {
+  const sourceBoost = candidate.source === 'tmdb-recommendations' ? 0.24 : 0.16;
+  const ratingScore = Math.min(Math.max((candidate.vote_average || 0) / 10, 0), 1) * 0.28;
+  const voteConfidence = Math.min(Math.log10((candidate.vote_count || 0) + 1) / 4, 1) * 0.16;
+  const popularityScore = Math.min(Math.log10((candidate.popularity || 0) + 1) / 2.2, 1) * 0.18;
+
+  let genreScore = 0;
+  if (seed.genre_ids.length > 0 && (candidate.genre_ids || []).length > 0) {
+    const seedGenres = new Set(seed.genre_ids);
+    const overlap = (candidate.genre_ids || []).filter((genreId) => seedGenres.has(genreId)).length;
+    const denominator = Math.max(seed.genre_ids.length, (candidate.genre_ids || []).length, 1);
+    genreScore = (overlap / denominator) * 0.18;
+  }
+
+  let yearProximityScore = 0;
+  if (seed.year && candidate.year && /^\d{4}$/.test(candidate.year)) {
+    const distance = Math.abs(seed.year - Number(candidate.year));
+    yearProximityScore = Math.max(0, 1 - distance / 25) * 0.08;
+  }
+
+  return sourceBoost + ratingScore + voteConfidence + popularityScore + genreScore + yearProximityScore;
+}
+
+export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'): Promise<import('../types').RelatedTitle[]> {
+  try {
+    const [seedDetails, similarJson, recJson] = await Promise.all([
+      tmdbDirectFetch(`/${mediaType}/${id}`),
+      tmdbDirectFetch(`/${mediaType}/${id}/similar`),
+      tmdbDirectFetch(`/${mediaType}/${id}/recommendations`)
+    ]);
+
+    const seed: RecommendationSeed = {
+      year: Number((seedDetails?.release_date || seedDetails?.first_air_date || '').substring(0, 4)) || undefined,
+      genre_ids: Array.isArray(seedDetails?.genres)
+        ? seedDetails.genres
+            .map((genre: any) => genre?.id)
+            .filter((genreId: unknown): genreId is number => typeof genreId === 'number')
+        : []
+    };
+
+    const combinedCandidates: RecommendationCandidate[] = [
+      ...(Array.isArray(similarJson?.results)
+        ? similarJson.results
+            .map((item: any) => mapRecommendationItem(item, 'tmdb-similar'))
+            .filter((item: RecommendationCandidate | null): item is RecommendationCandidate => Boolean(item))
+        : []),
+      ...(Array.isArray(recJson?.results)
+        ? recJson.results
+            .map((item: any) => mapRecommendationItem(item, 'tmdb-recommendations'))
+            .filter((item: RecommendationCandidate | null): item is RecommendationCandidate => Boolean(item))
+        : [])
+    ].filter((candidate) => candidate.id !== id);
+
+    const mergedById = new Map<number, RecommendationCandidate>();
+    for (const candidate of combinedCandidates) {
+      const existing = mergedById.get(candidate.id);
+      if (!existing) {
+        mergedById.set(candidate.id, candidate);
+        continue;
+      }
+
+      mergedById.set(candidate.id, {
+        ...existing,
+        source: existing.source === 'tmdb-recommendations' || candidate.source === 'tmdb-recommendations'
+          ? 'tmdb-recommendations'
+          : 'tmdb-similar',
+        popularity: Math.max(existing.popularity || 0, candidate.popularity || 0),
+        vote_average: Math.max(existing.vote_average || 0, candidate.vote_average || 0),
+        vote_count: Math.max(existing.vote_count || 0, candidate.vote_count || 0),
+        genre_ids: existing.genre_ids && existing.genre_ids.length > 0 ? existing.genre_ids : candidate.genre_ids,
+        poster_url: existing.poster_url || candidate.poster_url,
+        year: existing.year || candidate.year
+      });
+    }
+
+    return Array.from(mergedById.values())
+      .map((candidate) => ({
+        ...candidate,
+        score: computeRecommendationScore(candidate, seed)
+      }))
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (b.popularity || 0) - (a.popularity || 0);
+      })
+      .slice(0, 18)
+      .map(({ vote_average, vote_count, genre_ids, score, ...item }) => item);
+  } catch {
+    return [];
+  }
+}
 
   export async function fetchRelatedPeopleForPerson(personId: number): Promise<import('../types').RelatedPerson[]> {
     const token = getTMDBToken();

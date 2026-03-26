@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, startTransition } from 'react';
+import React, { useCallback, useEffect, useRef, useState, startTransition } from 'react';
 import MovieDisplay from './components/MovieDisplay';
 import PersonDisplay from './components/PersonDisplay';
 import DiscoveryPage from './components/DiscoveryPage';
@@ -21,6 +21,7 @@ const debugLog = (...args: any[]) => {
 
 const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 type AppView = 'discovery' | 'movie' | 'person';
+const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 
 const App: React.FC = () => {
   useRenderCounter('App');
@@ -38,8 +39,10 @@ const App: React.FC = () => {
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<AppView>('discovery');
-  const [isDiscoveryOpening, setIsDiscoveryOpening] = useState(false);
+  const [globalLoadingVisible, setGlobalLoadingVisible] = useState(false);
   const [shortlistCandidates, setShortlistCandidates] = useState<AmbiguousCandidate[] | null>(null);
+  const loadingStartedAtRef = useRef<number | null>(null);
+  const loadingHideTimeoutRef = useRef<number | null>(null);
   const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
@@ -91,6 +94,39 @@ const App: React.FC = () => {
       refresh();
     }
   }, [showWatchlistsModal, refresh]);
+
+  useEffect(() => {
+    if (isLoading) {
+      if (loadingHideTimeoutRef.current !== null) {
+        window.clearTimeout(loadingHideTimeoutRef.current);
+        loadingHideTimeoutRef.current = null;
+      }
+      loadingStartedAtRef.current = Date.now();
+      setGlobalLoadingVisible(true);
+      return;
+    }
+
+    if (!globalLoadingVisible) {
+      return;
+    }
+
+    const elapsed = loadingStartedAtRef.current ? Date.now() - loadingStartedAtRef.current : GLOBAL_LOADING_MIN_VISIBLE_MS;
+    const remaining = Math.max(0, GLOBAL_LOADING_MIN_VISIBLE_MS - elapsed);
+
+    loadingHideTimeoutRef.current = window.setTimeout(() => {
+      setGlobalLoadingVisible(false);
+      loadingHideTimeoutRef.current = null;
+      loadingStartedAtRef.current = null;
+    }, remaining);
+  }, [isLoading, globalLoadingVisible]);
+
+  useEffect(() => {
+    return () => {
+      if (loadingHideTimeoutRef.current !== null) {
+        window.clearTimeout(loadingHideTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const startEditFolder = useCallback((folder: any) => {
     setEditingFolderId(folder.id);
@@ -208,7 +244,6 @@ const App: React.FC = () => {
       setPersonData(null);
       setSources(null);
       setCurrentQuery('');
-      setIsDiscoveryOpening(false);
     });
     const main = document.querySelector('.main-content');
     if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
@@ -216,13 +251,8 @@ const App: React.FC = () => {
 
   const handleOpenTitle = useCallback(async (
     item: { id: number; mediaType: 'movie' | 'tv' },
-    provider?: AIProvider,
-    options?: { showDiscoveryLoader?: boolean }
+    provider?: AIProvider
   ) => {
-    const showDiscoveryLoader = options?.showDiscoveryLoader === true;
-    if (showDiscoveryLoader) {
-      setIsDiscoveryOpening(true);
-    }
     setIsLoading(true);
     setError(null);
 
@@ -255,9 +285,6 @@ const App: React.FC = () => {
     } catch (err: any) {
       setError(err?.message || 'Failed to open title');
     } finally {
-      if (showDiscoveryLoader) {
-        setIsDiscoveryOpening(false);
-      }
       setIsLoading(false);
     }
   }, [selectedProvider]);
@@ -431,10 +458,10 @@ const App: React.FC = () => {
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 glass-panel border-b-0 z-50">
-          <button type="button" className="flex items-center gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
-            <Logo className="w-10 h-10 text-primary drop-shadow-glow" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gradient tracking-tight">MovieMonk</h1>
+        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 glass-panel border-b-0 z-50">
+          <button type="button" className="flex items-center gap-2 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
+            <Logo className="w-8 h-8 text-primary drop-shadow-glow" />
+            <h1 className="text-lg sm:text-xl font-bold text-gradient tracking-tight">MovieMonk</h1>
           </button>
           <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-3">
             <DynamicSearchIsland
@@ -489,18 +516,7 @@ const App: React.FC = () => {
         {/* Main Content Area - Full width Featured UI */}
         <div className="main-content pb-24">
           {currentView === 'discovery' ? (
-            <>
-              <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item, undefined, { showDiscoveryLoader: true })} />
-              {isDiscoveryOpening && (
-                <div className="discovery-transition-loading" role="status" aria-live="polite">
-                  <div className="discovery-transition-card">
-                    <div className="discovery-transition-spinner" />
-                    <p className="discovery-transition-title">Loading title details</p>
-                    <p className="discovery-transition-subtitle">Fetching cast, ratings, and watch options...</p>
-                  </div>
-                </div>
-              )}
-            </>
+            <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item)} />
           ) : currentView === 'person' && personData ? (
             <PersonDisplay
               data={personData}
@@ -525,6 +541,22 @@ const App: React.FC = () => {
         </div>
 
       </div >
+      {globalLoadingVisible && (
+        <div
+          className="fixed inset-0 z-[3500] bg-brand-bg/80 backdrop-blur-sm flex items-center justify-center pointer-events-auto"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading movie details"
+        >
+          <div className="glass-panel px-6 py-5 rounded-2xl shadow-2xl border border-white/15 flex flex-col items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
+              <div className="w-14 h-14 rounded-full border-4 border-brand-primary/25 border-t-brand-primary animate-spin" />
+            </div>
+            <p className="text-sm sm:text-base font-semibold text-brand-text-light">Loading title details...</p>
+          </div>
+        </div>
+      )}
       {/* Summary Modal */}
       {
         summaryModal && (
@@ -582,7 +614,7 @@ const App: React.FC = () => {
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
                     <p className="text-white font-semibold text-sm">{folder.name}</p>
                     <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
-                    <button onClick={() => startEditFolder(folder)} className="ml-2 text-xs text-brand-text-dark hover:text-white p-1 rounded hover:bg-white/10 inline-flex items-center gap-1">
+                    <button onClick={() => startEditFolder(folder)} className="ml-2 text-xs text-brand-text-dark hover:text-white p-1 rounded hover:bg-white/10 inline-flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu">
                       <EditIcon className="w-3.5 h-3.5" />
                       <span>Edit</span>
                     </button>
@@ -609,8 +641,8 @@ const App: React.FC = () => {
                         ))}
                       </div>
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => setEditingFolderId(null)} className="px-3 py-1.5 rounded-lg border border-white/15 text-white text-xs hover:bg-white/10">Cancel</button>
-                        <button onClick={saveFolderEdits} className="px-3 py-1.5 rounded-lg bg-brand-primary text-white text-xs font-semibold hover:bg-brand-secondary">Save</button>
+                        <button onClick={() => setEditingFolderId(null)} className="px-3 py-1.5 rounded-lg border border-white/15 text-white text-xs hover:bg-white/10 transition-[background-color,border-color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu">Cancel</button>
+                        <button onClick={saveFolderEdits} className="px-3 py-1.5 rounded-lg bg-brand-primary text-white text-xs font-semibold hover:bg-brand-secondary transition-[background-color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu">Save</button>
                       </div>
                     </div>
                   )}
@@ -630,9 +662,9 @@ const App: React.FC = () => {
                                 key={item.id}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
-                                className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${draggedItem?.itemId === item.id
+                                className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transform-gpu transition-[background-color,border-color,transform,opacity] duration-150 ease-out ${draggedItem?.itemId === item.id
                                   ? 'opacity-50 border-brand-primary bg-brand-primary/10'
-                                  : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
+                                  : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5 hover:-translate-y-px'
                                   }`}
                               >
                                 <button
@@ -647,7 +679,7 @@ const App: React.FC = () => {
                                 <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
                                 <button
                                   onClick={() => deleteItem(folder.id, item.id)}
-                                  className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center"
+                                  className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu"
                                   aria-label="Delete item"
                                   title="Delete from watchlist"
                                 >
@@ -663,9 +695,9 @@ const App: React.FC = () => {
                             key={item.id}
                             draggable
                             onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
-                            className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transition-all ${draggedItem?.itemId === item.id
+                            className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transform-gpu transition-[background-color,border-color,transform,opacity] duration-150 ease-out ${draggedItem?.itemId === item.id
                               ? 'opacity-50 border-brand-primary bg-brand-primary/10'
-                              : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5'
+                              : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5 hover:-translate-y-px'
                               }`}
                           >
                             <button
@@ -680,7 +712,7 @@ const App: React.FC = () => {
                             <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
                             <button
                               onClick={() => deleteItem(folder.id, item.id)}
-                              className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center"
+                              className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu"
                               aria-label="Delete item"
                               title="Delete from watchlist"
                             >

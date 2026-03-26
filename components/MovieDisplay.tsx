@@ -370,17 +370,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     // Otherwise, use the standard movie display
     return (
         <div className="h-full overflow-y-auto relative">
-            {isLoading && (
-                <div className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 animate-fade-in">
-                    <div className="relative">
-                        <div className="absolute inset-0 animate-ping rounded-full bg-brand-primary/30" />
-                        <FilmIcon className="w-20 h-20 text-brand-primary animate-spin" />
-                    </div>
-                    <p className="mt-6 text-lg font-semibold text-brand-text-light flex items-center gap-2">
-                        <span className="inline-flex w-2 h-2 bg-brand-secondary rounded-full animate-pulse" /> Loading cinematic data...
-                    </p>
-                </div>
-            )}
             {/* Hero Section with Poster Card */}
             <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">
                 {/* Backdrop Image Layer */}
@@ -632,25 +621,25 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                         {(movie as any).related.slice(0, 12).map((it: any, idx: number) => (
                                             <button
                                                 key={`${it.media_type}-${it.id}-${idx}`}
-                                                className="flex-shrink-0 w-24 text-left group touch-target"
+                                                className="flex-shrink-0 w-24 text-left group touch-target transform-gpu"
                                                 onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title }); onQuickSearch(it.title); }}
                                                 aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
                                             >
-                                                <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5 group-hover:border-brand-primary/50 transition-colors">
+                                                <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5 group-hover:border-brand-primary/50 transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-150 ease-out group-hover:-translate-y-px group-hover:shadow-lg">
                                                     {it.poster_url ? (
-                                                        <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                                                        <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover transform-gpu transition-transform duration-150 ease-out group-hover:scale-[1.02]" loading="lazy" />
                                                     ) : (
                                                         <div className="w-full h-full bg-white/10" />
                                                     )}
                                                 </div>
-                                                <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2 group-hover:text-brand-primary transition-colors">{it.title}</p>
+                                                <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2 group-hover:text-brand-primary transition-colors duration-150 ease-out">{it.title}</p>
                                                 {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                                 <div className="flex justify-end">
-                                    <button className="text-xs px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 transition-colors touch-target" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
+                                    <button className="text-xs px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 transform-gpu transition-[background-color,transform] duration-150 ease-out hover:-translate-y-px touch-target" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
                                 </div>
                             </div>
                         </Section>
@@ -959,7 +948,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 );
 
 const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
-    <div className="bg-white/5 p-2 md:p-3 rounded-lg text-center transform hover:-translate-y-1 transition-transform duration-300 border border-transparent hover:border-brand-primary">
+    <div className="bg-white/5 p-2 md:p-3 rounded-lg text-center transform-gpu will-change-transform hover:-translate-y-1 transition-transform duration-200 ease-out border border-transparent hover:border-brand-primary">
         <p className="font-bold text-xs md:text-sm text-brand-text-light truncate">{member.name}</p>
         <p className="text-xs text-brand-primary truncate">{member.role}</p>
     </div>
@@ -1010,7 +999,7 @@ const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
             href={option.link}
             target="_blank"
             rel="noopener noreferrer"
-            className={`group rounded-xl border border-white/10 bg-brand-surface/60 p-3 md:p-4 flex flex-col gap-2 md:gap-3 hover:shadow-lg transition-all relative overflow-hidden platform-card touch-target ${platformClass}`}
+            className={`group rounded-xl border border-white/10 bg-brand-surface/60 p-3 md:p-4 flex flex-col gap-2 md:gap-3 hover:shadow-lg transition-shadow relative overflow-hidden platform-card touch-target ${platformClass}`}
             aria-label={`Open ${option.platform} (${option.type})`}
         >
             <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent)]" />

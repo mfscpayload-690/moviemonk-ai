@@ -11,7 +11,7 @@ import {
 } from '../services/suggestRanking';
 
 const SUGGEST_CACHE_TTL_SECONDS = 45;
-const MAX_SUGGESTIONS = 8;
+const MAX_SUGGESTIONS = 12;
 
 function mapTmdbItemToCandidate(item: any): SuggestCandidate | null {
   const mediaType = item?.media_type;

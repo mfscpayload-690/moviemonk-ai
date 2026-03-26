@@ -183,7 +183,7 @@ h6 {
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .btn-glass:hover {
@@ -270,7 +270,7 @@ h6 {
     padding: 0.75rem 1rem;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .rating-card:hover {
@@ -372,7 +372,8 @@ h6 {
     overflow: hidden;
     cursor: pointer;
     background: rgba(15, 15, 22, 0.5);
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    will-change: transform;
     scroll-snap-align: start;
 }
 
@@ -384,7 +385,7 @@ h6 {
 .gallery-thumb:hover {
     border-color: rgba(124, 58, 237, 0.6);
     box-shadow: 0 0 16px rgba(124, 58, 237, 0.3);
-    transform: scale(1.05);
+    transform: translateY(-1px) scale(1.03);
 }
 
 .gallery-thumb:focus-visible {
@@ -896,12 +897,14 @@ h6 {
 }
 
 .platform-card {
-    transition: all 0.3s ease;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    will-change: transform;
 }
 
 .platform-card:hover {
+    transform: translateY(-1px);
     border-color: var(--platform-color, var(--color-primary)) !important;
-    box-shadow: 0 0 20px rgba(var(--platform-color-rgb, 124, 58, 237), 0.3);
+    box-shadow: 0 0 14px rgba(var(--platform-color-rgb, 124, 58, 237), 0.24);
 }
 
 /* --- 7. Poster Hover Effects (Desktop) --- */
@@ -921,12 +924,13 @@ h6 {
 
 /* --- 8. Rating Card Hover Effects --- */
 .rating-card-hover {
-    transition: all 0.25s ease;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    will-change: transform;
 }
 
 .rating-card-hover:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 25px rgba(124, 58, 237, 0.35);
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.24);
     border-color: rgba(124, 58, 237, 0.5) !important;
 }
 
@@ -1810,9 +1814,8 @@ a:focus-visible {
     line-height: 1.2;
 }
 
-.discovery-hero {
+.discovery-hero-wrapper {
     position: relative;
-    min-height: clamp(22rem, 58vw, 31rem);
     margin: 0 1rem;
     border-radius: 18px;
     overflow: hidden;
@@ -1820,6 +1823,21 @@ a:focus-visible {
     box-shadow: var(--discovery-shadow);
     background: linear-gradient(125deg, #131313 0%, #080808 45%, #050505 100%);
     touch-action: pan-y;
+    transform: translateZ(0);
+}
+
+.discovery-hero-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.65s cubic-bezier(0.25, 1, 0.4, 1);
+    will-change: transform;
+}
+
+.discovery-hero-slide {
+    position: relative;
+    flex: 0 0 100%;
+    width: 100%;
+    min-height: clamp(22rem, 58vw, 31rem);
 }
 
 .discovery-hero-backdrop {
@@ -1916,6 +1934,13 @@ a:focus-visible {
     border-color: rgba(255, 255, 255, 0.22);
 }
 
+.discovery-hero-dots-global {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 10;
+}
+
 .discovery-hero-dots {
     display: flex;
     gap: 0.45rem;
@@ -1972,10 +1997,11 @@ a:focus-visible {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-fast);
+    transition: background-color 0.13s ease-out, border-color 0.13s ease-out, color 0.13s ease-out, transform 0.13s ease-out;
 }
 
 .discovery-carousel-arrow:hover {
+    transform: translateY(-1px);
     border-color: rgba(255, 255, 255, 0.22);
     color: #ffffff;
     background: rgba(255, 255, 255, 0.09);
@@ -1995,6 +2021,8 @@ a:focus-visible {
     background: transparent;
     gap: 0.42rem;
     scroll-snap-align: start;
+    transform: translateZ(0);
+    cursor: pointer;
 }
 
 .discovery-poster-frame {
@@ -2005,14 +2033,15 @@ a:focus-visible {
     border: 1px solid rgba(255, 255, 255, 0.14);
     box-shadow: 0 5px 18px rgba(0, 0, 0, 0.45);
     background: #151515;
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+    transition: transform 0.13s cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 0.13s ease-out, border-color 0.13s ease-out;
+    will-change: transform;
 }
 
 .discovery-poster-card:hover .discovery-poster-frame,
 .discovery-poster-card:focus-visible .discovery-poster-frame {
-    transform: translateY(-3px) scale(1.02);
+    transform: translateY(-1px) scale(1.01);
     border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.52);
+    box-shadow: 0 7px 14px rgba(0, 0, 0, 0.4);
 }
 
 .discovery-poster-image {
@@ -2048,8 +2077,8 @@ a:focus-visible {
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.2);
     opacity: 0;
-    transform: translateY(4px);
-    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    transform: translateY(2px);
+    transition: opacity 0.12s ease-out, transform 0.12s ease-out;
 }
 
 .discovery-poster-card:hover .discovery-poster-plus,
@@ -2091,7 +2120,7 @@ a:focus-visible {
     color: var(--discovery-text-secondary);
     padding: 0.38rem 0.82rem;
     font-size: 0.75rem;
-    transition: all var(--transition-fast);
+    transition: border-color 0.13s ease-out, background-color 0.13s ease-out, color 0.13s ease-out;
 }
 
 .discovery-genre-pill:hover,

@@ -55,7 +55,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
 
   if (!items.length) {
     return (
-      <section className="discovery-hero discovery-hero-empty">
+      <section className="discovery-hero-wrapper discovery-hero-empty">
         <div className="discovery-hero-copy">
           <p className="discovery-hero-kicker">Discover</p>
           <h2 className="discovery-hero-title">Browse what is trending right now.</h2>
@@ -67,58 +67,77 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
     );
   }
 
-  const activeItem = items[Math.min(activeIndex, items.length - 1)];
-
   return (
-    <section className="discovery-hero" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      {activeItem.backdrop_url && (
-        <img
-          src={activeItem.backdrop_url}
-          alt={`${activeItem.title} backdrop`}
-          className="discovery-hero-backdrop"
-          loading="eager"
-        />
-      )}
-      <div className="discovery-hero-overlay" />
-      <div className="discovery-hero-copy">
-        <p className="discovery-hero-kicker">Featured This Week</p>
-        <h2 className="discovery-hero-title">{activeItem.title}</h2>
-        <div className="discovery-hero-meta">
-          <span>{activeItem.media_type === 'tv' ? 'TV Show' : 'Movie'}</span>
-          <span>{activeItem.year || 'TBA'}</span>
-          <span>{formatRating(activeItem.rating)}</span>
-        </div>
-        <p className="discovery-hero-overview">{activeItem.overview || 'No synopsis available yet.'}</p>
-        <div className="discovery-hero-actions">
-          <button
-            type="button"
-            className="discovery-cta discovery-cta-primary"
-            onClick={() => onOpenTitle({ id: activeItem.id, mediaType: activeItem.media_type })}
-          >
-            Learn More
-          </button>
-          <button
-            type="button"
-            className="discovery-cta discovery-cta-secondary"
-            onClick={() => onOpenTitle({ id: activeItem.id, mediaType: activeItem.media_type })}
-          >
-            Add to Watchlist
-          </button>
-        </div>
-        {items.length > 1 && (
-          <div className="discovery-hero-dots" aria-label="Featured titles">
+    <section className="discovery-hero-wrapper" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div 
+        className="discovery-hero-track"
+        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+      >
+        {items.map((item, index) => {
+          const isActive = index === activeIndex;
+          // Render backgrounds for adjacent slides for smooth transition
+          const isAdjacent = Math.abs(index - activeIndex) <= 1;
+
+          return (
+            <div key={`${item.id}-${index}`} className="discovery-hero-slide" aria-hidden={!isActive}>
+              {(isActive || isAdjacent) && item.backdrop_url && (
+                <img
+                  src={item.backdrop_url}
+                  alt={`${item.title} backdrop`}
+                  className="discovery-hero-backdrop"
+                  loading={index === 0 ? "eager" : "lazy"}
+                />
+              )}
+              <div className="discovery-hero-overlay" />
+              <div className="discovery-hero-copy">
+                <p className="discovery-hero-kicker">Featured This Week</p>
+                <h2 className="discovery-hero-title">{item.title}</h2>
+                <div className="discovery-hero-meta">
+                  <span>{item.media_type === 'tv' ? 'TV Show' : 'Movie'}</span>
+                  <span>{item.year || 'TBA'}</span>
+                  <span>{formatRating(item.rating)}</span>
+                </div>
+                <p className="discovery-hero-overview">{item.overview || 'No synopsis available yet.'}</p>
+                <div className="discovery-hero-actions">
+                  <button
+                    type="button"
+                    className="discovery-cta discovery-cta-primary"
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
+                  >
+                    Learn More
+                  </button>
+                  <button
+                    type="button"
+                    className="discovery-cta discovery-cta-secondary"
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
+                  >
+                    Add to Watchlist
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {items.length > 1 && (
+        <div className="discovery-hero-dots-global" aria-label="Featured titles">
+          <div className="discovery-hero-dots">
             {items.map((item, index) => (
               <button
-                key={`${item.id}-${index}`}
+                key={`${item.id}-dot-${index}`}
                 type="button"
                 className={`discovery-hero-dot ${index === activeIndex ? 'is-active' : ''}`}
                 onClick={() => setActiveIndex(index)}
                 aria-label={`Show ${item.title}`}
+                tabIndex={-1}
               />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 };

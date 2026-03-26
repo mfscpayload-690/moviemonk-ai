@@ -13,7 +13,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
 import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-react';
 import { QueryComplexity, SuggestionItem } from '../types';
-import { Logo, SearchIcon, SendIcon } from './icons';
+import { SearchIcon, SendIcon } from './icons';
 import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import '../styles/dynamic-search-island.css';
@@ -352,36 +352,25 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     );
   }
 
+  const shouldExpandForResults = query.trim().length >= 2 || isSuggesting || (showSuggestions && suggestions.length > 0);
+
   // Expanded panel state
   return (
-    <div
-      ref={islandRef}
-      className="search-island expanded"
-      role="dialog"
-      aria-label="Search movies and shows"
-      aria-modal="false"
-      id="search-island-content"
-    >
-      <div className="island-content">
-        {/* Header with close button */}
-        <div className="island-header">
-          <div className="header-title">
-            <SearchIcon className="w-5 h-5" />
-            <span>Find Your Next Watch</span>
-          </div>
-          <button
-            className="close-btn"
-            onClick={handleCollapse}
-            aria-label="Close search (Esc)"
-            title="Close (Esc)"
-          >
-            ✕
-          </button>
-        </div>
-
+    <>
+      <div className="search-island-backdrop" onClick={handleCollapse} aria-hidden="true" />
+      <div
+        ref={islandRef}
+        className={`search-island expanded ${shouldExpandForResults ? 'has-results' : 'is-compact'}`}
+        role="dialog"
+        aria-label="Search movies and shows"
+        aria-modal="false"
+        id="search-island-content"
+      >
+        <div className="island-content">
         {/* Search Input */}
         <form onSubmit={handleSubmit} className="search-form">
           <div className="search-input-wrapper">
+            <SearchIcon className="search-input-left-icon" />
             <input
               ref={searchInputRef}
               type="text"
@@ -403,9 +392,27 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               aria-controls="search-suggestion-list"
               aria-expanded={showSuggestions}
               aria-activedescendant={highlightedIndex >= 0 ? `search-suggestion-${highlightedIndex}` : undefined}
-              className="search-input"
+              className="search-input has-icons"
             />
-            {isSuggesting && <div className="suggest-loading">Searching...</div>}
+            {isLoading ? (
+              <button type="button" className="search-input-action" disabled aria-label="Searching">
+                <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="search-input-action"
+                disabled={!query.trim()}
+                aria-label="Search"
+                title="Search"
+              >
+                <SendIcon className="w-4 h-4" />
+              </button>
+            )}
+            {isSuggesting && !isLoading && <div className="suggest-loading">Searching...</div>}
 
             {/* Suggestions Dropdown with Icons */}
             {showSuggestions && suggestions.length > 0 && (
@@ -476,8 +483,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             </div>
           )}
 
-          {/* Mode Selector: Two Button Tabs */}
-          <div className="mode-selector">
+          {/* Mode Selector: Single-line pill toggle */}
+          <div className="mode-selector-pill" role="tablist" aria-label="Search mode">
             <button
               type="button"
               onClick={() => {
@@ -485,15 +492,18 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 localStorage.setItem(STORAGE_KEY_ANALYSIS, 'quick');
                 track('analysis_mode_toggled', { from: analysisMode, to: 'quick', source: 'search_island' });
               }}
-              className={`mode-btn ${analysisMode === 'quick' ? 'active' : ''}`}
+              className={`mode-pill-btn ${analysisMode === 'quick' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={analysisMode === 'quick'}
               aria-pressed={analysisMode === 'quick'}
               title="Fast results with summary"
+              aria-label="Quick Search"
             >
-              <Zap size={20} className="mode-icon" />
-              <div className="mode-content">
-                <span className="mode-label">Quick Search</span>
-                <span className="mode-desc">Find a movie fast</span>
-              </div>
+              <Zap size={14} className="mode-icon-inline" />
+              <span className="mode-label-group">
+                <span className="mode-label-inline">Quick</span>
+                <span className="mode-desc-inline">Fast summary</span>
+              </span>
             </button>
 
             <button
@@ -503,65 +513,24 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 localStorage.setItem(STORAGE_KEY_ANALYSIS, 'complex');
                 track('analysis_mode_toggled', { from: analysisMode, to: 'complex', source: 'search_island' });
               }}
-              className={`mode-btn ${analysisMode === 'complex' ? 'active' : ''}`}
+              className={`mode-pill-btn ${analysisMode === 'complex' ? 'active' : ''}`}
+              role="tab"
+              aria-selected={analysisMode === 'complex'}
               aria-pressed={analysisMode === 'complex'}
               title="Detailed analysis with cast, crew, ratings"
+              aria-label="Deep Dive"
             >
-              <FlaskConical size={20} className="mode-icon" />
-              <div className="mode-content">
-                <span className="mode-label">Deep Dive</span>
-                <span className="mode-desc">Analyze in detail</span>
-              </div>
+              <FlaskConical size={14} className="mode-icon-inline" />
+              <span className="mode-label-group">
+                <span className="mode-label-inline">Deep</span>
+                <span className="mode-desc-inline">Richer analysis</span>
+              </span>
             </button>
           </div>
-
-          {/* Helper text */}
-          <div className="mode-helper-text">
-            {analysisMode === 'quick' ? (
-              <span className="mode-helper-row">
-                <Zap size={14} className="mode-helper-icon" />
-                <span>Get instant results with key details and summaries</span>
-              </span>
-            ) : (
-              <span className="mode-helper-row">
-                <FlaskConical size={14} className="mode-helper-icon" />
-                <span>Full analysis with cast, crew, ratings, and web context</span>
-              </span>
-            )}
-          </div>
-
-          {/* Search Button */}
-          <button
-            type="submit"
-            className="search-action-btn"
-            disabled={!query.trim() || isLoading}
-            aria-label={isLoading ? 'Searching' : 'Search'}
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25" />
-                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75" />
-                </svg>
-                Searching...
-              </>
-            ) : (
-              <>
-                <SendIcon className="w-5 h-5" />
-                Search
-              </>
-            )}
-          </button>
         </form>
-
-        {/* Keyboard hints at bottom */}
-        <div className="search-hints">
-          <span><kbd>↑↓</kbd> navigate</span>
-          <span><kbd>⏎</kbd> select</span>
-          <span><kbd>Esc</kbd> close</span>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
