@@ -46,13 +46,16 @@ const GENRE_OPTIONS = [
   'Horror',
   'Mystery',
   'Romance',
+  'Family',
   'Science Fiction',
-  'Thriller'
+  'Thriller',
+  'War'
 ];
 
 const LANGUAGE_OPTIONS = [
   'English',
   'Hindi',
+  'Malayalam',
   'Spanish',
   'French',
   'German',
@@ -64,7 +67,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const DECADE_OPTIONS = ['1960s', '1970s', '1980s', '1990s', '2000s', '2010s', '2020s'];
-const REGION_OPTIONS = ['Hollywood', 'Bollywood', 'K-drama', 'Anime', 'European', 'Latin American'];
+const REGION_OPTIONS = ['Hollywood', 'Bollywood', 'K-drama', 'Anime', 'European', 'Latin American', 'Mollywood', 'South Indian'];
 
 const cardStyle: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.12)',
@@ -214,7 +217,7 @@ function SaveStatusMessage({ message }: { message: string }) {
   const isSuccess = message.toLowerCase().includes('saved successfully');
 
   return (
-    <p className={`text-sm inline-flex items-center gap-2 ${isSuccess ? 'text-emerald-300' : 'text-brand-text-light'}`}>
+    <p className={`text-sm inline-flex items-center gap-2 leading-none ${isSuccess ? 'text-emerald-300' : 'text-brand-text-light'}`}>
       {isSuccess ? <CheckIcon className="w-4 h-4" /> : <InfoIcon className="w-4 h-4" />}
       <span>{message}</span>
     </p>
@@ -329,16 +332,18 @@ export function ProfileSettingsPage() {
           />
         </div>
 
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={saving}
-          onClick={() => void saveAll(profile, preferences)}
-        >
-          {saving ? 'Saving...' : 'Save profile'}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={saving}
+            onClick={() => void saveAll(profile, preferences)}
+          >
+            {saving ? 'Saving...' : 'Save profile'}
+          </button>
 
-        {saveMessage && <SaveStatusMessage message={saveMessage} />}
+          {saveMessage && <SaveStatusMessage message={saveMessage} />}
+        </div>
       </section>
     </SettingsLayout>
   );
@@ -456,16 +461,18 @@ export function PreferenceSettingsPage() {
           </label>
         </div>
 
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={saving}
-          onClick={() => void saveAll(profile, preferences)}
-        >
-          {saving ? 'Saving...' : 'Save preferences'}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={saving}
+            onClick={() => void saveAll(profile, preferences)}
+          >
+            {saving ? 'Saving...' : 'Save preferences'}
+          </button>
 
-        {saveMessage && <SaveStatusMessage message={saveMessage} />}
+          {saveMessage && <SaveStatusMessage message={saveMessage} />}
+        </div>
       </section>
     </SettingsLayout>
   );
@@ -493,20 +500,22 @@ export function OnboardingPage() {
           />
         </div>
 
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={!canContinue || saving}
-          onClick={async () => {
-            const nextProfile = { ...profile, onboardingCompleted: true };
-            await saveAll(nextProfile, preferences);
-            navigate('/');
-          }}
-        >
-          {saving ? 'Saving...' : 'Finish onboarding'}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!canContinue || saving}
+            onClick={async () => {
+              const nextProfile = { ...profile, onboardingCompleted: true };
+              await saveAll(nextProfile, preferences);
+              navigate('/');
+            }}
+          >
+            {saving ? 'Saving...' : 'Finish onboarding'}
+          </button>
 
-        {saveMessage && <SaveStatusMessage message={saveMessage} />}
+          {saveMessage && <SaveStatusMessage message={saveMessage} />}
+        </div>
       </section>
     </SettingsLayout>
   );

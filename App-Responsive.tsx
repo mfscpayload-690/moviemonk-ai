@@ -642,7 +642,7 @@ const App: React.FC = () => {
         }
 
         {/* Main Content Area - Full width Featured UI */}
-        <div className="main-content pb-24">
+        <div className="main-content pb-4 sm:pb-6">
           {currentView === 'discovery' ? (
             <>
               <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item)} />

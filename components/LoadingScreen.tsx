@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface LoadingScreenProps {
   type: 'movie' | 'tv' | 'person';
@@ -6,6 +6,33 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ type, visible }) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!visible) {
+      setProgress(0);
+      return;
+    }
+
+    setProgress(6);
+    const startedAt = Date.now();
+    const configByType = {
+      movie: { target: 90, tauMs: 1700 },
+      tv: { target: 88, tauMs: 1850 },
+      person: { target: 94, tauMs: 1400 }
+    } as const;
+    const config = configByType[type];
+
+    const intervalId = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      // Ease toward a type-specific cap so progress feels realistic by content type.
+      const eased = 6 + (config.target - 6) * (1 - Math.exp(-elapsed / config.tauMs));
+      setProgress((current) => Math.max(current, Math.min(config.target, eased)));
+    }, 120);
+
+    return () => window.clearInterval(intervalId);
+  }, [visible, type]);
+
   if (!visible) return null;
 
   return (
@@ -15,18 +42,32 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ type, visible }) => {
       aria-live="polite"
       aria-label={`Loading ${type} details`}
     >
-      {type === 'movie' && <MovieLoadingScreen />}
-      {type === 'tv' && <TVLoadingScreen />}
-      {type === 'person' && <PersonLoadingScreen />}
+      {type === 'movie' && <MovieLoadingScreen progress={progress} />}
+      {type === 'tv' && <TVLoadingScreen progress={progress} />}
+      {type === 'person' && <PersonLoadingScreen progress={progress} />}
     </div>
   );
 };
+
+const LoadingProgressBar: React.FC<{ progress: number }> = ({ progress }) => (
+  <div className="w-full mt-1.5">
+    <div className="w-56 max-w-[72vw] h-1.5 rounded-full bg-white/10 overflow-hidden">
+      <div
+        className="h-full rounded-full bg-gradient-to-r from-brand-primary via-brand-accent to-brand-primary transition-[width] duration-300 ease-out"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+    <p className="text-[11px] text-brand-text-muted mt-1.5 text-center tabular-nums">
+      {Math.max(1, Math.round(progress))}% loaded
+    </p>
+  </div>
+);
 
 /**
  * Movie Loading Screen - Film Reel Spinner
  * Features a cinematic film reel with spinning animation
  */
-const MovieLoadingScreen: React.FC = () => (
+const MovieLoadingScreen: React.FC<{ progress: number }> = ({ progress }) => (
   <div className="glass-panel px-8 py-8 rounded-2xl shadow-2xl border border-white/15 flex flex-col items-center gap-4">
     {/* Film Reel Container */}
     <div className="relative w-20 h-20 flex items-center justify-center">
@@ -52,6 +93,8 @@ const MovieLoadingScreen: React.FC = () => (
       <p className="text-base font-semibold text-brand-text-main">Finding the perfect film</p>
       <p className="text-sm text-brand-text-muted animate-pulse">Loading movie details...</p>
     </div>
+
+    <LoadingProgressBar progress={progress} />
   </div>
 );
 
@@ -59,7 +102,7 @@ const MovieLoadingScreen: React.FC = () => (
  * TV Show Loading Screen - Scanning CRT Effect
  * Features a TV screen with animated scanning lines
  */
-const TVLoadingScreen: React.FC = () => (
+const TVLoadingScreen: React.FC<{ progress: number }> = ({ progress }) => (
   <div className="glass-panel px-8 py-8 rounded-2xl shadow-2xl border border-white/15 flex flex-col items-center gap-4">
     {/* TV Screen Container */}
     <div className="relative w-24 h-20 bg-black rounded-lg border-4 border-brand-accent/40 overflow-hidden"
@@ -104,6 +147,8 @@ const TVLoadingScreen: React.FC = () => (
         />
       ))}
     </div>
+
+    <LoadingProgressBar progress={progress} />
   </div>
 );
 
@@ -111,7 +156,7 @@ const TVLoadingScreen: React.FC = () => (
  * Person Loading Screen - Portrait Shimmer
  * Features a portrait frame with elegant shimmer effect
  */
-const PersonLoadingScreen: React.FC = () => (
+const PersonLoadingScreen: React.FC<{ progress: number }> = ({ progress }) => (
   <div className="glass-panel px-8 py-8 rounded-2xl shadow-2xl border border-white/15 flex flex-col items-center gap-4">
     {/* Portrait Frame */}
     <div className="relative w-24 h-32 rounded-lg border-2 border-brand-primary/40 overflow-hidden bg-gradient-to-b from-brand-primary/5 to-brand-accent/5"
@@ -157,6 +202,8 @@ const PersonLoadingScreen: React.FC = () => (
         />
       ))}
     </div>
+
+    <LoadingProgressBar progress={progress} />
   </div>
 );
 

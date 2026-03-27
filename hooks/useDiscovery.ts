@@ -181,9 +181,21 @@ const LANGUAGE_CODE_MAP: Record<string, string> = {
   german: 'de',
   japanese: 'ja',
   korean: 'ko',
+  malayalam: 'ml',
   tamil: 'ta',
   telugu: 'te',
   portuguese: 'pt'
+};
+
+const REGION_LANGUAGE_CODE_MAP: Record<string, string[]> = {
+  hollywood: ['en'],
+  bollywood: ['hi'],
+  'k-drama': ['ko'],
+  anime: ['ja'],
+  european: ['fr', 'de', 'es', 'it', 'pt'],
+  'latin american': ['es', 'pt'],
+  mollywood: ['ml'],
+  'south indian': ['ta', 'te', 'ml', 'kn']
 };
 
 function parseDecadeRanges(decades: string[]): DecadeRange[] {
@@ -201,6 +213,11 @@ function pickLanguageCodes(languages: string[]): string[] {
   return languages
     .map((language) => LANGUAGE_CODE_MAP[language.trim().toLowerCase()])
     .filter((code): code is string => Boolean(code));
+}
+
+function pickRegionLanguageCodes(regions: string[]): string[] {
+  const expanded = regions.flatMap((region) => REGION_LANGUAGE_CODE_MAP[region.trim().toLowerCase()] || []);
+  return [...new Set(expanded)];
 }
 
 function isYearInRanges(yearText: string, ranges: DecadeRange[]): boolean {
@@ -380,7 +397,10 @@ export async function loadDiscoverySnapshot(
   const strictEnabled = hasStrictPreferenceFilters(strictPrefs);
 
   if (strictEnabled) {
-    const languageCodes = pickLanguageCodes(strictPrefs.languages);
+    const languageCodes = [...new Set([
+      ...pickLanguageCodes(strictPrefs.languages),
+      ...pickRegionLanguageCodes(strictPrefs.favoriteRegions)
+    ])];
     const decadeRanges = parseDecadeRanges(strictPrefs.favoriteDecades);
 
     const movieGenreIds = strictPrefs.genres
@@ -503,7 +523,10 @@ export function useDiscovery() {
     }
     setError(null);
 
-    const languageCodes = pickLanguageCodes(preferences.languages);
+    const languageCodes = [...new Set([
+      ...pickLanguageCodes(preferences.languages),
+      ...pickRegionLanguageCodes(preferences.favoriteRegions)
+    ])];
     const decadeRanges = parseDecadeRanges(preferences.favoriteDecades);
     setStrictLanguageCodes(languageCodes);
     setStrictDecadeRanges(decadeRanges);
