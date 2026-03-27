@@ -7,6 +7,7 @@ import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
 import { useRenderCounter } from '../lib/perfDebug';
+import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -82,69 +83,6 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
     return null;
 };
 
-// Basic HTML escape function
-const escapeHtml = (unsafe: string) => {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-};
-
-// Helper function to convert simple markdown to HTML (XSS Safe)
-const markdownToHtml = (text: string): string => {
-    if (!text) return '';
-
-    const lines = text.split('\n');
-    const htmlBlocks: string[] = [];
-    let currentList: string[] = [];
-
-    const closeList = () => {
-        if (currentList.length > 0) {
-            htmlBlocks.push(`<ul>${currentList.join('')}</ul>`);
-            currentList = [];
-        }
-    };
-
-    lines.forEach(line => {
-        if (line.startsWith('### ')) {
-            closeList();
-            htmlBlocks.push(`<h3>${escapeHtml(line.substring(4))}</h3>`);
-        } else if (line.startsWith('## ')) {
-            closeList();
-            htmlBlocks.push(`<h2>${escapeHtml(line.substring(3))}</h2>`);
-        } else if (line.startsWith('* ')) {
-            currentList.push(`<li>${escapeHtml(line.substring(2))}</li>`);
-        } else if (line.trim() === '') {
-            closeList();
-        } else {
-            closeList();
-            htmlBlocks.push(`<p>${escapeHtml(line)}</p>`);
-        }
-    });
-
-    closeList(); // Close any remaining list
-
-    let html = htmlBlocks.join('');
-
-    // Inline replacements (Applied AFTER escaping to preserve tags)
-    // Note: This logic prevents bolding if the user inputs literal **foo**.
-    // To support markdown styles properly, we should unescape the specific specific tags we want to allow,
-    // or use a proper parser. For this simple case, we'll re-apply the formatting tags to the escaped string.
-
-    html = html.replace(/&lt;strong&gt;&lt;em&gt;(.*?)&lt;\/em&gt;&lt;\/strong&gt;/g, '<strong><em>$1</em></strong>'); // simplified for this regex approach
-    // Actually, simple regex replacement on escaped text:
-    // We want **text** to become <strong>text</strong>.
-    // The escape happened first, so **text** became **text** (unchanged special chars).
-    // So we can just run the replacements now.
-
-    html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>'); // Bold + Italic
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');       // Bold
-    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');               // Italic
-
-    return html;
-};
 
 const ImageWithFallback: React.FC<{ src: string, alt: string, className: string }> = ({ src, alt, className }) => {
     const [error, setError] = useState(false);
@@ -655,7 +593,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     </Section>
 
                     <Section title="AI Notes & Trivia">
-                        <div className="prose prose-invert prose-sm text-brand-text-dark max-w-none prose-p:my-2 prose-ul:my-2 prose-headings:text-brand-accent" dangerouslySetInnerHTML={{ __html: markdownToHtml(movie.ai_notes) }} />
+                        <div className="ai-notes-rich" dangerouslySetInnerHTML={{ __html: formatAiNotesHtml(movie.ai_notes) }} />
                     </Section>
                 </div>
 

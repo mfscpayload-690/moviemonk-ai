@@ -209,6 +209,82 @@ h6 {
     border-color: var(--color-text-muted);
 }
 
+/* Rich AI notes typography */
+.ai-notes-rich {
+    color: var(--color-text-muted);
+    line-height: 1.72;
+    font-size: 1.03rem;
+}
+
+.ai-notes-rich > * + * {
+    margin-top: 0.8rem;
+}
+
+.ai-notes-rich h2 {
+    color: var(--color-text-main);
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-top: 1.1rem;
+}
+
+.ai-notes-rich h3 {
+    color: #d9ccff;
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.4;
+    margin-top: 0.95rem;
+}
+
+.ai-notes-rich p {
+    margin: 0.4rem 0;
+}
+
+.ai-notes-rich ul,
+.ai-notes-rich ol {
+    margin: 0.5rem 0 0.7rem;
+    padding-left: 1.2rem;
+}
+
+.ai-notes-rich li {
+    margin: 0.25rem 0;
+}
+
+.ai-notes-rich strong {
+    color: #f1ecff;
+    font-weight: 700;
+}
+
+.ai-notes-rich em {
+    color: #c5cbda;
+    font-style: italic;
+}
+
+.ai-notes-rich code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.08);
+    color: #efe7ff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.9em;
+}
+
+@media (max-width: 640px) {
+    .ai-notes-rich {
+        font-size: 0.98rem;
+        line-height: 1.66;
+    }
+
+    .ai-notes-rich h2 {
+        font-size: 1.08rem;
+    }
+
+    .ai-notes-rich h3 {
+        font-size: 0.98rem;
+    }
+}
+
 /* Backward Compatibility Layer */
 .bg-brand-bg {
     background-color: var(--color-bg);

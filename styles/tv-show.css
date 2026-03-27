@@ -440,8 +440,8 @@
 
 /* AI Notes */
 .ai-notes {
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.8);
+  color: inherit;
+  line-height: inherit;
 }
 
 /* Official Site Link */

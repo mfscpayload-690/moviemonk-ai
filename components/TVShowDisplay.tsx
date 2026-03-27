@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MovieData, TVShowEpisode, TVShowSeason } from '../types';
 import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon } from './icons';
+import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import '../styles/tv-show.css';
 
 interface TVShowDisplayProps {
@@ -327,9 +328,9 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
                 <div className="tv-show-section">
                     <h2>Trivia & Facts</h2>
                     <div
-                        className="ai-notes"
+                        className="ai-notes ai-notes-rich"
                         dangerouslySetInnerHTML={{
-                            __html: movie.ai_notes.replace(/\n/g, '<br />')
+                            __html: formatAiNotesHtml(movie.ai_notes)
                         }}
                     />
                 </div>
