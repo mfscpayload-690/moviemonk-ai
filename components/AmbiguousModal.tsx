@@ -33,6 +33,20 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   const listRef = useRef<HTMLDivElement>(null);
   const isPersonShortlist = mode === 'person-shortlist';
 
+  // Keep the background page fixed while this modal is open so wheel/trackpad
+  // gestures are applied to the modal list instead of the page beneath.
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, []);
+
   // Filter candidates based on selected type
   const filtered = isPersonShortlist
     ? sortPersonShortlist(candidates.filter(c => c.type === 'person'))
@@ -95,8 +109,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col max-h-[94vh] sm:max-h-[88vh] sm:my-6">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
           <div>
@@ -145,7 +159,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         )}
 
         {/* Results List */}
-        <div ref={listRef} className="overflow-y-auto flex-1 overscroll-contain">
+        <div ref={listRef} className="overflow-y-auto flex-1 min-h-0 overscroll-contain">
           <div className="divide-y divide-white/5">
             {filtered.length === 0 ? (
               <div className="px-6 py-8 text-center">
@@ -167,7 +181,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     key={`${c.type}-${c.id}`}
                     data-idx={i}
                     onClick={() => onSelect(c)}
-                    className={`w-full text-left px-4 sm:px-6 py-4 transition flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
+                    className={`w-full text-left px-4 sm:px-6 py-4 transition-colors duration-150 flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
                       ? 'border-l-brand-primary bg-brand-primary/10'
                       : 'border-l-transparent hover:border-l-brand-primary/50'
                       }`}
@@ -176,7 +190,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                   {/* Thumbnail - larger on mobile */}
                   <div className="flex-shrink-0 w-20 h-28 sm:w-20 sm:h-28 ambiguous-thumb-mobile rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
                     {c.image ? (
-                      <img src={c.image} alt={c.title} className="w-full h-full object-cover" loading="lazy" />
+                      <img src={c.image} alt={c.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="text-brand-primary/60">
                         {getTypeIcon(c.type)}
