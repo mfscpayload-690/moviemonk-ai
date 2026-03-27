@@ -92,10 +92,11 @@ h6 {
 }
 
 .text-gradient {
-    background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #db2777 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease;
 }
 
 .text-gradient-primary {
@@ -103,6 +104,12 @@ h6 {
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.title-font {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
 /* Layout Containers */
@@ -1769,11 +1776,38 @@ a:focus-visible {
 }
 
 .app-header {
-    background: rgba(8, 8, 8, 0.92);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 2px 18px rgba(0, 0, 0, 0.32);
+    background: rgba(8, 8, 8, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(124, 58, 237, 0.15);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Header Logo Animations */
+.app-header .drop-shadow-glow {
+    transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.app-header button:hover .drop-shadow-glow {
+    filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.8));
+    transform: scale(1.05);
+}
+
+/* Header Title Hover */
+.app-header button:hover .text-gradient {
+    background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #db2777 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+}
+
+/* Button Hover Animations */
+.btn-glass {
+    transition: all 0.25s ease;
+}
+
+.btn-glass:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
 }
 
 .discovery-page {
