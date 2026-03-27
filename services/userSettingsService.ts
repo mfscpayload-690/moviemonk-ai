@@ -70,7 +70,7 @@ export async function fetchPreferenceSettings(userId: string): Promise<UserPrefe
     : [];
 
   const legacyEnabled = Boolean(data.notifications_enabled);
-  const notificationChannels = channels.length > 0 ? channels : (legacyEnabled ? ['in_app'] : []);
+  const notificationChannels: Array<'in_app' | 'email' | 'push'> = channels.length > 0 ? channels : (legacyEnabled ? ['in_app'] : []);
   const notificationFrequency = data.notification_frequency === 'daily' || data.notification_frequency === 'weekly' || data.notification_frequency === 'off'
     ? data.notification_frequency
     : (legacyEnabled ? 'weekly' : 'off');

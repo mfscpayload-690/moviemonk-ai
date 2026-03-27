@@ -80,7 +80,8 @@ export async function enablePushNotifications(userId: string): Promise<void> {
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: base64UrlToUint8Array(vapidPublicKey)
+      // Keep as string for broad TS lib compatibility across CI environments.
+      applicationServerKey: vapidPublicKey
     });
   }
 
