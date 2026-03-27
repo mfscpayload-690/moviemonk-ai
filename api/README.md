@@ -27,12 +27,18 @@ Processes queued events from `notification_events`:
 
 - In-app channel: marks queued events as `sent` for inbox display
 - Email channel: sends via Resend and marks `sent`/`failed`
-- Push channel: currently marked `failed` until provider adapter is added
+- Push channel: sends via Web Push (VAPID) to registered device subscriptions
 
 ### Required env vars for email delivery
 
 - `RESEND_API_KEY`
 - `NOTIFICATION_FROM_EMAIL` (verified sender identity)
+
+### Required env vars for push delivery
+
+- `VITE_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT` (mailto URL)
 
 ## OpenRouter Proxy (`/api/openrouter`)
 

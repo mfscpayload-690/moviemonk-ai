@@ -3,6 +3,7 @@ import { applyCors } from '../_utils/cors';
 import { beginRequestObservation } from '../_utils/observability';
 import { sendApiError } from '../_utils/http';
 import { getSupabaseAdminClient } from '../_utils/supabaseAdmin';
+import webpush from 'web-push';
 
 type NotificationRow = {
   id: string;
@@ -11,6 +12,28 @@ type NotificationRow = {
   event_type: 'digest' | 'recommendation' | 'watchlist_reminder' | 'release_alert';
   payload: { title?: string; message?: string } | null;
 };
+
+type PushSubscriptionRow = {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+};
+
+let vapidConfigured = false;
+
+function ensureVapidConfigured() {
+  if (vapidConfigured) return;
+  const publicKey = process.env.VITE_VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  const subject = process.env.VAPID_SUBJECT || 'mailto:support@moviemonk.app';
+
+  if (!publicKey || !privateKey) {
+    throw new Error('Push provider not configured. Set VITE_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.');
+  }
+
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+  vapidConfigured = true;
+}
 
 async function sendEmail(to: string, subject: string, body: string): Promise<void> {
   const resendApiKey = process.env.RESEND_API_KEY;
@@ -119,8 +142,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           continue;
         }
 
-        // Push provider wiring placeholder
-        throw new Error('Push provider is not configured yet.');
+        if (item.channel === 'push') {
+          ensureVapidConfigured();
+
+          const { data: subs, error: subError } = await (supabase.from('push_subscriptions') as any)
+            .select('endpoint, p256dh, auth')
+            .eq('user_id', item.user_id);
+
+          if (subError) throw subError;
+          const subscriptions = (subs || []) as PushSubscriptionRow[];
+          if (subscriptions.length === 0) {
+            throw new Error('No push subscriptions found for user.');
+          }
+
+          let delivered = 0;
+          for (const sub of subscriptions) {
+            const payload = JSON.stringify({
+              title: item.payload?.title || 'MovieMonk notification',
+              body: item.payload?.message || 'You have an update from MovieMonk.',
+              data: { url: '/' }
+            });
+
+            try {
+              await webpush.sendNotification(
+                {
+                  endpoint: sub.endpoint,
+                  keys: {
+                    p256dh: sub.p256dh,
+                    auth: sub.auth
+                  }
+                },
+                payload
+              );
+              delivered += 1;
+            } catch (pushErr: any) {
+              const status = pushErr?.statusCode;
+              if (status === 404 || status === 410) {
+                await (supabase.from('push_subscriptions') as any)
+                  .delete()
+                  .eq('user_id', item.user_id)
+                  .eq('endpoint', sub.endpoint);
+              }
+            }
+          }
+
+          if (delivered === 0) {
+            throw new Error('Push delivery failed for all subscriptions.');
+          }
+
+          const { error } = await (supabase.from('notification_events') as any)
+            .update({ status: 'sent', sent_at: new Date().toISOString() })
+            .eq('id', item.id);
+          if (error) throw error;
+          sent += 1;
+          continue;
+        }
+
+        throw new Error(`Unsupported notification channel: ${item.channel}`);
       } catch (err: any) {
         failed += 1;
         await (supabase.from('notification_events') as any)

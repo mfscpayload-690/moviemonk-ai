@@ -3,6 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { CheckIcon, InfoIcon } from '../components/icons';
 import {
+  disablePushNotifications,
+  enablePushNotifications,
+  hasPushSubscription
+} from '../services/notificationService';
+import {
   DEFAULT_PREFERENCE_SETTINGS,
   DEFAULT_PROFILE_SETTINGS,
   loadPreferenceSettings,
@@ -344,6 +349,56 @@ export function PreferenceSettingsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { profile, preferences, setPreferences, saveAll, saving, saveMessage } = useSettingsState();
+  const [isPushReady, setIsPushReady] = useState(false);
+  const [pushStatusMessage, setPushStatusMessage] = useState<string | null>(null);
+  const [isPushSyncing, setIsPushSyncing] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let alive = true;
+    void hasPushSubscription()
+      .then((active) => {
+        if (!alive) return;
+        setIsPushReady(active);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setIsPushReady(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [user?.id]);
+
+  const handleEnablePush = async () => {
+    if (!user?.id) return;
+    setIsPushSyncing(true);
+    setPushStatusMessage(null);
+    try {
+      await enablePushNotifications(user.id);
+      setIsPushReady(true);
+      setPushStatusMessage('Push notifications enabled on this device.');
+    } catch (error: any) {
+      setPushStatusMessage(error?.message || 'Failed to enable push notifications.');
+    } finally {
+      setIsPushSyncing(false);
+    }
+  };
+
+  const handleDisablePush = async () => {
+    if (!user?.id) return;
+    setIsPushSyncing(true);
+    setPushStatusMessage(null);
+    try {
+      await disablePushNotifications(user.id);
+      setIsPushReady(false);
+      setPushStatusMessage('Push notifications disabled on this device.');
+    } catch (error: any) {
+      setPushStatusMessage(error?.message || 'Failed to disable push notifications.');
+    } finally {
+      setIsPushSyncing(false);
+    }
+  };
 
   const toggleNotificationChannel = (channel: 'in_app' | 'email' | 'push') => {
     const exists = preferences.notificationChannels.includes(channel);
@@ -488,6 +543,34 @@ export function PreferenceSettingsPage() {
                 );
               })}
             </div>
+
+            {preferences.notificationChannels.includes('push') && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  className="btn-glass px-3 py-1.5 text-sm"
+                  onClick={() => void handleEnablePush()}
+                  disabled={isPushSyncing}
+                >
+                  {isPushSyncing ? 'Working...' : 'Enable push on this device'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-glass px-3 py-1.5 text-sm"
+                  onClick={() => void handleDisablePush()}
+                  disabled={isPushSyncing || !isPushReady}
+                >
+                  Disable push on this device
+                </button>
+                <span className={`text-xs ${isPushReady ? 'text-emerald-300' : 'text-brand-text-light'}`}>
+                  {isPushReady ? 'Device registered' : 'Device not registered'}
+                </span>
+              </div>
+            )}
+
+            {pushStatusMessage && (
+              <p className="text-xs text-brand-text-light">{pushStatusMessage}</p>
+            )}
           </div>
 
           <div>
