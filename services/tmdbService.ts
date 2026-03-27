@@ -414,6 +414,7 @@ async function fetchWatchProviders(mediaType: 'movie'|'tv', id: number): Promise
 async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
   title: string;
   year: string;
+  language?: string;
   type: MovieData['type'];
   genres: string[];
   overview: string;
@@ -427,6 +428,16 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
     const title = mediaType === 'movie' ? data.title : data.name;
     const releaseDate = mediaType === 'movie' ? data.release_date : data.first_air_date;
     const year = releaseDate ? new Date(releaseDate).getFullYear().toString() : '';
+    const spokenLanguage = Array.isArray(data?.spoken_languages) && data.spoken_languages.length > 0
+      ? data.spoken_languages[0]
+      : null;
+    const language = typeof spokenLanguage?.english_name === 'string' && spokenLanguage.english_name.trim().length > 0
+      ? spokenLanguage.english_name.trim()
+      : typeof spokenLanguage?.name === 'string' && spokenLanguage.name.trim().length > 0
+        ? spokenLanguage.name.trim()
+        : typeof data?.original_language === 'string'
+          ? data.original_language
+          : undefined;
     const genres = (data.genres || []).map((g: any) => g.name);
     const overview = data.overview || '';
     const poster = buildImageUrl(data.poster_path, 'w500');
@@ -449,6 +460,7 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
     return {
       title,
       year,
+      language,
       type: mediaType === 'tv' ? 'show' : 'movie',
       genres,
       overview,
@@ -771,6 +783,7 @@ export async function getFromTMDB(parsed: ParsedQuery): Promise<MovieData | null
     const movieData: MovieData = {
       title: details.title,
       year: details.year,
+      language: details.language,
       type: details.type,
       genres: details.genres,
       poster_url: images.poster || details.poster || images.backdrop || details.backdrop || '',

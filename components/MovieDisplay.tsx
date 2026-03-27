@@ -20,6 +20,49 @@ interface MovieDisplayProps {
     onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
 }
 
+const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
+    ja: 'Japanese',
+    ko: 'Korean',
+    zh: 'Chinese',
+    th: 'Thai',
+    hi: 'Hindi',
+    ta: 'Tamil',
+    te: 'Telugu',
+    ml: 'Malayalam',
+    bn: 'Bengali',
+    mr: 'Marathi',
+    pa: 'Punjabi',
+    en: 'English',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    ar: 'Arabic',
+    tr: 'Turkish',
+    id: 'Indonesian'
+};
+
+const toSentenceCase = (value: string): string =>
+    value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+
+const formatDisplayLanguage = (value?: string): string => {
+    if (!value || !value.trim()) return '';
+    const normalized = value.trim();
+    const lower = normalized.toLowerCase();
+
+    if (LANGUAGE_NAME_BY_CODE[lower]) {
+        return LANGUAGE_NAME_BY_CODE[lower];
+    }
+
+    if (normalized.length <= 3 && /^[a-zA-Z]{2,3}$/.test(normalized)) {
+        return toSentenceCase(normalized);
+    }
+
+    return normalized;
+};
+
 const getYouTubeEmbedUrl = (url: string): string | null => {
     if (!url) return null;
     let videoId: string | null = null;
@@ -368,6 +411,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     }
 
     // Otherwise, use the standard movie display
+    const heroMetaParts = [
+        movie.year,
+        typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : '',
+        safeGenres[0] || '',
+        formatDisplayLanguage(movie.language)
+    ].filter((part) => typeof part === 'string' && part.trim().length > 0);
+
     return (
         <div className="relative min-h-full">
             {/* Hero Section with Poster Card */}
@@ -402,7 +452,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         <div className="flex-1 text-center sm:text-left pb-2 md:pb-4 w-full sm:w-auto">
                             <h1 className="text-2xl sm:text-3xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight drop-shadow-2xl animate-fade-in leading-tight text-depth" style={{ animationDelay: '0.15s', animationFillMode: 'forwards' }}>{movie.title}</h1>
                             <p className="mt-2 md:mt-3 text-sm sm:text-base md:text-xl text-brand-text-light font-semibold animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'forwards' }}>
-                                {movie.year} &bull; {typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : ''}
+                                {heroMetaParts.join(' \u2022 ')}
                             </p>
 
                             <div className="mt-2 md:mt-4 flex flex-wrap justify-center sm:justify-start gap-1.5 md:gap-2 animate-slide-up" style={{ animationDelay: '0.35s', animationFillMode: 'forwards' }}>
