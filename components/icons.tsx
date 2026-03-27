@@ -17,7 +17,7 @@ import {
     Sparkles as LucideSparkles,
     Trash2
 } from 'lucide-react';
-import logoUrl from '../asset/MovieMonk Logo.png';
+import logoUrl from '../asset/android-chrome-192x192.png';
 
 type IconProps = { className?: string; 'aria-label'?: string };
 

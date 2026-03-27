@@ -477,10 +477,10 @@ const App: React.FC = () => {
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 glass-panel border-b-0 z-50">
-          <button type="button" className="flex items-center gap-2 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
-            <Logo className="w-8 h-8 text-primary drop-shadow-glow" />
-            <h1 className="text-lg sm:text-xl font-bold text-gradient tracking-tight">MovieMonk</h1>
+        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-3.5 glass-panel border-b-0 z-50">
+          <button type="button" className="flex items-center gap-2.5 sm:gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
+            <Logo className="w-9 h-9 sm:w-10 sm:h-10 text-primary drop-shadow-glow" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gradient title-font tracking-tight">MovieMonk</h1>
           </button>
           <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-3">
             <DynamicSearchIsland
@@ -495,7 +495,7 @@ const App: React.FC = () => {
               className="btn-glass flex items-center gap-2"
               aria-label="Open watch later"
             >
-              <FolderIcon className="w-4 h-4" />
+              <FolderIcon className="w-5 h-5" />
               <span className="hidden sm:inline">Watchlists</span>
             </button>
             {(movieData || personData) && (
@@ -504,7 +504,7 @@ const App: React.FC = () => {
                 className="btn-glass flex items-center gap-2"
                 aria-label="Share this result"
               >
-                <ShareIcon className="w-4 h-4" />
+                <ShareIcon className="w-5 h-5" />
                 <span className="hidden sm:inline">Share</span>
               </button>
             )}
