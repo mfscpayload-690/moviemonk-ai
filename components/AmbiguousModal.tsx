@@ -271,8 +271,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
 
         {/* Footer */}
         <div className="px-4 sm:px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0 text-center sm:text-left">
-          <span className="hidden sm:inline flex items-center gap-2 justify-center sm:justify-start">
-            <Lightbulb size={14} className="flex-shrink-0" />
+          <div className="hidden sm:flex items-start gap-2 justify-center sm:justify-start leading-5">
+            <Lightbulb size={14} className="flex-shrink-0 mt-[1px]" />
             {isPersonShortlist ? 'Tip: choose the exact person profile you mean, then continue.' : 'Tip: Use'}
             <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">↑↓</kbd>
             {!isPersonShortlist && (
@@ -284,11 +284,11 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 to close
               </>
             )}
-          </span>
-          <span className="sm:hidden flex items-center gap-2 justify-center">
-            <Lightbulb size={14} className="flex-shrink-0" />
+          </div>
+          <div className="sm:hidden flex items-start gap-2 justify-center leading-5">
+            <Lightbulb size={14} className="flex-shrink-0 mt-[1px]" />
             {isPersonShortlist ? 'Tap the right person to continue' : 'Tap to select a result'}
-          </span>
+          </div>
         </div>
       </div>
     </div>
