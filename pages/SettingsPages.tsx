@@ -467,21 +467,32 @@ export function OnboardingPage() {
 export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { loading, user } = useAuth();
+  const [waitCount, setWaitCount] = useState(0);
 
   useEffect(() => {
-    if (loading) return;
-    const localProfile = loadProfileSettings();
-    if (!user) {
-      navigate('/');
+    // If still loading or user hasn't been populated yet, wait a bit
+    if (loading || !user) {
+      // Maximum 2 seconds wait for auth to complete
+      if (waitCount < 20) {
+        const timer = setTimeout(() => {
+          setWaitCount(prev => prev + 1);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+      // If we've waited long enough and still no user, redirect to home
+      navigate('/', { replace: true });
       return;
     }
+
+    // User is now confirmed logged in
+    const localProfile = loadProfileSettings();
     navigate(localProfile.onboardingCompleted ? '/' : '/onboarding', { replace: true });
-  }, [loading, navigate, user]);
+  }, [loading, user, navigate, waitCount]);
 
   return (
     <SettingsLayout title="Signing you in">
       <section style={cardStyle}>
-        <p className="text-brand-text-light text-sm">Completing authentication and restoring your session.</p>
+        <p className="text-brand-text-light text-sm">Completing authentication and restoring your session...</p>
       </section>
     </SettingsLayout>
   );

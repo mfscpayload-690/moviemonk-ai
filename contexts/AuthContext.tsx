@@ -31,6 +31,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const hydrate = async () => {
       try {
         setLoading(true);
+        
+        // Wait a tick for Supabase to process OAuth callback from URL hash
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
         if (!isMounted) return;
@@ -49,10 +53,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession ?? null);
-      setUser(nextSession?.user ?? null);
-      setLoading(false);
-      setError(null);
+      if (isMounted) {
+        setSession(nextSession ?? null);
+        setUser(nextSession?.user ?? null);
+        setLoading(false);
+        setError(null);
+      }
     });
 
     return () => {
