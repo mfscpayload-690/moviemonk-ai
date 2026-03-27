@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { DEFAULT_PROFILE_SETTINGS, DEFAULT_PREFERENCE_SETTINGS, saveProfileSettings, savePreferenceSettings } from '../lib/userSettings';
 
 type AuthContextValue = {
   isEnabled: boolean;
@@ -97,6 +98,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(signOutError.message || 'Sign-out failed');
       throw signOutError;
     }
+    
+    // Clear user preferences and profile from localStorage on sign-out
+    saveProfileSettings(DEFAULT_PROFILE_SETTINGS);
+    savePreferenceSettings(DEFAULT_PREFERENCE_SETTINGS);
   };
 
   const value = useMemo<AuthContextValue>(

@@ -14,6 +14,7 @@ import { ClipboardIcon, EditIcon, FolderIcon, Logo, SettingsIcon, ShareIcon, Tra
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
 import { useCloudWatchlists } from './hooks/useCloudWatchlists';
+import { useAuth } from './contexts/AuthContext';
 import { VirtualizedList } from './components/VirtualizedList';
 import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
 import { parseAppRoute } from './lib/routeState';
@@ -31,6 +32,7 @@ const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 const App: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   useRenderCounter('App');
   useEffect(() => {
     initPerfDebug('app-shell');
@@ -599,10 +601,12 @@ const App: React.FC = () => {
                 {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
               </span>
             </button>
-            <Link to="/settings" className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4" aria-label="Open settings">
-              <SettingsIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Settings</span>
-            </Link>
+            {user && (
+              <Link to="/settings" className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4" aria-label="Open settings">
+                <SettingsIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Settings</span>
+              </Link>
+            )}
             {(movieData || personData) && (
               <button
                 onClick={handleShare}

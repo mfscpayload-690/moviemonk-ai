@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { CheckIcon, InfoIcon } from '../components/icons';
 import {
   DEFAULT_PREFERENCE_SETTINGS,
   DEFAULT_PROFILE_SETTINGS,
@@ -209,14 +210,41 @@ function MultiSelectChips({
   );
 }
 
+function SaveStatusMessage({ message }: { message: string }) {
+  const isSuccess = message.toLowerCase().includes('saved successfully');
+
+  return (
+    <p className={`text-sm inline-flex items-center gap-2 ${isSuccess ? 'text-emerald-300' : 'text-brand-text-light'}`}>
+      {isSuccess ? <CheckIcon className="w-4 h-4" /> : <InfoIcon className="w-4 h-4" />}
+      <span>{message}</span>
+    </p>
+  );
+}
+
 export function SettingsHubPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return <SettingsLayout title="Settings"><div className="text-center text-brand-text-light">Loading...</div></SettingsLayout>;
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <SettingsLayout title="Settings">
       <div className="grid gap-4 md:grid-cols-2">
         <section style={cardStyle}>
           <h2 style={sectionTitleStyle}>Profile Settings</h2>
-          <p className="text-brand-text-light text-sm mb-3">Manage identity details used for account and feed tuning.</p>
+          <p className="text-brand-text-light text-sm mb-3">Manage your account identity and profile details.</p>
           <Link to="/settings/profile" className="btn-primary inline-flex">Open profile settings</Link>
         </section>
         <section style={cardStyle}>
@@ -225,18 +253,28 @@ export function SettingsHubPage() {
           <Link to="/settings/preferences" className="btn-primary inline-flex">Open preference settings</Link>
         </section>
       </div>
-      {!user && (
-        <section style={{ ...cardStyle, marginTop: '1rem' }}>
-          <h2 style={sectionTitleStyle}>Guest mode active</h2>
-          <p className="text-brand-text-light text-sm">You can edit settings locally. Sign in to sync preferences and unlock personalized feed.</p>
-        </section>
-      )}
     </SettingsLayout>
   );
 }
 
 export function ProfileSettingsPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const { profile, preferences, setProfile, saveAll, saving, saveMessage } = useSettingsState();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return <SettingsLayout title="Profile Settings"><div className="text-center text-brand-text-light">Loading...</div></SettingsLayout>;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <SettingsLayout title="Profile Settings">
@@ -300,14 +338,30 @@ export function ProfileSettingsPage() {
           {saving ? 'Saving...' : 'Save profile'}
         </button>
 
-        {saveMessage && <p className="text-sm text-brand-text-light">{saveMessage}</p>}
+        {saveMessage && <SaveStatusMessage message={saveMessage} />}
       </section>
     </SettingsLayout>
   );
 }
 
 export function PreferenceSettingsPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const { profile, preferences, setPreferences, saveAll, saving, saveMessage } = useSettingsState();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return <SettingsLayout title="Preference Settings"><div className="text-center text-brand-text-light">Loading...</div></SettingsLayout>;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <SettingsLayout title="Preference Settings">
@@ -411,7 +465,7 @@ export function PreferenceSettingsPage() {
           {saving ? 'Saving...' : 'Save preferences'}
         </button>
 
-        {saveMessage && <p className="text-sm text-brand-text-light">{saveMessage}</p>}
+        {saveMessage && <SaveStatusMessage message={saveMessage} />}
       </section>
     </SettingsLayout>
   );
@@ -452,7 +506,7 @@ export function OnboardingPage() {
           {saving ? 'Saving...' : 'Finish onboarding'}
         </button>
 
-        {saveMessage && <p className="text-sm text-brand-text-light">{saveMessage}</p>}
+        {saveMessage && <SaveStatusMessage message={saveMessage} />}
       </section>
     </SettingsLayout>
   );
