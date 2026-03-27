@@ -34,6 +34,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   const [hasOverflow, setHasOverflow] = useState(false);
   const [canScrollUp, setCanScrollUp] = useState(false);
   const [canScrollDown, setCanScrollDown] = useState(false);
+  const [hasUserScrolledList, setHasUserScrolledList] = useState(false);
   const isPersonShortlist = mode === 'person-shortlist';
 
   // Keep the background page fixed while this modal is open so wheel/trackpad
@@ -108,6 +109,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
 
   useEffect(() => {
     updateScrollAffordance();
+    setHasUserScrolledList(false);
   }, [filtered.length, updateScrollAffordance]);
 
   useEffect(() => {
@@ -115,6 +117,14 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [updateScrollAffordance]);
+
+  const handleListScroll = useCallback(() => {
+    const el = listRef.current;
+    if (el && el.scrollTop > 8 && !hasUserScrolledList) {
+      setHasUserScrolledList(true);
+    }
+    updateScrollAffordance();
+  }, [hasUserScrolledList, updateScrollAffordance]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -193,7 +203,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
           <div
             ref={listRef}
             className="overflow-y-auto h-full overscroll-contain"
-            onScroll={updateScrollAffordance}
+            onScroll={handleListScroll}
           >
             <div className="divide-y divide-white/5">
             {filtered.length === 0 ? (
@@ -316,11 +326,13 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 aria-hidden="true"
                 className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/75 to-transparent z-10"
               />
-              <div className="pointer-events-none absolute bottom-2 left-0 right-0 z-20 flex justify-center">
-                <span className="px-2 py-1 rounded-full text-[11px] font-medium bg-black/50 border border-white/10 text-brand-text-dark">
-                  Scroll for more
-                </span>
-              </div>
+              {!hasUserScrolledList && (
+                <div className="pointer-events-none absolute bottom-2 left-0 right-0 z-20 flex justify-center">
+                  <span className="px-2 py-1 rounded-full text-[11px] font-medium bg-black/50 border border-white/10 text-brand-text-dark">
+                    Scroll for more
+                  </span>
+                </div>
+              )}
             </>
           )}
         </div>
