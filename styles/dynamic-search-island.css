@@ -226,8 +226,8 @@
 
 .search-input-left-icon {
   position: absolute;
-  left: 0.875rem;
-  top: 50%;
+  left: 1rem;
+  top: calc(50% - 1px);
   transform: translateY(-50%);
   width: 18px;
   height: 18px;
