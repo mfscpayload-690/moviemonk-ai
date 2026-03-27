@@ -2570,17 +2570,18 @@ a:focus-visible {
 
 .person-editorial-identity {
     display: grid;
-    grid-template-columns: 88px minmax(0, 1fr);
-    gap: 0.95rem;
-    align-items: center;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 1.2rem;
+    align-items: start;
 }
 
 .person-editorial-avatar {
-    width: 88px;
-    height: 88px;
+    width: 120px;
+    height: 120px;
     border-radius: 14px;
     object-fit: cover;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
 }
 
 .person-editorial-avatar-fallback {
@@ -3090,13 +3091,13 @@ a:focus-visible {
     }
 
     .person-editorial-identity {
-        grid-template-columns: 132px minmax(0, 1fr);
-        gap: 1.15rem;
+        grid-template-columns: 160px minmax(0, 1fr);
+        gap: 1.4rem;
     }
 
     .person-editorial-avatar {
-        width: 132px;
-        height: 132px;
+        width: 160px;
+        height: 160px;
     }
 
     .person-editorial-secondary-desktop {

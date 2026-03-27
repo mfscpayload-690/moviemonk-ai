@@ -591,7 +591,7 @@ const App: React.FC = () => {
             <AuthButton />
             <button
               onClick={() => navigate('/watchlists')}
-              className="btn-glass flex items-center gap-1 px-2 py-1.5 sm:gap-2 sm:px-4 sm:py-2"
+              className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4"
               aria-label="Open watch later"
             >
               <FolderIcon className="w-3.5 h-3.5" />
@@ -599,14 +599,14 @@ const App: React.FC = () => {
                 {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
               </span>
             </button>
-            <Link to="/settings" className="btn-glass flex items-center gap-1 px-2 py-1.5 sm:gap-2 sm:px-4 sm:py-2" aria-label="Open settings">
+            <Link to="/settings" className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4" aria-label="Open settings">
               <SettingsIcon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Settings</span>
             </Link>
             {(movieData || personData) && (
               <button
                 onClick={handleShare}
-                className="btn-glass flex items-center gap-1 px-2 py-1.5 sm:gap-2 sm:px-4 sm:py-2"
+                className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4"
                 aria-label="Share this result"
               >
                 <ShareIcon className="w-3.5 h-3.5" />
