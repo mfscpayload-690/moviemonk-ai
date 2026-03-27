@@ -23,6 +23,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    isStrictPersonalized,
     isLoading,
     isGenreLoading,
     error,
@@ -83,6 +84,18 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
           onOpenTitle={onOpenTitle}
         />
       ))}
+
+      {isStrictPersonalized && !isLoading && sections.length === 0 && (
+        <section className="discovery-error" role="status">
+          <div>
+            <p className="discovery-section-kicker">No personalized matches</p>
+            <h2 className="discovery-section-title">Try broadening your preferences.</h2>
+            <p className="discovery-error-copy">
+              Your current language, genre, decade, and content mix filters are strict. Update preferences to see more titles.
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className="discovery-section">
         <div className="discovery-section-heading genre-heading">

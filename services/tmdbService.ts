@@ -49,6 +49,7 @@ function normalizeDiscoveryItem(raw: any): DiscoveryItem | null {
     id: raw.id,
     tmdb_id: String(raw.id),
     media_type: mediaType,
+    original_language: typeof raw?.original_language === 'string' ? raw.original_language : undefined,
     title,
     year: typeof releaseDate === 'string' ? releaseDate.substring(0, 4) : '',
     overview: typeof raw?.overview === 'string' ? raw.overview : '',

@@ -6,12 +6,11 @@ import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import LoadingScreen from './components/LoadingScreen';
-import PersonalizedFeedPanel from './components/PersonalizedFeedPanel';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
-import { ClipboardIcon, FolderIcon, Logo, SettingsIcon, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
+import { ClipboardIcon, EditIcon, FolderIcon, Logo, SettingsIcon, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
 import { useCloudWatchlists } from './hooks/useCloudWatchlists';
@@ -627,11 +626,6 @@ const App: React.FC = () => {
         <div className="main-content pb-24">
           {currentView === 'discovery' ? (
             <>
-              <PersonalizedFeedPanel
-                onRunQuery={(query) => {
-                  void handleSendMessage(query, QueryComplexity.SIMPLE, selectedProvider);
-                }}
-              />
               <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item)} />
             </>
           ) : currentView === 'person' && personData ? (

@@ -21,6 +21,7 @@ export interface DiscoveryItem {
   id: number;
   tmdb_id: string;
   media_type: 'movie' | 'tv';
+  original_language?: string;
   title: string;
   year: string;
   overview: string;

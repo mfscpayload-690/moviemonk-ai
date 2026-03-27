@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DiscoveryGenre, DiscoveryItem } from '../types';
 import {
+  DEFAULT_PREFERENCE_SETTINGS,
+  UserPreferenceSettings,
+  loadPreferenceSettings,
+  savePreferenceSettings
+} from '../lib/userSettings';
+import {
   fetchByGenre,
   fetchDiscoverMovie,
   fetchDiscoverTv,
@@ -165,7 +171,107 @@ export function dedupeSectionsByTitle(sections: DiscoverySection[]): DiscoverySe
   });
 }
 
-export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<DiscoverySnapshot> {
+type DecadeRange = { start: number; end: number };
+
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+  english: 'en',
+  hindi: 'hi',
+  spanish: 'es',
+  french: 'fr',
+  german: 'de',
+  japanese: 'ja',
+  korean: 'ko',
+  tamil: 'ta',
+  telugu: 'te',
+  portuguese: 'pt'
+};
+
+function parseDecadeRanges(decades: string[]): DecadeRange[] {
+  return decades
+    .map((decade) => {
+      const match = decade.trim().match(/^(\d{4})s$/);
+      if (!match) return null;
+      const start = Number(match[1]);
+      return { start, end: start + 9 };
+    })
+    .filter((range): range is DecadeRange => Boolean(range));
+}
+
+function pickLanguageCodes(languages: string[]): string[] {
+  return languages
+    .map((language) => LANGUAGE_CODE_MAP[language.trim().toLowerCase()])
+    .filter((code): code is string => Boolean(code));
+}
+
+function isYearInRanges(yearText: string, ranges: DecadeRange[]): boolean {
+  if (ranges.length === 0) return true;
+  const year = Number(yearText);
+  if (!Number.isFinite(year)) return false;
+  return ranges.some((range) => year >= range.start && year <= range.end);
+}
+
+function applyStrictFilters(
+  items: DiscoveryItem[],
+  languageCodes: string[],
+  decadeRanges: DecadeRange[]
+): DiscoveryItem[] {
+  return items.filter((item) => {
+    const languageOk =
+      languageCodes.length === 0 ||
+      (typeof item.original_language === 'string' && languageCodes.includes(item.original_language));
+    if (!languageOk) return false;
+    return isYearInRanges(item.year, decadeRanges);
+  });
+}
+
+async function fetchStrictDiscoverItems(
+  mediaType: 'movie' | 'tv',
+  genreIds: number[],
+  languageCodes: string[],
+  signal?: AbortSignal
+): Promise<DiscoveryItem[]> {
+  const calls = (languageCodes.length ? languageCodes : [undefined]).map((languageCode) => {
+    if (mediaType === 'movie') {
+      return fetchDiscoverMovie(
+        {
+          withGenres: genreIds.length ? genreIds : undefined,
+          withOriginalLanguage: languageCode
+        },
+        { signal }
+      );
+    }
+
+    return fetchDiscoverTv(
+      {
+        withGenres: genreIds.length ? genreIds : undefined,
+        withOriginalLanguage: languageCode
+      },
+      { signal }
+    );
+  });
+
+  const groups = await Promise.all(calls);
+  return mergeUniqueDiscoveryItems(...groups);
+}
+
+function hasStrictPreferenceFilters(preferences: UserPreferenceSettings): boolean {
+  return (
+    preferences.genres.length > 0 ||
+    preferences.languages.length > 0 ||
+    preferences.favoriteDecades.length > 0 ||
+    preferences.contentMix !== 'balanced'
+  );
+}
+
+async function fetchCloudPreferences(userId: string): Promise<UserPreferenceSettings> {
+  const module = await import('../services/userSettingsService');
+  return module.fetchPreferenceSettings(userId);
+}
+
+export async function loadDiscoverySnapshot(
+  signal?: AbortSignal,
+  preferences?: UserPreferenceSettings
+): Promise<DiscoverySnapshot> {
   const [
     trendingAll,
     trendingMovies,
@@ -250,6 +356,69 @@ export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<Disco
   const topRatedMoviesAndSeries = mergeUniqueDiscoveryItems(topRatedMovies, topRatedTv).slice(0, 24);
 
   const curatedGenres = getCuratedMovieGenres(movieGenres);
+
+  const strictPrefs = preferences || DEFAULT_PREFERENCE_SETTINGS;
+  const strictEnabled = hasStrictPreferenceFilters(strictPrefs);
+
+  if (strictEnabled) {
+    const languageCodes = pickLanguageCodes(strictPrefs.languages);
+    const decadeRanges = parseDecadeRanges(strictPrefs.favoriteDecades);
+
+    const movieGenreIds = strictPrefs.genres
+      .map((name) => movieGenres.find((genre) => genre.name.toLowerCase() === name.toLowerCase())?.id)
+      .filter((id): id is number => typeof id === 'number');
+
+    const tvGenreIds = strictPrefs.genres
+      .map((name) => tvGenres.find((genre) => genre.name.toLowerCase() === name.toLowerCase())?.id)
+      .filter((id): id is number => typeof id === 'number');
+
+    const [strictMoviesRaw, strictSeriesRaw] = await Promise.all([
+      fetchStrictDiscoverItems('movie', movieGenreIds, languageCodes, signal),
+      fetchStrictDiscoverItems('tv', tvGenreIds, languageCodes, signal)
+    ]);
+
+    const strictMovies = applyStrictFilters(strictMoviesRaw, languageCodes, decadeRanges);
+    const strictSeries = applyStrictFilters(strictSeriesRaw, languageCodes, decadeRanges);
+
+    const sections: DiscoverySection[] = [];
+    if (strictPrefs.contentMix !== 'mostly_series') {
+      sections.push({
+        key: 'personalized-movies',
+        title: 'Your Movies',
+        items: strictMovies.slice(0, 24)
+      });
+    }
+    if (strictPrefs.contentMix !== 'mostly_movies') {
+      sections.push({
+        key: 'personalized-series',
+        title: 'Your Series',
+        items: strictSeries.slice(0, 24)
+      });
+    }
+
+    const heroPool = mergeUniqueDiscoveryItems(strictMovies, strictSeries);
+    const preferredGenreName = strictPrefs.genres[0]?.toLowerCase();
+    const selectedGenre =
+      (preferredGenreName
+        ? curatedGenres.find((genre) => genre.name.toLowerCase() === preferredGenreName)
+        : null) ||
+      curatedGenres[0] ||
+      movieGenres[0] ||
+      null;
+
+    const selectedGenreItems = selectedGenre
+      ? applyStrictFilters(await fetchByGenre(selectedGenre.id, 'movie', { signal }), languageCodes, decadeRanges)
+      : [];
+
+    return {
+      heroItems: pickHeroItems(heroPool.length ? heroPool : trendingAll),
+      sections: dedupeSectionsByTitle(sections.filter((section) => section.items.length > 0)),
+      movieGenres: curatedGenres,
+      selectedGenre,
+      selectedGenreItems
+    };
+  }
+
   const selectedGenre = curatedGenres[0] || movieGenres[0] || null;
   const selectedGenreItems = selectedGenre
     ? await fetchByGenre(selectedGenre.id, 'movie', { signal })
@@ -280,17 +449,45 @@ export function useDiscovery() {
   const [movieGenres, setMovieGenres] = useState<DiscoveryGenre[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<DiscoveryGenre | null>(null);
   const [selectedGenreItems, setSelectedGenreItems] = useState<DiscoveryItem[]>([]);
+  const [preferences, setPreferences] = useState<UserPreferenceSettings>(loadPreferenceSettings());
   const [isLoading, setIsLoading] = useState(true);
   const [isGenreLoading, setIsGenreLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [strictLanguageCodes, setStrictLanguageCodes] = useState<string[]>([]);
+  const [strictDecadeRanges, setStrictDecadeRanges] = useState<DecadeRange[]>([]);
+  const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const module = await import('../lib/supabase');
+        if (!module.isSupabaseConfigured || !module.supabase || !active) return;
+        const { data } = await module.supabase.auth.getSession();
+        if (!active) return;
+        setAuthUserId(data.session?.user?.id);
+      } catch {
+        // If auth lookup fails, discovery still works with local preferences.
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
 
+    const languageCodes = pickLanguageCodes(preferences.languages);
+    const decadeRanges = parseDecadeRanges(preferences.favoriteDecades);
+    setStrictLanguageCodes(languageCodes);
+    setStrictDecadeRanges(decadeRanges);
+
     try {
-      const snapshot = await loadDiscoverySnapshot(signal);
+      const snapshot = await loadDiscoverySnapshot(signal, preferences);
       if (signal?.aborted) return;
       setHeroItems(snapshot.heroItems);
       setSections(snapshot.sections);
@@ -310,7 +507,45 @@ export function useDiscovery() {
         setIsLoading(false);
       }
     }
+  }, [preferences]);
+
+  useEffect(() => {
+    setPreferences(loadPreferenceSettings());
   }, []);
+
+  useEffect(() => {
+    const onFocus = () => setPreferences(loadPreferenceSettings());
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.includes('moviemonk_preference_settings_v1')) {
+        setPreferences(loadPreferenceSettings());
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!authUserId) return;
+    let active = true;
+    void (async () => {
+      try {
+        const cloudPrefs = await fetchCloudPreferences(authUserId);
+        if (!active) return;
+        savePreferenceSettings(cloudPrefs);
+        setPreferences(cloudPrefs);
+      } catch {
+        // Keep local fallback preferences.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [authUserId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -326,7 +561,11 @@ export function useDiscovery() {
     setSelectedGenre(genre);
     setIsGenreLoading(true);
     try {
-      const items = await fetchByGenre(genre.id, 'movie', { signal: controller.signal });
+      const items = applyStrictFilters(
+        await fetchByGenre(genre.id, 'movie', { signal: controller.signal }),
+        strictLanguageCodes,
+        strictDecadeRanges
+      );
       if (controller.signal.aborted) return;
       setSelectedGenreItems(items);
     } catch (err: any) {
@@ -338,7 +577,7 @@ export function useDiscovery() {
         setIsGenreLoading(false);
       }
     }
-  }, []);
+  }, [strictDecadeRanges, strictLanguageCodes]);
 
   const retry = useCallback(() => {
     setReloadToken((value) => value + 1);
@@ -350,6 +589,7 @@ export function useDiscovery() {
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    isStrictPersonalized: hasStrictPreferenceFilters(preferences),
     isLoading,
     isGenreLoading,
     error,
@@ -361,6 +601,7 @@ export function useDiscovery() {
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    preferences,
     isLoading,
     isGenreLoading,
     error,
