@@ -579,13 +579,13 @@ const App: React.FC = () => {
               className="btn-glass flex items-center gap-2"
               aria-label="Open watch later"
             >
-              <FolderIcon className="w-4 h-4" />
+              <FolderIcon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">
                 {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
               </span>
             </button>
             <Link to="/settings" className="btn-glass flex items-center gap-2" aria-label="Open settings">
-              <SettingsIcon className="w-4 h-4" />
+              <SettingsIcon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Settings</span>
             </Link>
             {(movieData || personData) && (
@@ -594,7 +594,7 @@ const App: React.FC = () => {
                 className="btn-glass flex items-center gap-2"
                 aria-label="Share this result"
               >
-                <ShareIcon className="w-5 h-5" />
+                <ShareIcon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Share</span>
               </button>
             )}

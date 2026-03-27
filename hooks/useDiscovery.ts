@@ -263,6 +263,25 @@ function hasStrictPreferenceFilters(preferences: UserPreferenceSettings): boolea
   );
 }
 
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
+function preferencesEqual(a: UserPreferenceSettings, b: UserPreferenceSettings): boolean {
+  return (
+    arraysEqual(a.genres, b.genres) &&
+    arraysEqual(a.languages, b.languages) &&
+    arraysEqual(a.favoriteDecades, b.favoriteDecades) &&
+    arraysEqual(a.favoriteRegions, b.favoriteRegions) &&
+    a.contentMix === b.contentMix &&
+    a.familySafe === b.familySafe &&
+    a.autoplayTrailers === b.autoplayTrailers &&
+    a.cardDensity === b.cardDensity &&
+    a.notificationsEnabled === b.notificationsEnabled
+  );
+}
+
 async function fetchCloudPreferences(userId: string): Promise<UserPreferenceSettings> {
   const module = await import('../services/userSettingsService');
   return module.fetchPreferenceSettings(userId);
@@ -444,6 +463,7 @@ export async function loadDiscoverySnapshot(
 
 export function useDiscovery() {
   const genreRequestRef = useRef<AbortController | null>(null);
+  const hasLoadedOnceRef = useRef(false);
   const [heroItems, setHeroItems] = useState<DiscoveryItem[]>([]);
   const [sections, setSections] = useState<DiscoverySection[]>([]);
   const [movieGenres, setMovieGenres] = useState<DiscoveryGenre[]>([]);
@@ -478,7 +498,9 @@ export function useDiscovery() {
   }, []);
 
   const load = useCallback(async (signal?: AbortSignal) => {
-    setIsLoading(true);
+    if (!hasLoadedOnceRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
 
     const languageCodes = pickLanguageCodes(preferences.languages);
@@ -504,25 +526,22 @@ export function useDiscovery() {
       setSelectedGenreItems([]);
     } finally {
       if (!signal?.aborted) {
+        hasLoadedOnceRef.current = true;
         setIsLoading(false);
       }
     }
   }, [preferences]);
 
   useEffect(() => {
-    setPreferences(loadPreferenceSettings());
-  }, []);
-
-  useEffect(() => {
-    const onFocus = () => setPreferences(loadPreferenceSettings());
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    const local = loadPreferenceSettings();
+    setPreferences((current) => (preferencesEqual(current, local) ? current : local));
   }, []);
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (!event.key || event.key.includes('moviemonk_preference_settings_v1')) {
-        setPreferences(loadPreferenceSettings());
+        const local = loadPreferenceSettings();
+        setPreferences((current) => (preferencesEqual(current, local) ? current : local));
       }
     };
     window.addEventListener('storage', onStorage);
@@ -537,7 +556,7 @@ export function useDiscovery() {
         const cloudPrefs = await fetchCloudPreferences(authUserId);
         if (!active) return;
         savePreferenceSettings(cloudPrefs);
-        setPreferences(cloudPrefs);
+        setPreferences((current) => (preferencesEqual(current, cloudPrefs) ? current : cloudPrefs));
       } catch {
         // Keep local fallback preferences.
       }

@@ -100,7 +100,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
       <section className="discovery-section">
         <div className="discovery-section-heading genre-heading">
           <div>
-            <p className="discovery-section-kicker">Genres</p>
             <h2 className="discovery-section-title">Browse by mood</h2>
           </div>
           {selectedGenre && (

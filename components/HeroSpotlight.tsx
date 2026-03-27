@@ -164,7 +164,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
       </div>
 
       {items.length > 1 && (
-        <div className="discovery-hero-nav" aria-label="Hero slider controls">
+        <div className="discovery-hero-nav hidden md:flex" aria-label="Hero slider controls">
           <button
             type="button"
             className="discovery-hero-nav-btn"

@@ -98,7 +98,6 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
     <section ref={sectionRef} className="discovery-section" aria-label={title}>
       <div className="discovery-section-heading">
         <div>
-          <p className="discovery-section-kicker">Browse</p>
           <h2 className="discovery-section-title">{title}</h2>
         </div>
         <div className="discovery-carousel-controls" aria-hidden={isLoading}>
