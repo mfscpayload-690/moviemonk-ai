@@ -12,7 +12,7 @@ const GitHubMark: React.FC = () => (
 );
 
 export const AuthButton: React.FC = () => {
-  const { user, loading, error, signInWithGitHub, signOut } = useAuth();
+  const { isEnabled, user, loading, error, signInWithGitHub, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +26,10 @@ export const AuthButton: React.FC = () => {
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [menuOpen]);
+
+  if (!isEnabled) {
+    return null;
+  }
 
   if (loading) {
     return <button className="auth-btn auth-btn-loading" disabled>Loading...</button>;

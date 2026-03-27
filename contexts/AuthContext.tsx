@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type AuthContextValue = {
+  isEnabled: boolean;
   user: User | null;
   session: Session | null;
   loading: boolean;
@@ -20,6 +21,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
 
     const hydrate = async () => {
@@ -56,6 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGitHub = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      const configError = new Error('Supabase auth is not configured');
+      setError(configError.message);
+      throw configError;
+    }
+
     setError(null);
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'github'
@@ -67,6 +79,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      const configError = new Error('Supabase auth is not configured');
+      setError(configError.message);
+      throw configError;
+    }
+
     setError(null);
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
@@ -77,6 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = useMemo<AuthContextValue>(
     () => ({
+      isEnabled: isSupabaseConfigured,
       user,
       session,
       loading,

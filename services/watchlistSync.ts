@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { WatchlistFolder, WatchlistItem } from '../types';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -32,8 +32,16 @@ type CloudItemRow = {
   added_at?: string;
 };
 
+function getSupabaseOrThrow() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured');
+  }
+  return supabase;
+}
+
 export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFolder[]> {
-  const { data: folderRows, error: folderError } = await supabase
+  const client = getSupabaseOrThrow();
+  const { data: folderRows, error: folderError } = await client
     .from('watchlist_folders')
     .select('id, user_id, name, color, created_at')
     .eq('user_id', userId)
@@ -43,7 +51,7 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
   if (!folderRows || folderRows.length === 0) return [];
 
   const folderIds = folderRows.map((folder) => folder.id);
-  const { data: itemRows, error: itemError } = await supabase
+  const { data: itemRows, error: itemError } = await client
     .from('watchlist_items')
     .select('id, folder_id, tmdb_id, media_type, saved_title, movie_data, added_at')
     .in('folder_id', folderIds)
@@ -73,9 +81,10 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
 }
 
 export async function uploadWatchlistsToCloud(userId: string, folders: WatchlistFolder[]): Promise<void> {
+  const client = getSupabaseOrThrow();
   for (const folder of folders) {
     const folderId = ensureUuid(folder.id);
-    const { error: folderError } = await supabase.from('watchlist_folders').upsert(
+    const { error: folderError } = await client.from('watchlist_folders').upsert(
       {
         id: folderId,
         user_id: userId,
@@ -89,7 +98,7 @@ export async function uploadWatchlistsToCloud(userId: string, folders: Watchlist
 
     for (const item of folder.items || []) {
       const itemId = ensureUuid(item.id);
-      const { error: itemError } = await supabase.from('watchlist_items').upsert(
+      const { error: itemError } = await client.from('watchlist_items').upsert(
         {
           id: itemId,
           folder_id: folderId,
@@ -112,8 +121,9 @@ export async function addCloudFolder(
   color: string,
   folderId = crypto.randomUUID()
 ): Promise<string> {
+  const client = getSupabaseOrThrow();
   const safeId = ensureUuid(folderId);
-  const { error } = await supabase.from('watchlist_folders').insert({
+  const { error } = await client.from('watchlist_folders').insert({
     id: safeId,
     user_id: userId,
     name: name.trim(),
@@ -125,7 +135,8 @@ export async function addCloudFolder(
 }
 
 export async function saveCloudItem(folderId: string, item: WatchlistItem): Promise<void> {
-  const { error } = await supabase.from('watchlist_items').upsert(
+  const client = getSupabaseOrThrow();
+  const { error } = await client.from('watchlist_items').upsert(
     {
       id: ensureUuid(item.id),
       folder_id: folderId,
@@ -141,12 +152,14 @@ export async function saveCloudItem(folderId: string, item: WatchlistItem): Prom
 }
 
 export async function deleteCloudItem(itemId: string): Promise<void> {
-  const { error } = await supabase.from('watchlist_items').delete().eq('id', itemId);
+  const client = getSupabaseOrThrow();
+  const { error } = await client.from('watchlist_items').delete().eq('id', itemId);
   if (error) throw error;
 }
 
 export async function renameCloudFolder(folderId: string, name: string): Promise<void> {
-  const { error } = await supabase
+  const client = getSupabaseOrThrow();
+  const { error } = await client
     .from('watchlist_folders')
     .update({ name: name.trim(), updated_at: new Date().toISOString() })
     .eq('id', folderId);
@@ -154,7 +167,8 @@ export async function renameCloudFolder(folderId: string, name: string): Promise
 }
 
 export async function updateCloudFolderColor(folderId: string, color: string): Promise<void> {
-  const { error } = await supabase
+  const client = getSupabaseOrThrow();
+  const { error } = await client
     .from('watchlist_folders')
     .update({ color, updated_at: new Date().toISOString() })
     .eq('id', folderId);
@@ -162,6 +176,7 @@ export async function updateCloudFolderColor(folderId: string, color: string): P
 }
 
 export async function deleteCloudFolder(folderId: string): Promise<void> {
-  const { error } = await supabase.from('watchlist_folders').delete().eq('id', folderId);
+  const client = getSupabaseOrThrow();
+  const { error } = await client.from('watchlist_folders').delete().eq('id', folderId);
   if (error) throw error;
 }

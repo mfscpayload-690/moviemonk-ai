@@ -12,7 +12,7 @@ import {
   saveCloudItem,
   updateCloudFolderColor
 } from '../services/watchlistSync';
-import { supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const CLOUD_MIGRATION_EVENT = 'watchlists:cloud-migrated';
 
@@ -36,7 +36,7 @@ export function useCloudWatchlists() {
   const [cloudLoading, setCloudLoading] = useState(false);
 
   const refreshCloud = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || !isSupabaseConfigured) return;
     setCloudLoading(true);
     try {
       const folders = await fetchCloudWatchlists(user.id);
@@ -49,12 +49,12 @@ export function useCloudWatchlists() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !isSupabaseConfigured) return;
     refreshCloud();
   }, [user?.id, refreshCloud]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !isSupabaseConfigured) return;
     const handleMigration = () => {
       refreshCloud();
     };
@@ -169,6 +169,9 @@ export function useCloudWatchlists() {
         );
 
         void (async () => {
+          if (!isSupabaseConfigured || !supabase) {
+            throw new Error('Supabase is not configured');
+          }
           const { error } = await supabase
             .from('watchlist_items')
             .update({ folder_id: toFolderId })
@@ -205,7 +208,7 @@ export function useCloudWatchlists() {
     [cloudFolders, refreshCloud, user?.id]
   );
 
-  if (!user) {
+  if (!user || !isSupabaseConfigured) {
     return {
       folders: local.folders,
       addFolder: local.addFolder,

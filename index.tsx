@@ -6,6 +6,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import './styles/modern.css';
 import './styles/dynamic-search-island.css';
 import App from './App-Responsive';
+import { AuthProvider } from './contexts/AuthContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -15,7 +16,9 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
     {/* Only track in production to keep dev data clean */}
     {import.meta.env.PROD && <Analytics />}
     {import.meta.env.PROD && <SpeedInsights />}

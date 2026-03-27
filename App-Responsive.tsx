@@ -6,11 +6,13 @@ import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import LoadingScreen from './components/LoadingScreen';
+import { AuthButton } from './components/AuthButton';
+import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { ClipboardIcon, EditIcon, FolderIcon, Logo, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
 import { track } from '@vercel/analytics/react';
-import { useWatchlists } from './hooks/useWatchlists';
+import { useCloudWatchlists } from './hooks/useCloudWatchlists';
 import { VirtualizedList } from './components/VirtualizedList';
 import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
 
@@ -44,7 +46,19 @@ const App: React.FC = () => {
   const [shortlistCandidates, setShortlistCandidates] = useState<AmbiguousCandidate[] | null>(null);
   const loadingStartedAtRef = useRef<number | null>(null);
   const loadingHideTimeoutRef = useRef<number | null>(null);
-  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
+  const {
+    folders: watchlists,
+    addFolder,
+    saveToFolder,
+    findItem,
+    refresh,
+    renameFolder,
+    setFolderColor,
+    moveItem,
+    deleteItem,
+    isCloud,
+    isSyncing
+  } = useCloudWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
@@ -490,13 +504,16 @@ const App: React.FC = () => {
             />
           </div>
           <div className="flex items-center justify-end gap-2 sm:gap-3">
+            <AuthButton />
             <button
               onClick={() => setShowWatchlistsModal(true)}
               className="btn-glass flex items-center gap-2"
               aria-label="Open watch later"
             >
               <FolderIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Watchlists</span>
+              <span className="hidden sm:inline">
+                {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
+              </span>
             </button>
             {(movieData || personData) && (
               <button
@@ -752,6 +769,8 @@ const App: React.FC = () => {
           onClose={() => setShortlistCandidates(null)}
         />
       )}
+
+      <MigrationModal />
 
     </>
   );
