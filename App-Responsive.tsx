@@ -11,7 +11,7 @@ import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
-import { ClipboardIcon, EditIcon, FolderIcon, Logo, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
+import { ClipboardIcon, FolderIcon, Logo, SettingsIcon, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
 import { useCloudWatchlists } from './hooks/useCloudWatchlists';
@@ -580,13 +580,13 @@ const App: React.FC = () => {
               className="btn-glass flex items-center gap-2"
               aria-label="Open watch later"
             >
-              <FolderIcon className="w-5 h-5" />
+              <FolderIcon className="w-4 h-4" />
               <span className="hidden sm:inline">
                 {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
               </span>
             </button>
             <Link to="/settings" className="btn-glass flex items-center gap-2" aria-label="Open settings">
-              <EditIcon className="w-5 h-5" />
+              <SettingsIcon className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
             </Link>
             {(movieData || personData) && (

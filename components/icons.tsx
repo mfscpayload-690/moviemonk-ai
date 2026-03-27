@@ -13,6 +13,7 @@ import {
     Loader2,
     Cake,
     Search as LucideSearch,
+    Settings,
     Share2,
     Sparkles as LucideSparkles,
     Trash2
@@ -92,6 +93,10 @@ export const ShareIcon: React.FC<IconProps> = ({ className }) => (
 
 export const EditIcon: React.FC<IconProps> = ({ className }) => (
     <Edit3 {...baseIconProps} className={className} />
+);
+
+export const SettingsIcon: React.FC<IconProps> = ({ className }) => (
+    <Settings {...baseIconProps} className={className} />
 );
 
 export const TrashIcon: React.FC<IconProps> = ({ className }) => (

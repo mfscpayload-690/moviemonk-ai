@@ -280,6 +280,9 @@ export function ProfileSettingsPage() {
 
         <div>
           <label className="block text-sm mb-1">Avatar URL</label>
+          <p className="text-xs text-brand-text-light mb-2">
+            Link to your profile picture. Example: <code className="bg-black/20 px-1 py-0.5 rounded text-xs">https://avatars.githubusercontent.com/u/123456?v=4</code>
+          </p>
           <input
             style={inputStyle}
             value={profile.avatarUrl}
@@ -426,15 +429,6 @@ export function OnboardingPage() {
         <p className="text-brand-text-light text-sm">
           Complete your profile and preferences to unlock personalized discovery.
         </p>
-
-        <div>
-          <label className="block text-sm mb-1">Full name</label>
-          <input
-            style={inputStyle}
-            value={profile.fullName}
-            onChange={(event) => setProfile({ ...profile, fullName: event.target.value })}
-          />
-        </div>
 
         <div>
           <h2 style={sectionTitleStyle}>Pick at least 3 genres</h2>
