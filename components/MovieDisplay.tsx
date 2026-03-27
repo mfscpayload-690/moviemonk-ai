@@ -414,7 +414,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const heroMetaParts = [
         movie.year,
         typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : '',
-        safeGenres[0] || '',
         formatDisplayLanguage(movie.language)
     ].filter((part) => typeof part === 'string' && part.trim().length > 0);
 

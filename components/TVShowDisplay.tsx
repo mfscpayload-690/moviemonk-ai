@@ -7,6 +7,49 @@ interface TVShowDisplayProps {
     movie: MovieData; // Actually a TV show with tvShow data
 }
 
+const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
+    ja: 'Japanese',
+    ko: 'Korean',
+    zh: 'Chinese',
+    th: 'Thai',
+    hi: 'Hindi',
+    ta: 'Tamil',
+    te: 'Telugu',
+    ml: 'Malayalam',
+    bn: 'Bengali',
+    mr: 'Marathi',
+    pa: 'Punjabi',
+    en: 'English',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    ar: 'Arabic',
+    tr: 'Turkish',
+    id: 'Indonesian'
+};
+
+const toSentenceCase = (value: string): string =>
+    value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+
+const formatDisplayLanguage = (value?: string): string => {
+    if (!value || !value.trim()) return '';
+    const normalized = value.trim();
+    const lower = normalized.toLowerCase();
+
+    if (LANGUAGE_NAME_BY_CODE[lower]) {
+        return LANGUAGE_NAME_BY_CODE[lower];
+    }
+
+    if (normalized.length <= 3 && /^[a-zA-Z]{2,3}$/.test(normalized)) {
+        return toSentenceCase(normalized);
+    }
+
+    return normalized;
+};
+
 const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
     const [selectedSeason, setSelectedSeason] = useState(1);
     const [expandedEpisode, setExpandedEpisode] = useState<number | null>(null);
@@ -19,6 +62,13 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
     const seasonsData = tvShow.seasons || [];
     const selectedSeasonData = seasonsData.find(s => s.number === selectedSeason);
     const episodesForSeason = (tvShow.episodes || []).filter(e => e.season === selectedSeason);
+    const languageLabel = formatDisplayLanguage(movie.language || tvShow.language);
+    const premieredYear = tvShow.premiered ? new Date(tvShow.premiered).getFullYear().toString() : movie.year;
+    const headerMetaParts = [
+        premieredYear,
+        'TV Series',
+        languageLabel
+    ].filter((part) => typeof part === 'string' && part.trim().length > 0);
 
     // Status badge color
     const getStatusColor = (status: string) => {
@@ -58,6 +108,12 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
 
                         <h1 className="tv-show-title">{movie.title}</h1>
 
+                        {headerMetaParts.length > 0 && (
+                            <div className="tv-show-dates">
+                                <span>{headerMetaParts.join(' \u2022 ')}</span>
+                            </div>
+                        )}
+
                         <div className="tv-show-stats">
                             <span className={`status-badge ${getStatusColor(tvShow.status)}`}>
                                 {tvShow.status}
@@ -85,12 +141,11 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
                             )}
                         </div>
 
-                        {tvShow.premiered && (
+                        {tvShow.premiered && tvShow.ended && (
                             <div className="tv-show-dates">
                                 <CalendarIcon className="icon-small" />
                                 <span>
-                                    {new Date(tvShow.premiered).getFullYear()}
-                                    {tvShow.ended && ` - ${new Date(tvShow.ended).getFullYear()}`}
+                                    {new Date(tvShow.premiered).getFullYear()} - {new Date(tvShow.ended).getFullYear()}
                                 </span>
                             </div>
                         )}
