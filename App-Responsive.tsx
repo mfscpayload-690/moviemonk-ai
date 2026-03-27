@@ -6,13 +6,18 @@ import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import LoadingScreen from './components/LoadingScreen';
+import PersonalizedFeedPanel from './components/PersonalizedFeedPanel';
+import { AuthButton } from './components/AuthButton';
+import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
 import { ClipboardIcon, EditIcon, FolderIcon, Logo, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
-import { useWatchlists } from './hooks/useWatchlists';
+import { useCloudWatchlists } from './hooks/useCloudWatchlists';
 import { VirtualizedList } from './components/VirtualizedList';
 import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
+import { parseAppRoute } from './lib/routeState';
 
 const debugLog = (...args: any[]) => {
   if (import.meta.env.DEV) {
@@ -25,6 +30,8 @@ type AppView = 'discovery' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 
 const App: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   useRenderCounter('App');
   useEffect(() => {
     initPerfDebug('app-shell');
@@ -44,7 +51,20 @@ const App: React.FC = () => {
   const [shortlistCandidates, setShortlistCandidates] = useState<AmbiguousCandidate[] | null>(null);
   const loadingStartedAtRef = useRef<number | null>(null);
   const loadingHideTimeoutRef = useRef<number | null>(null);
-  const { folders: watchlists, addFolder, saveToFolder, findItem, refresh, renameFolder, setFolderColor, moveItem, deleteItem } = useWatchlists();
+  const lastHandledRouteRef = useRef<string>('');
+  const {
+    folders: watchlists,
+    addFolder,
+    saveToFolder,
+    findItem,
+    refresh,
+    renameFolder,
+    setFolderColor,
+    moveItem,
+    deleteItem,
+    isCloud,
+    isSyncing
+  } = useCloudWatchlists();
   const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
@@ -72,6 +92,10 @@ const App: React.FC = () => {
     const found = findItem(folderId, itemId);
     if (!found) return;
     const { item } = found;
+    if (item.movie.tmdb_id) {
+      const mediaType = item.movie.media_type === 'tv' || item.movie.type === 'show' ? 'tv' : 'movie';
+      navigate(`/${mediaType}/${item.movie.tmdb_id}`);
+    }
     startTransition(() => {
       setMovieData(item.movie);
       setPersonData(null);
@@ -82,29 +106,7 @@ const App: React.FC = () => {
     debugLog('[watchlists] loaded saved item', item.saved_title);
     setShowWatchlistsModal(false);
     scrollMainContentToTop();
-  }, [findItem, scrollMainContentToTop]);
-
-  // Load shared link on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sharedQuery = params.get('q');
-    const sharedType = params.get('type');
-
-    if (sharedQuery) {
-      track('shared_link_opened', { query: sharedQuery, type: sharedType || 'unknown' });
-      setCurrentQuery(sharedQuery);
-
-      // Auto-load the shared content
-      if (sharedType === 'person') {
-        const personId = params.get('id');
-        if (personId) {
-          loadPersonFromShare(parseInt(personId));
-        }
-      } else {
-        handleSendMessage(sharedQuery, QueryComplexity.SIMPLE, 'groq');
-      }
-    }
-  }, []);
+  }, [findItem, navigate, scrollMainContentToTop]);
 
   useEffect(() => {
     if (showWatchlistsModal) {
@@ -181,9 +183,13 @@ const App: React.FC = () => {
   const openPersonById = useCallback(async (
     personId: number,
     titleHint?: string,
-    options: { manageLoading?: boolean } = {}
+    options: { manageLoading?: boolean; skipNavigate?: boolean } = {}
   ) => {
     const manageLoading = options.manageLoading !== false;
+    const shouldNavigate = options.skipNavigate !== true;
+    if (shouldNavigate) {
+      navigate(`/person/${personId}`);
+    }
     if (manageLoading) {
       setIsLoading(true);
       setError(null);
@@ -205,7 +211,7 @@ const App: React.FC = () => {
         setIsLoading(false);
       }
     }
-  }, [scrollMainContentToTop]);
+  }, [navigate, scrollMainContentToTop]);
 
   const loadPersonFromShare = async (personId: number) => {
     await openPersonById(personId, undefined, { manageLoading: true });
@@ -256,20 +262,27 @@ const App: React.FC = () => {
   }, [currentQuery, movieData, personData]);
 
   const handleGoHome = useCallback(() => {
+    navigate('/');
     startTransition(() => {
       setCurrentView('discovery');
       setMovieData(null);
       setPersonData(null);
       setSources(null);
       setCurrentQuery('');
+      setShowWatchlistsModal(false);
     });
     scrollMainContentToTop();
-  }, [scrollMainContentToTop]);
+  }, [navigate, scrollMainContentToTop]);
 
   const handleOpenTitle = useCallback(async (
     item: { id: number; mediaType: 'movie' | 'tv' },
-    provider?: AIProvider
+    provider?: AIProvider,
+    options: { skipNavigate?: boolean } = {}
   ) => {
+    if (!options.skipNavigate) {
+      navigate(`/${item.mediaType}/${item.id}`);
+    }
+
     setIsLoading(true);
     setError(null);
     scrollMainContentToTop();
@@ -305,7 +318,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [scrollMainContentToTop, selectedProvider]);
+  }, [navigate, scrollMainContentToTop, selectedProvider]);
 
   const classifyError = (raw: string | undefined, provider: 'groq' | 'mistral'): string => {
     if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
@@ -328,7 +341,16 @@ const App: React.FC = () => {
     return raw;
   };
 
-  const handleSendMessage = useCallback(async (message: string, complexity: QueryComplexity, provider: AIProvider = 'groq') => {
+  const handleSendMessage = useCallback(async (
+    message: string,
+    complexity: QueryComplexity,
+    provider: AIProvider = 'groq',
+    options: { skipNavigate?: boolean } = {}
+  ) => {
+    if (!options.skipNavigate) {
+      navigate(`/search?q=${encodeURIComponent(message)}`);
+    }
+
     setIsLoading(true);
     setError(null);
     setCurrentQuery(message);
@@ -399,6 +421,10 @@ const App: React.FC = () => {
             setSources(result.sources || []);
             setCurrentView('movie');
           });
+          if (!options.skipNavigate && result.movieData.tmdb_id) {
+            const mediaType = result.movieData.tvShow ? 'tv' : 'movie';
+            navigate(`/${mediaType}/${result.movieData.tmdb_id}`);
+          }
           scrollMainContentToTop();
         } else {
           throw new Error(result.error || 'Failed to load data');
@@ -413,7 +439,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [openPersonById, scrollMainContentToTop]);
+  }, [navigate, openPersonById, scrollMainContentToTop]);
 
   const handleQuickSearch = useCallback((title: string) => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
@@ -473,6 +499,64 @@ const App: React.FC = () => {
     await handleOpenTitle({ id: candidate.id, mediaType });
   }, [handleOpenTitle, openPersonById]);
 
+  const closeWatchlistsModal = useCallback(() => {
+    setShowWatchlistsModal(false);
+    if (location.pathname === '/watchlists') {
+      navigate('/');
+    }
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    const routeKey = `${location.pathname}${location.search}`;
+    if (lastHandledRouteRef.current === routeKey) {
+      return;
+    }
+    lastHandledRouteRef.current = routeKey;
+
+    const route = parseAppRoute(location.pathname, location.search);
+
+    if (route.kind === 'home') {
+      setShowWatchlistsModal(false);
+      setCurrentView('discovery');
+      return;
+    }
+
+    if (route.kind === 'watchlists') {
+      setCurrentView('discovery');
+      setShowWatchlistsModal(true);
+      return;
+    }
+
+    if (route.kind === 'search' && route.query) {
+      track('shared_link_opened', { query: route.query, type: 'search-route' });
+      void handleSendMessage(route.query, QueryComplexity.SIMPLE, 'groq', { skipNavigate: true });
+      return;
+    }
+
+    if ((route.kind === 'movie' || route.kind === 'tv') && route.id) {
+      const mediaType = route.kind === 'tv' ? 'tv' : 'movie';
+      void handleOpenTitle({ id: route.id, mediaType }, selectedProvider, { skipNavigate: true });
+      return;
+    }
+
+    if (route.kind === 'person' && route.id) {
+      void openPersonById(route.id, undefined, { manageLoading: true, skipNavigate: true });
+      return;
+    }
+
+    if (route.kind === 'unknown') {
+      navigate('/', { replace: true });
+    }
+  }, [
+    location.pathname,
+    location.search,
+    navigate,
+    openPersonById,
+    handleOpenTitle,
+    handleSendMessage,
+    selectedProvider
+  ]);
+
   return (
     <>
       <div className="app-container">
@@ -490,14 +574,21 @@ const App: React.FC = () => {
             />
           </div>
           <div className="flex items-center justify-end gap-2 sm:gap-3">
+            <AuthButton />
             <button
-              onClick={() => setShowWatchlistsModal(true)}
+              onClick={() => navigate('/watchlists')}
               className="btn-glass flex items-center gap-2"
               aria-label="Open watch later"
             >
               <FolderIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Watchlists</span>
+              <span className="hidden sm:inline">
+                {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
+              </span>
             </button>
+            <Link to="/settings" className="btn-glass flex items-center gap-2" aria-label="Open settings">
+              <EditIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Settings</span>
+            </Link>
             {(movieData || personData) && (
               <button
                 onClick={handleShare}
@@ -535,7 +626,14 @@ const App: React.FC = () => {
         {/* Main Content Area - Full width Featured UI */}
         <div className="main-content pb-24">
           {currentView === 'discovery' ? (
-            <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item)} />
+            <>
+              <PersonalizedFeedPanel
+                onRunQuery={(query) => {
+                  void handleSendMessage(query, QueryComplexity.SIMPLE, selectedProvider);
+                }}
+              />
+              <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item)} />
+            </>
           ) : currentView === 'person' && personData ? (
             <PersonDisplay
               data={personData}
@@ -597,7 +695,7 @@ const App: React.FC = () => {
       {showWatchlistsModal && (
         <div
           className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setShowWatchlistsModal(false)}
+          onClick={closeWatchlistsModal}
           role="dialog"
           aria-modal="true"
         >
@@ -607,7 +705,7 @@ const App: React.FC = () => {
           >
             <div className="flex items-center justify-between flex-shrink-0">
               <h3 className="text-lg sm:text-xl font-bold text-white">Your Watchlists</h3>
-              <button onClick={() => setShowWatchlistsModal(false)} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close watchlists">
+              <button onClick={closeWatchlistsModal} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close watchlists">
                 <XMarkIcon className="w-4 h-4" />
               </button>
             </div>
@@ -752,6 +850,8 @@ const App: React.FC = () => {
           onClose={() => setShortlistCandidates(null)}
         />
       )}
+
+      <MigrationModal />
 
     </>
   );

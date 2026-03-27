@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.46.0",
+    "@supabase/supabase-js": "^2.100.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/kv": "^3.0.0",
     "@vercel/speed-insights": "^2.0.0",
@@ -22,6 +23,7 @@
     "lucide-react": "^1.6.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.2",
     "react-window": "^2.2.7",
     "redis": "^5.11.0"
   },
@@ -33,7 +35,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "jest": "^30.3.0",
     "node-mocks-http": "^1.14.1",
-    "ts-jest": "^29.4.6",
+    "ts-jest": "^29.1.2",
     "typescript": "~5.9.3",
     "vite": "^7.3.1"
   },
