@@ -12,6 +12,8 @@ jest.mock('../../services/tmdbService', () => ({
 }));
 
 import {
+  buildBalancedMixRow,
+  dedupeSectionsByTitle,
   getCuratedMovieGenres,
   loadDiscoverySnapshot,
   pickHeroItems
@@ -58,6 +60,91 @@ describe('useDiscovery helpers', () => {
 
     expect(heroes).toHaveLength(1);
     expect(heroes[0].id).toBe(2);
+  });
+
+  it('builds deterministic mix rows with quota fallback when a pool is sparse', () => {
+    const mixed = buildBalancedMixRow(
+      10,
+      {
+        global: [
+          { id: 1, tmdb_id: '1', media_type: 'movie', title: 'Global A', year: '2024', overview: '', poster_url: '', backdrop_url: '/a.jpg', rating: 7.1, genre_ids: [] },
+          { id: 2, tmdb_id: '2', media_type: 'movie', title: 'Global B', year: '2024', overview: '', poster_url: '', backdrop_url: '/b.jpg', rating: 7.2, genre_ids: [] },
+          { id: 3, tmdb_id: '3', media_type: 'movie', title: 'Global C', year: '2024', overview: '', poster_url: '', backdrop_url: '/c.jpg', rating: 7.3, genre_ids: [] },
+          { id: 4, tmdb_id: '4', media_type: 'movie', title: 'Global D', year: '2024', overview: '', poster_url: '', backdrop_url: '/d.jpg', rating: 7.4, genre_ids: [] },
+          { id: 5, tmdb_id: '5', media_type: 'movie', title: 'Global E', year: '2024', overview: '', poster_url: '', backdrop_url: '/e.jpg', rating: 7.5, genre_ids: [] }
+        ],
+        bollywood: [
+          { id: 21, tmdb_id: '21', media_type: 'movie', title: 'Bolly A', year: '2023', overview: '', poster_url: '', backdrop_url: '/x.jpg', rating: 7.6, genre_ids: [] }
+        ],
+        asian: [
+          { id: 31, tmdb_id: '31', media_type: 'movie', title: 'Asian A', year: '2022', overview: '', poster_url: '', backdrop_url: '/y.jpg', rating: 7.7, genre_ids: [] }
+        ]
+      },
+      [
+        { pool: 'global', ratio: 0.7 },
+        { pool: 'bollywood', ratio: 0.15 },
+        { pool: 'asian', ratio: 0.15 }
+      ]
+    );
+
+    expect(mixed.map((item) => item.title)).toEqual([
+      'Global A',
+      'Global B',
+      'Global C',
+      'Global D',
+      'Global E',
+      'Bolly A',
+      'Asian A'
+    ]);
+  });
+
+  it('falls back to global pool when regional pools are empty', () => {
+    const mixed = buildBalancedMixRow(
+      5,
+      {
+        global: [
+          { id: 1, tmdb_id: '1', media_type: 'movie', title: 'Global 1', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 2, tmdb_id: '2', media_type: 'movie', title: 'Global 2', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 3, tmdb_id: '3', media_type: 'movie', title: 'Global 3', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 4, tmdb_id: '4', media_type: 'movie', title: 'Global 4', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 5, tmdb_id: '5', media_type: 'movie', title: 'Global 5', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] }
+        ],
+        bollywood: [],
+        asian: []
+      },
+      [
+        { pool: 'global', ratio: 0.7 },
+        { pool: 'bollywood', ratio: 0.15 },
+        { pool: 'asian', ratio: 0.15 }
+      ]
+    );
+
+    expect(mixed).toHaveLength(5);
+    expect(mixed.map((item) => item.title)).toEqual(['Global 1', 'Global 2', 'Global 3', 'Global 4', 'Global 5']);
+  });
+
+  it('de-duplicates repeated titles across section priority order', () => {
+    const sections = dedupeSectionsByTitle([
+      {
+        key: 'first',
+        title: 'First',
+        items: [
+          { id: 1, tmdb_id: '1', media_type: 'movie', title: 'Repeat', year: '2021', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 2, tmdb_id: '2', media_type: 'movie', title: 'Unique First', year: '2021', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] }
+        ]
+      },
+      {
+        key: 'second',
+        title: 'Second',
+        items: [
+          { id: 3, tmdb_id: '3', media_type: 'movie', title: 'Repeat', year: '2022', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 4, tmdb_id: '4', media_type: 'movie', title: 'Unique Second', year: '2022', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] }
+        ]
+      }
+    ]);
+
+    expect(sections[0].items.map((item) => item.title)).toEqual(['Repeat', 'Unique First']);
+    expect(sections[1].items.map((item) => item.title)).toEqual(['Unique Second']);
   });
 
   it('loads discovery snapshot and fetches selected genre row from first curated genre', async () => {
@@ -142,11 +229,14 @@ describe('useDiscovery helpers', () => {
     expect(snapshot.sections[3].title).toBe('Top Rated Movies & Series');
     expect(snapshot.sections[4].title).toBe('Global Web Series and TV Shows');
     expect(snapshot.sections[5].title).toBe('K-Drama and Asian Series');
-    expect(snapshot.sections[0].items.map((x) => x.id)).toEqual([3, 51, 52]);
-    expect(snapshot.sections[2].items.map((x) => x.id)).toEqual([42, 51, 53]);
+    expect(snapshot.sections[0].items.map((x) => x.id)).toEqual([3, 51, 52, 53]);
+    expect(snapshot.sections[2].items.map((x) => x.id)).toEqual([42]);
     expect(snapshot.sections[3].items.map((x) => x.id)).toEqual([20, 13]);
-    expect(snapshot.sections[4].items.map((x) => x.id)).toEqual([12, 13, 10, 11]);
+    expect(snapshot.sections[4].items.map((x) => x.id)).toEqual([12, 10, 11]);
     expect(snapshot.sections[5].items.map((x) => x.id)).toEqual([31, 32, 33, 34]);
+
+    const titlesAcrossSections = snapshot.sections.flatMap((section) => section.items.map((item) => item.title.toLowerCase()));
+    expect(new Set(titlesAcrossSections).size).toBe(titlesAcrossSections.length);
     expect(snapshot.movieGenres).toEqual([
       { id: 28, name: 'Action' },
       { id: 35, name: 'Comedy' }

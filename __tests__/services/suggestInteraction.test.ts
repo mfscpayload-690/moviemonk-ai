@@ -1,4 +1,4 @@
-import { getNextHighlightIndex, resolveEnterAction } from '../../services/suggestInteraction';
+import { getNextHighlightIndex, inferInteractionIntent, resolveEnterAction } from '../../services/suggestInteraction';
 
 describe('suggestInteraction', () => {
   it('cycles highlight index forward and backward', () => {
@@ -46,5 +46,15 @@ describe('suggestInteraction', () => {
         topConfidence: 0
       })
     ).toBe('submit_query');
+  });
+
+  it('infers stricter interaction intent when person cues or year are typed', () => {
+    const personIntent = inferInteractionIntent('director christopher nolan');
+    expect(personIntent.prefersPersonResult).toBe(true);
+    expect(personIntent.confidenceThreshold).toBeGreaterThanOrEqual(0.88);
+
+    const yearIntent = inferInteractionIntent('dune 2021');
+    expect(yearIntent.typedYear).toBe('2021');
+    expect(yearIntent.prefersExactTitle).toBe(true);
   });
 });

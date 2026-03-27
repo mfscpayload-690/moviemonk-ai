@@ -1,4 +1,5 @@
 import { parsePersonIntent, resolveRoleMatch } from './personIntent';
+import { inferInteractionIntent } from './suggestInteraction';
 
 export type SuggestEntityType = 'movie' | 'show' | 'person';
 
@@ -32,6 +33,47 @@ function extractYear(input: string): string | undefined {
   return match?.[0];
 }
 
+function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+
+  const matrix: number[][] = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + substitutionCost
+      );
+    }
+  }
+
+  return matrix[a.length][b.length];
+}
+
+function getFuzzySimilarity(query: string, title: string): number {
+  const normalizedQuery = normalizeText(query);
+  const normalizedTitle = normalizeText(title);
+  if (!normalizedQuery || !normalizedTitle) return 0;
+
+  const distance = levenshteinDistance(normalizedQuery, normalizedTitle);
+  const maxLen = Math.max(normalizedQuery.length, normalizedTitle.length);
+  const editSimilarity = maxLen > 0 ? Math.max(0, 1 - distance / maxLen) : 0;
+
+  const queryTokens = normalizedQuery.split(' ').filter(Boolean);
+  const titleTokens = normalizedTitle.split(' ').filter(Boolean);
+  const titleTokenSet = new Set(titleTokens);
+  const tokenHits = queryTokens.filter((token) => titleTokenSet.has(token)).length;
+  const tokenSimilarity = queryTokens.length > 0 ? tokenHits / queryTokens.length : 0;
+
+  return Number((editSimilarity * 0.6 + tokenSimilarity * 0.4).toFixed(3));
+}
+
 function getTitleMatchScore(query: string, title: string): number {
   const normalizedQuery = normalizeText(query);
   const normalizedTitle = normalizeText(title);
@@ -49,7 +91,8 @@ function getTitleMatchScore(query: string, title: string): number {
   }, 0);
 
   if (tokenMatches === 0) return 0;
-  return 18 + tokenMatches * 10;
+  const fuzzySimilarity = getFuzzySimilarity(normalizedQuery, normalizedTitle);
+  return 18 + tokenMatches * 10 + fuzzySimilarity * 26;
 }
 
 function getPopularityBoost(popularity?: number): number {
@@ -87,7 +130,37 @@ function getPersonFocusBoost(isPersonFocused: boolean, type: SuggestEntityType):
 
 function getYearBoost(queryYear: string | undefined, candidateYear: string | undefined): number {
   if (!queryYear || !candidateYear) return 0;
-  return queryYear === candidateYear ? 10 : 0;
+  if (queryYear === candidateYear) return 12;
+
+  const queryYearNum = Number(queryYear);
+  const candidateYearNum = Number(candidateYear);
+  if (!Number.isFinite(queryYearNum) || !Number.isFinite(candidateYearNum)) return 0;
+
+  const yearDistance = Math.abs(queryYearNum - candidateYearNum);
+  if (yearDistance === 1) return 6;
+  if (yearDistance === 2) return 3;
+  return 0;
+}
+
+function getInteractionIntentBoost(query: string, candidate: SuggestCandidate): number {
+  const intent = inferInteractionIntent(query);
+  let boost = 0;
+
+  if (intent.prefersPersonResult) {
+    boost += candidate.type === 'person' ? 14 : -4;
+  }
+
+  if (intent.prefersExactTitle) {
+    const normalizedTitle = normalizeText(candidate.title);
+    const normalizedQuery = normalizeText(query.replace(/\b(19|20)\d{2}\b/g, ' '));
+    if (normalizedTitle === normalizedQuery) boost += 10;
+  }
+
+  if (intent.typedYear && candidate.year && intent.typedYear === candidate.year) {
+    boost += 4;
+  }
+
+  return boost;
 }
 
 function toConfidence(score: number): number {
@@ -102,6 +175,11 @@ export function rankSuggestCandidates(query: string, candidates: SuggestCandidat
 
   return candidates
     .map((candidate) => {
+      // Weighted blend:
+      // - Title relevance (exact/starts-with/fuzzy): strongest signal
+      // - Popularity: weak prior
+      // - Year confidence: medium when year is typed
+      // - Person and interaction intent: query-context aware boosts
       const titleScore = getTitleMatchScore(query, candidate.title);
       const popularityBoost = getPopularityBoost(candidate.popularity);
       const yearBoost = getYearBoost(queryYear, candidate.year);
@@ -112,7 +190,8 @@ export function rankSuggestCandidates(query: string, candidates: SuggestCandidat
       const knownForBoost = candidate.type === 'person'
         ? getKnownForOverlapBoost(intent.tokens, candidate.known_for_titles)
         : 0;
-      const score = titleScore + popularityBoost + yearBoost + personFocusBoost + roleMatchBoost + knownForBoost;
+      const interactionIntentBoost = getInteractionIntentBoost(query, candidate);
+      const score = titleScore + popularityBoost + yearBoost + personFocusBoost + roleMatchBoost + knownForBoost + interactionIntentBoost;
 
       return {
         ...candidate,

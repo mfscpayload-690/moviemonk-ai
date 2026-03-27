@@ -61,6 +61,7 @@ import { fetchMovieData } from '../../services/aiService';
 import { fetchMovieData as fetchFromGroq } from '../../services/groqService';
 import { fetchMovieData as fetchFromMistral } from '../../services/mistralService';
 import { fetchFromBestSource } from '../../services/hybridDataService';
+import { buildBalancedMixRow, dedupeSectionsByTitle } from '../../hooks/useDiscovery';
 import {
   addFolderToWatchlists,
   saveMovieToFolder,
@@ -221,5 +222,50 @@ describe('integration smoke: user journey and provider fallback', () => {
     expect(result.provider).toBe('mistral');
     expect(result.movieData?.title).toBe('Interstellar');
     expect(result.movieData?.summary_short).toContain('wormhole');
+  });
+
+  it('keeps dashboard mixes deterministic and globally de-duplicated', () => {
+    const mixed = buildBalancedMixRow(
+      6,
+      {
+        global: [
+          { id: 1, tmdb_id: '1', media_type: 'movie', title: 'Global One', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 2, tmdb_id: '2', media_type: 'movie', title: 'Global Two', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 3, tmdb_id: '3', media_type: 'movie', title: 'Global Three', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] }
+        ],
+        bollywood: [
+          { id: 11, tmdb_id: '11', media_type: 'movie', title: 'Bollywood One', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] }
+        ],
+        asian: [
+          { id: 21, tmdb_id: '21', media_type: 'movie', title: 'Asian One', year: '2024', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] }
+        ]
+      },
+      [
+        { pool: 'global', ratio: 0.7 },
+        { pool: 'bollywood', ratio: 0.15 },
+        { pool: 'asian', ratio: 0.15 }
+      ]
+    );
+
+    const dedupedSections = dedupeSectionsByTitle([
+      { key: 'first', title: 'First', items: mixed },
+      {
+        key: 'second',
+        title: 'Second',
+        items: [
+          { id: 30, tmdb_id: '30', media_type: 'movie', title: 'Global Two', year: '2025', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] },
+          { id: 31, tmdb_id: '31', media_type: 'movie', title: 'Second Unique', year: '2025', overview: '', poster_url: '', backdrop_url: '', rating: 7, genre_ids: [] }
+        ]
+      }
+    ]);
+
+    expect(mixed.map((item) => item.title)).toEqual([
+      'Global One',
+      'Global Two',
+      'Global Three',
+      'Bollywood One',
+      'Asian One'
+    ]);
+    expect(dedupedSections[1].items.map((item) => item.title)).toEqual(['Second Unique']);
   });
 });

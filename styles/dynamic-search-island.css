@@ -276,7 +276,7 @@
   transform: translateY(-50%);
   font-size: 0.75rem;
   color: #9ca3af;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: mm-soft-pulse 1.5s ease-in-out infinite;
   z-index: 2;
 }
 
@@ -535,15 +535,6 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
   }
 }
 

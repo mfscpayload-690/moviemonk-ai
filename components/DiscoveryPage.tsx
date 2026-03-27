@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { track } from '@vercel/analytics/react';
 import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
 import { useDiscovery } from '../hooks/useDiscovery';
+import {
+  recordDiscoveryCardOpened,
+  recordDiscoveryCardViewed,
+  recordDiscoverySectionRendered,
+  recordDiscoverySectionSkipped
+} from '../services/observability';
+import { DiscoveryItem } from '../types';
 
 interface DiscoveryPageProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
@@ -24,6 +32,26 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
 
   const heroCandidates = heroItems.length ? heroItems : (sections[0]?.items || []).slice(0, 5);
 
+  const handleSectionVisible = useCallback((sectionKey: string, title: string, itemCount: number) => {
+    recordDiscoverySectionRendered(sectionKey, title, itemCount);
+    track('discovery_section_rendered', { section_key: sectionKey, section_title: title, item_count: itemCount });
+  }, []);
+
+  const handleSectionSkipped = useCallback((sectionKey: string, title: string, itemCount: number) => {
+    recordDiscoverySectionSkipped(sectionKey, title, itemCount);
+    track('discovery_section_skipped', { section_key: sectionKey, section_title: title, item_count: itemCount });
+  }, []);
+
+  const handleCardView = useCallback((item: DiscoveryItem, sectionKey: string, position: number) => {
+    recordDiscoveryCardViewed(sectionKey, item.title, position);
+    track('discovery_card_viewed', { section_key: sectionKey, title: item.title, media_type: item.media_type, position });
+  }, []);
+
+  const handleCardOpen = useCallback((item: DiscoveryItem, sectionKey: string, position: number) => {
+    recordDiscoveryCardOpened(sectionKey, item.title, position);
+    track('discovery_card_opened', { section_key: sectionKey, title: item.title, media_type: item.media_type, position });
+  }, []);
+
   return (
     <div className="discovery-page animate-fade-in">
       <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} />
@@ -44,9 +72,14 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
       {sections.map((section) => (
         <ContentCarousel
           key={section.key}
+          sectionKey={section.key}
           title={section.title}
           items={section.items}
           isLoading={isLoading}
+          onSectionVisible={handleSectionVisible}
+          onSectionSkipped={handleSectionSkipped}
+          onCardView={handleCardView}
+          onCardOpen={handleCardOpen}
           onOpenTitle={onOpenTitle}
         />
       ))}
@@ -65,9 +98,14 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
         </div>
         <GenrePills genres={movieGenres} selectedGenre={selectedGenre} onSelectGenre={selectGenre} />
         <ContentCarousel
+          sectionKey="genre-picks"
           title={selectedGenre ? `${selectedGenre.name} Picks` : 'Genre Picks'}
           items={selectedGenreItems}
           isLoading={isLoading || isGenreLoading}
+          onSectionVisible={handleSectionVisible}
+          onSectionSkipped={handleSectionSkipped}
+          onCardView={handleCardView}
+          onCardOpen={handleCardOpen}
           onOpenTitle={onOpenTitle}
         />
       </section>

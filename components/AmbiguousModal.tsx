@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Film, User, Star, Lightbulb } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Film, User, Star } from 'lucide-react';
 import { buildPersonCardPresentation, sortPersonShortlist } from '../services/personPresentation';
 
 export interface Candidate {
@@ -31,7 +31,25 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   const [focused, setFocused] = useState(0);
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'person' | 'review'>('all');
   const listRef = useRef<HTMLDivElement>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const [hasUserScrolledList, setHasUserScrolledList] = useState(false);
   const isPersonShortlist = mode === 'person-shortlist';
+
+  // Keep the background page fixed while this modal is open so wheel/trackpad
+  // gestures are applied to the modal list instead of the page beneath.
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, []);
 
   // Filter candidates based on selected type
   const filtered = isPersonShortlist
@@ -72,6 +90,42 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
     }
   }, [focused]);
 
+  const updateScrollAffordance = useCallback(() => {
+    const el = listRef.current;
+    if (!el) {
+      setHasOverflow(false);
+      setCanScrollUp(false);
+      setCanScrollDown(false);
+      return;
+    }
+
+    const threshold = 2;
+    const maxScrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
+    const overflow = maxScrollTop > threshold;
+    setHasOverflow(overflow);
+    setCanScrollUp(overflow && el.scrollTop > threshold);
+    setCanScrollDown(overflow && el.scrollTop < maxScrollTop - threshold);
+  }, []);
+
+  useEffect(() => {
+    updateScrollAffordance();
+    setHasUserScrolledList(false);
+  }, [filtered.length, updateScrollAffordance]);
+
+  useEffect(() => {
+    const handleResize = () => updateScrollAffordance();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateScrollAffordance]);
+
+  const handleListScroll = useCallback(() => {
+    const el = listRef.current;
+    if (el && el.scrollTop > 8 && !hasUserScrolledList) {
+      setHasUserScrolledList(true);
+    }
+    updateScrollAffordance();
+  }, [hasUserScrolledList, updateScrollAffordance]);
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'movie': return <Film size={24} />;
@@ -95,8 +149,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden" role="dialog" aria-modal="true">
+      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col h-[92vh] max-h-[92vh] sm:h-[86vh] sm:max-h-[86vh] sm:my-6">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
           <div>
@@ -145,8 +199,13 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         )}
 
         {/* Results List */}
-        <div ref={listRef} className="overflow-y-auto flex-1 overscroll-contain">
-          <div className="divide-y divide-white/5">
+        <div className="relative flex-1 min-h-0 overflow-hidden">
+          <div
+            ref={listRef}
+            className="overflow-y-auto h-full overscroll-contain"
+            onScroll={handleListScroll}
+          >
+            <div className="divide-y divide-white/5">
             {filtered.length === 0 ? (
               <div className="px-6 py-8 text-center">
                 <p className="text-brand-text-dark">No results for this filter</p>
@@ -167,16 +226,16 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     key={`${c.type}-${c.id}`}
                     data-idx={i}
                     onClick={() => onSelect(c)}
-                    className={`w-full text-left px-4 sm:px-6 py-4 transition flex gap-3 sm:gap-4 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
+                    className={`w-full text-left px-4 py-4 sm:px-6 sm:py-4 ${isPersonShortlist ? 'sm:px-7 sm:py-5 sm:gap-5' : 'sm:gap-4'} transition-colors duration-150 flex gap-3 items-start hover:bg-white/5 border-l-4 touch-target ${focused === i
                       ? 'border-l-brand-primary bg-brand-primary/10'
                       : 'border-l-transparent hover:border-l-brand-primary/50'
                       }`}
                     aria-selected={focused === i}
                   >
                   {/* Thumbnail - larger on mobile */}
-                  <div className="flex-shrink-0 w-20 h-28 sm:w-20 sm:h-28 ambiguous-thumb-mobile rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10">
+                  <div className={`flex-shrink-0 w-20 h-28 ${isPersonShortlist ? 'sm:w-24 sm:h-32' : 'sm:w-20 sm:h-28'} ambiguous-thumb-mobile rounded-lg bg-gradient-to-br from-brand-primary/20 to-brand-primary/5 flex items-center justify-center overflow-hidden border border-white/10`}>
                     {c.image ? (
-                      <img src={c.image} alt={c.title} className="w-full h-full object-cover" loading="lazy" />
+                      <img src={c.image} alt={c.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="text-brand-primary/60">
                         {getTypeIcon(c.type)}
@@ -187,7 +246,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                     {/* Title */}
-                    <div className="flex items-start gap-2 mb-2">
+                    <div className={`flex items-start gap-2 ${isPersonShortlist ? 'mb-3' : 'mb-2'}`}>
                       <h3 className="font-semibold text-lg text-brand-text-light leading-tight">{c.title}</h3>
                       {c.year && (
                         <span className="text-xs px-2 py-1 rounded bg-white/10 text-brand-text-dark flex-shrink-0 mt-0.5">
@@ -197,7 +256,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                     </div>
 
                     {/* Type & Language Badge */}
-                    <div className="flex gap-2 mb-3 flex-wrap">
+                    <div className={`flex gap-2 ${isPersonShortlist ? 'mb-4' : 'mb-3'} flex-wrap`}>
                       {!isPersonShortlist && (
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${typeColor[c.type]}`}>
                           {c.type.toUpperCase()}
@@ -252,30 +311,32 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
                 );
               })
             )}
+            </div>
           </div>
+
+          {hasOverflow && canScrollUp && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-black/65 to-transparent z-10"
+            />
+          )}
+          {hasOverflow && canScrollDown && (
+            <>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/75 to-transparent z-10"
+              />
+              {!hasUserScrolledList && (
+                <div className="pointer-events-none absolute bottom-2 left-0 right-0 z-20 flex justify-center">
+                  <span className="px-2 py-1 rounded-full text-[11px] font-medium bg-black/50 border border-white/10 text-brand-text-dark">
+                    Scroll for more
+                  </span>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 sm:px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0 text-center sm:text-left">
-          <span className="hidden sm:inline flex items-center gap-2 justify-center sm:justify-start">
-            <Lightbulb size={14} className="flex-shrink-0" />
-            {isPersonShortlist ? 'Tip: choose the exact person profile you mean, then continue.' : 'Tip: Use'}
-            <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">↑↓</kbd>
-            {!isPersonShortlist && (
-              <>
-                arrow keys to navigate,
-                <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">⏎</kbd>
-                to select,
-                <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">Esc</kbd>
-                to close
-              </>
-            )}
-          </span>
-          <span className="sm:hidden flex items-center gap-2 justify-center">
-            <Lightbulb size={14} className="flex-shrink-0" />
-            {isPersonShortlist ? 'Tap the right person to continue' : 'Tap to select a result'}
-          </span>
-        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { track } from '@vercel/analytics/react';
-import { BirthdayIcon, LocationIcon, SparklesIcon } from './icons';
+import { SparklesIcon } from './icons';
 import { useRenderCounter } from '../lib/perfDebug';
 import { PersonCredit, PersonRoleBucket } from '../types';
 import { buildPersonCardPresentation } from '../services/personPresentation';
@@ -209,23 +209,7 @@ const PersonDisplay: React.FC<{
           <div className="person-editorial-header">
             <h2 className="person-editorial-name">{person.name}</h2>
             {metadataParts.length > 0 && (
-              <p className="person-editorial-meta-line">
-                {person.birthday && (
-                  <span className="person-meta-item">
-                    <BirthdayIcon className="w-3.5 h-3.5" />
-                    {person.birthday}
-                  </span>
-                )}
-                {person.place_of_birth && (
-                  <span className="person-meta-item">
-                    <LocationIcon className="w-3.5 h-3.5" />
-                    {person.place_of_birth}
-                  </span>
-                )}
-                {person.known_for_department && (
-                  <span className="person-meta-role-chip">{person.known_for_department}</span>
-                )}
-              </p>
+              <p className="person-editorial-meta-line">{metadataParts.join(' \u2022 ')}</p>
             )}
             {tags.length > 0 && (
               <div className="person-editorial-tags">

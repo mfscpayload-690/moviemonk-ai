@@ -167,6 +167,7 @@ export interface MovieData {
   tmdb_id?: string;
   title: string;
   year: string;
+  language?: string;
   type: 'movie' | 'show' | 'song' | 'franchise';
   media_type?: string;
   genres: string[];

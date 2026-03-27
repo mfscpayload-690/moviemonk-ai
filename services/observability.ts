@@ -93,3 +93,46 @@ export function getProviderMetricsSnapshot(): Record<AIProvider, ProviderStats> 
     openrouter: { ...metrics.openrouter }
   };
 }
+
+const discoveryEventDedupe = new Set<string>();
+
+function shouldEmitDiscoveryEvent(dedupeKey: string): boolean {
+  if (discoveryEventDedupe.has(dedupeKey)) return false;
+  discoveryEventDedupe.add(dedupeKey);
+  return true;
+}
+
+export function recordDiscoverySectionRendered(sectionKey: string, title: string, itemCount: number): void {
+  if (!shouldEmitDiscoveryEvent(`section:render:${sectionKey}`)) return;
+  log('discovery_section_rendered', {
+    section_key: sectionKey,
+    section_title: title,
+    item_count: itemCount
+  });
+}
+
+export function recordDiscoverySectionSkipped(sectionKey: string, title: string, itemCount: number): void {
+  if (!shouldEmitDiscoveryEvent(`section:skip:${sectionKey}`)) return;
+  log('discovery_section_skipped', {
+    section_key: sectionKey,
+    section_title: title,
+    item_count: itemCount
+  }, 'warn');
+}
+
+export function recordDiscoveryCardViewed(sectionKey: string, title: string, position: number): void {
+  if (!shouldEmitDiscoveryEvent(`card:view:${sectionKey}:${title}:${position}`)) return;
+  log('discovery_card_viewed', {
+    section_key: sectionKey,
+    title,
+    position
+  });
+}
+
+export function recordDiscoveryCardOpened(sectionKey: string, title: string, position: number): void {
+  log('discovery_card_opened', {
+    section_key: sectionKey,
+    title,
+    position
+  });
+}

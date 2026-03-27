@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DiscoveryItem } from '../types';
 import SkeletonCard from './SkeletonCard';
+import { ArrowLeftIcon, ArrowRightIcon } from './icons';
 
 interface HeroSpotlightProps {
   items: DiscoveryItem[];
@@ -14,7 +15,9 @@ const formatRating = (rating: number | null) => (
 
 const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isAutoPaused, setIsAutoPaused] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const autoplayMs = 7000;
   const goPrev = () => setActiveIndex((current) => (current - 1 + items.length) % items.length);
   const goNext = () => setActiveIndex((current) => (current + 1) % items.length);
   const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
@@ -34,20 +37,46 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
     } else {
       goPrev();
     }
+    setIsAutoPaused(true);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (items.length <= 1) return;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      goPrev();
+      setIsAutoPaused(true);
+    }
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      goNext();
+      setIsAutoPaused(true);
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      setActiveIndex(0);
+      setIsAutoPaused(true);
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      setActiveIndex(Math.max(0, items.length - 1));
+      setIsAutoPaused(true);
+    }
   };
 
   useEffect(() => {
     setActiveIndex(0);
+    setIsAutoPaused(false);
   }, [items]);
 
   useEffect(() => {
-    if (items.length <= 1) return;
+    if (items.length <= 1 || isAutoPaused) return;
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % items.length);
-    }, 7000);
+    }, autoplayMs);
 
     return () => window.clearInterval(timer);
-  }, [items]);
+  }, [isAutoPaused, items]);
 
   if (isLoading) {
     return <SkeletonCard variant="hero" />;
@@ -68,7 +97,19 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   }
 
   return (
-    <section className="discovery-hero-wrapper" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <section
+      className="discovery-hero-wrapper"
+      tabIndex={0}
+      aria-roledescription="carousel"
+      aria-label="Featured discovery titles"
+      onKeyDown={handleKeyDown}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onMouseEnter={() => setIsAutoPaused(true)}
+      onMouseLeave={() => setIsAutoPaused(false)}
+      onFocusCapture={() => setIsAutoPaused(true)}
+      onBlurCapture={() => setIsAutoPaused(false)}
+    >
       <div 
         className="discovery-hero-track"
         style={{ transform: `translateX(-${activeIndex * 100}%)` }}
@@ -123,6 +164,33 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
       </div>
 
       {items.length > 1 && (
+        <div className="discovery-hero-nav" aria-label="Hero slider controls">
+          <button
+            type="button"
+            className="discovery-hero-nav-btn"
+            aria-label="Previous featured title"
+            onClick={() => {
+              goPrev();
+              setIsAutoPaused(true);
+            }}
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            className="discovery-hero-nav-btn"
+            aria-label="Next featured title"
+            onClick={() => {
+              goNext();
+              setIsAutoPaused(true);
+            }}
+          >
+            <ArrowRightIcon className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {items.length > 1 && (
         <div className="discovery-hero-dots-global" aria-label="Featured titles">
           <div className="discovery-hero-dots">
             {items.map((item, index) => (
@@ -130,10 +198,20 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                 key={`${item.id}-dot-${index}`}
                 type="button"
                 className={`discovery-hero-dot ${index === activeIndex ? 'is-active' : ''}`}
-                onClick={() => setActiveIndex(index)}
+                onClick={() => {
+                  setActiveIndex(index);
+                  setIsAutoPaused(true);
+                }}
                 aria-label={`Show ${item.title}`}
                 tabIndex={-1}
-              />
+              >
+                {index === activeIndex && (
+                  <span
+                    className={`discovery-hero-dot-progress ${isAutoPaused ? 'is-paused' : ''}`}
+                    style={{ animationDuration: `${autoplayMs}ms` }}
+                  />
+                )}
+              </button>
             ))}
           </div>
         </div>

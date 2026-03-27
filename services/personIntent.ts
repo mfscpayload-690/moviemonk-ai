@@ -14,7 +14,11 @@ const STOP_TOKENS = new Set([
   'of',
   'the',
   'a',
-  'an'
+  'an',
+  'please',
+  'find',
+  'search',
+  'for'
 ]);
 
 const PERSON_ROLE_PATTERNS: Array<{ role: PersonIntent['requested_role']; pattern: RegExp }> = [
@@ -44,8 +48,9 @@ export function parsePersonIntent(query: string): PersonIntent {
     .map(normalizeToken)
     .filter((token) => token.length > 1 && !STOP_TOKENS.has(token));
 
+  const hasPersonCue = /\b(actor|actress|director|cast|starring|filmography|movies by|shows by|who is)\b/i.test(raw);
   const queryLooksLikeName = tokens.length >= 2 && tokens.length <= 4;
-  const isPersonFocused = requestedRole !== 'any' || queryLooksLikeName;
+  const isPersonFocused = requestedRole !== 'any' || hasPersonCue || queryLooksLikeName;
 
   return {
     raw_query: raw,

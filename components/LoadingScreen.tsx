@@ -122,7 +122,7 @@ const PersonLoadingScreen: React.FC = () => (
       <div
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
         style={{
-          animation: 'shimmer 2s infinite',
+          animation: 'mm-loading-shimmer 2s infinite',
           transform: 'skewX(-20deg)'
         }}
       />
