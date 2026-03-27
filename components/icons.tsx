@@ -2,6 +2,7 @@ import React from 'react';
 import {
     AlertCircle,
     AlertTriangle,
+    Bell,
     Bot,
     CheckCircle2,
     ClipboardCheck,
@@ -105,6 +106,10 @@ export const TrashIcon: React.FC<IconProps> = ({ className }) => (
 
 export const FolderIcon: React.FC<IconProps> = ({ className }) => (
     <Folder {...baseIconProps} className={className} />
+);
+
+export const BellIcon: React.FC<IconProps> = ({ className }) => (
+    <Bell {...baseIconProps} className={className} />
 );
 
 export const LocationIcon: React.FC<IconProps> = ({ className }) => (

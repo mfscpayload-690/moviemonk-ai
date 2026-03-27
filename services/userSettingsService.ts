@@ -55,7 +55,7 @@ export async function fetchPreferenceSettings(userId: string): Promise<UserPrefe
   const client = getClientOrThrow();
   const { data, error } = await client
     .from('user_preferences')
-    .select('genres, languages, favorite_decades, favorite_regions, content_mix, maturity_filter, autoplay_trailers, card_density, notifications_enabled')
+    .select('genres, languages, favorite_decades, favorite_regions, content_mix, maturity_filter, autoplay_trailers, card_density, notifications_enabled, notification_channels, notification_frequency')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -64,6 +64,17 @@ export async function fetchPreferenceSettings(userId: string): Promise<UserPrefe
   if (!data) {
     return DEFAULT_PREFERENCE_SETTINGS;
   }
+
+  const channels = Array.isArray(data.notification_channels)
+    ? data.notification_channels.filter((ch: unknown): ch is 'in_app' | 'email' | 'push' => ch === 'in_app' || ch === 'email' || ch === 'push')
+    : [];
+
+  const legacyEnabled = Boolean(data.notifications_enabled);
+  const notificationChannels = channels.length > 0 ? channels : (legacyEnabled ? ['in_app'] : []);
+  const notificationFrequency = data.notification_frequency === 'daily' || data.notification_frequency === 'weekly' || data.notification_frequency === 'off'
+    ? data.notification_frequency
+    : (legacyEnabled ? 'weekly' : 'off');
+  const notificationsEnabled = notificationFrequency !== 'off' && notificationChannels.length > 0;
 
   return {
     genres: Array.isArray(data.genres) ? data.genres : [],
@@ -74,12 +85,16 @@ export async function fetchPreferenceSettings(userId: string): Promise<UserPrefe
     familySafe: data.maturity_filter !== 'strict',
     autoplayTrailers: Boolean(data.autoplay_trailers),
     cardDensity: data.card_density || 'rich',
-    notificationsEnabled: Boolean(data.notifications_enabled)
+    notificationsEnabled,
+    notificationChannels,
+    notificationFrequency
   };
 }
 
 export async function upsertPreferenceSettings(userId: string, settings: UserPreferenceSettings): Promise<void> {
   const client = getClientOrThrow();
+  const notificationsEnabled = settings.notificationFrequency !== 'off' && settings.notificationChannels.length > 0;
+
   const { error } = await client.from('user_preferences').upsert({
     user_id: userId,
     genres: settings.genres,
@@ -90,7 +105,9 @@ export async function upsertPreferenceSettings(userId: string, settings: UserPre
     maturity_filter: settings.familySafe ? 'standard' : 'strict',
     autoplay_trailers: settings.autoplayTrailers,
     card_density: settings.cardDensity,
-    notifications_enabled: settings.notificationsEnabled,
+    notifications_enabled: notificationsEnabled,
+    notification_channels: settings.notificationChannels,
+    notification_frequency: settings.notificationFrequency,
     updated_at: new Date().toISOString()
   });
 

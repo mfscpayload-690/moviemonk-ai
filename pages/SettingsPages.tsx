@@ -150,13 +150,17 @@ function useSettingsState() {
   const saveAll = async (nextProfile: UserProfileSettings, nextPrefs: UserPreferenceSettings) => {
     setSaving(true);
     setSaveMessage(null);
+    const normalizedPrefs: UserPreferenceSettings = {
+      ...nextPrefs,
+      notificationsEnabled: nextPrefs.notificationFrequency !== 'off' && nextPrefs.notificationChannels.length > 0
+    };
     saveProfileSettings(nextProfile);
-    savePreferenceSettings(nextPrefs);
+    savePreferenceSettings(normalizedPrefs);
     try {
       if (user?.id) {
         await Promise.all([
           upsertProfileSettings(user.id, nextProfile),
-          upsertPreferenceSettings(user.id, nextPrefs)
+          upsertPreferenceSettings(user.id, normalizedPrefs)
         ]);
       }
       setSaveMessage('Saved successfully');
@@ -319,19 +323,6 @@ export function ProfileSettingsPage() {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm mb-1">Avatar URL</label>
-          <p className="text-xs text-brand-text-light mb-2">
-            Link to your profile picture. Example: <code className="bg-black/20 px-1 py-0.5 rounded text-xs">https://avatars.githubusercontent.com/u/123456?v=4</code>
-          </p>
-          <input
-            style={inputStyle}
-            value={profile.avatarUrl}
-            onChange={(event) => setProfile({ ...profile, avatarUrl: event.target.value })}
-            placeholder="https://..."
-          />
-        </div>
-
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -353,6 +344,31 @@ export function PreferenceSettingsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { profile, preferences, setPreferences, saveAll, saving, saveMessage } = useSettingsState();
+
+  const toggleNotificationChannel = (channel: 'in_app' | 'email' | 'push') => {
+    const exists = preferences.notificationChannels.includes(channel);
+    const nextChannels = exists
+      ? preferences.notificationChannels.filter((entry) => entry !== channel)
+      : [...preferences.notificationChannels, channel];
+
+    const nextFrequency = nextChannels.length === 0 ? 'off' : preferences.notificationFrequency;
+
+    setPreferences({
+      ...preferences,
+      notificationChannels: nextChannels,
+      notificationFrequency: nextFrequency,
+      notificationsEnabled: nextFrequency !== 'off' && nextChannels.length > 0
+    });
+  };
+
+  const setNotificationFrequency = (frequency: UserPreferenceSettings['notificationFrequency']) => {
+    const notificationsEnabled = frequency !== 'off' && preferences.notificationChannels.length > 0;
+    setPreferences({
+      ...preferences,
+      notificationFrequency: frequency,
+      notificationsEnabled
+    });
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -451,14 +467,41 @@ export function PreferenceSettingsPage() {
             />
             Autoplay trailers
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={preferences.notificationsEnabled}
-              onChange={(event) => setPreferences({ ...preferences, notificationsEnabled: event.target.checked })}
-            />
-            Notification preference (placeholder)
-          </label>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Notification channels</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'in_app', label: 'In-app' },
+                { key: 'email', label: 'Email' },
+                { key: 'push', label: 'Push' }
+              ].map((option) => {
+                const active = preferences.notificationChannels.includes(option.key as 'in_app' | 'email' | 'push');
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={`px-3 py-1 rounded-full border text-sm ${active ? 'bg-brand-primary text-white border-brand-primary' : 'border-white/20 text-brand-text-light'}`}
+                    onClick={() => toggleNotificationChannel(option.key as 'in_app' | 'email' | 'push')}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Notification frequency</label>
+            <select
+              style={inputStyle}
+              value={preferences.notificationFrequency}
+              onChange={(event) => setNotificationFrequency(event.target.value as UserPreferenceSettings['notificationFrequency'])}
+            >
+              <option value="off">Off</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

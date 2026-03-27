@@ -2,6 +2,38 @@
 
 This directory contains Vercel serverless functions that act as a secure backend proxy for API requests.
 
+## Notifications Dispatch (`/api/notifications/dispatch`)
+
+Queues notification events for users based on saved preferences:
+
+- Channels: `in_app`, `email`, `push`
+- Frequency: `daily`, `weekly`
+
+### Request
+
+- Method: `POST`
+- Query or body: `frequency` (`daily` or `weekly`)
+- Optional header: `x-notification-secret` (required if `NOTIFICATION_DISPATCH_SECRET` is set)
+
+### Environment variables
+
+- `VITE_SUPABASE_URL` or `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NOTIFICATION_DISPATCH_SECRET` (recommended)
+
+## Notifications Processing (`/api/notifications/process`)
+
+Processes queued events from `notification_events`:
+
+- In-app channel: marks queued events as `sent` for inbox display
+- Email channel: sends via Resend and marks `sent`/`failed`
+- Push channel: currently marked `failed` until provider adapter is added
+
+### Required env vars for email delivery
+
+- `RESEND_API_KEY`
+- `NOTIFICATION_FROM_EMAIL` (verified sender identity)
+
 ## OpenRouter Proxy (`/api/openrouter`)
 
 ### Why?
