@@ -49,18 +49,120 @@ export function pickHeroItems(items: DiscoveryItem[], limit = 5): DiscoveryItem[
   return items.filter((item) => item.backdrop_url).slice(0, limit);
 }
 
-function mergeUniqueDiscoveryItems(...groups: DiscoveryItem[][]): DiscoveryItem[] {
-  const seen = new Set<string>();
+function getDiscoveryTitleKey(item: DiscoveryItem): string {
+  return item.title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+export function mergeUniqueDiscoveryItems(...groups: DiscoveryItem[][]): DiscoveryItem[] {
+  const seenByEntity = new Set<string>();
   const merged: DiscoveryItem[] = [];
 
   groups.flat().forEach((item) => {
     const key = `${item.media_type}-${item.id}`;
-    if (seen.has(key)) return;
-    seen.add(key);
+    if (seenByEntity.has(key)) return;
+    seenByEntity.add(key);
     merged.push(item);
   });
 
   return merged;
+}
+
+export function buildBalancedMixRow(
+  total: number,
+  pools: Record<string, DiscoveryItem[]>,
+  policy: Array<{ pool: string; ratio: number }>
+): DiscoveryItem[] {
+  const cappedTotal = Math.max(0, total);
+  if (cappedTotal === 0 || policy.length === 0) return [];
+
+  const prepared = new Map<string, DiscoveryItem[]>();
+  policy.forEach(({ pool }) => {
+    const seenTitles = new Set<string>();
+    const source = pools[pool] || [];
+    prepared.set(
+      pool,
+      source.filter((item) => {
+        const titleKey = getDiscoveryTitleKey(item);
+        if (!titleKey || seenTitles.has(titleKey)) return false;
+        seenTitles.add(titleKey);
+        return true;
+      })
+    );
+  });
+
+  const wanted = new Map<string, number>();
+  let allocated = 0;
+  policy.forEach(({ pool, ratio }) => {
+    const count = Math.floor(cappedTotal * ratio);
+    wanted.set(pool, count);
+    allocated += count;
+  });
+
+  let remainingByRounding = cappedTotal - allocated;
+  for (let i = 0; i < policy.length && remainingByRounding > 0; i += 1) {
+    const pool = policy[i].pool;
+    wanted.set(pool, (wanted.get(pool) || 0) + 1);
+    remainingByRounding -= 1;
+  }
+
+  const takenByPool = new Map<string, number>();
+  policy.forEach(({ pool }) => takenByPool.set(pool, 0));
+
+  const selected: DiscoveryItem[] = [];
+  const selectedTitles = new Set<string>();
+
+  const takeFromPool = (pool: string, count: number) => {
+    if (count <= 0) return 0;
+    const items = prepared.get(pool) || [];
+    let cursor = takenByPool.get(pool) || 0;
+    let added = 0;
+
+    while (cursor < items.length && added < count) {
+      const candidate = items[cursor];
+      cursor += 1;
+      const titleKey = getDiscoveryTitleKey(candidate);
+      if (!titleKey || selectedTitles.has(titleKey)) continue;
+      selectedTitles.add(titleKey);
+      selected.push(candidate);
+      added += 1;
+    }
+
+    takenByPool.set(pool, cursor);
+    return added;
+  };
+
+  policy.forEach(({ pool }) => {
+    takeFromPool(pool, wanted.get(pool) || 0);
+  });
+
+  // Fallback fill in priority order when a pool is sparse.
+  while (selected.length < cappedTotal) {
+    let addedInPass = 0;
+    for (let i = 0; i < policy.length && selected.length < cappedTotal; i += 1) {
+      addedInPass += takeFromPool(policy[i].pool, 1);
+    }
+    if (addedInPass === 0) break;
+  }
+
+  return selected.slice(0, cappedTotal);
+}
+
+export function dedupeSectionsByTitle(sections: DiscoverySection[]): DiscoverySection[] {
+  const seenTitles = new Set<string>();
+
+  return sections.map((section) => {
+    const uniqueItems = section.items.filter((item) => {
+      const titleKey = getDiscoveryTitleKey(item);
+      if (!titleKey || seenTitles.has(titleKey)) return false;
+      seenTitles.add(titleKey);
+      return true;
+    });
+
+    return {
+      ...section,
+      items: uniqueItems
+    };
+  });
 }
 
 export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<DiscoverySnapshot> {
@@ -92,15 +194,15 @@ export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<Disco
 
   const dramaGenreId = tvGenres.find((genre) => genre.name === 'Drama')?.id;
 
-  const [bollywoodMovies, asianMovies] = await Promise.all([
+  const [bollywoodMovies, asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh] = await Promise.all([
     fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal }),
-    fetchDiscoverMovie({ withOriginalLanguage: 'ja' }, { signal })
+    fetchDiscoverMovie({ withOriginalLanguage: 'ja' }, { signal }),
+    fetchDiscoverMovie({ withOriginalLanguage: 'ko' }, { signal }),
+    fetchDiscoverMovie({ withOriginalLanguage: 'zh' }, { signal }),
+    fetchDiscoverMovie({ withOriginalLanguage: 'th' }, { signal })
   ]);
 
-  const [asianNowPlayingCandidates, bollywoodNowPlayingCandidates] = await Promise.all([
-    fetchDiscoverMovie({ withOriginalLanguage: 'ko' }, { signal }),
-    fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal })
-  ]);
+  const asianMovies = mergeUniqueDiscoveryItems(asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh);
 
   const [koreanSeries, japaneseSeries, chineseSeries, thaiSeries] = await Promise.all([
     fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ko' }, { signal }),
@@ -117,17 +219,33 @@ export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<Disco
   ).slice(0, 24);
 
   const globalWebSeriesAndTv = mergeUniqueDiscoveryItems(onTheAir, topRatedTv, popularTv, trendingTv).slice(0, 24);
-  const trendingMoviesMixed = mergeUniqueDiscoveryItems(
-    trendingMovies.slice(0, 18),
-    bollywoodMovies.slice(0, 1),
-    asianMovies.slice(0, 1)
-  ).slice(0, 20);
+  const trendingMoviesMixed = buildBalancedMixRow(
+    20,
+    {
+      global: trendingMovies,
+      bollywood: bollywoodMovies,
+      asian: asianMovies
+    },
+    [
+      { pool: 'global', ratio: 0.7 },
+      { pool: 'bollywood', ratio: 0.15 },
+      { pool: 'asian', ratio: 0.15 }
+    ]
+  );
 
-  const nowPlayingMixed = mergeUniqueDiscoveryItems(
-    nowPlaying.slice(0, 16),
-    bollywoodNowPlayingCandidates.slice(0, 2),
-    asianNowPlayingCandidates.slice(0, 2)
-  ).slice(0, 20);
+  const nowPlayingMixed = buildBalancedMixRow(
+    20,
+    {
+      global: nowPlaying,
+      bollywood: bollywoodMovies,
+      asian: asianMovies
+    },
+    [
+      { pool: 'global', ratio: 0.7 },
+      { pool: 'bollywood', ratio: 0.15 },
+      { pool: 'asian', ratio: 0.15 }
+    ]
+  );
 
   const topRatedMoviesAndSeries = mergeUniqueDiscoveryItems(topRatedMovies, topRatedTv).slice(0, 24);
 
@@ -137,16 +255,18 @@ export async function loadDiscoverySnapshot(signal?: AbortSignal): Promise<Disco
     ? await fetchByGenre(selectedGenre.id, 'movie', { signal })
     : [];
 
+  const prioritizedSections: DiscoverySection[] = [
+    { key: 'trending-movies', title: 'Trending Movies', items: trendingMoviesMixed },
+    { key: 'upcoming', title: 'Upcoming', items: upcoming },
+    { key: 'now-playing-mix', title: 'Now Playing', items: nowPlayingMixed },
+    { key: 'top-rated-movies-series', title: 'Top Rated Movies & Series', items: topRatedMoviesAndSeries },
+    { key: 'global-web-series-tv', title: 'Global Web Series and TV Shows', items: globalWebSeriesAndTv },
+    { key: 'kdrama-asian-series', title: 'K-Drama and Asian Series', items: kDramaAndAsianSeries }
+  ];
+
   return {
     heroItems: pickHeroItems(trendingAll),
-    sections: [
-      { key: 'trending-movies', title: 'Trending Movies', items: trendingMoviesMixed },
-      { key: 'upcoming', title: 'Upcoming', items: upcoming },
-      { key: 'now-playing-mix', title: 'Now Playing', items: nowPlayingMixed },
-      { key: 'top-rated-movies-series', title: 'Top Rated Movies & Series', items: topRatedMoviesAndSeries },
-      { key: 'global-web-series-tv', title: 'Global Web Series and TV Shows', items: globalWebSeriesAndTv },
-      { key: 'kdrama-asian-series', title: 'K-Drama and Asian Series', items: kDramaAndAsianSeries }
-    ],
+    sections: dedupeSectionsByTitle(prioritizedSections),
     movieGenres: curatedGenres,
     selectedGenre,
     selectedGenreItems

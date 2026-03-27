@@ -157,6 +157,17 @@ h6 {
     }
 }
 
+@keyframes mm-soft-pulse {
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
 .animate-fade-in {
     animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -452,7 +463,7 @@ h6 {
     justify-content: center;
     z-index: 50;
     padding: 1rem;
-    animation: fadeIn 0.3s ease;
+    animation: galleryFadeIn 0.3s ease;
     overflow: hidden;
     overscroll-behavior: contain;
 }
@@ -467,7 +478,7 @@ h6 {
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-    animation: slideUp 0.3s ease;
+    animation: gallerySlideUp 0.3s ease;
 }
 
 .gallery-lightbox-image {
@@ -627,7 +638,7 @@ h6 {
 
 /* Animations */
 
-@keyframes fadeIn {
+@keyframes galleryFadeIn {
     from {
         opacity: 0;
     }
@@ -637,7 +648,7 @@ h6 {
     }
 }
 
-@keyframes slideUp {
+@keyframes gallerySlideUp {
     from {
         opacity: 0;
         transform: translateY(20px);
@@ -859,7 +870,7 @@ h6 {
     animation: shimmer 1.5s infinite;
 }
 
-@keyframes shimmer {
+@keyframes mm-loading-shimmer {
     0% {
         background-position: 200% 0;
     }
@@ -1860,6 +1871,11 @@ a:focus-visible {
     transform: translateZ(0);
 }
 
+.discovery-hero-wrapper:focus-visible {
+    outline: 2px solid rgba(167, 139, 250, 0.8);
+    outline-offset: 2px;
+}
+
 .discovery-hero-track {
     display: flex;
     height: 100%;
@@ -1987,11 +2003,69 @@ a:focus-visible {
     border: 0;
     background: rgba(255, 255, 255, 0.3);
     transition: transform 150ms ease, background 150ms ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .discovery-hero-dot.is-active {
     background: #ffffff;
     transform: scale(1.2);
+}
+
+.discovery-hero-dot-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    transform-origin: left center;
+    transform: scaleX(0);
+    background: linear-gradient(90deg, #c4b5fd, #ffffff);
+    animation-name: discoveryProgressFill;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+.discovery-hero-dot-progress.is-paused {
+    animation-play-state: paused;
+}
+
+.discovery-hero-nav {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 8;
+    display: inline-flex;
+    gap: 0.45rem;
+}
+
+.discovery-hero-nav-btn {
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(12, 12, 12, 0.42);
+    color: rgba(255, 255, 255, 0.92);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.discovery-hero-nav-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(12, 12, 12, 0.62);
+    border-color: rgba(255, 255, 255, 0.34);
+}
+
+@keyframes discoveryProgressFill {
+    from {
+        transform: scaleX(0);
+    }
+
+    to {
+        transform: scaleX(1);
+    }
 }
 
 .discovery-carousel {

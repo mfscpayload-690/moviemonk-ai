@@ -14,7 +14,7 @@ import { track } from '@vercel/analytics/react';
 import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-react';
 import { QueryComplexity, SuggestionItem } from '../types';
 import { SearchIcon, SendIcon } from './icons';
-import { getNextHighlightIndex, resolveEnterAction } from '../services/suggestInteraction';
+import { getNextHighlightIndex, inferInteractionIntent, resolveEnterAction } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import '../styles/dynamic-search-island.css';
@@ -304,11 +304,13 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     if (e.key === 'Enter') {
       e.preventDefault();
 
+      const interactionIntent = inferInteractionIntent(query);
+
       const action = resolveEnterAction({
         highlightedIndex,
         suggestionsCount: showSuggestions ? suggestions.length : 0,
         topConfidence: suggestions[0]?.confidence,
-        confidenceThreshold: AUTO_SELECT_CONFIDENCE
+        confidenceThreshold: Math.max(AUTO_SELECT_CONFIDENCE, interactionIntent.confidenceThreshold)
       });
 
       if (action === 'select_highlighted') {
