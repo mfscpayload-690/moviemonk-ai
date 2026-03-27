@@ -8,6 +8,7 @@ import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
 import { useRenderCounter } from '../lib/perfDebug';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
+import RatingDisplay from './RatingDisplay';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -416,7 +417,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             </div>
                                             <div className="flex flex-col gap-0.5">
                                                 <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
-                                                <p className="text-sm md:text-lg font-extrabold rating-score-accessible">{rating.score}</p>
+                                                <RatingDisplay score={rating.score} size="md" compact={true} />
                                             </div>
                                         </div>
                                     ))

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
+import RatingDisplay from './RatingDisplay';
 
 interface PosterCardProps {
   item: DiscoveryItem;
@@ -70,7 +71,10 @@ const PosterCard: React.FC<PosterCardProps> = ({
         <span className="discovery-poster-plus" aria-hidden="true">+</span>
       </div>
       <span className="discovery-poster-title">{item.title}</span>
-      <span className="discovery-poster-meta">{item.year || 'TBA'} • {formatRating(item.rating)}</span>
+      <div className="discovery-poster-meta flex items-center justify-between">
+        <span>{item.year || 'TBA'}</span>
+        <RatingDisplay score={item.rating} size="sm" compact={true} />
+      </div>
     </button>
   );
 };

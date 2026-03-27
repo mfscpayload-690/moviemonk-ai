@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MovieData, TVShowEpisode, TVShowSeason } from '../types';
 import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon } from './icons';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
+import RatingDisplay from './RatingDisplay';
 import '../styles/tv-show.css';
 
 interface TVShowDisplayProps {
@@ -122,8 +123,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
 
                             {movie.ratings.length > 0 && (
                                 <div className="rating-badge">
-                                    <StarIcon className="icon-small" />
-                                    <span>{movie.ratings[0].score}</span>
+                                    <RatingDisplay score={movie.ratings[0].score} size="sm" compact={true} />
                                 </div>
                             )}
 

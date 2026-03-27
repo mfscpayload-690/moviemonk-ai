@@ -61,6 +61,7 @@ const App: React.FC = () => {
     setFolderColor,
     moveItem,
     deleteItem,
+    deleteFolder,
     isCloud,
     isSyncing
   } = useCloudWatchlists();
@@ -158,6 +159,20 @@ const App: React.FC = () => {
     setFolderColor(editingFolderId, editFolderColor);
     setEditingFolderId(null);
   }, [editingFolderId, editFolderName, editFolderColor, renameFolder, setFolderColor]);
+
+  const handleDeleteFolder = useCallback((folderId: string, folderName: string, itemCount: number) => {
+    const hasItems = itemCount > 0;
+    const message = hasItems
+      ? `Delete folder "${folderName}" and its ${itemCount} saved item${itemCount > 1 ? 's' : ''}? This cannot be undone.`
+      : `Delete empty folder "${folderName}"?`;
+
+    if (!window.confirm(message)) return;
+
+    deleteFolder(folderId);
+    if (editingFolderId === folderId) {
+      setEditingFolderId(null);
+    }
+  }, [deleteFolder, editingFolderId]);
 
   const handleDragStart = useCallback((e: React.DragEvent, folderId: string, itemId: string) => {
     setDraggedItem({ folderId, itemId });
@@ -576,7 +591,7 @@ const App: React.FC = () => {
             <AuthButton />
             <button
               onClick={() => navigate('/watchlists')}
-              className="btn-glass flex items-center gap-2"
+              className="btn-glass flex items-center gap-1 px-2 py-1.5 sm:gap-2 sm:px-4 sm:py-2"
               aria-label="Open watch later"
             >
               <FolderIcon className="w-3.5 h-3.5" />
@@ -584,14 +599,14 @@ const App: React.FC = () => {
                 {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
               </span>
             </button>
-            <Link to="/settings" className="btn-glass flex items-center gap-2" aria-label="Open settings">
+            <Link to="/settings" className="btn-glass flex items-center gap-1 px-2 py-1.5 sm:gap-2 sm:px-4 sm:py-2" aria-label="Open settings">
               <SettingsIcon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Settings</span>
             </Link>
             {(movieData || personData) && (
               <button
                 onClick={handleShare}
-                className="btn-glass flex items-center gap-2"
+                className="btn-glass flex items-center gap-1 px-2 py-1.5 sm:gap-2 sm:px-4 sm:py-2"
                 aria-label="Share this result"
               >
                 <ShareIcon className="w-3.5 h-3.5" />
@@ -720,10 +735,26 @@ const App: React.FC = () => {
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
                     <p className="text-white font-semibold text-sm">{folder.name}</p>
                     <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
-                    <button onClick={() => startEditFolder(folder)} className="ml-2 text-xs text-brand-text-dark hover:text-white p-1 rounded hover:bg-white/10 inline-flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu">
-                      <EditIcon className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
+                    <div className="ml-2 flex items-center gap-1.5">
+                      <button
+                        onClick={() => startEditFolder(folder)}
+                        className="text-xs text-brand-text-dark hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 inline-flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu touch-target"
+                        aria-label={`Edit folder ${folder.name}`}
+                        title="Edit folder"
+                      >
+                        <EditIcon className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFolder(folder.id, folder.name, folder.items.length)}
+                        className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-red-500/10 inline-flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu touch-target"
+                        aria-label={`Delete folder ${folder.name}`}
+                        title="Delete folder"
+                      >
+                        <TrashIcon className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
 
                   {editingFolderId === folder.id && (
