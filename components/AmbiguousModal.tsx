@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Film, User, Star, Lightbulb } from 'lucide-react';
+import { Film, User, Star } from 'lucide-react';
 import { buildPersonCardPresentation, sortPersonShortlist } from '../services/personPresentation';
 
 export interface Candidate {
@@ -149,8 +149,8 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto" role="dialog" aria-modal="true">
-      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col max-h-[94vh] sm:max-h-[88vh] sm:my-6">
+    <div className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden" role="dialog" aria-modal="true">
+      <div className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden animate-fade-in modal-mobile-slide ambiguous-modal-mobile ambiguous-modal-editorial flex flex-col h-[92vh] max-h-[92vh] sm:h-[86vh] sm:max-h-[86vh] sm:my-6">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5 bg-black/20 flex-shrink-0">
           <div>
@@ -199,7 +199,7 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
         )}
 
         {/* Results List */}
-        <div className="relative flex-1 min-h-0">
+        <div className="relative flex-1 min-h-0 overflow-hidden">
           <div
             ref={listRef}
             className="overflow-y-auto h-full overscroll-contain"
@@ -337,27 +337,6 @@ const AmbiguousModal: React.FC<AmbiguousModalProps> = ({ candidates, onSelect, o
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 sm:px-6 py-3 border-t border-white/5 bg-black/20 text-xs text-brand-text-dark flex-shrink-0 text-center sm:text-left">
-          <div className="hidden sm:flex items-start gap-2 justify-center sm:justify-start leading-5">
-            <Lightbulb size={14} className="flex-shrink-0 mt-[1px]" />
-            {isPersonShortlist ? 'Tip: choose the exact person profile you mean, then continue.' : 'Tip: Use'}
-            <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">↑↓</kbd>
-            {!isPersonShortlist && (
-              <>
-                arrow keys to navigate,
-                <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">⏎</kbd>
-                to select,
-                <kbd className="px-2 py-1 rounded bg-white/10 border border-white/20 font-mono">Esc</kbd>
-                to close
-              </>
-            )}
-          </div>
-          <div className="sm:hidden flex items-start gap-2 justify-center leading-5">
-            <Lightbulb size={14} className="flex-shrink-0 mt-[1px]" />
-            {isPersonShortlist ? 'Tap the right person to continue' : 'Tap to select a result'}
-          </div>
-        </div>
       </div>
     </div>
   );
