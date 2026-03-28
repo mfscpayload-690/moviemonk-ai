@@ -49,7 +49,7 @@ export async function searchSerpApi(query: string, limit: number = 6): Promise<S
             return [];
         }
 
-        const data = await response.json();
+        const data: any = await response.json();
         const results: SerpApiResult[] = [];
 
         // 1. Check Knowledge Graph (High confidence)

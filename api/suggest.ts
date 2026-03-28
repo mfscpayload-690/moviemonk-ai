@@ -61,7 +61,7 @@ async function fetchTmdbSuggestions(query: string): Promise<SuggestCandidate[]> 
     throw new Error(`TMDB suggest request failed: ${response.status}`);
   }
 
-  const data = await response.json();
+  const data: any = await response.json();
   const rawResults = Array.isArray(data?.results) ? data.results : [];
 
   return rawResults

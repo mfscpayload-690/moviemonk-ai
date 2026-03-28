@@ -1,6 +1,7 @@
 /**
  * Secure Groq API proxy - keeps API key server-side
  */
+export {};
 const { applyCors } = require('./_utils/cors');
 
 module.exports = async function handler(req: any, res: any) {

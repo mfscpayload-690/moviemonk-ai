@@ -2,6 +2,7 @@
  * Serverless proxy for OpenRouter API
  * This avoids CORS issues and keeps the API key secure on the backend
  */
+export {};
 const { applyCors } = require('./_utils/cors');
 
 module.exports = async function handler(req: any, res: any) {

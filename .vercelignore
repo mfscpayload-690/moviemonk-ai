@@ -5,3 +5,4 @@ dist
 .git
 .github
 *.log
+api/omdb.ts
