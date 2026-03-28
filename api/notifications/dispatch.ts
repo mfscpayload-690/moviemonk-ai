@@ -3,6 +3,7 @@ import { applyCors } from '../_utils/cors';
 import { beginRequestObservation } from '../_utils/observability';
 import { sendApiError } from '../_utils/http';
 import { getSupabaseAdminClient } from '../_utils/supabaseAdmin';
+import { secureCompareSecret } from '../_utils/security';
 
 type NotificationChannel = 'in_app' | 'email' | 'push';
 type NotificationFrequency = 'daily' | 'weekly';
@@ -34,10 +35,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const dispatchSecret = process.env.NOTIFICATION_DISPATCH_SECRET;
+  if (!dispatchSecret) {
+    obs.finish(500, { error_code: 'dispatch_secret_not_configured' });
+    return sendApiError(res, 500, 'dispatch_secret_not_configured', 'Notification dispatch secret is not configured');
+  }
+
   const incomingSecret = req.headers['x-notification-secret'];
   const secretValue = Array.isArray(incomingSecret) ? incomingSecret[0] : incomingSecret;
-  const querySecret = (req.query.secret as string) || req.body?.secret;
-  if (dispatchSecret && secretValue !== dispatchSecret && querySecret !== dispatchSecret) {
+  if (!secretValue || !secureCompareSecret(secretValue, dispatchSecret)) {
     obs.finish(401, { error_code: 'unauthorized_dispatch' });
     return sendApiError(res, 401, 'unauthorized_dispatch', 'Invalid dispatch secret');
   }
