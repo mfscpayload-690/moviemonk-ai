@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in MovieMonk, please **do not** open a public GitHub issue. Instead, please follow these steps:
+If you discover a security vulnerability in MovieMonk, please **do not** open a public GitHub issue. Instead, please follow these steps:-
 
 ### Report Process
 
