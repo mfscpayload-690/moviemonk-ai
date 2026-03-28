@@ -1,5 +1,5 @@
 ---
-name: moviemonk-ux-build-safety
+name: moviemonk-ux-build-safety!
 description: "Full build and safety test workflow for MovieMonk UX/Component changes. Validates that UI modifications maintain type safety, component consistency, responsive behavior, and test coverage before deployment. Runs linting, unit tests, integration tests, and regression checks with automated validation of component consistency patterns. WHEN: after making UI component changes, before deploying UX improvements, validating movie/show/person display consistency, ensuring responsive behavior is preserved, testing ambiguity modal or hero metadata changes."
 license: MIT
 metadata:
