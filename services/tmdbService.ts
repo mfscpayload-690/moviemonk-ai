@@ -324,7 +324,7 @@ async function fetchOMDBRatings(imdbId: string): Promise<Rating[]> {
       return [];
     }
     
-    const data = await response.json();
+    const data: any = await response.json();
     
     if (data.Response === 'False') {
       return [];
@@ -639,7 +639,7 @@ export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'):
     const headers = { Authorization: `Bearer ${token}` } as any;
     try {
       const creditsRes = await fetch(`${base}/person/${personId}/combined_credits`, { headers });
-      const credits = await creditsRes.json();
+      const credits: any = await creditsRes.json();
       const works = ([] as any[])
         .concat(credits?.cast || [], credits?.crew || [])
         .filter((work: any) => work?.id && (work?.media_type === 'movie' || work?.media_type === 'tv'))
@@ -672,7 +672,7 @@ export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'):
         try {
           const creditsRes = await fetch(`${base}/${work.media_type}/${work.id}/credits`, { headers });
           if (!creditsRes.ok) return;
-          const details = await creditsRes.json();
+          const details: any = await creditsRes.json();
 
           const castMembers = Array.isArray(details?.cast) ? details.cast.slice(0, 20) : [];
           const crewMembers = Array.isArray(details?.crew)

@@ -4,9 +4,9 @@ import { enrichWithTMDB } from './tmdbService';
 import { sanitizeMovieData } from './movieDataValidation';
 
 // Use proxy for Mistral calls (API key stays server-side)
-const MISTRAL_PROXY = import.meta.env.DEV
-  ? 'http://localhost:3000/api/mistral'
-  : `${window.location.origin}/api/mistral`;
+const MISTRAL_PROXY = (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development')
+  ? `${window.location.origin}/api/mistral`
+  : 'http://localhost:3000/api/mistral';
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {
@@ -87,7 +87,7 @@ export async function fetchMovieData(
       };
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {

@@ -1,4 +1,4 @@
-import type { VercelResponse } from '@vercel/node';
+import type { VercelResponse } from './vercel';
 
 export function sendApiError(
   res: VercelResponse,
@@ -7,10 +7,12 @@ export function sendApiError(
   message: string,
   details?: unknown
 ) {
+  const includeDetails = process.env.NODE_ENV !== 'production' && typeof details !== 'undefined';
+
   return res.status(status).json({
     ok: false,
     error: message,
     error_code: code,
-    error_details: details
+    ...(includeDetails ? { error_details: details } : {})
   });
 }

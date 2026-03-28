@@ -141,7 +141,7 @@ Return ONLY valid JSON with this structure:
       };
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
@@ -277,7 +277,7 @@ If not found, return: {"error": "not_found"}`;
       return null;
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {

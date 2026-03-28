@@ -4,9 +4,9 @@ import { enrichWithTMDB } from './tmdbService';
 import { sanitizeMovieData } from './movieDataValidation';
 
 // Use serverless proxy endpoint instead of direct API call
-const PROXY_URL = import.meta.env.DEV 
-  ? 'http://localhost:3000/api/openrouter'  // Local dev (if running Vercel dev)
-  : `${window.location.origin}/api/openrouter`;  // Production (Vercel deployment)
+const PROXY_URL = (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development')
+  ? `${window.location.origin}/api/openrouter`  // Production (Vercel deployment)
+  : 'http://localhost:3000/api/openrouter'; // Local dev (if running Vercel dev)
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {
@@ -122,7 +122,7 @@ export async function fetchMovieData(
       return { movieData: null, sources: null, error: `OpenRouter proxy error ${res.status}: ${txt || res.statusText}` };
     }
 
-    const json = await res.json();
+    const json: any = await res.json();
     const text: string = json?.choices?.[0]?.message?.content ?? '';
 
     const parsed = sanitizeMovieData(parseJsonResponse(text));

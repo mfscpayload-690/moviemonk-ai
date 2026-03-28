@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '../_utils/vercel';
 import { getCache, setCache, withCacheKey } from '../../lib/cache';
 import { fetchRelatedPeopleForPerson } from '../../services/tmdbService';
 import { applyCors } from '../_utils/cors';

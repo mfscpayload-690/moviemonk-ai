@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './_utils/vercel';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { searchPerplexity } from '../services/perplexityService';
 import { searchSerpApi } from '../services/serpApiService';
@@ -328,7 +328,7 @@ async function callCreativeProvider(provider: ProviderChoice, prompt: string): P
         signal
       }));
       if (!res.ok) return null;
-      const json = await res.json();
+      const json: any = await res.json();
       const text: string = json?.choices?.[0]?.message?.content || '';
       return parseCreativeFields(text);
     }
@@ -352,7 +352,7 @@ async function callCreativeProvider(provider: ProviderChoice, prompt: string): P
         signal
       }));
       if (!res.ok) return null;
-      const json = await res.json();
+      const json: any = await res.json();
       const text: string = json?.choices?.[0]?.message?.content || '';
       return parseCreativeFields(text);
     }
@@ -378,7 +378,7 @@ async function callCreativeProvider(provider: ProviderChoice, prompt: string): P
         signal
       }));
       if (!res.ok) return null;
-      const json = await res.json();
+      const json: any = await res.json();
       const text: string = json?.choices?.[0]?.message?.content || '';
       return parseCreativeFields(text);
     }
@@ -460,8 +460,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const parsed = parseComplexQuery(q);
         const searchQuery = buildSearchQuery(parsed);
 
-        console.log('[api] parsed query:', parsed);
-        console.log('[api] search query:', searchQuery);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[api] parsed query:', parsed);
+          console.log('[api] search query:', searchQuery);
+        }
 
         // Try TMDB first (more reliable)
         let results = await searchTMDB(parsed.title, 6);
@@ -526,7 +528,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('[api] search error:', searchError);
         obs.log('search_failed', 'error', { action, error: searchError.message || 'Search failed' });
         obs.finish(500, { action, error_code: 'search_failed' });
-        return sendApiError(res, 500, 'search_failed', searchError.message || 'Search failed', { query: q });
+        return sendApiError(res, 500, 'search_failed', 'Search failed', { query: q });
       }
     }
 
@@ -705,7 +707,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('Details fetch error:', e);
         obs.log('details_fetch_failed', 'error', { action, error: e.message || 'Details fetch failed' });
         obs.finish(500, { action, error_code: 'details_fetch_failed' });
-        return sendApiError(res, 500, 'details_fetch_failed', e.message || 'Details fetch failed');
+        return sendApiError(res, 500, 'details_fetch_failed', 'Details fetch failed');
       }
     }
 
@@ -787,7 +789,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.error('[api] parse error:', parseError);
         obs.log('parse_failed', 'error', { action, error: parseError.message || 'Parsing failed' });
         obs.finish(500, { action, error_code: 'parse_failed' });
-        return sendApiError(res, 500, 'parse_failed', parseError.message || 'Parsing failed', {
+        return sendApiError(res, 500, 'parse_failed', 'Parsing failed', {
           title,
           type
         });
@@ -802,7 +804,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error(`Stack:`, error.stack);
     obs.log('unhandled_server_error', 'error', { action, error: error.message || 'Server error' });
     obs.finish(500, { action, error_code: 'server_error' });
-    return sendApiError(res, 500, 'server_error', error.message || 'Server error', {
+    return sendApiError(res, 500, 'server_error', 'Server error', {
       action,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });

@@ -1,6 +1,7 @@
 /**
  * Secure OMDB API proxy - keeps API key server-side
  */
+export {};
 const { applyCors } = require('./_utils/cors');
 
 module.exports = async function handler(req: any, res: any) {
@@ -45,7 +46,7 @@ module.exports = async function handler(req: any, res: any) {
       return sendError(response.status, 'upstream_error', `OMDB API error ${response.status}`, errorText);
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     
     // OMDB returns Response: "False" on error
     if (data.Response === 'False') {

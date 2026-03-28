@@ -1,0 +1,66 @@
+name: Notification Scheduler
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+    - cron: '0 13 * * *'
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate secrets
+        env:
+          BASE_URL: ${{ secrets['NOTIFICATION_BASE_URL'] }}
+          SHARED_SECRET: ${{ secrets['NOTIFICATION_DISPATCH_SECRET'] }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "Missing NOTIFICATION_BASE_URL secret"
+            exit 1
+          fi
+          if [ -z "$SHARED_SECRET" ]; then
+            echo "Missing NOTIFICATION_DISPATCH_SECRET secret"
+            exit 1
+          fi
+          case "$BASE_URL" in
+            https://*) ;;
+            *)
+              echo "NOTIFICATION_BASE_URL must start with https://"
+              exit 1
+              ;;
+          esac
+
+      - name: Dispatch daily digest
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 13 * * *'
+        env:
+          BASE_URL: ${{ secrets['NOTIFICATION_BASE_URL'] }}
+          SHARED_SECRET: ${{ secrets['NOTIFICATION_DISPATCH_SECRET'] }}
+        run: |
+          curl --fail-with-body --retry 3 --retry-all-errors --retry-delay 3 --max-time 30 \
+            -X POST "$BASE_URL/api/notifications/dispatch?frequency=daily" \
+            -H "x-notification-secret: $SHARED_SECRET"
+
+      - name: Dispatch weekly digest
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 13 * * 1'
+        env:
+          BASE_URL: ${{ secrets['NOTIFICATION_BASE_URL'] }}
+          SHARED_SECRET: ${{ secrets['NOTIFICATION_DISPATCH_SECRET'] }}
+        run: |
+          curl --fail-with-body --retry 3 --retry-all-errors --retry-delay 3 --max-time 30 \
+            -X POST "$BASE_URL/api/notifications/dispatch?frequency=weekly" \
+            -H "x-notification-secret: $SHARED_SECRET"
+
+      - name: Process queued notifications
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
+        env:
+          BASE_URL: ${{ secrets['NOTIFICATION_BASE_URL'] }}
+          SHARED_SECRET: ${{ secrets['NOTIFICATION_DISPATCH_SECRET'] }}
+        run: |
+          curl --fail-with-body --retry 3 --retry-all-errors --retry-delay 3 --max-time 30 \
+            -X POST "$BASE_URL/api/notifications/process?limit=100" \
+            -H "x-notification-secret: $SHARED_SECRET"

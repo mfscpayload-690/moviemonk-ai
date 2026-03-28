@@ -1,6 +1,7 @@
 /**
  * Secure TMDB API proxy - keeps API key server-side
  */
+export {};
 const { applyCors } = require('./_utils/cors');
 
 module.exports = async function handler(req: any, res: any) {
@@ -52,7 +53,7 @@ module.exports = async function handler(req: any, res: any) {
     }
 
     // Use Bearer token for v4 or fallback to v3
-    const headers: HeadersInit = TMDB_READ_TOKEN
+    const headers: Record<string, string> = TMDB_READ_TOKEN
       ? { Authorization: `Bearer ${TMDB_READ_TOKEN}` }
       : {};
 
