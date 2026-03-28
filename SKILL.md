@@ -1,5 +1,5 @@
 ---
-name: moviemonk-ux-build-safety!
+name: moviemonk-ai
 description: "Full build and safety test workflow for MovieMonk UX/Component changes. Validates that UI modifications maintain type safety, component consistency, responsive behavior, and test coverage before deployment. Runs linting, unit tests, integration tests, and regression checks with automated validation of component consistency patterns. WHEN: after making UI component changes, before deploying UX improvements, validating movie/show/person display consistency, ensuring responsive behavior is preserved, testing ambiguity modal or hero metadata changes."
 license: MIT
 metadata:
@@ -53,7 +53,7 @@ Activate this skill when you want to:
 | 1 | **Type Check** | `npm run lint` | No TypeScript errors, all imports valid |
 | 2 | **Unit Tests** | `npm test -- __tests__/components/` (affected components) | 100% pass (affected files only) |
 | 3 | **Integration Tests** | `npm test -- __tests__/integration/userJourneySmoke.test.ts` | 100% pass (user stories intact) |
-| 4 | **Consistency Audit** | Visual inspection of component pattern alignment | [Component Consistency Checklist](#component-consistency-checklist) |
+| 4 | **Consistency Audit** | Visual inspection of component pattern alignment | Component Consistency Checklist section below |
 | 5 | **Responsive Verify** | Dev tools: test mobile and desktop viewports | Spacing, affordances, scroll behavior consistent |
 | 6 | **Edge Cases** | Manual testing of boundary conditions | Empty states, long text, slow networks |
 | 7 | **Report & Approve** | Summarize all validation results | All stages passed, ready for merge |

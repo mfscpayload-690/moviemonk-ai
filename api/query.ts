@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './_utils/vercel';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { generateSummary } from '../services/ai';
 import { applyCors } from './_utils/cors';
@@ -7,7 +7,7 @@ import { beginRequestObservation } from './_utils/observability';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
-async function tmdb(path: string, params: Record<string, string | number | undefined>) {
+async function tmdb(path: string, params: Record<string, string | number | undefined>): Promise<any> {
   const TMDB_READ_TOKEN = process.env.TMDB_READ_TOKEN;
   const TMDB_API_KEY = process.env.TMDB_API_KEY;
   const url = new URL(`${TMDB_BASE}/${path}`);
@@ -16,7 +16,7 @@ async function tmdb(path: string, params: Record<string, string | number | undef
   const headers: Record<string, string> = TMDB_READ_TOKEN ? { Authorization: `Bearer ${TMDB_READ_TOKEN}` } : {};
   const r = await fetch(url.toString(), { headers });
   if (!r.ok) throw new Error(`TMDB ${path} failed ${r.status}`);
-  return r.json();
+  return (await r.json()) as any;
 }
 
 function buildBaseUrl(req: VercelRequest) {
@@ -67,14 +67,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // Resolve entity using our resolver endpoint
     const resolvedRes = await fetch(`${base}/api/resolveEntity?q=${encodeURIComponent(q)}`);
-    const resolved = await resolvedRes.json();
+    const resolved: any = await resolvedRes.json();
     
     // If TMDB has low confidence or regional query, enhance with web search
     let webContext = '';
     if (isRegionalQuery || !resolved?.chosen?.id) {
       try {
         const webRes = await fetch(`${base}/api/websearch?q=${encodeURIComponent(q + ' movie actor director')}&sources=wikipedia,imdb`);
-        const webData = await webRes.json();
+        const webData: any = await webRes.json();
         if (webData.ok && webData.total > 0) {
           // Build context from web results
           const snippets = Object.values(webData.results || {})
@@ -91,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (resolved?.type === 'person' && resolved?.chosen?.id) {
       const personRes = await fetch(`${base}/api/person/${resolved.chosen.id}`);
-      const personPayload = await personRes.json();
+      const personPayload: any = await personRes.json();
 
       let summary: any = { summary_short: '', summary_long: '' };
       if (mode === 'short') {
@@ -127,7 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Movie path: fetch details + credits, summarize
     if (resolved?.type === 'movie' && resolved?.chosen?.id) {
       const id = resolved.chosen.id;
-      const [movie, credits] = await Promise.all([
+      const [movie, credits]: [any, any] = await Promise.all([
         tmdb(`movie/${id}`, { language: 'en-US' }),
         tmdb(`movie/${id}/credits`, { language: 'en-US' })
       ]);

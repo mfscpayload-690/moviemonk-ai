@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '../_utils/vercel';
 import { applyCors } from '../_utils/cors';
 import { beginRequestObservation } from '../_utils/observability';
 import { sendApiError } from '../_utils/http';
@@ -222,6 +222,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ok: true, processed: rows.length, sent, failed });
   } catch (error: any) {
     obs.finish(500, { error_code: 'notification_process_failed' });
-    return sendApiError(res, 500, 'notification_process_failed', error?.message || 'Unknown error');
+    return sendApiError(res, 500, 'notification_process_failed', 'Notification processing failed');
   }
 }

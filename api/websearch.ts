@@ -2,7 +2,7 @@
  * Web search API using DuckDuckGo HTML scraping
  * Provides additional context for movies/actors not well-covered in TMDB
  */
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './_utils/vercel';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { applyCors } from './_utils/cors';
 import { sendApiError } from './_utils/http';

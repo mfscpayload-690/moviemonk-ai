@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './_utils/vercel';
 import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { applyCors } from './_utils/cors';
 import { sendApiError } from './_utils/http';
@@ -153,6 +153,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error: any) {
     obs.log('suggest_failed', 'error', { error: error?.message || 'Suggest request failed' });
     obs.finish(500, { error_code: 'suggest_failed' });
-    return sendApiError(res, 500, 'suggest_failed', error?.message || 'Suggest request failed');
+    return sendApiError(res, 500, 'suggest_failed', 'Suggest request failed');
   }
 }
