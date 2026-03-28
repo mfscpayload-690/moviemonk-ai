@@ -8,6 +8,7 @@ import {
     ClipboardCheck,
     Edit3,
     MapPin,
+    MoreHorizontal,
     Folder,
     Info,
     Link as LucideLink,
@@ -110,6 +111,10 @@ export const FolderIcon: React.FC<IconProps> = ({ className }) => (
 
 export const BellIcon: React.FC<IconProps> = ({ className }) => (
     <Bell {...baseIconProps} className={className} />
+);
+
+export const MoreIcon: React.FC<IconProps> = ({ className }) => (
+    <MoreHorizontal {...baseIconProps} className={className} />
 );
 
 export const LocationIcon: React.FC<IconProps> = ({ className }) => (

@@ -5,13 +5,14 @@ import DiscoveryPage from './components/DiscoveryPage';
 import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
+import HeaderUtilityMenu from './components/HeaderUtilityMenu';
 import LoadingScreen from './components/LoadingScreen';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
 import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
-import { BellIcon, ClipboardIcon, EditIcon, FolderIcon, Logo, SettingsIcon, ShareIcon, TrashIcon, XMarkIcon } from './components/icons';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon } from './components/icons';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
 import { useCloudWatchlists } from './hooks/useCloudWatchlists';
 import { useAuth } from './contexts/AuthContext';
@@ -316,6 +317,18 @@ const App: React.FC = () => {
     scrollMainContentToTop();
   }, [navigate, scrollMainContentToTop]);
 
+  const handleOpenWatchlists = useCallback(() => {
+    navigate('/watchlists');
+  }, [navigate]);
+
+  const handleOpenNotifications = useCallback(() => {
+    setShowNotificationsModal(true);
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    navigate('/settings');
+  }, [navigate]);
+
   const handleOpenTitle = useCallback(async (
     item: { id: number; mediaType: 'movie' | 'tv' },
     provider?: AIProvider,
@@ -617,42 +630,16 @@ const App: React.FC = () => {
           </div>
           <div className="flex items-center justify-end gap-2 sm:gap-3">
             <AuthButton />
-            <button
-              onClick={() => navigate('/watchlists')}
-              className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4"
-              aria-label="Open watch later"
-            >
-              <FolderIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {isCloud ? (isSyncing ? 'Syncing...' : 'Cloud Lists') : 'Watchlists'}
-              </span>
-            </button>
-            {user && (
-              <button
-                onClick={() => setShowNotificationsModal(true)}
-                className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4"
-                aria-label="Open notifications"
-              >
-                <BellIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Notifications</span>
-              </button>
-            )}
-            {user && (
-              <Link to="/settings" className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4" aria-label="Open settings">
-                <SettingsIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Settings</span>
-              </Link>
-            )}
-            {(movieData || personData) && (
-              <button
-                onClick={handleShare}
-                className="btn-glass flex items-center h-10 gap-1 px-2 sm:gap-2 sm:px-4"
-                aria-label="Share this result"
-              >
-                <ShareIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Share</span>
-              </button>
-            )}
+            <HeaderUtilityMenu
+              user={user}
+              isCloud={isCloud}
+              isSyncing={isSyncing}
+              canShare={Boolean(movieData || personData || currentQuery)}
+              onOpenWatchlists={handleOpenWatchlists}
+              onOpenNotifications={handleOpenNotifications}
+              onOpenSettings={handleOpenSettings}
+              onShare={handleShare}
+            />
           </div>
         </header>
 
