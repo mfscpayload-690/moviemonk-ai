@@ -3497,3 +3497,514 @@ a:focus-visible {
 .migration-btn-secondary:hover {
     border-color: rgba(255, 255, 255, 0.22);
 }
+
+/* ============================================================================
+   SETTINGS PAGE — Redesigned sectioned layout
+   ============================================================================ */
+
+.mm-settings-body {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+}
+
+.mm-settings-hero-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.mm-settings-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6a44ff, #db2777);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.mm-settings-avatar.lg {
+    width: 72px;
+    height: 72px;
+    font-size: 26px;
+}
+
+.mm-settings-hero-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: #f9fafb;
+}
+
+.mm-settings-hero-email {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.mm-settings-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    background: #1a1a2e;
+    border: 0.5px solid #534ab7;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #afa9ec;
+}
+
+.mm-settings-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6a44ff;
+}
+
+.mm-settings-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin: 0 0 8px 4px;
+}
+
+.mm-settings-group {
+    background: #1a1a1a;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.mm-settings-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.mm-settings-row:last-child {
+    border-bottom: none;
+}
+
+.mm-settings-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mm-settings-row-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mm-settings-row-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.mm-icon-purple { background: rgba(106, 68, 255, 0.15); }
+.mm-icon-pink { background: rgba(219, 39, 119, 0.15); }
+.mm-icon-teal { background: rgba(29, 158, 117, 0.15); }
+.mm-icon-amber { background: rgba(186, 117, 23, 0.15); }
+.mm-icon-blue { background: rgba(55, 138, 221, 0.15); }
+.mm-icon-red { background: rgba(226, 75, 74, 0.12); }
+
+.mm-settings-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.mm-settings-row-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #f3f4f6;
+}
+
+.mm-settings-row-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mm-settings-row-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.mm-settings-chevron {
+    color: #4b5563;
+}
+
+.mm-settings-chevron svg {
+    width: 14px;
+    height: 14px;
+}
+
+.mm-settings-toggle {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: #374151;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: none;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.mm-settings-toggle.on {
+    background: #6a44ff;
+}
+
+.mm-settings-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.mm-settings-toggle.on::after {
+    transform: translateX(16px);
+}
+
+.mm-settings-pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.mm-pill-purple {
+    background: rgba(106, 68, 255, 0.15);
+    color: #afa9ec;
+}
+
+.mm-pill-green {
+    background: rgba(99, 153, 34, 0.15);
+    color: #97c459;
+}
+
+.mm-pill-gray {
+    background: rgba(255, 255, 255, 0.08);
+    color: #9ca3af;
+}
+
+.mm-settings-danger-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 0.5px solid rgba(226, 75, 74, 0.2);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    background: #1a1a1a;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.mm-settings-danger-row:hover {
+    background: rgba(226, 75, 74, 0.06);
+}
+
+.mm-settings-danger-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e24b4a;
+}
+
+.mm-settings-danger-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.mm-settings-version {
+    text-align: center;
+    font-size: 11px;
+    color: #374151;
+    margin-top: 8px;
+}
+
+.mm-settings-nav-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #9ca3af;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+
+.mm-settings-nav-back:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #e5e7eb;
+}
+
+.mm-settings-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.mm-settings-panel-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f9fafb;
+}
+
+.mm-settings-field {
+    margin-bottom: 20px;
+}
+
+.mm-settings-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+}
+
+.mm-settings-input {
+    width: 100%;
+    background: #1a1a1a;
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #f3f4f6;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+}
+
+.mm-settings-input:focus {
+    border-color: #6a44ff;
+}
+
+.mm-settings-save-btn {
+    width: 100%;
+    background: #6a44ff;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.15s;
+    font-family: inherit;
+}
+
+.mm-settings-save-btn:hover {
+    opacity: 0.9;
+}
+
+.mm-settings-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.mm-settings-genre-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.mm-settings-genre-pill {
+    padding: 8px 4px;
+    border-radius: 10px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: #1a1a1a;
+    text-align: center;
+    font-size: 12px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.mm-settings-genre-pill.sel {
+    background: rgba(106, 68, 255, 0.15);
+    border-color: #6a44ff;
+    color: #afa9ec;
+    font-weight: 500;
+}
+
+.mm-settings-lang-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #1a1a1a;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.mm-settings-lang-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mm-settings-lang-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.mm-settings-lang-check.on {
+    background: #6a44ff;
+    border-color: #6a44ff;
+}
+
+.mm-settings-lang-check svg {
+    width: 10px;
+    height: 10px;
+    color: #fff;
+}
+
+.mm-settings-freq-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background 0.12s;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.mm-settings-freq-row:last-child {
+    border-bottom: none;
+}
+
+.mm-settings-freq-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mm-settings-freq-row.active {
+    background: rgba(106, 68, 255, 0.08);
+}
+
+.mm-settings-radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.mm-settings-radio.on {
+    border-color: #6a44ff;
+}
+
+.mm-settings-radio-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6a44ff;
+}
+
+.mm-settings-select-group {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.mm-settings-select-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #1a1a1a;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.mm-settings-select-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mm-settings-select-row.sel {
+    border-color: #6a44ff;
+    background: rgba(106, 68, 255, 0.08);
+}
+
+@media (min-width: 640px) {
+    .mm-settings-body {
+        max-width: 520px;
+        padding: 32px 24px 56px;
+    }
+}

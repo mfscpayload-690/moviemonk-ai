@@ -5,8 +5,10 @@ import {
     Bell,
     Bot,
     CheckCircle2,
+    ChevronRight,
     ClipboardCheck,
     Edit3,
+    Globe,
     MapPin,
     MoreHorizontal,
     Folder,
@@ -17,6 +19,7 @@ import {
     Search as LucideSearch,
     Settings,
     Share2,
+    Shield,
     Sparkles as LucideSparkles,
     Trash2
 } from 'lucide-react';
@@ -281,4 +284,16 @@ export const FilterIcon: React.FC<{ className?: string }> = ({ className }) => (
       d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
     />
   </svg>
+);
+
+export const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <ChevronRight {...baseIconProps} className={className} />
+);
+
+export const ShieldIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Shield {...baseIconProps} className={className} />
+);
+
+export const GlobeIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <Globe {...baseIconProps} className={className} />
 );
