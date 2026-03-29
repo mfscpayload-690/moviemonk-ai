@@ -105,6 +105,7 @@ export default function HeaderUtilityMenu({
 }: HeaderUtilityMenuProps) {
   const [open, setOpen] = useState(defaultOpen);
   const containerRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
   const items = useMemo(
@@ -119,8 +120,12 @@ export default function HeaderUtilityMenu({
   useEffect(() => {
     if (!open) return;
 
-    const handleOutside = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
+    const handleOutside = (event: MouseEvent | TouchEvent) => {
+      const targetNode = event.target as Node;
+      const isInsideMenu =
+        containerRef.current?.contains(targetNode) || sheetRef.current?.contains(targetNode);
+
+      if (!isInsideMenu) {
         setOpen(false);
       }
     };
@@ -132,10 +137,12 @@ export default function HeaderUtilityMenu({
     };
 
     document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
       document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [open]);
@@ -210,6 +217,7 @@ export default function HeaderUtilityMenu({
         >
           <div
             className="w-full bg-brand-surface border border-white/10 rounded-t-2xl shadow-2xl p-4 space-y-4 modal-mobile-slide max-h-[85vh] overflow-hidden flex flex-col"
+            ref={sheetRef}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between">
