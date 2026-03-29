@@ -2716,6 +2716,8 @@ a:focus-visible {
     top: calc(100% + 0.4rem);
     right: 0;
     min-width: 190px;
+    width: min(22rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(8, 8, 10, 0.98);
@@ -2734,6 +2736,8 @@ a:focus-visible {
     display: inline-flex;
     gap: 0.35rem;
     align-items: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .person-editorial-more-sheet button:hover {
