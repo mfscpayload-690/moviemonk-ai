@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { User } from '@supabase/supabase-js';
 import { useLocation } from 'react-router-dom';
 import { BellIcon, FolderIcon, MoreIcon, SettingsIcon, ShareIcon, XMarkIcon } from './icons';
@@ -207,37 +208,41 @@ export default function HeaderUtilityMenu({
         )}
       </div>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-end justify-center p-0 sm:hidden"
-          onClick={closeMenu}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Header utility menu"
-        >
+      {open && (() => {
+        const mobileSheet = (
           <div
-            className="w-full bg-brand-surface border border-white/10 rounded-t-2xl shadow-2xl p-4 space-y-4 modal-mobile-slide max-h-[85vh] overflow-hidden flex flex-col"
-            ref={sheetRef}
-            onClick={(event) => event.stopPropagation()}
+            className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-end justify-center p-0 sm:hidden"
+            onClick={closeMenu}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Header utility menu"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-white">More</h3>
-                <p className="text-sm text-brand-text-light">Quick actions and utilities</p>
+            <div
+              className="w-full bg-brand-surface border border-white/10 rounded-t-2xl shadow-2xl p-4 space-y-4 modal-mobile-slide max-h-[85vh] overflow-hidden flex flex-col"
+              ref={sheetRef}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white">More</h3>
+                  <p className="text-sm text-brand-text-light">Quick actions and utilities</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  className="p-2.5 rounded-lg hover:bg-white/10 touch-target"
+                  aria-label="Close more options"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={closeMenu}
-                className="p-2.5 rounded-lg hover:bg-white/10 touch-target"
-                aria-label="Close more options"
-              >
-                <XMarkIcon className="w-4 h-4" />
-              </button>
+              <div className="header-utility-sheet-list">{menuRows}</div>
             </div>
-            <div className="header-utility-sheet-list">{menuRows}</div>
           </div>
-        </div>
-      )}
+        );
+        const portalTarget = typeof document !== 'undefined' ? document.getElementById('modal-root') : null;
+        return portalTarget ? createPortal(mobileSheet, portalTarget) : mobileSheet;
+      })()}
     </>
   );
 }
