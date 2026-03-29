@@ -3308,6 +3308,7 @@ a:focus-visible {
     top: calc(100% + 0.45rem);
     right: 0;
     min-width: 260px;
+    max-width: calc(100vw - 1.5rem);
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: rgba(10, 10, 14, 0.98);
@@ -3391,6 +3392,14 @@ a:focus-visible {
     font-size: 0.76rem;
     color: #a1a1aa;
     line-height: 1.35;
+}
+
+@media (max-width: 767px) {
+    .header-utility-dropdown {
+        min-width: 0;
+        width: min(22rem, calc(100vw - 1.5rem));
+        max-width: calc(100vw - 1.5rem);
+    }
 }
 
 @media (max-width: 639px) {
