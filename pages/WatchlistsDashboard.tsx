@@ -51,9 +51,10 @@ export function WatchlistsDashboard() {
     isCloud, 
     isSyncing 
   } = useCloudWatchlists();
-  const { watchedCount } = useWatched();
+  const { watchedCount, watched, toggle: toggleWatched } = useWatched();
 
   const [profile, setProfile] = useState<any>(null);
+  const [showWatchedView, setShowWatchedView] = useState(false);
 
   // Detail View State
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
@@ -82,6 +83,7 @@ export function WatchlistsDashboard() {
   const openFolder = (folderId: string | null) => {
     setActiveFolderId(folderId);
     if (folderId) {
+      setShowWatchedView(false);
       const folder = folders.find(f => f.id === folderId);
       if (folder) {
         navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
@@ -206,16 +208,94 @@ export function WatchlistsDashboard() {
             <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Top Format</div>
             <div className="text-2xl font-bold text-white">{stats.topFormat}</div>
           </div>
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
+          <button
+            onClick={() => { setShowWatchedView(true); openFolder(null); }}
+            className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-emerald-500/30 transition-all cursor-pointer text-left w-full"
+          >
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 to-transparent opacity-50" />
-            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Watched</div>
+            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2 flex items-center gap-2">
+              Watched
+              <svg className="w-3.5 h-3.5 text-brand-text-dark group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
             <div className="text-3xl font-bold text-emerald-400">{watchedCount}</div>
-          </div>
+          </button>
         </div>
       )}
 
-      {/* 3. Watchlist Grid */}
-      {activeFolder ? (
+      {/* 3. Watched List View */}
+      {showWatchedView && !activeFolderId ? (
+        <div className="animate-fade-in">
+          <button
+            onClick={() => setShowWatchedView(false)}
+            className="text-brand-text-light hover:text-white mb-6 flex items-center gap-2 group transition-colors"
+          >
+            <ChevronRightIcon className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
+            Back to Dashboard
+          </button>
+
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.5)]" />
+              <h2 className="text-3xl font-bold text-white tracking-tight">Watched</h2>
+              <span className="text-brand-text-dark text-sm font-medium">{watchedCount} title{watchedCount !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+
+          {watched.length === 0 ? (
+            <div className="glass-panel p-12 rounded-3xl text-center border border-white/5">
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-emerald-400" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <p className="text-brand-text-light text-lg">Nothing marked as watched yet.</p>
+              <Link to="/" className="mt-4 inline-block px-6 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition-colors">
+                Discover titles
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+              {watched.map((item) => (
+                <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl">
+                  {/* Poster */}
+                  {item.poster_url ? (
+                    <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40 text-sm">
+                      {item.title}
+                    </div>
+                  )}
+
+                  {/* Gradient info bar */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-12 z-20 pointer-events-none">
+                    <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md">{item.title}</h4>
+                    <span className="text-xs text-brand-text-light block mt-0.5">{item.year || 'Unknown'}</span>
+                  </div>
+
+                  {/* Watched badge */}
+                  <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-md bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" /></svg>
+                    {item.media_type === 'tv' ? 'Series' : 'Movie'}
+                  </div>
+
+                  {/* Unwatch button */}
+                  <button
+                    onClick={() => toggleWatched({
+                      tmdb_id: item.tmdb_id,
+                      media_type: item.media_type,
+                      title: item.title,
+                      poster_url: item.poster_url,
+                      year: item.year,
+                    })}
+                    className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-emerald-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/80 hover:text-white"
+                    title="Remove from watched"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : activeFolder ? (
         <div className="animate-fade-in">
           <button 
             onClick={() => openFolder(null)}
