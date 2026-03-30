@@ -936,9 +936,21 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 );
 
 const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
-    <div className="bg-white/5 p-2 md:p-3 rounded-lg text-center transform-gpu will-change-transform hover:-translate-y-1 transition-transform duration-200 ease-out border border-transparent hover:border-brand-primary">
-        <p className="font-bold text-xs md:text-sm text-brand-text-light truncate">{member.name}</p>
-        <p className="text-xs text-brand-primary truncate">{member.role}</p>
+    <div className="bg-white/5 p-3 md:p-4 rounded-xl text-center transform-gpu will-change-transform hover:-translate-y-1 transition-all duration-200 ease-out border border-transparent hover:border-brand-primary/40 hover:bg-white/8 group">
+        <div className="mx-auto w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-brand-primary/50 transition-colors mb-3 bg-gradient-to-br from-violet-600/30 to-pink-600/30 flex items-center justify-center flex-shrink-0">
+            {member.profile_url ? (
+                <img
+                    src={member.profile_url}
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                />
+            ) : (
+                <span className="text-xl md:text-2xl font-bold text-white/60">{member.name?.[0]?.toUpperCase() || '?'}</span>
+            )}
+        </div>
+        <p className="font-bold text-xs md:text-sm text-white truncate" title={member.name}>{member.name}</p>
+        <p className="text-[11px] md:text-xs text-brand-primary truncate mt-0.5" title={member.role}>{member.role}</p>
     </div>
 );
 

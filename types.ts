@@ -3,6 +3,7 @@ export interface CastMember {
   name: string;
   role: string;
   known_for: string;
+  profile_url?: string;
 }
 
 export interface Crew {

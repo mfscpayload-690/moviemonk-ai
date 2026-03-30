@@ -419,8 +419,12 @@
 .cast-member {
   background: rgba(255, 255, 255, 0.05);
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   transition: all 0.3s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .cast-member:hover {
@@ -428,14 +432,41 @@
   transform: translateY(-2px);
 }
 
+.cast-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cast-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cast-avatar-initial {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 .cast-name {
   font-weight: 600;
   margin-bottom: 0.25rem;
+  font-size: 0.875rem;
 }
 
 .cast-role {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.875rem;
+  color: rgba(139, 92, 246, 0.8);
+  font-size: 0.8125rem;
 }
 
 /* AI Notes */

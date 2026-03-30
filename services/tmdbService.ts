@@ -263,7 +263,8 @@ async function fetchCast(mediaType: 'movie'|'tv', id: number): Promise<CastMembe
         cast.push({
           name: actor.name,
           role: actor.character,
-          known_for: actor.known_for_department || 'Acting'
+          known_for: actor.known_for_department || 'Acting',
+          profile_url: actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : undefined
         });
       }
     });

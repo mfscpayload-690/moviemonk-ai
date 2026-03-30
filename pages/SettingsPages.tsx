@@ -199,6 +199,26 @@ function getInitial(name?: string, email?: string): string {
   return '?';
 }
 
+function getAvatarUrl(user: any, profile?: UserProfileSettings): string | null {
+  return profile?.avatarUrl || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+}
+
+function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSettings; size?: 'lg' }) {
+  const url = getAvatarUrl(user, profile);
+  const name = profile?.fullName || user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+  const email = user?.email || '';
+  const cls = `mm-settings-avatar${size === 'lg' ? ' lg' : ''}`;
+
+  if (url) {
+    return (
+      <div className={cls} style={{ padding: 0, overflow: 'hidden' }}>
+        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+      </div>
+    );
+  }
+  return <div className={cls}>{getInitial(name, email)}</div>;
+}
+
 function getProviderLabel(user: any): string {
   const provider = user?.app_metadata?.provider || user?.app_metadata?.providers?.[0] || '';
   if (provider === 'github') return 'GitHub account';
@@ -271,7 +291,7 @@ export function SettingsHubPage() {
       <div className="mm-settings-body">
         {/* Hero */}
         <div className="mm-settings-hero-top">
-          <div className="mm-settings-avatar">{getInitial(displayName, email)}</div>
+          <Avatar user={user} profile={profile} />
           <div>
             <div className="mm-settings-hero-name">{displayName || 'MovieMonk User'}</div>
             <div className="mm-settings-hero-email">{email}</div>
@@ -454,7 +474,7 @@ export function ProfileSettingsPage() {
       <div className="mm-settings-body">
         {/* Avatar */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-          <div className="mm-settings-avatar lg">{getInitial(displayName, email)}</div>
+          <Avatar user={user} profile={profile} size="lg" />
         </div>
 
         <div className="mm-settings-field">

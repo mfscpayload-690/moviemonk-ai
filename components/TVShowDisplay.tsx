@@ -315,6 +315,13 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
                     <div className="cast-grid">
                         {movie.cast.slice(0, 12).map((member, idx) => (
                             <div key={idx} className="cast-member">
+                                <div className="cast-avatar">
+                                    {member.profile_url ? (
+                                        <img src={member.profile_url} alt={member.name} loading="lazy" />
+                                    ) : (
+                                        <span className="cast-avatar-initial">{member.name?.[0]?.toUpperCase() || '?'}</span>
+                                    )}
+                                </div>
                                 <div className="cast-name">{member.name}</div>
                                 <div className="cast-role">{member.role}</div>
                             </div>
