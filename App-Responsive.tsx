@@ -20,6 +20,7 @@ import { VirtualizedList } from './components/VirtualizedList';
 import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
 import { parseAppRoute } from './lib/routeState';
 import { fetchInAppNotifications, InAppNotification } from './services/notificationService';
+import { useWatched } from './hooks/useWatched';
 
 const debugLog = (...args: any[]) => {
   if (import.meta.env.DEV) {
@@ -61,6 +62,7 @@ const App: React.FC = () => {
     isCloud,
     isSyncing
   } = useCloudWatchlists();
+  const { isWatched, toggle: toggleWatched, watchedCount } = useWatched();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
@@ -594,6 +596,20 @@ const App: React.FC = () => {
               watchlists={watchlists}
               onCreateWatchlist={addFolder}
               onSaveToWatchlist={saveToFolder}
+              isWatched={movieData ? isWatched(
+                String(movieData.tmdb_id || ''),
+                movieData.tvShow ? 'tv' : 'movie'
+              ) : false}
+              onToggleWatched={() => {
+                if (!movieData) return;
+                toggleWatched({
+                  tmdb_id: String(movieData.tmdb_id || ''),
+                  media_type: movieData.tvShow ? 'tv' : 'movie',
+                  title: movieData.title,
+                  poster_url: movieData.poster_url,
+                  year: movieData.year,
+                });
+              }}
             />
           )}
         </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
@@ -20,6 +20,8 @@ interface MovieDisplayProps {
     watchlists: WatchlistFolder[];
     onCreateWatchlist: (name: string, color: string) => string | null;
     onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
+    isWatched?: boolean;
+    onToggleWatched?: () => void;
 }
 
 const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
@@ -179,7 +181,7 @@ const DISCOVER_TITLES = [
 
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist }) => {
+const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched }) => {
     useRenderCounter('MovieDisplay');
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
@@ -346,7 +348,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     // If this is a TV show with episode data, use the dedicated TV Show display
     if (movie && movie.tvShow) {
-        return <TVShowDisplay movie={movie} />;
+        return <TVShowDisplay movie={movie} isWatched={isWatched} onToggleWatched={onToggleWatched} />;
     }
 
     // Otherwise, use the standard movie display
@@ -426,6 +428,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
                             {movie && (
                                 <div className="mt-4 md:mt-8 animate-slide-up flex flex-wrap justify-center sm:justify-start gap-3" style={{ animationDelay: '0.55s', animationFillMode: 'forwards' }}>
+                                    {/* Watched button */}
+                                    <button
+                                        onClick={onToggleWatched}
+                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-300 touch-target btn-mobile-friendly ${
+                                            isWatched
+                                                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
+                                                : 'bg-white/10 border-white/15 text-white hover:bg-white/20 hover:border-white/30'
+                                        }`}
+                                        aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                                        title={isWatched ? 'Click to unmark as watched' : 'Mark as watched'}
+                                    >
+                                        <WatchedIcon className="w-5 h-5" filled={isWatched} />
+                                        <span>{isWatched ? 'Watched ✓' : 'Mark Watched'}</span>
+                                    </button>
                                     <button
                                         onClick={() => setShowWatchlistModal(true)}
                                         className="inline-flex items-center gap-2 px-5 py-3 bg-white/15 text-white font-semibold text-sm md:text-base rounded-xl border border-white/15 hover:border-brand-primary/50 hover:bg-white/20 transition-all duration-200 touch-target btn-mobile-friendly"

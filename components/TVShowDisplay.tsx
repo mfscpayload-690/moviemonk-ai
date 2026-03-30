@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { MovieData, TVShowEpisode, TVShowSeason } from '../types';
-import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon } from './icons';
+import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon } from './icons';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
 import '../styles/tv-show.css';
 
 interface TVShowDisplayProps {
     movie: MovieData; // Actually a TV show with tvShow data
+    isWatched?: boolean;
+    onToggleWatched?: () => void;
 }
 
 const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
@@ -52,7 +54,7 @@ const formatDisplayLanguage = (value?: string): string => {
     return normalized;
 };
 
-const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
+const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false, onToggleWatched }) => {
     const [selectedSeason, setSelectedSeason] = useState(1);
     const [expandedEpisode, setExpandedEpisode] = useState<number | null>(null);
 
@@ -158,6 +160,31 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie }) => {
                                 ))}
                             </div>
                         )}
+
+                        {/* Watched button */}
+                        <div style={{ marginTop: '1rem' }}>
+                            <button
+                                onClick={onToggleWatched}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.6rem 1.2rem',
+                                    borderRadius: '0.75rem',
+                                    border: isWatched ? '1px solid rgba(52,211,153,0.5)' : '1px solid rgba(255,255,255,0.15)',
+                                    background: isWatched ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.1)',
+                                    color: isWatched ? '#34d399' : '#fff',
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.25s ease',
+                                }}
+                                aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                            >
+                                <WatchedIcon className="icon-small" filled={isWatched} />
+                                <span>{isWatched ? 'Watched ✓' : 'Mark Watched'}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

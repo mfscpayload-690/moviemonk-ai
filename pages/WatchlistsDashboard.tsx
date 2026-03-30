@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
+import { useWatched } from '../hooks/useWatched';
 import { loadProfileSettings } from '../lib/userSettings';
 import logoUrl from '../asset/android-chrome-192x192.png';
 import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon } from '../components/icons';
@@ -50,6 +51,7 @@ export function WatchlistsDashboard() {
     isCloud, 
     isSyncing 
   } = useCloudWatchlists();
+  const { watchedCount } = useWatched();
 
   const [profile, setProfile] = useState<any>(null);
 
@@ -186,7 +188,7 @@ export function WatchlistsDashboard() {
 
       {/* 2. Metric Cards */}
       {!activeFolderId && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-12 animate-fade-in">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 animate-fade-in">
           <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-primary to-transparent opacity-50" />
             <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Total Saved</div>
@@ -203,6 +205,11 @@ export function WatchlistsDashboard() {
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-transparent opacity-50" />
             <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Top Format</div>
             <div className="text-2xl font-bold text-white">{stats.topFormat}</div>
+          </div>
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 to-transparent opacity-50" />
+            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Watched</div>
+            <div className="text-3xl font-bold text-emerald-400">{watchedCount}</div>
           </div>
         </div>
       )}
@@ -443,14 +450,6 @@ export function WatchlistsDashboard() {
       </div>
       )}
       
-      {/* 4. Recent Items Preview (Optional future expansion) */}
-      {stats.totalSaved > 0 && (
-        <div className="mt-12 text-center">
-          <p className="text-brand-text-dark text-sm inline-flex items-center gap-2">
-            Go back to <Link to="/" className="text-brand-primary hover:underline">Search</Link> to view folder contents and continue building your collection.
-          </p>
-        </div>
-      )}
     </DashboardLayout>
   );
 }

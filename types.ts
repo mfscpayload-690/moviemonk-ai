@@ -1,5 +1,17 @@
 
+export interface WatchedTitle {
+  id?: string;
+  user_id?: string;
+  tmdb_id: string;
+  media_type: 'movie' | 'tv';
+  title: string;
+  poster_url?: string;
+  year?: string;
+  watched_at?: string;
+}
+
 export interface CastMember {
+
   name: string;
   role: string;
   known_for: string;
