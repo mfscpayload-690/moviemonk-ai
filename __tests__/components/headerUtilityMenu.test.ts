@@ -17,7 +17,7 @@ import HeaderUtilityMenu, {
 } from '../../components/HeaderUtilityMenu';
 
 describe('HeaderUtilityMenu', () => {
-  it('builds signed-in utility items in the expected order', () => {
+  it('builds signed-in utility items in the expected order (Share is a standalone button, not in dropdown)', () => {
     const items = buildHeaderUtilityMenuItems({
       user: { id: 'user-1' } as any,
       isCloud: true,
@@ -25,13 +25,14 @@ describe('HeaderUtilityMenu', () => {
       canShare: true
     });
 
+    // Share has moved to a standalone header button — only 3 items in dropdown
     expect(items.map((item) => item.label)).toEqual([
       'Cloud Lists',
       'Notifications',
-      'Settings',
-      'Share'
+      'Settings'
     ]);
-    expect(items.find((item) => item.label === 'Share')?.disabled).toBe(false);
+    // Share is no longer a dropdown item
+    expect(items.find((item) => item.label === 'Share')).toBeUndefined();
   });
 
   it('builds signed-out utility items without notifications or settings', () => {
@@ -42,12 +43,12 @@ describe('HeaderUtilityMenu', () => {
       canShare: false
     });
 
-    expect(items.map((item) => item.label)).toEqual(['Watchlist', 'Share']);
+    // Share moved out of dropdown — only Watchlist remains
+    expect(items.map((item) => item.label)).toEqual(['Watchlist']);
     expect(items[0].description).toContain('Saved on this device');
-    expect(items[1].disabled).toBe(true);
   });
 
-  it('renders signed-in menu content and disabled share state when open', () => {
+  it('renders signed-in menu content and standalone share button when open', () => {
     const html = renderToStaticMarkup(
       React.createElement(
         MemoryRouter,
@@ -69,7 +70,9 @@ describe('HeaderUtilityMenu', () => {
     expect(html).toContain('Cloud Lists');
     expect(html).toContain('Notifications');
     expect(html).toContain('Settings');
-    expect(html).toContain('Open a result to share it');
+    // Share is now a standalone button - its title attribute contains this text
+    expect(html).toContain('Open a result to share');
+    // The standalone share button is disabled when canShare=false
     expect(html).toContain('disabled=""');
   });
 
