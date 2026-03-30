@@ -250,15 +250,40 @@ function detectQueryType(
 
 type ProviderChoice = 'groq' | 'mistral' | 'openrouter';
 
-function buildGalleryImages(images: any): string[] {
+function buildGalleryImages(images: any, posterPath?: string, backdropPath?: string): string[] {
   if (!images) return [];
+  const seen = new Set<string>();
+  // Exclude hero poster/backdrop from gallery
+  if (posterPath) seen.add(posterPath);
+  if (backdropPath) seen.add(backdropPath);
+
   const galleryPaths: string[] = [];
-  (images.backdrops || []).slice(0, 6).forEach((b: any) => b?.file_path && galleryPaths.push(b.file_path));
-  (images.posters || []).slice(0, 2).forEach((p: any) => p?.file_path && galleryPaths.push(p.file_path));
-  return galleryPaths
-    .map((p) => `https://image.tmdb.org/t/p/w780${p}`)
-    .filter(Boolean)
-    .slice(0, 6);
+
+  const sortedBackdrops = (images.backdrops || [])
+    .filter((b: any) => b?.file_path && typeof b.file_path === 'string')
+    .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0));
+
+  for (const b of sortedBackdrops) {
+    if (galleryPaths.length >= 6) break;
+    if (!seen.has(b.file_path)) {
+      seen.add(b.file_path);
+      galleryPaths.push(b.file_path);
+    }
+  }
+
+  const sortedPosters = (images.posters || [])
+    .filter((p: any) => p?.file_path && typeof p.file_path === 'string')
+    .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0));
+
+  for (const p of sortedPosters) {
+    if (galleryPaths.length >= 6) break;
+    if (!seen.has(p.file_path)) {
+      seen.add(p.file_path);
+      galleryPaths.push(p.file_path);
+    }
+  }
+
+  return galleryPaths.map((p) => `https://image.tmdb.org/t/p/w780${p}`).filter(Boolean);
 }
 
 function buildCreativePrompt(movie: MovieData): string {
@@ -583,7 +608,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const cast = data.credits?.cast?.slice(0, 12).map((c: any) => ({
           name: c.name,
           role: c.character,
-          known_for: c.known_for_department
+          known_for: c.known_for_department,
+          profile_url: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : undefined
         })) || [];
 
         // Ratings
@@ -640,7 +666,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const trailer = data.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
 
         // Images/Gallery
-        const extra_images = buildGalleryImages(data.images);
+        const extra_images = buildGalleryImages(data.images, data.poster_path, data.backdrop_path);
         const poster_url = data.poster_path
           ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
           : (data.images?.posters?.[0]?.file_path ? `https://image.tmdb.org/t/p/w500${data.images.posters[0].file_path}` : '');

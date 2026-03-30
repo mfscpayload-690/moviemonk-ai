@@ -134,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const year = movie.release_date ? String(movie.release_date).slice(0,4) : '';
       const genres = Array.isArray(movie.genres) ? movie.genres.map((g: any) => g.name) : [];
-      const cast = (credits?.cast || []).slice(0, 12).map((c: any) => ({ name: c.name, role: c.character }));
+      const cast = (credits?.cast || []).slice(0, 12).map((c: any) => ({ name: c.name, role: c.character, known_for: c.known_for_department || 'Acting', profile_url: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : undefined }));
       const crew = {
         director: (credits?.crew || []).find((c: any) => c.job === 'Director')?.name || '',
         writer: (credits?.crew || []).find((c: any) => c.job === 'Writer' || c.job === 'Screenplay')?.name || '',

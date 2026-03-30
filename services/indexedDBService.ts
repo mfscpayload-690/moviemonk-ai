@@ -77,6 +77,15 @@ export async function getFromIndexedDB(
           return;
         }
 
+        // Invalidate entries where cast data is missing profile_url (pre-v2 data)
+        const cast = cached.movieData?.cast;
+        if (Array.isArray(cast) && cast.length > 0 && !cast[0].profile_url) {
+          console.log(`[indexeddb] stale cast data for "${query}", refetching`);
+          deleteFromIndexedDB(query, provider);
+          resolve(null);
+          return;
+        }
+
         console.log(`[indexeddb] hit for "${query}" with ${provider}`);
         resolve({
           movieData: cached.movieData,
