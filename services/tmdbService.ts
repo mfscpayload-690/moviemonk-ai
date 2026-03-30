@@ -229,14 +229,46 @@ async function searchTitle(title: string, year?: string, type?: MovieData['type'
 async function fetchImages(mediaType: 'movie'|'tv', id: number): Promise<{ poster?: string; backdrop?: string; gallery: string[] }> {
   try {
     const data = await tmdbFetch(`/${mediaType}/${id}/images`, { include_image_language: 'en,null' });
-    const poster = buildImageUrl(data?.posters?.[0]?.file_path, 'w500');
-    const backdrop = buildImageUrl(data?.backdrops?.[0]?.file_path, 'w780');
+    const posterPath = data?.posters?.[0]?.file_path;
+    const backdropPath = data?.backdrops?.[0]?.file_path;
+    const poster = buildImageUrl(posterPath, 'w500');
+    const backdrop = buildImageUrl(backdropPath, 'w780');
+
+    // Collect gallery images — deduplicate by file_path and exclude the hero poster/backdrop
+    const seenPaths = new Set<string>();
+    // Reserve the hero images so they don't appear in the gallery
+    if (posterPath) seenPaths.add(posterPath);
+    if (backdropPath) seenPaths.add(backdropPath);
 
     const galleryPaths: string[] = [];
-    (data?.backdrops || []).slice(0, 6).forEach((b: any) => b?.file_path && galleryPaths.push(b.file_path));
-    (data?.posters || []).slice(0, 2).forEach((p: any) => p?.file_path && galleryPaths.push(p.file_path));
 
-    const gallery = galleryPaths.map(p => buildImageUrl(p, 'w780')).filter(Boolean).slice(0, 6);
+    // Prefer backdrops (wider, more interesting) sorted by vote_count
+    const sortedBackdrops = (data?.backdrops || [])
+      .filter((b: any) => b?.file_path && typeof b.file_path === 'string')
+      .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0));
+
+    for (const b of sortedBackdrops) {
+      if (galleryPaths.length >= 6) break;
+      if (!seenPaths.has(b.file_path)) {
+        seenPaths.add(b.file_path);
+        galleryPaths.push(b.file_path);
+      }
+    }
+
+    // Fill remaining slots with posters
+    const sortedPosters = (data?.posters || [])
+      .filter((p: any) => p?.file_path && typeof p.file_path === 'string')
+      .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0));
+
+    for (const p of sortedPosters) {
+      if (galleryPaths.length >= 6) break;
+      if (!seenPaths.has(p.file_path)) {
+        seenPaths.add(p.file_path);
+        galleryPaths.push(p.file_path);
+      }
+    }
+
+    const gallery = galleryPaths.map(p => buildImageUrl(p, 'w780')).filter(Boolean);
     return { poster, backdrop, gallery };
   } catch (e) {
     console.warn('TMDB images error:', e);
