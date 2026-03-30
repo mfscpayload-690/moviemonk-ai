@@ -294,9 +294,31 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         let alive = true;
         setReviews([]);
         setRevLoading(true);
-        fetch(`/api/reviews?id=${movie.tmdb_id}&type=${mediaType}`)
+        const endpoint = `${mediaType}/${movie.tmdb_id}/reviews`;
+        fetch(`/api/tmdb?endpoint=${encodeURIComponent(endpoint)}&language=en-US&page=1`)
             .then(r => r.json())
-            .then(data => { if (alive) setReviews(Array.isArray(data.reviews) ? data.reviews : []); })
+            .then(data => {
+                if (!alive) return;
+                const TMDB_IMG = 'https://image.tmdb.org/t/p/w92';
+                const raw: any[] = Array.isArray(data.results) ? data.results : [];
+                const normalised: TmdbReview[] = raw
+                    .filter((r: any) => r.content && r.content.trim().length > 40)
+                    .slice(0, 6)
+                    .map((r: any) => ({
+                        id: r.id,
+                        author: r.author || 'Anonymous',
+                        avatar_url: r.author_details?.avatar_path
+                            ? r.author_details.avatar_path.startsWith('/')
+                                ? `${TMDB_IMG}${r.author_details.avatar_path}`
+                                : r.author_details.avatar_path
+                            : null,
+                        rating: r.author_details?.rating ?? null,
+                        content: r.content.trim(),
+                        url: r.url || null,
+                        created_at: r.created_at || null,
+                    }));
+                setReviews(normalised);
+            })
             .catch(() => { if (alive) setReviews([]); })
             .finally(() => { if (alive) setRevLoading(false); });
         return () => { alive = false; };
