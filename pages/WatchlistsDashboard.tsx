@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
 import { loadProfileSettings } from '../lib/userSettings';
 import logoUrl from '../asset/android-chrome-192x192.png';
-import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon, BellIcon } from '../components/icons';
+import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon } from '../components/icons';
 import { WatchlistFolder } from '../types';
 
 export const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
@@ -12,7 +12,7 @@ export const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   return (
-    <div className="app-container" style={{ background: '#121212', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-container" style={{ background: '#121212', height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50 sticky top-0">
         <Link to="/" className="flex items-center gap-2">
           <img src={logoUrl} alt="MovieMonk" className="w-8 h-8" />
@@ -23,7 +23,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           Back to app
         </button>
       </header>
-      <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+      <main
+        className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8"
+        style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+      >
         {children}
       </main>
     </div>
@@ -37,6 +40,7 @@ function getAvatarUrl(user: any, profile: any): string | null {
 export function WatchlistsDashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { folderName: folderNameParam } = useParams<{ folderName?: string }>();
   const { 
     folders, 
     renameFolder, 
@@ -57,6 +61,33 @@ export function WatchlistsDashboard() {
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
+
+  // Deep-link: resolve :folderName param → activeFolderId once folders are loaded
+  const [deepLinkResolved, setDeepLinkResolved] = useState(false);
+  useEffect(() => {
+    if (deepLinkResolved || folders.length === 0) return;
+    if (folderNameParam) {
+      const decoded = decodeURIComponent(folderNameParam);
+      const match = folders.find(
+        f => f.name.toLowerCase() === decoded.toLowerCase()
+      );
+      if (match) setActiveFolderId(match.id);
+    }
+    setDeepLinkResolved(true);
+  }, [folderNameParam, folders, deepLinkResolved]);
+
+  // Sync URL when active folder changes
+  const openFolder = (folderId: string | null) => {
+    setActiveFolderId(folderId);
+    if (folderId) {
+      const folder = folders.find(f => f.id === folderId);
+      if (folder) {
+        navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
+      }
+    } else {
+      navigate('/watchlists', { replace: false });
+    }
+  };
 
   useEffect(() => {
     setProfile(loadProfileSettings());
@@ -180,7 +211,7 @@ export function WatchlistsDashboard() {
       {activeFolder ? (
         <div className="animate-fade-in">
           <button 
-            onClick={() => setActiveFolderId(null)}
+            onClick={() => openFolder(null)}
             className="text-brand-text-light hover:text-white mb-6 flex items-center gap-2 group transition-colors"
           >
             <ChevronRightIcon className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
@@ -221,7 +252,7 @@ export function WatchlistsDashboard() {
               <button 
                 onClick={() => {
                   handleDeleteFolder(activeFolder.id, activeFolder.name, activeFolder.items.length);
-                  setActiveFolderId(null);
+                  openFolder(null);
                 }}
                 className="px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 flex items-center gap-2 text-sm font-medium transition-colors"
               >
@@ -328,7 +359,7 @@ export function WatchlistsDashboard() {
                 style={{ backgroundColor: folder.color }}
               />
 
-              <div className="relative z-10 flex justify-between items-start cursor-pointer" onClick={() => setActiveFolderId(folder.id)}>
+              <div className="relative z-10 flex justify-between items-start cursor-pointer" onClick={() => openFolder(folder.id)}>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]" style={{ backgroundColor: folder.color, boxShadow: `0 0 12px ${folder.color}80` }} />
                   <h3 className="text-lg font-bold text-white group-hover:text-brand-primary transition-colors pr-2 break-words max-w-[200px]">{folder.name}</h3>

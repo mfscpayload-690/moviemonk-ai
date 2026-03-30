@@ -19,6 +19,7 @@ export default function AppRoutes() {
       <Route path="/tv/:id" element={<App />} />
       <Route path="/person/:id" element={<App />} />
       <Route path="/watchlists" element={<WatchlistsDashboard />} />
+      <Route path="/watchlists/:folderName" element={<WatchlistsDashboard />} />
       <Route path="/settings" element={<SettingsHubPage />} />
       <Route path="/settings/profile" element={<ProfileSettingsPage />} />
       <Route path="/settings/preferences" element={<PreferenceSettingsPage />} />

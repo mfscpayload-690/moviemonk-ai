@@ -22,7 +22,11 @@ export function parseAppRoute(pathname: string, search: string): ParsedRoute {
   const normalizedPath = pathname || '/';
   const params = new URLSearchParams(search || '');
 
-  if (normalizedPath === '/') return { kind: 'home' };
+  if (normalizedPath === '/') {
+    const q = params.get('q');
+    if (q) return { kind: 'search', query: q };
+    return { kind: 'home' };
+  }
   if (normalizedPath === '/search') return { kind: 'search', query: params.get('q') || '' };
   if (normalizedPath === '/watchlists') return { kind: 'watchlists' };
   if (normalizedPath === '/settings') return { kind: 'settings' };
