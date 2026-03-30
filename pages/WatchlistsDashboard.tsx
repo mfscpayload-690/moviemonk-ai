@@ -42,11 +42,16 @@ export function WatchlistsDashboard() {
     renameFolder, 
     setFolderColor, 
     deleteFolder, 
+    deleteItem,
     isCloud, 
     isSyncing 
   } = useCloudWatchlists();
 
   const [profile, setProfile] = useState<any>(null);
+
+  // Detail View State
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const activeFolder = useMemo(() => folders.find(f => f.id === activeFolderId), [folders, activeFolderId]);
 
   // Edit State
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
@@ -149,35 +154,157 @@ export function WatchlistsDashboard() {
       </div>
 
       {/* 2. Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-12">
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-primary to-transparent opacity-50" />
-          <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Total Saved</div>
-          <div className="text-3xl font-bold text-white">{stats.totalSaved}</div>
-        </div>
-        
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-secondary to-transparent opacity-50" />
-          <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Folders</div>
-          <div className="text-3xl font-bold text-white">{stats.totalFolders}</div>
-        </div>
+      {!activeFolderId && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-12 animate-fade-in">
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-primary to-transparent opacity-50" />
+            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Total Saved</div>
+            <div className="text-3xl font-bold text-white">{stats.totalSaved}</div>
+          </div>
+          
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-secondary to-transparent opacity-50" />
+            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Folders</div>
+            <div className="text-3xl font-bold text-white">{stats.totalFolders}</div>
+          </div>
 
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-transparent opacity-50" />
-          <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Top Format</div>
-          <div className="text-2xl font-bold text-white">{stats.topFormat}</div>
+          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-transparent opacity-50" />
+            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Top Format</div>
+            <div className="text-2xl font-bold text-white">{stats.topFormat}</div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 3. Watchlist Grid */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white tracking-tight">Your Folders</h2>
-        {!isCloud && folders.length > 0 && (
-          <span className="text-xs bg-white/10 text-brand-text-light px-3 py-1 rounded-full">Local Storage</span>
-        )}
-      </div>
+      {activeFolder ? (
+        <div className="animate-fade-in">
+          <button 
+            onClick={() => setActiveFolderId(null)}
+            className="text-brand-text-light hover:text-white mb-6 flex items-center gap-2 group transition-colors"
+          >
+            <ChevronRightIcon className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
+            Back to Folders
+          </button>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: activeFolder.color, boxShadow: `0 0 16px ${activeFolder.color}` }} />
+              {editingFolderId === activeFolder.id ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={editFolderName}
+                    onChange={(e) => setEditFolderName(e.target.value)}
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                    placeholder="Folder name"
+                    autoFocus
+                  />
+                  <button onClick={saveFolderEdits} className="p-1.5 rounded-md text-brand-primary hover:bg-brand-primary/20 transition-colors">
+                    <CheckIcon className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => setEditingFolderId(null)} className="p-1.5 rounded-md text-brand-text-light hover:text-white hover:bg-white/10 transition-colors">
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              ) : (
+                <h2 className="text-3xl font-bold text-white tracking-tight">{activeFolder.name}</h2>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => startEditFolder(activeFolder)}
+                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-2 text-sm font-medium transition-colors"
+              >
+                <EditIcon className="w-4 h-4" /> Edit Folder
+              </button>
+              <button 
+                onClick={() => {
+                  handleDeleteFolder(activeFolder.id, activeFolder.name, activeFolder.items.length);
+                  setActiveFolderId(null);
+                }}
+                className="px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 flex items-center gap-2 text-sm font-medium transition-colors"
+              >
+                <TrashIcon className="w-4 h-4" /> Delete
+              </button>
+            </div>
+          </div>
+          
+          {editingFolderId === activeFolder.id && (
+            <div className="mb-8 flex items-center gap-2 p-4 glass-panel rounded-xl border border-white/5 overflow-x-auto">
+              <span className="text-sm text-brand-text-light mr-2 flex-shrink-0">Theme Color:</span>
+              <div className="flex gap-2 min-w-max">
+                {WATCHLIST_COLORS.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setEditFolderColor(color)}
+                    className={`w-6 h-6 rounded-full border ${editFolderColor === color ? 'border-white ring-2 ring-white/50 scale-110' : 'border-transparent'} transition-all flex-shrink-0`}
+                    style={{ backgroundColor: color }}
+                    aria-label={`Color ${color}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
-      {folders.length === 0 ? (
+          {activeFolder.items.length === 0 ? (
+            <div className="glass-panel p-12 rounded-3xl text-center border border-white/5">
+              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-brand-text-dark" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+              </div>
+              <p className="text-brand-text-light text-lg">This folder is empty.</p>
+              <Link to="/" className="mt-4 inline-block px-6 py-2 rounded-full bg-brand-primary hover:bg-brand-secondary text-white font-medium transition-colors">
+                Discover titles
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+              {activeFolder.items.map(item => (
+                <div key={item.id} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl">
+                  <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />
+                  {item.movie.poster_url ? (
+                    <img src={item.movie.poster_url} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40">
+                      {item.movie.title}
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-12 z-20 pointer-events-none">
+                    <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md">{item.movie.title}</h4>
+                    <span className="text-xs text-brand-text-light block mt-0.5">{item.movie.year || 'Unknown'}</span>
+                  </div>
+                  
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      deleteItem(activeFolder.id, item.id);
+                    }}
+                    className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                    title="Remove from folder"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                  
+                  <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
+                    {item.movie.type === 'show' ? 'Series' : 'Movie'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="animate-fade-in">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white tracking-tight">Your Folders</h2>
+            {!isCloud && folders.length > 0 && (
+              <span className="text-xs bg-white/10 text-brand-text-light px-3 py-1 rounded-full">Local Storage</span>
+            )}
+          </div>
+
+          {folders.length === 0 ? (
         <div className="glass-panel rounded-3xl p-12 text-center border border-white/5">
           <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-brand-text-dark" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
@@ -201,10 +328,10 @@ export function WatchlistsDashboard() {
                 style={{ backgroundColor: folder.color }}
               />
 
-              <div className="relative z-10 flex justify-between items-start">
+              <div className="relative z-10 flex justify-between items-start cursor-pointer" onClick={() => setActiveFolderId(folder.id)}>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]" style={{ backgroundColor: folder.color, boxShadow: `0 0 12px ${folder.color}80` }} />
-                  <h3 className="text-lg font-bold text-white group-hover:text-brand-primary transition-colors">{folder.name}</h3>
+                  <h3 className="text-lg font-bold text-white group-hover:text-brand-primary transition-colors pr-2 break-words max-w-[200px]">{folder.name}</h3>
                 </div>
                 <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-white/40">
                   {folder.items.length}
@@ -281,6 +408,8 @@ export function WatchlistsDashboard() {
             </div>
           ))}
         </div>
+      )}
+      </div>
       )}
       
       {/* 4. Recent Items Preview (Optional future expansion) */}
