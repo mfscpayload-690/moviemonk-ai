@@ -1012,27 +1012,73 @@ const CastCard: React.FC<{ member: CastMember; onClick?: () => void }> = ({ memb
     </button>
 );
 
-const CrewCard: React.FC<{ name: string; role: string; onClick: () => void }> = ({ name, role, onClick }) => (
-    <button
-        className="bg-white/5 p-3 rounded-xl text-center transform-gpu will-change-transform hover:-translate-y-1 transition-all duration-200 ease-out border border-transparent hover:border-brand-primary/40 hover:bg-white/8 group w-full relative"
-        onClick={onClick}
-        type="button"
-        aria-label={`View profile of ${name}`}
-    >
-        <div className="mx-auto w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-brand-primary/50 transition-colors mb-2 bg-gradient-to-br from-fuchsia-700/40 to-indigo-700/40 flex items-center justify-center flex-shrink-0">
-            <span className="text-lg font-bold text-white/70">{name?.[0]?.toUpperCase() || '?'}</span>
-        </div>
-        <p className="font-bold text-xs text-white truncate" title={name}>{name}</p>
-        <p className="text-[10px] text-brand-text-dark uppercase tracking-wider mt-0.5">{role}</p>
-        <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-            <span className="absolute inset-0 bg-black/40 rounded-xl" />
-            <span className="relative z-10 text-[10px] font-semibold text-white/90 flex items-center gap-1">
-                View Profile
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+// Module-level cache so we never double-fetch the same name
+const crewImageCache = new Map<string, string | null>();
+
+const CrewCard: React.FC<{ name: string; role: string; onClick: () => void }> = ({ name, role, onClick }) => {
+    const [photoUrl, setPhotoUrl] = React.useState<string | null | undefined>(undefined);
+
+    React.useEffect(() => {
+        if (!name) return;
+        const key = name.toLowerCase().trim();
+        if (crewImageCache.has(key)) {
+            setPhotoUrl(crewImageCache.get(key)!);
+            return;
+        }
+        let cancelled = false;
+        fetch(`/api/resolveEntity?q=${encodeURIComponent(name)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (cancelled) return;
+                // Pick the top person candidate's profile_url
+                const person = (data?.shortlisted || []).find((c: any) => c.type === 'person' || !c.type);
+                const url = person?.profile_url || null;
+                crewImageCache.set(key, url);
+                setPhotoUrl(url);
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    crewImageCache.set(key, null);
+                    setPhotoUrl(null);
+                }
+            });
+        return () => { cancelled = true; };
+    }, [name]);
+
+    return (
+        <button
+            className="bg-white/5 p-3 rounded-xl text-center transform-gpu will-change-transform hover:-translate-y-1 transition-all duration-200 ease-out border border-transparent hover:border-brand-primary/40 hover:bg-white/8 group w-full relative"
+            onClick={onClick}
+            type="button"
+            aria-label={`View profile of ${name}`}
+        >
+            <div className="mx-auto w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-brand-primary/50 transition-colors mb-2 bg-gradient-to-br from-fuchsia-700/40 to-indigo-700/40 flex items-center justify-center flex-shrink-0">
+                {photoUrl === undefined ? (
+                    /* Loading shimmer */
+                    <div className="w-full h-full animate-pulse bg-white/10" />
+                ) : photoUrl ? (
+                    <img
+                        src={photoUrl}
+                        alt={name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                    />
+                ) : (
+                    <span className="text-lg font-bold text-white/70">{name?.[0]?.toUpperCase() || '?'}</span>
+                )}
+            </div>
+            <p className="font-bold text-xs text-white truncate" title={name}>{name}</p>
+            <p className="text-[10px] text-brand-text-dark uppercase tracking-wider mt-0.5">{role}</p>
+            <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                <span className="absolute inset-0 bg-black/40 rounded-xl" />
+                <span className="relative z-10 text-[10px] font-semibold text-white/90 flex items-center gap-1">
+                    View Profile
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </span>
             </span>
-        </span>
-    </button>
-);
+        </button>
+    );
+}
 
 const watchTypeIcons: Record<WatchOption['type'], React.FC<{ className?: string }>> = {
     subscription: TvIcon,
