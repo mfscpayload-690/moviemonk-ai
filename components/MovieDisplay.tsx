@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
-import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder } from '../types';
+import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
 import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
@@ -282,6 +282,26 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const displayedCast = showAllCast ? safeCast : safeCast.slice(0, 8);
     const shouldVirtualizeCast = showAllCast && safeCast.length > 20;
     const castListHeight = Math.min(520, Math.max(260, safeCast.length * 120));
+
+    // ── Reviews state & fetch ────────────────────────────────────────────
+    const [reviews, setReviews]           = useState<TmdbReview[]>([]);
+    const [reviewsLoading, setRevLoading]  = useState(false);
+    const [expandedReview, setExpandedRev] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!movie?.tmdb_id) return;
+        const mediaType = movie.tvShow ? 'tv' : 'movie';
+        let alive = true;
+        setReviews([]);
+        setRevLoading(true);
+        fetch(`/api/reviews?id=${movie.tmdb_id}&type=${mediaType}`)
+            .then(r => r.json())
+            .then(data => { if (alive) setReviews(Array.isArray(data.reviews) ? data.reviews : []); })
+            .catch(() => { if (alive) setReviews([]); })
+            .finally(() => { if (alive) setRevLoading(false); });
+        return () => { alive = false; };
+    }, [movie?.tmdb_id, movie?.tvShow]);
+
     const renderCastItem = useCallback((member: CastMember) => (
         <div className="px-1 py-1">
             <CastCard key={member.name} member={member} onClick={() => onQuickSearch(member.name)} />
@@ -634,6 +654,78 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     <Section title="AI Notes & Trivia">
                         <div className="ai-notes-rich" dangerouslySetInnerHTML={{ __html: formatAiNotesHtml(movie.ai_notes) }} />
                     </Section>
+
+                    {/* ── User Reviews ────────────────────────────── */}
+                    {(reviewsLoading || reviews.length > 0) && (
+                        <Section title="User Reviews">
+                            {reviewsLoading ? (
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="animate-pulse flex gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-white/10 flex-shrink-0" />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-3 bg-white/10 rounded w-1/4" />
+                                                <div className="h-2.5 bg-white/8 rounded w-full" />
+                                                <div className="h-2.5 bg-white/8 rounded w-5/6" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-5">
+                                    {reviews.map(rev => {
+                                        const isExp = expandedReview === rev.id;
+                                        const LIMIT = 340;
+                                        const isLong = rev.content.length > LIMIT;
+                                        const text = isExp || !isLong ? rev.content : rev.content.slice(0, LIMIT).trimEnd() + '…';
+                                        const date = rev.created_at
+                                            ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                            : null;
+                                        return (
+                                            <div key={rev.id} className="border border-white/6 rounded-xl p-4 bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-violet-600/50 to-pink-600/50 flex items-center justify-center border border-white/10">
+                                                        {rev.avatar_url ? (
+                                                            <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
+                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-white/70">{rev.author[0]?.toUpperCase() || '?'}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-semibold text-sm text-white truncate">{rev.author}</span>
+                                                            {rev.rating !== null && (
+                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[11px] font-bold">
+                                                                    ⭐ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}/10
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {date && <p className="text-[11px] text-brand-text-dark mt-0.5">{date} · via TMDB</p>}
+                                                    </div>
+                                                    {rev.url && (
+                                                        <a href={rev.url} target="_blank" rel="noopener noreferrer"
+                                                            className="flex-shrink-0 text-[13px] text-brand-text-dark hover:text-brand-primary transition-colors"
+                                                            title="Read full review on TMDB" aria-label="Open full review on TMDB"
+                                                        >↗</a>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-brand-text-light leading-relaxed whitespace-pre-line">{text}</p>
+                                                {isLong && (
+                                                    <button onClick={() => setExpandedRev(isExp ? null : rev.id)}
+                                                        className="mt-2 text-[12px] text-brand-primary hover:text-brand-secondary font-semibold transition-colors">
+                                                        {isExp ? 'Show less ↑' : 'Read full review ↓'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    <p className="text-[11px] text-brand-text-dark text-center pt-1">Reviews sourced from The Movie Database (TMDB)</p>
+                                </div>
+                            )}
+                        </Section>
+                    )}
                 </div>
 
                 <div className="lg:col-span-1 space-y-8">

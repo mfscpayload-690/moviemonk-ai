@@ -10,6 +10,16 @@ export interface WatchedTitle {
   watched_at?: string;
 }
 
+export interface TmdbReview {
+  id: string;
+  author: string;
+  avatar_url: string | null;
+  rating: number | null;   // 0–10 from TMDB
+  content: string;
+  url: string | null;
+  created_at: string | null;
+}
+
 export interface CastMember {
 
   name: string;
