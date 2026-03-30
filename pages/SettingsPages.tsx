@@ -282,136 +282,144 @@ export function SettingsHubPage() {
           </div>
         </div>
 
-        {/* Account */}
-        <div className="mm-settings-section-label">Account</div>
-        <div className="mm-settings-group">
-          <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/profile')}>
-            <div className="mm-settings-row-icon mm-icon-purple">
-              <svg fill="none" stroke="#AFA9EC" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>
+        <div className="mm-settings-grid">
+          {/* Left column */}
+          <div className="mm-settings-grid-col">
+            {/* Account */}
+            <div className="mm-settings-section-label">Account</div>
+            <div className="mm-settings-group">
+              <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/profile')}>
+                <div className="mm-settings-row-icon mm-icon-purple">
+                  <svg fill="none" stroke="#AFA9EC" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Profile</div>
+                  <div className="mm-settings-row-sub">Display name, sex, country</div>
+                </div>
+                <div className="mm-settings-row-right"><Chevron /></div>
+              </button>
+              <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/preferences#notifications')}>
+                <div className="mm-settings-row-icon mm-icon-pink" style={{ color: '#ED93B1' }}>
+                  <BellIcon className="w-4 h-4" />
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Notifications</div>
+                  <div className="mm-settings-row-sub">Push, email, digest frequency</div>
+                </div>
+                <div className="mm-settings-row-right">
+                  <span className={`mm-settings-pill ${notifOn ? 'mm-pill-green' : 'mm-pill-gray'}`}>{notifOn ? 'On' : 'Off'}</span>
+                  <Chevron />
+                </div>
+              </button>
             </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Profile</div>
-              <div className="mm-settings-row-sub">Display name, sex, country</div>
-            </div>
-            <div className="mm-settings-row-right"><Chevron /></div>
-          </button>
-          <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/preferences#notifications')}>
-            <div className="mm-settings-row-icon mm-icon-pink" style={{ color: '#ED93B1' }}>
-              <BellIcon className="w-4 h-4" />
-            </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Notifications</div>
-              <div className="mm-settings-row-sub">Push, email, digest frequency</div>
-            </div>
-            <div className="mm-settings-row-right">
-              <span className={`mm-settings-pill ${notifOn ? 'mm-pill-green' : 'mm-pill-gray'}`}>{notifOn ? 'On' : 'Off'}</span>
-              <Chevron />
-            </div>
-          </button>
-        </div>
 
-        {/* Discovery */}
-        <div className="mm-settings-section-label">Discovery</div>
-        <div className="mm-settings-group">
-          <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/preferences')}>
-            <div className="mm-settings-row-icon mm-icon-teal" style={{ color: '#5DCAA5' }}>
-              <StarIcon className="w-4 h-4" />
-            </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Preferences</div>
-              <div className="mm-settings-row-sub">Genres, languages, content type</div>
-            </div>
-            <div className="mm-settings-row-right">
-              {genreCount > 0 && <span className="mm-settings-pill mm-pill-purple">{genreCount} genre{genreCount !== 1 ? 's' : ''}</span>}
-              <Chevron />
-            </div>
-          </button>
-          <div className="mm-settings-row" style={{ cursor: 'default' }}>
-            <div className="mm-settings-row-icon mm-icon-amber" style={{ color: '#EF9F27' }}>
-              <GlobeIcon className="w-4 h-4" />
-            </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Content mix</div>
-              <div className="mm-settings-row-sub">
-                {preferences.contentMix === 'balanced' ? 'Balanced mix' : preferences.contentMix === 'mostly_movies' ? 'Mostly movies' : 'Mostly series'}
+            {/* Discovery */}
+            <div className="mm-settings-section-label">Discovery</div>
+            <div className="mm-settings-group">
+              <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/preferences')}>
+                <div className="mm-settings-row-icon mm-icon-teal" style={{ color: '#5DCAA5' }}>
+                  <StarIcon className="w-4 h-4" />
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Preferences</div>
+                  <div className="mm-settings-row-sub">Genres, languages, content type</div>
+                </div>
+                <div className="mm-settings-row-right">
+                  {genreCount > 0 && <span className="mm-settings-pill mm-pill-purple">{genreCount} genre{genreCount !== 1 ? 's' : ''}</span>}
+                  <Chevron />
+                </div>
+              </button>
+              <div className="mm-settings-row" style={{ cursor: 'default' }}>
+                <div className="mm-settings-row-icon mm-icon-amber" style={{ color: '#EF9F27' }}>
+                  <GlobeIcon className="w-4 h-4" />
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Content mix</div>
+                  <div className="mm-settings-row-sub">
+                    {preferences.contentMix === 'balanced' ? 'Balanced mix' : preferences.contentMix === 'mostly_movies' ? 'Mostly movies' : 'Mostly series'}
+                  </div>
+                </div>
+                <div className="mm-settings-row-right">
+                  <span className="mm-settings-pill mm-pill-gray">
+                    {preferences.contentMix === 'balanced' ? 'Balanced' : preferences.contentMix === 'mostly_movies' ? 'Movies' : 'Series'}
+                  </span>
+                </div>
+              </div>
+              <div className="mm-settings-row" style={{ cursor: 'default' }}>
+                <div className="mm-settings-row-icon mm-icon-blue" style={{ color: '#85B7EB' }}>
+                  <ShieldIcon className="w-4 h-4" />
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Family-safe mode</div>
+                  <div className="mm-settings-row-sub">Filter explicit content from discovery</div>
+                </div>
+                <div className="mm-settings-row-right">
+                  <span className={`mm-settings-pill ${preferences.familySafe ? 'mm-pill-green' : 'mm-pill-gray'}`}>
+                    {preferences.familySafe ? 'On' : 'Off'}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="mm-settings-row-right">
-              <span className="mm-settings-pill mm-pill-gray">
-                {preferences.contentMix === 'balanced' ? 'Balanced' : preferences.contentMix === 'mostly_movies' ? 'Movies' : 'Series'}
-              </span>
-            </div>
           </div>
-          <div className="mm-settings-row" style={{ cursor: 'default' }}>
-            <div className="mm-settings-row-icon mm-icon-blue" style={{ color: '#85B7EB' }}>
-              <ShieldIcon className="w-4 h-4" />
+
+          {/* Right column */}
+          <div className="mm-settings-grid-col">
+            {/* Data & Privacy */}
+            <div className="mm-settings-section-label">Data &amp; privacy</div>
+            <div className="mm-settings-group">
+              <div className="mm-settings-row" style={{ cursor: 'default' }}>
+                <div className="mm-settings-row-icon mm-icon-teal">
+                  <svg fill="none" stroke="#5DCAA5" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Watchlist sync</div>
+                  <div className="mm-settings-row-sub">Auto-sync to cloud</div>
+                </div>
+                <div className="mm-settings-row-right">
+                  <button type="button" className={`mm-settings-toggle ${isCloudSync ? 'on' : ''}`} aria-label="Watchlist sync status" style={{ pointerEvents: 'none' }} />
+                </div>
+              </div>
+              <button type="button" className="mm-settings-row" onClick={handleClearHistory}>
+                <div className="mm-settings-row-icon mm-icon-amber" style={{ color: '#EF9F27' }}>
+                  <ClockIcon className="w-4 h-4" />
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Search history</div>
+                  <div className="mm-settings-row-sub">Stored locally on device</div>
+                </div>
+                <div className="mm-settings-row-right">
+                  <span style={{ fontSize: 12, color: '#EF9F27' }}>Clear</span>
+                </div>
+              </button>
+              <button type="button" className="mm-settings-row" onClick={handleSignOut}>
+                <div className="mm-settings-row-icon mm-icon-purple">
+                  <svg fill="none" stroke="#AFA9EC" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-row-title">Sign out</div>
+                  <div className="mm-settings-row-sub">Log out of your account</div>
+                </div>
+                <div className="mm-settings-row-right"><Chevron /></div>
+              </button>
             </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Family-safe mode</div>
-              <div className="mm-settings-row-sub">Filter explicit content from discovery</div>
+
+            {/* Danger zone */}
+            <div className="mm-settings-section-label">Danger zone</div>
+            <div style={{ marginBottom: 20 }}>
+              <button type="button" className="mm-settings-danger-row" onClick={handleDeleteAccount}>
+                <div className="mm-settings-row-icon mm-icon-red" style={{ color: '#E24B4A' }}>
+                  <TrashIcon className="w-4 h-4" />
+                </div>
+                <div className="mm-settings-row-text">
+                  <div className="mm-settings-danger-title">Delete account</div>
+                  <div className="mm-settings-danger-sub">Permanently remove all your data</div>
+                </div>
+              </button>
             </div>
-            <div className="mm-settings-row-right">
-              <span className={`mm-settings-pill ${preferences.familySafe ? 'mm-pill-green' : 'mm-pill-gray'}`}>
-                {preferences.familySafe ? 'On' : 'Off'}
-              </span>
-            </div>
+
+            <div className="mm-settings-version">MovieMonk v{APP_VERSION} · MIT License</div>
           </div>
         </div>
-
-        {/* Data & Privacy */}
-        <div className="mm-settings-section-label">Data &amp; privacy</div>
-        <div className="mm-settings-group">
-          <div className="mm-settings-row" style={{ cursor: 'default' }}>
-            <div className="mm-settings-row-icon mm-icon-teal">
-              <svg fill="none" stroke="#5DCAA5" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
-            </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Watchlist sync</div>
-              <div className="mm-settings-row-sub">Auto-sync to cloud</div>
-            </div>
-            <div className="mm-settings-row-right">
-              <button type="button" className={`mm-settings-toggle ${isCloudSync ? 'on' : ''}`} aria-label="Watchlist sync status" style={{ pointerEvents: 'none' }} />
-            </div>
-          </div>
-          <button type="button" className="mm-settings-row" onClick={handleClearHistory}>
-            <div className="mm-settings-row-icon mm-icon-amber" style={{ color: '#EF9F27' }}>
-              <ClockIcon className="w-4 h-4" />
-            </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Search history</div>
-              <div className="mm-settings-row-sub">Stored locally on device</div>
-            </div>
-            <div className="mm-settings-row-right">
-              <span style={{ fontSize: 12, color: '#EF9F27' }}>Clear</span>
-            </div>
-          </button>
-          <button type="button" className="mm-settings-row" onClick={handleSignOut}>
-            <div className="mm-settings-row-icon mm-icon-purple">
-              <svg fill="none" stroke="#AFA9EC" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-            </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-row-title">Sign out</div>
-              <div className="mm-settings-row-sub">Log out of your account</div>
-            </div>
-            <div className="mm-settings-row-right"><Chevron /></div>
-          </button>
-        </div>
-
-        {/* Danger zone */}
-        <div className="mm-settings-section-label">Danger zone</div>
-        <div style={{ marginBottom: 20 }}>
-          <button type="button" className="mm-settings-danger-row" onClick={handleDeleteAccount}>
-            <div className="mm-settings-row-icon mm-icon-red" style={{ color: '#E24B4A' }}>
-              <TrashIcon className="w-4 h-4" />
-            </div>
-            <div className="mm-settings-row-text">
-              <div className="mm-settings-danger-title">Delete account</div>
-              <div className="mm-settings-danger-sub">Permanently remove all your data</div>
-            </div>
-          </button>
-        </div>
-
-        <div className="mm-settings-version">MovieMonk v{APP_VERSION} · MIT License</div>
       </div>
     </SettingsLayout>
   );
