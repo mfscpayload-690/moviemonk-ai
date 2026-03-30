@@ -27,7 +27,6 @@ const debugLog = (...args: any[]) => {
   }
 };
 
-const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 type AppView = 'discovery' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 
@@ -59,24 +58,12 @@ const App: React.FC = () => {
     folders: watchlists,
     addFolder,
     saveToFolder,
-    findItem,
-    refresh,
-    renameFolder,
-    setFolderColor,
-    moveItem,
-    deleteItem,
-    deleteFolder,
     isCloud,
     isSyncing
   } = useCloudWatchlists();
-  const [showWatchlistsModal, setShowWatchlistsModal] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
-  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
-  const [editFolderName, setEditFolderName] = useState('');
-  const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
-  const [draggedItem, setDraggedItem] = useState<{ folderId: string; itemId: string } | null>(null);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
@@ -95,31 +82,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleLoadSavedItem = useCallback((folderId: string, itemId: string) => {
-    const found = findItem(folderId, itemId);
-    if (!found) return;
-    const { item } = found;
-    if (item.movie.tmdb_id) {
-      const mediaType = item.movie.media_type === 'tv' || item.movie.type === 'show' ? 'tv' : 'movie';
-      navigate(`/${mediaType}/${item.movie.tmdb_id}`);
-    }
-    startTransition(() => {
-      setMovieData(item.movie);
-      setPersonData(null);
-      setSources(item.movie.tmdb_id ? [{ web: { uri: `https://www.themoviedb.org/${item.movie.media_type || 'movie'}/${item.movie.tmdb_id}`, title: 'The Movie Database (TMDB)' } }] : null);
-      setCurrentQuery(item.saved_title || item.movie.title);
-      setCurrentView('movie');
-    });
-    debugLog('[watchlists] loaded saved item', item.saved_title);
-    setShowWatchlistsModal(false);
-    scrollMainContentToTop();
-  }, [findItem, navigate, scrollMainContentToTop]);
 
-  useEffect(() => {
-    if (showWatchlistsModal) {
-      refresh();
-    }
-  }, [showWatchlistsModal, refresh]);
 
   useEffect(() => {
     if (!showNotificationsModal || !user?.id) return;
@@ -176,52 +139,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const startEditFolder = useCallback((folder: any) => {
-    setEditingFolderId(folder.id);
-    setEditFolderName(folder.name);
-    setEditFolderColor(folder.color || '#7c3aed');
-  }, []);
 
-  const saveFolderEdits = useCallback(() => {
-    if (!editingFolderId) return;
-    renameFolder(editingFolderId, editFolderName);
-    setFolderColor(editingFolderId, editFolderColor);
-    setEditingFolderId(null);
-  }, [editingFolderId, editFolderName, editFolderColor, renameFolder, setFolderColor]);
-
-  const handleDeleteFolder = useCallback((folderId: string, folderName: string, itemCount: number) => {
-    const hasItems = itemCount > 0;
-    const message = hasItems
-      ? `Delete folder "${folderName}" and its ${itemCount} saved item${itemCount > 1 ? 's' : ''}? This cannot be undone.`
-      : `Delete empty folder "${folderName}"?`;
-
-    if (!window.confirm(message)) return;
-
-    deleteFolder(folderId);
-    if (editingFolderId === folderId) {
-      setEditingFolderId(null);
-    }
-  }, [deleteFolder, editingFolderId]);
-
-  const handleDragStart = useCallback((e: React.DragEvent, folderId: string, itemId: string) => {
-    setDraggedItem({ folderId, itemId });
-    e.dataTransfer.effectAllowed = 'move';
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent, targetFolderId: string) => {
-    e.preventDefault();
-    if (!draggedItem || draggedItem.folderId === targetFolderId) {
-      setDraggedItem(null);
-      return;
-    }
-    moveItem(draggedItem.folderId, draggedItem.itemId, targetFolderId);
-    setDraggedItem(null);
-  }, [draggedItem, moveItem]);
 
   const openPersonById = useCallback(async (
     personId: number,
@@ -312,7 +230,6 @@ const App: React.FC = () => {
       setPersonData(null);
       setSources(null);
       setCurrentQuery('');
-      setShowWatchlistsModal(false);
     });
     scrollMainContentToTop();
   }, [navigate, scrollMainContentToTop]);
@@ -554,12 +471,7 @@ const App: React.FC = () => {
     await handleOpenTitle({ id: candidate.id, mediaType });
   }, [handleOpenTitle, openPersonById]);
 
-  const closeWatchlistsModal = useCallback(() => {
-    setShowWatchlistsModal(false);
-    if (location.pathname === '/watchlists') {
-      navigate('/');
-    }
-  }, [location.pathname, navigate]);
+
 
   useEffect(() => {
     const routeKey = `${location.pathname}${location.search}`;
@@ -571,14 +483,7 @@ const App: React.FC = () => {
     const route = parseAppRoute(location.pathname, location.search);
 
     if (route.kind === 'home') {
-      setShowWatchlistsModal(false);
       setCurrentView('discovery');
-      return;
-    }
-
-    if (route.kind === 'watchlists') {
-      setCurrentView('discovery');
-      setShowWatchlistsModal(true);
       return;
     }
 
@@ -765,172 +670,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Watchlists Modal */}
-      {showWatchlistsModal && (
-        <div
-          className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={closeWatchlistsModal}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full max-w-3xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 sm:p-5 space-y-4 modal-mobile-slide max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between flex-shrink-0">
-              <h3 className="text-lg sm:text-xl font-bold text-white">Your Watchlists</h3>
-              <button onClick={closeWatchlistsModal} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close watchlists">
-                <XMarkIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            {watchlists.length === 0 && (
-              <p className="text-brand-text-dark text-sm">No watchlists yet. Save a title with "Save to List" to get started.</p>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1 pr-1 overscroll-contain content-visibility-auto">
-              {watchlists.map(folder => (
-                <div
-                  key={folder.id}
-                  className="p-3 rounded-xl border border-white/10 bg-white/5 space-y-2 min-h-[300px]"
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, folder.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
-                    <p className="text-white font-semibold text-sm">{folder.name}</p>
-                    <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
-                    <div className="ml-2 flex items-center gap-1.5">
-                      <button
-                        onClick={() => startEditFolder(folder)}
-                        className="text-xs text-brand-text-dark hover:text-white px-2 py-1 rounded-lg hover:bg-white/10 inline-flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu touch-target"
-                        aria-label={`Edit folder ${folder.name}`}
-                        title="Edit folder"
-                      >
-                        <EditIcon className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFolder(folder.id, folder.name, folder.items.length)}
-                        className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-red-500/10 inline-flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu touch-target"
-                        aria-label={`Delete folder ${folder.name}`}
-                        title="Delete folder"
-                      >
-                        <TrashIcon className="w-3.5 h-3.5" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {editingFolderId === folder.id && (
-                    <div className="space-y-2 p-2 rounded-lg border border-white/10 bg-white/5">
-                      <label className="text-xs text-brand-text-light">Folder name</label>
-                      <input
-                        value={editFolderName}
-                        onChange={(e) => setEditFolderName(e.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                      />
-                      <div className="flex items-center gap-2">
-                        {WATCHLIST_COLORS.map(color => (
-                          <button
-                            key={color}
-                            type="button"
-                            onClick={() => setEditFolderColor(color)}
-                            className={`w-6 h-6 rounded-full border ${editFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
-                            style={{ backgroundColor: color }}
-                            aria-label={`Choose ${color}`}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => setEditingFolderId(null)} className="px-3 py-1.5 rounded-lg border border-white/15 text-white text-xs hover:bg-white/10 transition-[background-color,border-color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu">Cancel</button>
-                        <button onClick={saveFolderEdits} className="px-3 py-1.5 rounded-lg bg-brand-primary text-white text-xs font-semibold hover:bg-brand-secondary transition-[background-color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu">Save</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {folder.items.length === 0 ? (
-                    <p className="text-xs text-brand-text-dark">Empty folder. Drag items here.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {folder.items.length > 10 ? (
-                        <VirtualizedList
-                          items={folder.items}
-                          itemHeight={90}
-                          height={Math.min(420, folder.items.length * 90)}
-                          renderItem={(item) => (
-                            <div className="px-0.5 py-0.5">
-                              <div
-                                key={item.id}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
-                                className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transform-gpu transition-[background-color,border-color,transform,opacity] duration-150 ease-out ${draggedItem?.itemId === item.id
-                                  ? 'opacity-50 border-brand-primary bg-brand-primary/10'
-                                  : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5 hover:-translate-y-px'
-                                  }`}
-                              >
-                                <button
-                                  onClick={() => handleLoadSavedItem(folder.id, item.id)}
-                                  className="flex-1 text-left"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-semibold text-white">{item.saved_title}</span>
-                                    <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0, 3).join(', ')}</span>
-                                  </div>
-                                </button>
-                                <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
-                                <button
-                                  onClick={() => deleteItem(folder.id, item.id)}
-                                  className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu"
-                                  aria-label="Delete item"
-                                  title="Delete from watchlist"
-                                >
-                                  <TrashIcon className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        />
-                      ) : (
-                        folder.items.map(item => (
-                          <div
-                            key={item.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, folder.id, item.id)}
-                            className={`w-full flex items-start justify-between gap-2 p-2 rounded-lg border cursor-move transform-gpu transition-[background-color,border-color,transform,opacity] duration-150 ease-out ${draggedItem?.itemId === item.id
-                              ? 'opacity-50 border-brand-primary bg-brand-primary/10'
-                              : 'border-white/10 hover:border-brand-primary/50 hover:bg-white/5 hover:-translate-y-px'
-                              }`}
-                          >
-                            <button
-                              onClick={() => handleLoadSavedItem(folder.id, item.id)}
-                              className="flex-1 text-left"
-                            >
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-white">{item.saved_title}</span>
-                                <span className="text-xs text-brand-text-dark">{item.movie.year} • {item.movie.genres?.slice(0, 3).join(', ')}</span>
-                              </div>
-                            </button>
-                            <span className="text-[10px] text-brand-text-dark whitespace-nowrap">Added {new Date(item.added_at).toLocaleDateString()}</span>
-                            <button
-                              onClick={() => deleteItem(folder.id, item.id)}
-                              className="ml-2 text-xs text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-500/10 inline-flex items-center justify-center transition-[background-color,color,transform] duration-150 ease-out hover:-translate-y-px transform-gpu"
-                              aria-label="Delete item"
-                              title="Delete from watchlist"
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {shortlistCandidates && shortlistCandidates.length > 0 && (
         <AmbiguousModal
