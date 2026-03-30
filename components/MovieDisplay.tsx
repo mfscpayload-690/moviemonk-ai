@@ -654,78 +654,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     <Section title="AI Notes & Trivia">
                         <div className="ai-notes-rich" dangerouslySetInnerHTML={{ __html: formatAiNotesHtml(movie.ai_notes) }} />
                     </Section>
-
-                    {/* ── User Reviews ────────────────────────────── */}
-                    {(reviewsLoading || reviews.length > 0) && (
-                        <Section title="User Reviews">
-                            {reviewsLoading ? (
-                                <div className="space-y-4">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="animate-pulse flex gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-white/10 flex-shrink-0" />
-                                            <div className="flex-1 space-y-2">
-                                                <div className="h-3 bg-white/10 rounded w-1/4" />
-                                                <div className="h-2.5 bg-white/8 rounded w-full" />
-                                                <div className="h-2.5 bg-white/8 rounded w-5/6" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="space-y-5">
-                                    {reviews.map(rev => {
-                                        const isExp = expandedReview === rev.id;
-                                        const LIMIT = 340;
-                                        const isLong = rev.content.length > LIMIT;
-                                        const text = isExp || !isLong ? rev.content : rev.content.slice(0, LIMIT).trimEnd() + '…';
-                                        const date = rev.created_at
-                                            ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                                            : null;
-                                        return (
-                                            <div key={rev.id} className="border border-white/6 rounded-xl p-4 bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
-                                                <div className="flex items-center gap-3 mb-3">
-                                                    <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-violet-600/50 to-pink-600/50 flex items-center justify-center border border-white/10">
-                                                        {rev.avatar_url ? (
-                                                            <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
-                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                            />
-                                                        ) : (
-                                                            <span className="text-xs font-bold text-white/70">{rev.author[0]?.toUpperCase() || '?'}</span>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="font-semibold text-sm text-white truncate">{rev.author}</span>
-                                                            {rev.rating !== null && (
-                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[11px] font-bold">
-                                                                    ⭐ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}/10
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {date && <p className="text-[11px] text-brand-text-dark mt-0.5">{date} · via TMDB</p>}
-                                                    </div>
-                                                    {rev.url && (
-                                                        <a href={rev.url} target="_blank" rel="noopener noreferrer"
-                                                            className="flex-shrink-0 text-[13px] text-brand-text-dark hover:text-brand-primary transition-colors"
-                                                            title="Read full review on TMDB" aria-label="Open full review on TMDB"
-                                                        >↗</a>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm text-brand-text-light leading-relaxed whitespace-pre-line">{text}</p>
-                                                {isLong && (
-                                                    <button onClick={() => setExpandedRev(isExp ? null : rev.id)}
-                                                        className="mt-2 text-[12px] text-brand-primary hover:text-brand-secondary font-semibold transition-colors">
-                                                        {isExp ? 'Show less ↑' : 'Read full review ↓'}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                    <p className="text-[11px] text-brand-text-dark text-center pt-1">Reviews sourced from The Movie Database (TMDB)</p>
-                                </div>
-                            )}
-                        </Section>
-                    )}
                 </div>
 
                 <div className="lg:col-span-1 space-y-8">
@@ -789,6 +717,95 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     )}
                 </div>
             </div>
+
+            {/* ── User Reviews — full-width below the grid ────────────────── */}
+            {(reviewsLoading || reviews.length > 0) && (
+                <div className="mt-8">
+                    {/* Section header */}
+                    <div className="flex items-center gap-3 mb-6">
+                        <svg className="w-5 h-5 text-brand-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z"/></svg>
+                        <h2 className="text-lg font-bold text-white">User Reviews</h2>
+                        {!reviewsLoading && reviews.length > 0 && (
+                            <span className="text-xs text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/8">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
+                        )}
+                    </div>
+
+                    {reviewsLoading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="animate-pulse border border-white/6 rounded-xl p-4 bg-white/[0.03]">
+                                    <div className="flex gap-3 mb-3">
+                                        <div className="w-9 h-9 rounded-full bg-white/10 flex-shrink-0" />
+                                        <div className="flex-1 space-y-2 pt-1">
+                                            <div className="h-3 bg-white/10 rounded w-1/3" />
+                                            <div className="h-2.5 bg-white/8 rounded w-1/4" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="h-2.5 bg-white/8 rounded w-full" />
+                                        <div className="h-2.5 bg-white/8 rounded w-5/6" />
+                                        <div className="h-2.5 bg-white/8 rounded w-4/6" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {reviews.map(rev => {
+                                const isExp = expandedReview === rev.id;
+                                const LIMIT = 280;
+                                const isLong = rev.content.length > LIMIT;
+                                const text = isExp || !isLong ? rev.content : rev.content.slice(0, LIMIT).trimEnd() + '…';
+                                const date = rev.created_at
+                                    ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                    : null;
+                                return (
+                                    <div key={rev.id} className="flex flex-col border border-white/6 rounded-xl p-4 bg-white/[0.03] hover:bg-white/[0.05] hover:border-white/10 transition-all duration-200">
+                                        {/* Author row */}
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-violet-600/50 to-pink-600/50 flex items-center justify-center border border-white/10">
+                                                {rev.avatar_url ? (
+                                                    <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                    />
+                                                ) : (
+                                                    <span className="text-xs font-bold text-white/70">{rev.author[0]?.toUpperCase() || '?'}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-sm text-white truncate">{rev.author}</p>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {rev.rating !== null && (
+                                                        <span className="inline-flex items-center gap-0.5 text-amber-400 text-[11px] font-bold">
+                                                            ⭐ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}/10
+                                                        </span>
+                                                    )}
+                                                    {date && <span className="text-[10px] text-brand-text-dark">· {date}</span>}
+                                                </div>
+                                            </div>
+                                            {rev.url && (
+                                                <a href={rev.url} target="_blank" rel="noopener noreferrer"
+                                                    className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-[11px] text-brand-text-dark hover:text-brand-primary hover:bg-white/10 transition-all"
+                                                    title="Full review on TMDB" aria-label="Open full review on TMDB"
+                                                >↗</a>
+                                            )}
+                                        </div>
+                                        {/* Review text */}
+                                        <p className="text-sm text-brand-text-light leading-relaxed whitespace-pre-line flex-1">{text}</p>
+                                        {isLong && (
+                                            <button onClick={() => setExpandedRev(isExp ? null : rev.id)}
+                                                className="mt-2 text-[11px] text-brand-primary hover:text-brand-secondary font-semibold transition-colors self-start">
+                                                {isExp ? 'Show less ↑' : 'Read more ↓'}
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                    <p className="text-[11px] text-brand-text-dark text-center mt-4">Reviews sourced from The Movie Database (TMDB)</p>
+                </div>
+            )}
 
             {showWatchlistModal && modalRoot && ReactDOM.createPortal(
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
