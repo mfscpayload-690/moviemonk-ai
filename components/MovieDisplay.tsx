@@ -749,7 +749,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
             {/* ── User Reviews — full-width below the grid ────────────────── */}
             {(reviewsLoading || reviews.length > 0) && (
-                <div className="mt-10 pt-6 border-t border-white/6">
+                <div className="mt-10 pt-6 pb-8 border-t border-white/6 px-4 md:px-8">
 
                     {/* Section header */}
                     <div className="flex items-center justify-between mb-6">
