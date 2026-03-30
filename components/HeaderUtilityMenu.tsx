@@ -17,7 +17,7 @@ export interface HeaderUtilityMenuProps {
 }
 
 export interface HeaderUtilityMenuItem {
-  key: 'watchlists' | 'notifications' | 'settings' | 'share';
+  key: 'watchlists' | 'notifications' | 'settings';
   label: string;
   description: string;
   disabled?: boolean;
@@ -63,13 +63,6 @@ export function buildHeaderUtilityMenuItems({
     );
   }
 
-  items.push({
-    key: 'share',
-    label: 'Share',
-    description: canShare ? 'Copy a shareable link' : 'Open a result to share it',
-    disabled: !canShare
-  });
-
   return items;
 }
 
@@ -86,8 +79,6 @@ function renderMenuIcon(key: HeaderUtilityMenuItem['key']) {
       return <BellIcon className="w-4 h-4" />;
     case 'settings':
       return <SettingsIcon className="w-4 h-4" />;
-    case 'share':
-      return <ShareIcon className="w-4 h-4" />;
     default:
       return null;
   }
@@ -163,8 +154,7 @@ export default function HeaderUtilityMenu({
   const actionMap: Record<HeaderUtilityMenuItem['key'], () => void> = {
     watchlists: onOpenWatchlists,
     notifications: onOpenNotifications,
-    settings: onOpenSettings,
-    share: onShare
+    settings: onOpenSettings
   };
 
   const closeMenu = () => setOpen(false);
@@ -188,7 +178,22 @@ export default function HeaderUtilityMenu({
 
   return (
     <>
-      <div className="header-utility-menu" ref={containerRef}>
+      <div className="header-utility-menu flex items-center gap-1" ref={containerRef}>
+        {/* Standalone Share button — always visible in header */}
+        <button
+          type="button"
+          className={`auth-btn auth-btn-avatar header-more-btn ${
+            canShare ? 'text-white hover:text-brand-primary' : 'opacity-40 cursor-not-allowed'
+          }`}
+          onClick={canShare ? () => { onShare(); } : undefined}
+          aria-label="Share current page"
+          title={canShare ? 'Copy shareable link' : 'Open a result to share'}
+          disabled={!canShare}
+        >
+          <ShareIcon className="w-[18px] h-[18px]" />
+        </button>
+
+        {/* More (...) button */}
         <button
           type="button"
           className="auth-btn auth-btn-avatar header-more-btn"

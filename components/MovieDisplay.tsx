@@ -284,9 +284,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const castListHeight = Math.min(520, Math.max(260, safeCast.length * 120));
     const renderCastItem = useCallback((member: CastMember) => (
         <div className="px-1 py-1">
-            <CastCard key={member.name} member={member} />
+            <CastCard key={member.name} member={member} onClick={() => onQuickSearch(member.name)} />
         </div>
-    ), []);
+    ), [onQuickSearch]);
 
 
     useEffect(() => {
@@ -589,7 +589,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {displayedCast.map(member => <CastCard key={member.name} member={member} />)}
+                                {displayedCast.map(member => <CastCard key={member.name} member={member} onClick={() => onQuickSearch(member.name)} />)}
                             </div>
                         )}
                         {safeCast.length > 8 && (
@@ -602,11 +602,33 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 </button>
                             </div>
                         )}
-                        <div className="mt-6 text-sm text-brand-text-dark grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                            <p><span className="font-semibold text-brand-text-light">Director:</span> {movie.crew?.director || 'Unknown'}</p>
-                            <p><span className="font-semibold text-brand-text-light">Writer:</span> {movie.crew?.writer || 'Unknown'}</p>
-                            <p><span className="font-semibold text-brand-text-light">Music:</span> {movie.crew?.music || 'Unknown'}</p>
-                        </div>
+                        {/* Crew Cards */}
+                        {(movie.crew?.director || movie.crew?.writer || movie.crew?.music) && (() => {
+                            const crewEntries: { names: string[]; role: string }[] = [
+                                { names: (movie.crew?.director || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Director' },
+                                { names: (movie.crew?.writer || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Writer' },
+                                { names: (movie.crew?.music || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Composer' },
+                            ].filter(e => e.names.length > 0 && e.names[0] !== 'Unknown');
+
+                            if (crewEntries.length === 0) return null;
+                            return (
+                                <div className="mt-6">
+                                    <p className="text-xs font-semibold text-brand-text-dark uppercase tracking-widest mb-3">Behind the Camera</p>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                        {crewEntries.flatMap(({ names, role }) =>
+                                            names.map(name => (
+                                                <CrewCard
+                                                    key={`${role}-${name}`}
+                                                    name={name}
+                                                    role={role}
+                                                    onClick={() => onQuickSearch(name)}
+                                                />
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </Section>
 
                     <Section title="AI Notes & Trivia">
@@ -951,8 +973,13 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
     </div>
 );
 
-const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
-    <div className="bg-white/5 p-3 md:p-4 rounded-xl text-center transform-gpu will-change-transform hover:-translate-y-1 transition-all duration-200 ease-out border border-transparent hover:border-brand-primary/40 hover:bg-white/8 group">
+const CastCard: React.FC<{ member: CastMember; onClick?: () => void }> = ({ member, onClick }) => (
+    <button
+        className="bg-white/5 p-3 md:p-4 rounded-xl text-center transform-gpu will-change-transform hover:-translate-y-1 transition-all duration-200 ease-out border border-transparent hover:border-brand-primary/40 hover:bg-white/8 group w-full relative"
+        onClick={onClick}
+        type="button"
+        aria-label={`View profile of ${member.name}`}
+    >
         <div className="mx-auto w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-brand-primary/50 transition-colors mb-3 bg-gradient-to-br from-violet-600/30 to-pink-600/30 flex items-center justify-center flex-shrink-0">
             {member.profile_url ? (
                 <img
@@ -967,7 +994,37 @@ const CastCard: React.FC<{ member: CastMember }> = ({ member }) => (
         </div>
         <p className="font-bold text-xs md:text-sm text-white truncate" title={member.name}>{member.name}</p>
         <p className="text-[11px] md:text-xs text-brand-primary truncate mt-0.5" title={member.role}>{member.role}</p>
-    </div>
+        {/* Hover overlay hint */}
+        <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            <span className="absolute inset-0 bg-black/40 rounded-xl" />
+            <span className="relative z-10 text-[11px] font-semibold text-white/90 flex items-center gap-1">
+                View Profile
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </span>
+        </span>
+    </button>
+);
+
+const CrewCard: React.FC<{ name: string; role: string; onClick: () => void }> = ({ name, role, onClick }) => (
+    <button
+        className="bg-white/5 p-3 rounded-xl text-center transform-gpu will-change-transform hover:-translate-y-1 transition-all duration-200 ease-out border border-transparent hover:border-brand-primary/40 hover:bg-white/8 group w-full relative"
+        onClick={onClick}
+        type="button"
+        aria-label={`View profile of ${name}`}
+    >
+        <div className="mx-auto w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 group-hover:border-brand-primary/50 transition-colors mb-2 bg-gradient-to-br from-fuchsia-700/40 to-indigo-700/40 flex items-center justify-center flex-shrink-0">
+            <span className="text-lg font-bold text-white/70">{name?.[0]?.toUpperCase() || '?'}</span>
+        </div>
+        <p className="font-bold text-xs text-white truncate" title={name}>{name}</p>
+        <p className="text-[10px] text-brand-text-dark uppercase tracking-wider mt-0.5">{role}</p>
+        <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            <span className="absolute inset-0 bg-black/40 rounded-xl" />
+            <span className="relative z-10 text-[10px] font-semibold text-white/90 flex items-center gap-1">
+                View Profile
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </span>
+        </span>
+    </button>
 );
 
 const watchTypeIcons: Record<WatchOption['type'], React.FC<{ className?: string }>> = {
