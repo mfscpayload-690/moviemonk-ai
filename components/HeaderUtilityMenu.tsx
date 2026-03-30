@@ -39,7 +39,7 @@ export function buildHeaderUtilityMenuItems({
   const items: HeaderUtilityMenuItem[] = [
     {
       key: 'watchlists',
-      label: 'Cloud Lists',
+      label: user ? 'Cloud Lists' : 'Watchlist',
       description: isSyncing
         ? 'Syncing across your devices'
         : isCloud

@@ -42,7 +42,7 @@ describe('HeaderUtilityMenu', () => {
       canShare: false
     });
 
-    expect(items.map((item) => item.label)).toEqual(['Cloud Lists', 'Share']);
+    expect(items.map((item) => item.label)).toEqual(['Watchlist', 'Share']);
     expect(items[0].description).toContain('Saved on this device');
     expect(items[1].disabled).toBe(true);
   });
