@@ -923,15 +923,21 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             )}
 
             {showRelatedModal && modalRoot && ReactDOM.createPortal(
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" onClick={() => setShowRelatedModal(false)}>
-                    <div className="w-full max-w-5xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-6" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg md:text-xl font-bold text-white">Similar Titles</h3>
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" onClick={() => setShowRelatedModal(false)}>
+                    <div className="w-full sm:max-w-5xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col" style={{ maxHeight: 'min(92dvh, 820px)' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/8 flex-shrink-0">
+                            <div>
+                                <h3 className="text-lg md:text-xl font-bold text-white">Similar Titles</h3>
+                                {Array.isArray((movie as any).related) && (
+                                    <p className="text-xs text-brand-text-dark mt-0.5">{(movie as any).related.length} titles</p>
+                                )}
+                            </div>
                             <button onClick={() => setShowRelatedModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close similar titles modal">
                                 <XMarkIcon className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <div className="overflow-y-auto overscroll-contain flex-1 p-4 sm:p-6">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
                             {Array.isArray((movie as any).related) && (movie as any).related.length > 0 ? (
                                 (movie as any).related.map((it: any, idx: number) => (
                                     <button
@@ -940,20 +946,21 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                         onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title, context: 'modal' }); onQuickSearch(it.title); setShowRelatedModal(false); }}
                                         aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
                                     >
-                                        <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                                        <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5 group-hover:border-brand-primary/50 transition-colors">
                                             {it.poster_url ? (
-                                                <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover" loading="lazy" />
+                                                <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover transform transition-transform duration-200 group-hover:scale-[1.04]" loading="lazy" />
                                             ) : (
-                                                <div className="w-full h-full bg-white/10" />
+                                                <div className="w-full h-full bg-white/10 flex items-center justify-center p-2 text-center text-brand-text-dark text-[10px]">{it.title}</div>
                                             )}
                                         </div>
-                                        <p className="mt-2 text-xs font-semibold text-white line-clamp-2">{it.title}</p>
-                                        {it.year && <p className="text-[11px] text-brand-text-dark">{it.year}</p>}
+                                        <p className="mt-1.5 text-xs font-semibold text-white line-clamp-2 group-hover:text-brand-primary transition-colors">{it.title}</p>
+                                        {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
                                     </button>
                                 ))
                             ) : (
-                                <p className="text-brand-text-dark">No similar titles found.</p>
+                                <p className="text-brand-text-dark col-span-full">No similar titles found.</p>
                             )}
+                            </div>
                         </div>
                     </div>
                 </div>,
