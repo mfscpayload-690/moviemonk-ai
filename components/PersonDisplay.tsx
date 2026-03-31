@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { track } from '@vercel/analytics/react';
-import { SparklesIcon } from './icons';
 import { useRenderCounter } from '../lib/perfDebug';
 import { PersonCredit, PersonRoleBucket } from '../types';
 import { buildPersonCardPresentation } from '../services/personPresentation';
@@ -125,7 +124,6 @@ const PersonDisplay: React.FC<{
 }> = ({ data, isLoading, onQuickSearch, onBriefMe, onOpenTitle }) => {
   const [bioExpanded, setBioExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<PersonRoleBucket>('all');
-  const [showMobileActions, setShowMobileActions] = useState(false);
   useRenderCounter('PersonDisplay');
 
   if (!data) return null;
@@ -146,11 +144,6 @@ const PersonDisplay: React.FC<{
     [allCredits]
   );
 
-  const canShowBestMovies = Boolean(onQuickSearch);
-  const canShowMoviesBy = Boolean(onQuickSearch);
-  const canShowBriefMe = Boolean(onBriefMe);
-  const hasSecondaryActions = canShowMoviesBy || canShowBriefMe;
-
   const handleOpenCredit = (credit: PersonCredit) => {
     const openPayload = toOpenTitlePayload(credit);
     if (!openPayload) return;
@@ -163,23 +156,6 @@ const PersonDisplay: React.FC<{
     }
   };
 
-  const handleBestMovies = () => {
-    if (!onQuickSearch) return;
-    onQuickSearch(`${person.name} best movies`);
-  };
-
-  const handleMoviesBy = () => {
-    if (!onQuickSearch) return;
-    setShowMobileActions(false);
-    onQuickSearch(`Movies by ${person.name}`);
-  };
-
-  const handleBriefMe = () => {
-    if (!onBriefMe) return;
-    setShowMobileActions(false);
-    track('brief_me_clicked', { person_name: person.name });
-    onBriefMe(person.name);
-  };
 
   const metadataParts = [
     person.birthday ? person.birthday : null,
@@ -218,54 +194,6 @@ const PersonDisplay: React.FC<{
                 ))}
               </div>
             )}
-            <div className="person-editorial-actions">
-              {canShowBestMovies && (
-                <button type="button" className="person-editorial-primary-btn" onClick={handleBestMovies}>
-                  Best Movies
-                </button>
-              )}
-              {hasSecondaryActions && (
-                <>
-                  <div className="person-editorial-secondary-desktop">
-                    {canShowMoviesBy && (
-                      <button type="button" className="person-editorial-secondary-btn" onClick={handleMoviesBy}>
-                        Movies by {person.name}
-                      </button>
-                    )}
-                    {canShowBriefMe && (
-                      <button type="button" className="person-editorial-secondary-btn" onClick={handleBriefMe}>
-                        <SparklesIcon className="w-4 h-4" />
-                        Brief Me
-                      </button>
-                    )}
-                  </div>
-                  <div className="person-editorial-secondary-mobile">
-                    <button
-                      type="button"
-                      className="person-editorial-more-btn"
-                      onClick={() => setShowMobileActions((value) => !value)}
-                    >
-                      More
-                    </button>
-                    {showMobileActions && (
-                      <div className="person-editorial-more-sheet">
-                        {canShowMoviesBy && (
-                          <button type="button" onClick={handleMoviesBy}>
-                            Movies by {person.name}
-                          </button>
-                        )}
-                        {canShowBriefMe && (
-                          <button type="button" onClick={handleBriefMe}>
-                            <SparklesIcon className="w-4 h-4" />
-                            Brief Me
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
       </section>
