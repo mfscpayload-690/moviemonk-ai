@@ -14,9 +14,11 @@ import { DiscoveryItem } from '../types';
 
 interface DiscoveryPageProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
+  isWatched?: (id: number, mediaType: 'movie' | 'tv') => boolean;
+  onToggleWatched?: (item: DiscoveryItem) => void;
 }
 
-const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
+const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, onToggleWatched }) => {
   const {
     heroItems,
     sections,
@@ -55,7 +57,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
 
   return (
     <div className="discovery-page animate-fade-in">
-      <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} />
+      <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} isWatched={isWatched} onToggleWatched={onToggleWatched} />
 
       {error && (
         <section className="discovery-error" role="alert">
@@ -82,6 +84,8 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
           onCardView={handleCardView}
           onCardOpen={handleCardOpen}
           onOpenTitle={onOpenTitle}
+          isWatched={isWatched}
+          onToggleWatched={onToggleWatched}
         />
       ))}
 
@@ -119,6 +123,8 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle }) => {
           onCardView={handleCardView}
           onCardOpen={handleCardOpen}
           onOpenTitle={onOpenTitle}
+          isWatched={isWatched}
+          onToggleWatched={onToggleWatched}
         />
       </section>
     </div>

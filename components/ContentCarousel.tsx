@@ -14,6 +14,8 @@ interface ContentCarouselProps {
   onCardView?: (item: DiscoveryItem, sectionKey: string, position: number) => void;
   onCardOpen?: (item: DiscoveryItem, sectionKey: string, position: number) => void;
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
+  isWatched?: (id: number, mediaType: 'movie' | 'tv') => boolean;
+  onToggleWatched?: (item: DiscoveryItem) => void;
 }
 
 const ContentCarousel: React.FC<ContentCarouselProps> = ({
@@ -25,7 +27,9 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
   onSectionSkipped,
   onCardView,
   onCardOpen,
-  onOpenTitle
+  onOpenTitle,
+  isWatched,
+  onToggleWatched
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -139,6 +143,8 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
                 onView={onCardView}
                 onOpen={onCardOpen}
                 onOpenTitle={onOpenTitle}
+                isWatched={isWatched?.(item.id, item.media_type)}
+                onToggleWatched={onToggleWatched}
               />
             ))}
       </div>

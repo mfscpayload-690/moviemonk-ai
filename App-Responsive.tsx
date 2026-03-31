@@ -575,7 +575,17 @@ const App: React.FC = () => {
         <div className="main-content pb-4 sm:pb-6">
           {currentView === 'discovery' ? (
             <>
-              <DiscoveryPage onOpenTitle={(item) => handleOpenTitle(item)} />
+              <DiscoveryPage
+                onOpenTitle={(item) => handleOpenTitle(item)}
+                isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+                onToggleWatched={(item) => toggleWatched({
+                  tmdb_id: String(item.id),
+                  media_type: item.media_type,
+                  title: item.title,
+                  poster_url: item.poster_url ?? null,
+                  year: item.year ?? null,
+                })}
+              />
             </>
           ) : currentView === 'person' && personData ? (
             <PersonDisplay

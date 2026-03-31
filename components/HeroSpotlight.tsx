@@ -7,13 +7,15 @@ interface HeroSpotlightProps {
   items: DiscoveryItem[];
   isLoading?: boolean;
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
+  isWatched?: (id: number, mediaType: 'movie' | 'tv') => boolean;
+  onToggleWatched?: (item: DiscoveryItem) => void;
 }
 
 const formatRating = (rating: number | null) => (
   typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : 'N/A'
 );
 
-const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle }) => {
+const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle, isWatched, onToggleWatched }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAutoPaused, setIsAutoPaused] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -148,14 +150,27 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                   >
                     Learn More
                   </button>
-                  <button
-                    type="button"
-                    className="discovery-cta discovery-cta-secondary"
-                    tabIndex={isActive ? 0 : -1}
-                    onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
-                  >
-                    Add to Watchlist
-                  </button>
+                  {onToggleWatched && (() => {
+                    const watched = isWatched?.(item.id, item.media_type) ?? false;
+                    return (
+                      <button
+                        type="button"
+                        tabIndex={isActive ? 0 : -1}
+                        onClick={() => onToggleWatched(item)}
+                        className={`discovery-cta flex items-center gap-2 transition-all duration-200 ${
+                          watched
+                            ? 'bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30'
+                            : 'discovery-cta-secondary'
+                        }`}
+                        aria-label={watched ? 'Mark as unwatched' : 'Mark as watched'}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {watched ? 'Watched' : 'Mark as Watched'}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
