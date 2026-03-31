@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
@@ -201,6 +201,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const heroPosterSrc = movie?.poster_url || movie?.backdrop_url || movie?.extra_images?.[0] || '';
     const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
     const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
+
+    const isSaved = useMemo(() => {
+        if (!movie || !watchlists) return false;
+        const currentId = movie.tmdb_id;
+        const currentTitle = movie.title?.toLowerCase();
+
+        return watchlists.some(folder =>
+            folder.items.some(item =>
+                (currentId && item.movie.tmdb_id === currentId) ||
+                (currentTitle && item.movie.title?.toLowerCase() === currentTitle)
+            )
+        );
+    }, [movie, watchlists]);
 
     // Check if synopsis is long enough to need truncation
     const synopsisNeedsTruncation = movie?.summary_medium && movie.summary_medium.length > 300;
@@ -493,10 +506,15 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     </button>
                                     <button
                                         onClick={() => setShowWatchlistModal(true)}
-                                        className="inline-flex items-center gap-2 px-5 py-3 bg-white/15 text-white font-semibold text-sm md:text-base rounded-xl border border-white/15 hover:border-brand-primary/50 hover:bg-white/20 transition-all duration-200 touch-target btn-mobile-friendly"
+                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-200 touch-target btn-mobile-friendly ${
+                                            isSaved
+                                                ? 'bg-violet-500/20 border-violet-500/50 text-violet-400 hover:bg-violet-500/30'
+                                                : 'bg-white/15 text-white border-white/15 hover:border-brand-primary/50 hover:bg-white/20'
+                                        }`}
+                                        aria-label={isSaved ? 'Manage Watchlist' : 'Save to Watchlist'}
                                     >
                                         <TagIcon className="w-5 h-5" />
-                                        <span>Save to List</span>
+                                        <span>{isSaved ? 'Saved to List ✓' : 'Save to List'}</span>
                                     </button>
                                     {embedUrl && (
                                         <button

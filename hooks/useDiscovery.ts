@@ -294,10 +294,7 @@ function preferencesEqual(a: UserPreferenceSettings, b: UserPreferenceSettings):
     a.contentMix === b.contentMix &&
     a.familySafe === b.familySafe &&
     a.autoplayTrailers === b.autoplayTrailers &&
-    a.cardDensity === b.cardDensity &&
-    a.notificationsEnabled === b.notificationsEnabled &&
-    arraysEqual(a.notificationChannels, b.notificationChannels) &&
-    a.notificationFrequency === b.notificationFrequency
+    a.cardDensity === b.cardDensity
   );
 }
 
