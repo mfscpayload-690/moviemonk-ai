@@ -17,9 +17,6 @@ export type UserPreferenceSettings = {
   familySafe: boolean;
   autoplayTrailers: boolean;
   cardDensity: 'compact' | 'rich';
-  notificationsEnabled: boolean;
-  notificationChannels: Array<'in_app' | 'email' | 'push'>;
-  notificationFrequency: 'off' | 'daily' | 'weekly';
 };
 
 export const DEFAULT_PROFILE_SETTINGS: UserProfileSettings = {
@@ -38,10 +35,7 @@ export const DEFAULT_PREFERENCE_SETTINGS: UserPreferenceSettings = {
   contentMix: 'balanced',
   familySafe: true,
   autoplayTrailers: false,
-  cardDensity: 'rich',
-  notificationsEnabled: false,
-  notificationChannels: ['in_app'],
-  notificationFrequency: 'off'
+  cardDensity: 'rich'
 };
 
 const PROFILE_STORAGE_KEY = 'moviemonk_profile_settings_v1';

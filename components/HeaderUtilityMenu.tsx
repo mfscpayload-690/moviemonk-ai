@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { User } from '@supabase/supabase-js';
 import { useLocation } from 'react-router-dom';
-import { BellIcon, FolderIcon, MoreIcon, SettingsIcon, ShareIcon, XMarkIcon } from './icons';
+import { FolderIcon, MoreIcon, SettingsIcon, ShareIcon, XMarkIcon } from './icons';
 
 export interface HeaderUtilityMenuProps {
   user: User | null;
@@ -10,14 +10,13 @@ export interface HeaderUtilityMenuProps {
   isSyncing: boolean;
   canShare: boolean;
   onOpenWatchlists: () => void;
-  onOpenNotifications: () => void;
   onOpenSettings: () => void;
   onShare: () => void;
   defaultOpen?: boolean;
 }
 
 export interface HeaderUtilityMenuItem {
-  key: 'watchlists' | 'notifications' | 'settings';
+  key: 'watchlists' | 'settings';
   label: string;
   description: string;
   disabled?: boolean;
@@ -49,18 +48,11 @@ export function buildHeaderUtilityMenuItems({
   ];
 
   if (user) {
-    items.push(
-      {
-        key: 'notifications',
-        label: 'Notifications',
-        description: 'Recent in-app updates'
-      },
-      {
-        key: 'settings',
-        label: 'Settings',
-        description: 'Profile and preference controls'
-      }
-    );
+    items.push({
+      key: 'settings',
+      label: 'Settings',
+      description: 'Profile and preference controls'
+    });
   }
 
   return items;
@@ -75,8 +67,6 @@ function renderMenuIcon(key: HeaderUtilityMenuItem['key']) {
   switch (key) {
     case 'watchlists':
       return <FolderIcon className="w-4 h-4" />;
-    case 'notifications':
-      return <BellIcon className="w-4 h-4" />;
     case 'settings':
       return <SettingsIcon className="w-4 h-4" />;
     default:
@@ -90,7 +80,6 @@ export default function HeaderUtilityMenu({
   isSyncing,
   canShare,
   onOpenWatchlists,
-  onOpenNotifications,
   onOpenSettings,
   onShare,
   defaultOpen = false
@@ -153,7 +142,6 @@ export default function HeaderUtilityMenu({
 
   const actionMap: Record<HeaderUtilityMenuItem['key'], () => void> = {
     watchlists: onOpenWatchlists,
-    notifications: onOpenNotifications,
     settings: onOpenSettings
   };
 

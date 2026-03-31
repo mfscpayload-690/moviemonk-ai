@@ -25,10 +25,9 @@ describe('HeaderUtilityMenu', () => {
       canShare: true
     });
 
-    // Share has moved to a standalone header button — only 3 items in dropdown
+    // Share has moved to a standalone header button — only 2 items in dropdown
     expect(items.map((item) => item.label)).toEqual([
       'Cloud Lists',
-      'Notifications',
       'Settings'
     ]);
     // Share is no longer a dropdown item
@@ -59,7 +58,6 @@ describe('HeaderUtilityMenu', () => {
           isSyncing: true,
           canShare: false,
           onOpenWatchlists: () => undefined,
-          onOpenNotifications: () => undefined,
           onOpenSettings: () => undefined,
           onShare: () => undefined,
           defaultOpen: true
@@ -68,7 +66,6 @@ describe('HeaderUtilityMenu', () => {
     );
 
     expect(html).toContain('Cloud Lists');
-    expect(html).toContain('Notifications');
     expect(html).toContain('Settings');
     // Share is now a standalone button - its title attribute contains this text
     expect(html).toContain('Open a result to share');

@@ -3,11 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { CheckIcon, InfoIcon, StarIcon, BellIcon, ChevronRightIcon, ShieldIcon, TrashIcon, ClockIcon, GlobeIcon } from '../components/icons';
 import logoUrl from '../asset/android-chrome-192x192.png';
-import {
-  disablePushNotifications,
-  enablePushNotifications,
-  hasPushSubscription
-} from '../services/notificationService';
+
 import {
   DEFAULT_PREFERENCE_SETTINGS,
   DEFAULT_PROFILE_SETTINGS,
@@ -102,10 +98,7 @@ function useSettingsState() {
   const saveAll = async (nextProfile: UserProfileSettings, nextPrefs: UserPreferenceSettings) => {
     setSaving(true);
     setSaveMessage(null);
-    const normalizedPrefs: UserPreferenceSettings = {
-      ...nextPrefs,
-      notificationsEnabled: nextPrefs.notificationFrequency !== 'off' && nextPrefs.notificationChannels.length > 0
-    };
+    const normalizedPrefs: UserPreferenceSettings = nextPrefs;
     saveProfileSettings(nextProfile);
     savePreferenceSettings(normalizedPrefs);
     try {
@@ -283,7 +276,6 @@ export function SettingsHubPage() {
   const displayName = profile.fullName || user.user_metadata?.full_name || user.user_metadata?.name || '';
   const email = user.email || '';
   const genreCount = preferences.genres.length;
-  const notifOn = preferences.notificationsEnabled;
   const isCloudSync = Boolean(user.id);
 
   return (
@@ -318,19 +310,7 @@ export function SettingsHubPage() {
                 </div>
                 <div className="mm-settings-row-right"><Chevron /></div>
               </button>
-              <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/preferences#notifications')}>
-                <div className="mm-settings-row-icon mm-icon-pink" style={{ color: '#ED93B1' }}>
-                  <BellIcon className="w-4 h-4" />
-                </div>
-                <div className="mm-settings-row-text">
-                  <div className="mm-settings-row-title">Notifications</div>
-                  <div className="mm-settings-row-sub">Push, email, digest frequency</div>
-                </div>
-                <div className="mm-settings-row-right">
-                  <span className={`mm-settings-pill ${notifOn ? 'mm-pill-green' : 'mm-pill-gray'}`}>{notifOn ? 'On' : 'Off'}</span>
-                  <Chevron />
-                </div>
-              </button>
+
             </div>
 
             {/* Discovery */}
@@ -537,48 +517,6 @@ export function PreferenceSettingsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { profile, preferences, setPreferences, saveAll, saving, saveMessage } = useSettingsState();
-  const [isPushReady, setIsPushReady] = useState(false);
-  const [pushStatusMessage, setPushStatusMessage] = useState<string | null>(null);
-  const [isPushSyncing, setIsPushSyncing] = useState(false);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    let alive = true;
-    void hasPushSubscription()
-      .then((active) => { if (alive) setIsPushReady(active); })
-      .catch(() => { if (alive) setIsPushReady(false); });
-    return () => { alive = false; };
-  }, [user?.id]);
-
-  const handleEnablePush = async () => {
-    if (!user?.id) return;
-    setIsPushSyncing(true);
-    setPushStatusMessage(null);
-    try {
-      await enablePushNotifications(user.id);
-      setIsPushReady(true);
-      setPushStatusMessage('Push notifications enabled on this device.');
-    } catch (error: any) {
-      setPushStatusMessage(error?.message || 'Failed to enable push notifications.');
-    } finally {
-      setIsPushSyncing(false);
-    }
-  };
-
-  const handleDisablePush = async () => {
-    if (!user?.id) return;
-    setIsPushSyncing(true);
-    setPushStatusMessage(null);
-    try {
-      await disablePushNotifications(user.id);
-      setIsPushReady(false);
-      setPushStatusMessage('Push notifications disabled on this device.');
-    } catch (error: any) {
-      setPushStatusMessage(error?.message || 'Failed to disable push notifications.');
-    } finally {
-      setIsPushSyncing(false);
-    }
-  };
 
   const toggleGenre = (genre: string) => {
     const next = preferences.genres.includes(genre)
@@ -608,24 +546,6 @@ export function PreferenceSettingsPage() {
     setPreferences({ ...preferences, favoriteRegions: next });
   };
 
-  const toggleNotificationChannel = (channel: 'in_app' | 'email' | 'push') => {
-    const exists = preferences.notificationChannels.includes(channel);
-    const nextChannels = exists
-      ? preferences.notificationChannels.filter((c) => c !== channel)
-      : [...preferences.notificationChannels, channel];
-    const nextFrequency = nextChannels.length === 0 ? 'off' : preferences.notificationFrequency;
-    setPreferences({
-      ...preferences,
-      notificationChannels: nextChannels,
-      notificationFrequency: nextFrequency,
-      notificationsEnabled: nextFrequency !== 'off' && nextChannels.length > 0
-    });
-  };
-
-  const setNotificationFrequency = (frequency: UserPreferenceSettings['notificationFrequency']) => {
-    const notificationsEnabled = frequency !== 'off' && preferences.notificationChannels.length > 0;
-    setPreferences({ ...preferences, notificationFrequency: frequency, notificationsEnabled });
-  };
 
   const setContentMix = (mix: UserPreferenceSettings['contentMix']) => {
     setPreferences({ ...preferences, contentMix: mix });
@@ -790,87 +710,6 @@ export function PreferenceSettingsPage() {
           </div>
         </div>
 
-        {/* Notifications */}
-        <div className="mm-settings-field" id="notifications">
-          <label>Notification channels</label>
-          <div className="mm-settings-group">
-            {([
-              { key: 'in_app' as const, title: 'In-app alerts', sub: 'Trending picks, new arrivals' },
-              { key: 'email' as const, title: 'Email digest', sub: 'Weekly recommendations' },
-              { key: 'push' as const, title: 'Push notifications', sub: 'New releases, watchlist reminders' }
-            ]).map((ch) => (
-              <div key={ch.key} className="mm-settings-row" style={{ cursor: 'default' }}>
-                <div className="mm-settings-row-text">
-                  <div className="mm-settings-row-title">{ch.title}</div>
-                  <div className="mm-settings-row-sub">{ch.sub}</div>
-                </div>
-                <button
-                  type="button"
-                  className={`mm-settings-toggle ${preferences.notificationChannels.includes(ch.key) ? 'on' : ''}`}
-                  onClick={() => toggleNotificationChannel(ch.key)}
-                  aria-label={`Toggle ${ch.title}`}
-                />
-              </div>
-            ))}
-          </div>
-
-          {preferences.notificationChannels.includes('push') && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-              <button
-                type="button"
-                className="mm-settings-genre-pill"
-                style={{ padding: '6px 12px' }}
-                onClick={() => void handleEnablePush()}
-                disabled={isPushSyncing}
-              >
-                {isPushSyncing ? 'Working...' : 'Enable push on device'}
-              </button>
-              <button
-                type="button"
-                className="mm-settings-genre-pill"
-                style={{ padding: '6px 12px' }}
-                onClick={() => void handleDisablePush()}
-                disabled={isPushSyncing || !isPushReady}
-              >
-                Disable push on device
-              </button>
-              <span style={{ fontSize: 11, alignSelf: 'center', color: isPushReady ? '#97C459' : '#6b7280' }}>
-                {isPushReady ? '● Device registered' : '○ Not registered'}
-              </span>
-            </div>
-          )}
-
-          {pushStatusMessage && (
-            <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>{pushStatusMessage}</p>
-          )}
-        </div>
-
-        {/* Digest frequency */}
-        <div className="mm-settings-field">
-          <label>Digest frequency</label>
-          <div className="mm-settings-group">
-            {([
-              { value: 'off' as const, title: 'Off', sub: 'No digest emails' },
-              { value: 'daily' as const, title: 'Daily', sub: 'Fresh picks every morning' },
-              { value: 'weekly' as const, title: 'Weekly', sub: 'Curated digest every Sunday' }
-            ]).map((opt) => (
-              <button
-                type="button"
-                key={opt.value}
-                className={`mm-settings-freq-row ${preferences.notificationFrequency === opt.value ? 'active' : ''}`}
-                onClick={() => setNotificationFrequency(opt.value)}
-              >
-                <div className="mm-settings-row-text">
-                  <div className="mm-settings-row-title">{opt.title}</div>
-                  <div className="mm-settings-row-sub">{opt.sub}</div>
-                </div>
-                <div className={`mm-settings-radio ${preferences.notificationFrequency === opt.value ? 'on' : ''}`}>
-                  {preferences.notificationFrequency === opt.value && <div className="mm-settings-radio-dot" />}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
 
         <button
           type="button"

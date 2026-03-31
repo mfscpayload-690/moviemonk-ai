@@ -19,7 +19,6 @@ import { useAuth } from './contexts/AuthContext';
 import { VirtualizedList } from './components/VirtualizedList';
 import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
 import { parseAppRoute } from './lib/routeState';
-import { fetchInAppNotifications, InAppNotification } from './services/notificationService';
 import { useWatched } from './hooks/useWatched';
 import { cacheGet, cacheSet, movieCacheKey, personCacheKey } from './lib/sessionCache';
 
@@ -64,9 +63,6 @@ const App: React.FC = () => {
     isSyncing
   } = useCloudWatchlists();
   const { isWatched, toggle: toggleWatched, watchedCount } = useWatched();
-  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
-  const [notificationsLoading, setNotificationsLoading] = useState(false);
-  const [notifications, setNotifications] = useState<InAppNotification[]>([]);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
@@ -84,30 +80,6 @@ const App: React.FC = () => {
       main.scrollTo({ top: 0, behavior: resolvedBehavior });
     }
   }, []);
-
-
-
-  useEffect(() => {
-    if (!showNotificationsModal || !user?.id) return;
-    let alive = true;
-    setNotificationsLoading(true);
-    void fetchInAppNotifications(user.id)
-      .then((items) => {
-        if (!alive) return;
-        setNotifications(items);
-      })
-      .catch(() => {
-        if (!alive) return;
-        setNotifications([]);
-      })
-      .finally(() => {
-        if (!alive) return;
-        setNotificationsLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [showNotificationsModal, user?.id]);
 
   useEffect(() => {
     if (isLoading) {
@@ -262,9 +234,6 @@ const App: React.FC = () => {
     navigate('/watchlists');
   }, [navigate]);
 
-  const handleOpenNotifications = useCallback(() => {
-    setShowNotificationsModal(true);
-  }, []);
 
   const handleOpenSettings = useCallback(() => {
     navigate('/settings');
@@ -572,7 +541,6 @@ const App: React.FC = () => {
               isSyncing={isSyncing}
               canShare={Boolean(movieData || personData || currentQuery)}
               onOpenWatchlists={handleOpenWatchlists}
-              onOpenNotifications={handleOpenNotifications}
               onOpenSettings={handleOpenSettings}
               onShare={handleShare}
             />
@@ -690,42 +658,6 @@ const App: React.FC = () => {
       }
 
       {/* Watchlists Modal */}
-      {showNotificationsModal && (
-        <div
-          className="fixed inset-0 z-[3000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setShowNotificationsModal(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="w-full max-w-2xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 sm:p-5 space-y-4 modal-mobile-slide max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between flex-shrink-0">
-              <h3 className="text-lg sm:text-xl font-bold text-white">Notifications</h3>
-              <button onClick={() => setShowNotificationsModal(false)} className="p-2.5 rounded-lg hover:bg-white/10 touch-target" aria-label="Close notifications">
-                <XMarkIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto flex-1 space-y-2 pr-1">
-              {notificationsLoading && <p className="text-sm text-brand-text-light">Loading notifications...</p>}
-              {!notificationsLoading && notifications.length === 0 && (
-                <p className="text-sm text-brand-text-light">No notifications yet.</p>
-              )}
-              {!notificationsLoading && notifications.map((item) => (
-                <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="text-xs text-brand-text-light mt-1">{item.message}</p>
-                  <p className="text-[11px] text-brand-text-dark mt-2">
-                    {new Date(item.createdAt).toLocaleString()} • {item.status}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {shortlistCandidates && shortlistCandidates.length > 0 && (

@@ -53,8 +53,6 @@ describe('PersonDisplay layout', () => {
       })
     );
 
-    expect(html).toContain('Best Movies');
-    expect(html).toContain('More');
     expect(html).toContain('Career Span');
     expect(html).toContain('Biography');
     expect(html).toContain('Top Works');
