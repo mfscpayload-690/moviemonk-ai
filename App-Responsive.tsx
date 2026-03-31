@@ -21,6 +21,7 @@ import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
 import { parseAppRoute } from './lib/routeState';
 import { fetchInAppNotifications, InAppNotification } from './services/notificationService';
 import { useWatched } from './hooks/useWatched';
+import { cacheGet, cacheSet, movieCacheKey, personCacheKey } from './lib/sessionCache';
 
 const debugLog = (...args: any[]) => {
   if (import.meta.env.DEV) {
@@ -153,19 +154,40 @@ const App: React.FC = () => {
     if (shouldNavigate) {
       navigate(`/person/${personId}`);
     }
+
+    // ── Cache check ────────────────────────────────────────────────────────
+    const cached = cacheGet<any>('person', personCacheKey(personId));
+    if (cached) {
+      debugLog('[cache] person hit', personId);
+      startTransition(() => {
+        setPersonData(cached);
+        setMovieData(null);
+        setSources(cached?.sources || null);
+        setCurrentView('person');
+        if (titleHint || cached?.person?.name) {
+          setCurrentQuery(titleHint || cached?.person?.name || '');
+        }
+      });
+      scrollMainContentToTop();
+      return;
+    }
+    // ── Fetch ───────────────────────────────────────────────────────────────
     if (manageLoading) {
       setIsLoading(true);
       setError(null);
     }
     try {
       const data = await fetch(`/api/person/${personId}`).then(r => r.json());
-      setPersonData(data);
-      setMovieData(null);
-      setSources(data?.sources || null);
-      setCurrentView('person');
-      if (titleHint || data?.person?.name) {
-        setCurrentQuery(titleHint || data?.person?.name || '');
-      }
+      cacheSet('person', personCacheKey(personId), data);
+      startTransition(() => {
+        setPersonData(data);
+        setMovieData(null);
+        setSources(data?.sources || null);
+        setCurrentView('person');
+        if (titleHint || data?.person?.name) {
+          setCurrentQuery(titleHint || data?.person?.name || '');
+        }
+      });
       scrollMainContentToTop();
     } catch (e) {
       setError('Failed to load person details');
@@ -256,14 +278,28 @@ const App: React.FC = () => {
     if (!options.skipNavigate) {
       navigate(`/${item.mediaType}/${item.id}`);
     }
-
-    setIsLoading(true);
-    setError(null);
     scrollMainContentToTop();
 
     const activeProvider = provider || selectedProvider || 'groq';
     setSelectedProvider(activeProvider);
 
+    // ── Cache check ────────────────────────────────────────────────────────
+    const cKey = movieCacheKey(item.id, item.mediaType === 'tv');
+    const cached = cacheGet<any>('movie', cKey);
+    if (cached) {
+      debugLog('[cache] movie hit', item.id, item.mediaType);
+      startTransition(() => {
+        setMovieData(cached);
+        setPersonData(null);
+        setSources([{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
+        setCurrentView('movie');
+        setCurrentQuery(cached?.title || '');
+      });
+      return;
+    }
+    // ── Fetch ───────────────────────────────────────────────────────────────
+    setIsLoading(true);
+    setError(null);
     try {
       const detailsRes = await fetch(
         `/api/ai?action=details&id=${item.id}&media_type=${item.mediaType}&provider=${activeProvider}`
@@ -271,19 +307,12 @@ const App: React.FC = () => {
       if (!detailsRes.ok) {
         throw new Error('Failed to load title details');
       }
-
       const detailsData = await detailsRes.json();
+      cacheSet('movie', cKey, detailsData);
       startTransition(() => {
         setMovieData(detailsData);
         setPersonData(null);
-        setSources([
-          {
-            web: {
-              uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`,
-              title: 'The Movie Database (TMDB)'
-            }
-          }
-        ]);
+        setSources([{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
         setCurrentView('movie');
         setCurrentQuery(detailsData?.title || '');
       });
@@ -589,6 +618,7 @@ const App: React.FC = () => {
             </>
           ) : currentView === 'person' && personData ? (
             <PersonDisplay
+              key={personData?.person?.id}
               data={personData}
               isLoading={isLoading}
               onQuickSearch={handleQuickSearch}
@@ -597,6 +627,7 @@ const App: React.FC = () => {
             />
           ) : (
             <MovieDisplay
+              key={movieData?.tmdb_id ?? 'movie-display'}
               movie={movieData}
               isLoading={isLoading}
               sources={sources}
