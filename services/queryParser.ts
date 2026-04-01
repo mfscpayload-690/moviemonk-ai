@@ -91,9 +91,19 @@ export function parseQuery(query: string): ParsedQuery {
     }
   }
 
-  // Clean up common words
+  // Check for explicit media type with common typos
+  if (result.type === 'auto') {
+    if (/\b(show|series|serees|seris|tv|tv\s+show|tv\s+series|season)\b/i.test(remaining)) {
+      result.type = 'show';
+    } else if (/\b(movie|moive|film|movies)\b/i.test(remaining)) {
+      result.type = 'movie';
+    }
+  }
+
+  // Clean up common noise and action words
+  const noiseRegex = /\b(movie|moive|film|movies|show|series|serees|seris|tv|tv\s+show|tv\s+series|watch|online|free|download|hd|1080p|4k)\b/gi;
   remaining = remaining
-    .replace(/\b(movie|film|show|series|tv\s+show|tv\s+series)\b/gi, '')
+    .replace(noiseRegex, '')
     .replace(/\s+/g, ' ')
     .trim();
 
