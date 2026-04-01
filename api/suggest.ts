@@ -4,6 +4,7 @@ import { applyCors } from './_utils/cors';
 import { sendApiError } from './_utils/http';
 import { beginRequestObservation } from './_utils/observability';
 import { searchPerplexity } from '../services/perplexityService';
+import { parseQuery, ParsedQuery } from '../services/queryParser';
 import {
   rankSuggestCandidates,
   SuggestCandidate,
@@ -44,7 +45,47 @@ function mapTmdbItemToCandidate(item: any): SuggestCandidate | null {
   };
 }
 
-async function fetchTmdbSuggestions(query: string): Promise<SuggestCandidate[]> {
+async function fetchTmdbTargetedSearch(parsed: ParsedQuery): Promise<SuggestCandidate[]> {
+  const tmdbKey = process.env.TMDB_API_KEY;
+  if (!tmdbKey) throw new Error('TMDB_API_KEY not configured');
+
+  const promises: Promise<SuggestCandidate[]>[] = [];
+
+  const fetchType = async (type: 'movie' | 'tv', extraParams: Record<string, string>) => {
+    const url = new URL(`https://api.themoviedb.org/3/search/${type}`);
+    url.searchParams.set('api_key', tmdbKey);
+    url.searchParams.set('query', parsed.title);
+    url.searchParams.set('page', '1');
+    url.searchParams.set('include_adult', 'false');
+    Object.entries(extraParams).forEach(([k, v]) => url.searchParams.set(k, v));
+
+    try {
+      const resp = await fetch(url.toString());
+      if (!resp.ok) return [];
+      const data: any = await resp.json();
+      const results = Array.isArray(data?.results) ? data.results : [];
+      
+      return results.map((item: any) => {
+        item.media_type = type;
+        return mapTmdbItemToCandidate(item);
+      }).filter((candidate: any): candidate is SuggestCandidate => Boolean(candidate));
+    } catch {
+      return [];
+    }
+  };
+
+  if (parsed.type === 'auto' || parsed.type === 'movie') {
+    promises.push(fetchType('movie', parsed.year ? { primary_release_year: String(parsed.year) } : {}));
+  }
+  if (parsed.type === 'auto' || parsed.type === 'show') {
+    promises.push(fetchType('tv', parsed.year ? { first_air_date_year: String(parsed.year) } : {}));
+  }
+
+  const results = await Promise.all(promises);
+  return results.flat().slice(0, 20);
+}
+
+async function fetchTmdbMultiSearch(query: string): Promise<SuggestCandidate[]> {
   const tmdbKey = process.env.TMDB_API_KEY;
   if (!tmdbKey) {
     throw new Error('TMDB_API_KEY not configured');
@@ -121,7 +162,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ...cached, cached: true });
     }
 
-    const tmdbCandidates = await fetchTmdbSuggestions(q);
+    const parsed = parseQuery(q);
+    const effectiveQuery = parsed.title.length < 2 ? q : parsed.title;
+    
+    let tmdbCandidates: SuggestCandidate[] = [];
+
+    // 1. If we extracted explicit intent, try targeted search
+    if (parsed.title.length >= 2 && (parsed.year || parsed.type !== 'auto')) {
+      tmdbCandidates = await fetchTmdbTargetedSearch({ ...parsed, title: effectiveQuery });
+    }
+
+    // 2. If no intent or targeted search yielded 0, try generic multi search with effective title
+    if (tmdbCandidates.length === 0) {
+      tmdbCandidates = await fetchTmdbMultiSearch(effectiveQuery);
+    }
+
+    // 3. Last resort before fallback: multi search with original, fully raw query
+    if (tmdbCandidates.length === 0 && effectiveQuery !== q) {
+      tmdbCandidates = await fetchTmdbMultiSearch(q);
+    }
+
     const candidates = tmdbCandidates.length > 0
       ? tmdbCandidates
       : await fetchFallbackSuggestions(q);

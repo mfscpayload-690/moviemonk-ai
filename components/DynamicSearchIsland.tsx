@@ -34,7 +34,7 @@ interface DynamicSearchIslandProps {
 }
 
 const STORAGE_KEY_ANALYSIS = 'moviemonk_analysis_mode';
-const SUGGEST_DEBOUNCE_MS = 200;
+const SUGGEST_DEBOUNCE_MS = 150;
 const SUGGEST_CACHE_TTL_MS = 45 * 1000;
 const AUTO_SELECT_CONFIDENCE = 0.82;
 
