@@ -95,7 +95,7 @@ export function useCloudWatchlists() {
           items: []
         };
         updateCloudState((prev) => [nextFolder, ...prev]);
-        void addCloudFolder(user.id, trimmed, nextFolder.color, folderId).catch((error) => {
+        void addCloudFolder(user.id, trimmed, nextFolder.color, nextFolder.icon, folderId).catch((error) => {
           console.warn('Failed to add cloud folder', error);
           updateCloudState((prev) => prev.filter((folder) => folder.id !== folderId));
         });
