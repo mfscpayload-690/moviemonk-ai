@@ -16,9 +16,10 @@ interface DiscoveryPageProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
   isWatched?: (id: number, mediaType: 'movie' | 'tv') => boolean;
   onToggleWatched?: (item: DiscoveryItem) => void;
+  onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
 }
 
-const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, onToggleWatched }) => {
+const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist }) => {
   const {
     heroItems,
     sections,
@@ -57,7 +58,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
 
   return (
     <div className="discovery-page animate-fade-in">
-      <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} isWatched={isWatched} onToggleWatched={onToggleWatched} />
+      <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} isWatched={isWatched} onToggleWatched={onToggleWatched} onQuickSaveToWatchlist={onQuickSaveToWatchlist} />
 
       {error && (
         <section className="discovery-error" role="alert">
@@ -86,6 +87,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
           onOpenTitle={onOpenTitle}
           isWatched={isWatched}
           onToggleWatched={onToggleWatched}
+          onQuickSaveToWatchlist={onQuickSaveToWatchlist}
         />
       ))}
 
@@ -125,6 +127,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
           onOpenTitle={onOpenTitle}
           isWatched={isWatched}
           onToggleWatched={onToggleWatched}
+          onQuickSaveToWatchlist={onQuickSaveToWatchlist}
         />
       </section>
     </div>

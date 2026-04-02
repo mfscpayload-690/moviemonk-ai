@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { DiscoveryItem } from '../types';
 import SkeletonCard from './SkeletonCard';
 import { ArrowLeftIcon, ArrowRightIcon } from './icons';
+import { TagIcon } from './icons';
 
 interface HeroSpotlightProps {
   items: DiscoveryItem[];
@@ -9,13 +10,14 @@ interface HeroSpotlightProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
   isWatched?: (id: number, mediaType: 'movie' | 'tv') => boolean;
   onToggleWatched?: (item: DiscoveryItem) => void;
+  onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
 }
 
 const formatRating = (rating: number | null) => (
   typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : 'N/A'
 );
 
-const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle, isWatched, onToggleWatched }) => {
+const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAutoPaused, setIsAutoPaused] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -171,6 +173,21 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                       </button>
                     );
                   })()}
+                    {onQuickSaveToWatchlist && (() => {
+                      return (
+                        <button
+                          type="button"
+                          tabIndex={isActive ? 0 : -1}
+                          onClick={() => onQuickSaveToWatchlist(item)}
+                          className="discovery-cta discovery-cta-secondary flex items-center gap-2"
+                          aria-label={`Save ${item.title} to watchlist`}
+                          title="Save to watchlist"
+                        >
+                          <TagIcon className="w-4 h-4" />
+                          Save to Watchlist
+                        </button>
+                      );
+                    })()}
                 </div>
               </div>
             </div>

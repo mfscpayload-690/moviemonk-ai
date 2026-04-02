@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import RatingDisplay from './RatingDisplay';
+import { TagIcon, WatchedIcon } from './icons';
 
 interface PosterCardProps {
   item: DiscoveryItem;
@@ -11,6 +12,7 @@ interface PosterCardProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
   isWatched?: boolean;
   onToggleWatched?: (item: DiscoveryItem) => void;
+  onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
 }
 
 const formatRating = (rating: number | null) => (
@@ -25,9 +27,21 @@ const PosterCard: React.FC<PosterCardProps> = ({
   onOpen,
   onOpenTitle,
   isWatched = false,
-  onToggleWatched
+  onToggleWatched,
+  onQuickSaveToWatchlist
 }) => {
-  const cardRef = useRef<HTMLButtonElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  const handleOpen = () => {
+    onOpen?.(item, sectionKey, position);
+    onOpenTitle({ id: item.id, mediaType: item.media_type });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    handleOpen();
+  };
 
   useEffect(() => {
     if (!cardRef.current || typeof IntersectionObserver === 'undefined' || !onView) return;
@@ -49,14 +63,13 @@ const PosterCard: React.FC<PosterCardProps> = ({
   }, [item, onView, position, sectionKey]);
 
   return (
-    <button
+    <div
       ref={cardRef}
-      type="button"
-      className="discovery-poster-card"
-      onClick={() => {
-        onOpen?.(item, sectionKey, position);
-        onOpenTitle({ id: item.id, mediaType: item.media_type });
-      }}
+      role="button"
+      tabIndex={0}
+      className="discovery-poster-card group"
+      onClick={handleOpen}
+      onKeyDown={handleKeyDown}
       aria-label={`Open ${item.title}${item.year ? ` (${item.year})` : ''}`}
     >
       <div className="discovery-poster-frame relative">
@@ -73,22 +86,30 @@ const PosterCard: React.FC<PosterCardProps> = ({
           </div>
         )}
         <span className="discovery-poster-plus" aria-hidden="true">+</span>
-        {/* Watched badge */}
+        {onQuickSaveToWatchlist && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onQuickSaveToWatchlist(item); }}
+            aria-label={`Save ${item.title} to watchlist`}
+            title="Save to watchlist"
+            className="absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+          >
+            <TagIcon className="w-3.5 h-3.5" />
+          </button>
+        )}
         {onToggleWatched && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onToggleWatched(item); }}
             aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
             title={isWatched ? 'Watched ✓' : 'Mark as watched'}
-            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${
+            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 ${
               isWatched
                 ? 'bg-green-500 text-white scale-100'
                 : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
             }`}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+            <WatchedIcon className="w-3.5 h-3.5" filled={isWatched} />
           </button>
         )}
       </div>
@@ -97,7 +118,7 @@ const PosterCard: React.FC<PosterCardProps> = ({
         <span>{item.year || 'TBA'}</span>
         <RatingDisplay score={item.rating} size="sm" compact={true} />
       </div>
-    </button>
+    </div>
   );
 };
 

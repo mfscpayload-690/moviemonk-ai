@@ -31,6 +31,36 @@ const debugLog = (...args: any[]) => {
 type AppView = 'discovery' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 
+type QuickSaveTitle = {
+  id: number;
+  media_type: 'movie' | 'tv';
+  title: string;
+  year?: string;
+  poster_url?: string | null;
+};
+
+const buildQuickMovieData = (item: QuickSaveTitle): MovieData => ({
+  tmdb_id: String(item.id),
+  title: item.title,
+  year: item.year || '',
+  type: item.media_type === 'tv' ? 'show' : 'movie',
+  media_type: item.media_type,
+  genres: [],
+  poster_url: item.poster_url || '',
+  backdrop_url: '',
+  trailer_url: '',
+  ratings: [],
+  cast: [],
+  crew: { director: '', writer: '', music: '' },
+  summary_short: '',
+  summary_medium: '',
+  summary_long_spoilers: '',
+  suspense_breaker: '',
+  where_to_watch: [],
+  extra_images: [],
+  ai_notes: ''
+});
+
 const App: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -63,6 +93,21 @@ const App: React.FC = () => {
     isSyncing
   } = useCloudWatchlists();
   const { isWatched, toggle: toggleWatched, watchedCount } = useWatched();
+
+  const resolveQuickSaveFolderId = useCallback(() => {
+    if (watchlists.length === 0) return null;
+    const preferredFolder = watchlists.find((folder) => /watchlist|saved|favorites?/i.test(folder.name));
+    return preferredFolder?.id || watchlists[0]?.id || null;
+  }, [watchlists]);
+
+  const handleQuickSaveToWatchlist = useCallback((item: QuickSaveTitle) => {
+    let folderId = resolveQuickSaveFolderId();
+    if (!folderId) {
+      folderId = addFolder('Watchlist', '#7c3aed');
+    }
+    if (!folderId) return;
+    saveToFolder(folderId, buildQuickMovieData(item), item.title);
+  }, [addFolder, resolveQuickSaveFolderId, saveToFolder]);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
@@ -582,6 +627,7 @@ const App: React.FC = () => {
                   poster_url: item.poster_url ?? null,
                   year: item.year ?? null,
                 })}
+                onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
               />
             </>
           ) : currentView === 'person' && personData ? (
@@ -619,6 +665,16 @@ const App: React.FC = () => {
                   year: movieData.year,
                 });
               }}
+              onToggleRelatedWatched={(entry) => {
+                toggleWatched({
+                  tmdb_id: entry.tmdb_id,
+                  media_type: entry.media_type,
+                  title: entry.title,
+                  poster_url: entry.poster_url ?? null,
+                  year: entry.year ?? null,
+                });
+              }}
+              isRelatedWatched={(tmdbId, mediaType) => isWatched(tmdbId, mediaType)}
             />
           )}
 

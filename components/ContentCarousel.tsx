@@ -16,6 +16,7 @@ interface ContentCarouselProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
   isWatched?: (id: number, mediaType: 'movie' | 'tv') => boolean;
   onToggleWatched?: (item: DiscoveryItem) => void;
+  onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
 }
 
 const ContentCarousel: React.FC<ContentCarouselProps> = ({
@@ -29,7 +30,8 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
   onCardOpen,
   onOpenTitle,
   isWatched,
-  onToggleWatched
+  onToggleWatched,
+  onQuickSaveToWatchlist
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -145,6 +147,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
                 onOpenTitle={onOpenTitle}
                 isWatched={isWatched?.(item.id, item.media_type)}
                 onToggleWatched={onToggleWatched}
+                onQuickSaveToWatchlist={onQuickSaveToWatchlist}
               />
             ))}
       </div>

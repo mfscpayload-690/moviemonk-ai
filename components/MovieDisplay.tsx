@@ -22,6 +22,8 @@ interface MovieDisplayProps {
     onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
     isWatched?: boolean;
     onToggleWatched?: () => void;
+    onToggleRelatedWatched?: (entry: { tmdb_id: string; media_type: 'movie' | 'tv'; title: string; poster_url?: string | null; year?: string | null; }) => void;
+    isRelatedWatched?: (tmdbId: string, mediaType: 'movie' | 'tv') => boolean;
 }
 
 const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
@@ -181,7 +183,7 @@ const DISCOVER_TITLES = [
 
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched }) => {
+const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched, onToggleRelatedWatched, isRelatedWatched }) => {
     useRenderCounter('MovieDisplay');
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
@@ -288,6 +290,120 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         if (!folderId) return;
         onSaveToWatchlist(folderId, movie, customSavedTitle || movie.title);
         setShowWatchlistModal(false);
+    };
+
+    const resolveQuickSaveFolderId = () => {
+        if (watchlists.length === 0) return null;
+        const preferredFolder = watchlists.find((folder) => /watchlist|saved|favorites?/i.test(folder.name));
+        return preferredFolder?.id || watchlists[0]?.id || null;
+    };
+
+    const buildRelatedQuickMovie = (item: any): MovieData => ({
+        tmdb_id: String(item.id),
+        title: item.title,
+        year: item.year || '',
+        type: item.media_type === 'tv' ? 'show' : 'movie',
+        media_type: item.media_type,
+        genres: [],
+        poster_url: item.poster_url || '',
+        backdrop_url: '',
+        trailer_url: '',
+        ratings: [],
+        cast: [],
+        crew: { director: '', writer: '', music: '' },
+        summary_short: '',
+        summary_medium: '',
+        summary_long_spoilers: '',
+        suspense_breaker: '',
+        where_to_watch: [],
+        extra_images: [],
+        ai_notes: ''
+    });
+
+    const handleQuickSaveRelated = (item: any) => {
+        let folderId = resolveQuickSaveFolderId();
+        if (!folderId) {
+            folderId = onCreateWatchlist('Watchlist', '#7c3aed');
+        }
+        if (!folderId) return;
+        onSaveToWatchlist(folderId, buildRelatedQuickMovie(item), item.title);
+    };
+
+    const handleToggleRelatedWatched = (item: any) => {
+        onToggleRelatedWatched?.({
+            tmdb_id: String(item.id),
+            media_type: item.media_type,
+            title: item.title,
+            poster_url: item.poster_url ?? null,
+            year: item.year ?? null,
+        });
+    };
+
+    const renderRelatedTile = (item: any, idx: number, context: 'inline' | 'modal') => {
+        const watched = Boolean(onToggleRelatedWatched && isRelatedWatched?.(String(item.id), item.media_type));
+        return (
+            <div
+                key={`${item.media_type}-${item.id}-${idx}`}
+                role="button"
+                tabIndex={0}
+                className={`${context === 'inline' ? 'flex-shrink-0 w-24' : ''} text-left group touch-target outline-none`}
+                onClick={() => {
+                    (window as any)?.track && (window as any).track('related_tile_click', { type: item.media_type, id: item.id, title: item.title, context });
+                    onQuickSearch(item.title);
+                    if (context === 'modal') setShowRelatedModal(false);
+                }}
+                onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    (window as any)?.track && (window as any).track('related_tile_click', { type: item.media_type, id: item.id, title: item.title, context });
+                    onQuickSearch(item.title);
+                    if (context === 'modal') setShowRelatedModal(false);
+                }}
+                aria-label={`Open ${item.title}${item.year ? ` (${item.year})` : ''}`}
+            >
+                <div className={`relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5 group-hover:border-brand-primary/50 transition-colors ${context === 'inline' ? 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-150 ease-out group-hover:-translate-y-px group-hover:shadow-lg' : ''}`}>
+                    {item.poster_url ? (
+                        <img src={item.poster_url} alt={`${item.title} poster`} className={`w-full h-full object-cover ${context === 'inline' ? 'transform-gpu transition-transform duration-150 ease-out group-hover:scale-[1.02]' : 'transition-transform duration-200 group-hover:scale-[1.04]'}`} loading="lazy" />
+                    ) : (
+                        <div className={`w-full h-full bg-white/10 ${context === 'modal' ? 'flex items-center justify-center p-2 text-center text-brand-text-dark text-[10px]' : ''}`}>{context === 'modal' ? item.title : null}</div>
+                    )}
+                    {(onToggleRelatedWatched || onSaveToWatchlist) && (
+                        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                            {onSaveToWatchlist ? (
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        handleQuickSaveRelated(item);
+                                    }}
+                                    className="h-7 w-7 rounded-full bg-black/60 border border-white/15 text-white/80 hover:bg-violet-500/90 hover:text-white flex items-center justify-center shadow-lg"
+                                    aria-label={`Save ${item.title} to watchlist`}
+                                    title="Save to watchlist"
+                                >
+                                    <TagIcon className="h-3.5 w-3.5" />
+                                </button>
+                            ) : <span />}
+                            {onToggleRelatedWatched ? (
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        handleToggleRelatedWatched(item);
+                                    }}
+                                    className={`h-7 w-7 rounded-full border flex items-center justify-center shadow-lg transition-colors ${watched ? 'bg-green-500 border-green-400 text-white' : 'bg-black/60 border-white/15 text-white/80 hover:bg-green-500/90 hover:text-white'}`}
+                                    aria-label={watched ? 'Mark as unwatched' : 'Mark as watched'}
+                                    title={watched ? 'Watched ✓' : 'Mark as watched'}
+                                >
+                                    <WatchedIcon className="h-3.5 w-3.5" filled={watched} />
+                                </button>
+                            ) : <span />}
+                        </div>
+                    )}
+                </div>
+                <p className={`mt-1.5 font-semibold text-white line-clamp-2 ${context === 'inline' ? 'text-[11px] group-hover:text-brand-primary transition-colors duration-150 ease-out' : 'text-xs group-hover:text-brand-primary transition-colors'}`}>{item.title}</p>
+                {item.year && <p className={`${context === 'inline' ? 'text-[10px]' : 'text-[10px]'} text-brand-text-dark`}>{item.year}</p>}
+            </div>
+        );
     };
 
     const safeExtraImages = movie && Array.isArray(movie.extra_images) ? movie.extra_images : [];
@@ -711,24 +827,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 {/* Horizontal scroll with fade indicator */}
                                 <div className="horizontal-scroll-fade-right relative">
                                     <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth">
-                                        {(movie as any).related.slice(0, 12).map((it: any, idx: number) => (
-                                            <button
-                                                key={`${it.media_type}-${it.id}-${idx}`}
-                                                className="flex-shrink-0 w-24 text-left group touch-target transform-gpu"
-                                                onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title }); onQuickSearch(it.title); }}
-                                                aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
-                                            >
-                                                <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5 group-hover:border-brand-primary/50 transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-150 ease-out group-hover:-translate-y-px group-hover:shadow-lg">
-                                                    {it.poster_url ? (
-                                                        <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover transform-gpu transition-transform duration-150 ease-out group-hover:scale-[1.02]" loading="lazy" />
-                                                    ) : (
-                                                        <div className="w-full h-full bg-white/10" />
-                                                    )}
-                                                </div>
-                                                <p className="mt-2 text-[11px] font-semibold text-white line-clamp-2 group-hover:text-brand-primary transition-colors duration-150 ease-out">{it.title}</p>
-                                                {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
-                                            </button>
-                                        ))}
+                                        {(movie as any).related.slice(0, 12).map((it: any, idx: number) => renderRelatedTile(it, idx, 'inline'))}
                                     </div>
                                 </div>
                                 <div className="flex justify-end">
@@ -1178,24 +1277,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         <div className="overflow-y-auto overscroll-contain flex-1 p-4 sm:p-6">
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
                             {Array.isArray((movie as any).related) && (movie as any).related.length > 0 ? (
-                                (movie as any).related.map((it: any, idx: number) => (
-                                    <button
-                                        key={`${it.media_type}-${it.id}-${idx}`}
-                                        className="text-left group"
-                                        onClick={() => { (window as any)?.track && (window as any).track('related_tile_click', { type: it.media_type, id: it.id, title: it.title, context: 'modal' }); onQuickSearch(it.title); setShowRelatedModal(false); }}
-                                        aria-label={`Open ${it.title}${it.year ? ` (${it.year})` : ''}`}
-                                    >
-                                        <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-white/10 bg-white/5 group-hover:border-brand-primary/50 transition-colors">
-                                            {it.poster_url ? (
-                                                <img src={it.poster_url} alt={`${it.title} poster`} className="w-full h-full object-cover transform transition-transform duration-200 group-hover:scale-[1.04]" loading="lazy" />
-                                            ) : (
-                                                <div className="w-full h-full bg-white/10 flex items-center justify-center p-2 text-center text-brand-text-dark text-[10px]">{it.title}</div>
-                                            )}
-                                        </div>
-                                        <p className="mt-1.5 text-xs font-semibold text-white line-clamp-2 group-hover:text-brand-primary transition-colors">{it.title}</p>
-                                        {it.year && <p className="text-[10px] text-brand-text-dark">{it.year}</p>}
-                                    </button>
-                                ))
+                                (movie as any).related.map((it: any, idx: number) => renderRelatedTile(it, idx, 'modal'))
                             ) : (
                                 <p className="text-brand-text-dark col-span-full">No similar titles found.</p>
                             )}
