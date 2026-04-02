@@ -93,8 +93,16 @@ async function tmdbFetch(
   
   const url = `${TMDB_PROXY}?${queryParams.toString()}`;
   const res = await fetch(url, { signal: options.signal });
-  if (!res.ok) throw new Error(`TMDB ${path} failed: ${res.status}`);
-  return res.json();
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`TMDB ${path} failed: ${res.status} ${text.slice(0, 180)}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`TMDB ${path} returned invalid JSON: ${text.slice(0, 180)}`);
+  }
 }
 
 export async function fetchTrending(
