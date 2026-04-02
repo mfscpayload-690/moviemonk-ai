@@ -31,6 +31,8 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/react-window": "^2.0.0",
     "@vitejs/plugin-react": "^5.1.4",
     "jest": "^30.3.0",

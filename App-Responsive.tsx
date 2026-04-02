@@ -670,8 +670,8 @@ const App: React.FC = () => {
                   tmdb_id: entry.tmdb_id,
                   media_type: entry.media_type,
                   title: entry.title,
-                  poster_url: entry.poster_url ?? null,
-                  year: entry.year ?? null,
+                  poster_url: entry.poster_url ?? undefined,
+                  year: entry.year ?? undefined,
                 });
               }}
               isRelatedWatched={(tmdbId, mediaType) => isWatched(tmdbId, mediaType)}

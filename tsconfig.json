@@ -12,7 +12,9 @@
     "skipLibCheck": true,
     "types": [
       "node",
-      "jest"
+      "jest",
+      "react",
+      "react-dom"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
