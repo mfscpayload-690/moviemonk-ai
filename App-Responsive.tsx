@@ -655,7 +655,31 @@ const App: React.FC = () => {
         <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2.5 sm:py-2.5 glass-panel border-b-0 z-50">
           <button type="button" className="flex items-center gap-2.5 sm:gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
             <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gradient title-font tracking-tight">MovieMonk</h1>
+            {/*
+            Previous cinematic wordmark:
+            <h1 className="brand-wordmark title-font text-xl sm:text-2xl font-bold tracking-tight">
+              <span className="brand-wordmark-prefix">Movie</span>
+              <span className="brand-wordmark-main">Monk</span>
+            </h1>
+            */}
+            {/*
+            Rejected studio wordmark:
+            <h1 className="brand-studio title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+              <span className="brand-studio-prefix">Movie</span>
+              <span className="brand-studio-title">Monk</span>
+            </h1>
+            */}
+            {/*
+            Rejected premiere wordmark:
+            <h1 className="brand-premiere text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+              <span className="brand-premiere-prefix">Movie</span>
+              <span className="brand-premiere-title">Monk</span>
+            </h1>
+            */}
+            <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+              <span className="brand-signature-movie">Movie</span>
+              <span className="brand-signature-monk">Monk</span>
+            </h1>
           </button>
           <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-2">
             <DynamicSearchIsland

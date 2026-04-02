@@ -112,6 +112,174 @@ h6 {
     letter-spacing: -0.02em;
 }
 
+/*
+Previous cinematic wordmark variant:
+.brand-wordmark {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.08em;
+    line-height: 0.95;
+    text-rendering: geometricPrecision;
+}
+
+.brand-wordmark-prefix {
+    color: rgba(244, 240, 232, 0.96);
+    letter-spacing: -0.045em;
+    text-shadow: 0 1px 10px rgba(255, 244, 214, 0.08);
+}
+
+.brand-wordmark-main {
+    background: linear-gradient(180deg, #f9c67a 0%, #e96a43 52%, #c63d52 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 18px rgba(233, 106, 67, 0.18);
+    letter-spacing: -0.05em;
+}
+
+@media (max-width: 639px) {
+    .brand-wordmark {
+        gap: 0.05em;
+    }
+
+    .brand-wordmark-prefix,
+    .brand-wordmark-main {
+        letter-spacing: -0.04em;
+    }
+}
+*/
+
+/*
+Rejected studio wordmark variant:
+.brand-studio {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.06em;
+    line-height: 0.95;
+    text-rendering: geometricPrecision;
+}
+
+.brand-studio-prefix {
+    color: rgba(242, 236, 226, 0.92);
+    letter-spacing: -0.045em;
+    text-shadow: 0 1px 10px rgba(255, 244, 214, 0.08);
+}
+
+.brand-studio-title {
+    position: relative;
+    background: linear-gradient(180deg, #fff4db 0%, #f1c372 46%, #da6a43 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.06em;
+    text-shadow: 0 2px 18px rgba(218, 106, 67, 0.18);
+}
+
+.brand-studio-title::after {
+    content: '';
+    position: absolute;
+    left: 0.08em;
+    right: 0.04em;
+    bottom: -0.08em;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 244, 219, 0), rgba(241, 195, 114, 0.85), rgba(218, 106, 67, 0));
+    opacity: 0.75;
+}
+
+@media (max-width: 639px) {
+    .brand-studio {
+        gap: 0.05em;
+    }
+}
+*/
+
+/*
+Rejected premiere wordmark variant:
+.brand-premiere {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 0.3rem;
+    line-height: 0.92;
+    text-rendering: geometricPrecision;
+}
+
+.brand-premiere-prefix {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 0.42em;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(225, 214, 255, 0.8);
+    transform: translateY(-0.12em);
+    text-shadow: 0 1px 10px rgba(167, 139, 250, 0.14);
+}
+
+.brand-premiere-title {
+    position: relative;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    background: linear-gradient(180deg, #f8f1ff 0%, #d9b9ff 38%, #b36cff 72%, #ff5ca8 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 24px rgba(180, 88, 220, 0.18);
+}
+
+.brand-premiere-title::after {
+    content: '';
+    position: absolute;
+    left: 0.08em;
+    right: 0.04em;
+    bottom: -0.1em;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(167, 139, 250, 0), rgba(167, 139, 250, 0.92), rgba(219, 39, 119, 0.9), rgba(167, 139, 250, 0));
+    opacity: 0.88;
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.22);
+}
+
+@media (max-width: 639px) {
+    .brand-premiere {
+        gap: 0.22rem;
+    }
+
+    .brand-premiere-prefix {
+        font-size: 0.4em;
+        letter-spacing: 0.22em;
+    }
+}
+*/
+
+.brand-signature {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.02em;
+    line-height: 0.94;
+    text-rendering: geometricPrecision;
+}
+
+.brand-signature-movie {
+    color: rgba(245, 241, 255, 0.95);
+    letter-spacing: -0.04em;
+    text-shadow: 0 1px 10px rgba(167, 139, 250, 0.08);
+}
+
+.brand-signature-monk {
+    background: linear-gradient(135deg, #d9c7ff 0%, #b78dff 38%, #a855f7 68%, #ec4899 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.045em;
+    text-shadow: 0 2px 16px rgba(168, 85, 247, 0.18);
+}
+
+@media (max-width: 639px) {
+    .brand-signature {
+        gap: 0.015em;
+    }
+}
+
 /* Layout Containers */
 .app-container {
     display: flex;
@@ -1897,10 +2065,16 @@ a:focus-visible {
 }
 
 /* Header Title Hover */
-.app-header button:hover .text-gradient {
-    background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #db2777 100%);
+.app-header button:hover .brand-signature-movie {
+    color: rgba(255, 250, 255, 0.98);
+}
+
+.app-header button:hover .brand-signature-monk {
+    background: linear-gradient(135deg, #eadbff 0%, #c89dff 36%, #b86dff 68%, #ff72b6 100%);
     background-clip: text;
     -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 18px rgba(191, 109, 255, 0.22);
 }
 
 /* Button Hover Animations */
