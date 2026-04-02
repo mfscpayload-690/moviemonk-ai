@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+  const getEnv = (key: string) => env[key] || process.env[key];
   return {
     base: process.env.GITHUB_ACTIONS ? '/moviemonk-ai/' : '/',
     server: {
@@ -15,6 +16,56 @@ export default defineConfig(({ mode }) => {
       {
         name: 'mock-api-middleware',
         configureServer(server) {
+          server.middlewares.use('/api/tmdb', async (req, res) => {
+            try {
+              const requestUrl = new URL(req.url || '/api/tmdb', 'http://localhost:3000');
+              const endpoint = requestUrl.searchParams.get('endpoint');
+
+              if (!endpoint) {
+                res.statusCode = 400;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: { provider: 'tmdb', code: 'missing_endpoint', message: 'Missing endpoint parameter' } }));
+                return;
+              }
+
+              const tmdbApiKey = getEnv('TMDB_API_KEY');
+              const tmdbReadToken = getEnv('TMDB_READ_TOKEN');
+
+              if (!tmdbApiKey && !tmdbReadToken) {
+                res.statusCode = 400;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: { provider: 'tmdb', code: 'missing_api_key', message: 'TMDB credentials not configured' } }));
+                return;
+              }
+
+              const upstream = new URL(`https://api.themoviedb.org/3/${endpoint}`);
+              requestUrl.searchParams.forEach((value, key) => {
+                if (key !== 'endpoint') {
+                  upstream.searchParams.set(key, value);
+                }
+              });
+
+              if (tmdbApiKey) {
+                upstream.searchParams.set('api_key', tmdbApiKey);
+              }
+
+              const headers = tmdbReadToken
+                ? { Authorization: `Bearer ${tmdbReadToken}` }
+                : undefined;
+
+              const response = await fetch(upstream.toString(), { headers });
+              const bodyText = await response.text();
+
+              res.statusCode = response.status;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(bodyText);
+            } catch (error: any) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: { provider: 'tmdb', code: 'proxy_error', message: 'TMDB proxy request failed', details: error?.message || 'Unknown error' } }));
+            }
+          });
+
           server.middlewares.use('/api/query', (req, res) => {
             // Mock response for "Inception" to allow UI testing
             res.setHeader('Content-Type', 'application/json');

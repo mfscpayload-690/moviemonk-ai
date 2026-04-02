@@ -303,23 +303,20 @@ async function fetchCloudPreferences(userId: string): Promise<UserPreferenceSett
   return module.fetchPreferenceSettings(userId);
 }
 
+async function settleOrDefault<T>(promise: Promise<T>, fallback: T, label: string): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    console.warn(`[discovery] ${label} failed`, error);
+    return fallback;
+  }
+}
+
 export async function loadDiscoverySnapshot(
   signal?: AbortSignal,
   preferences?: UserPreferenceSettings
 ): Promise<DiscoverySnapshot> {
-  const [
-    trendingAll,
-    trendingMovies,
-    trendingTv,
-    upcoming,
-    nowPlaying,
-    popularTv,
-    onTheAir,
-    topRatedMovies,
-    topRatedTv,
-    movieGenres,
-    tvGenres
-  ] = await Promise.all([
+  const settled = await Promise.allSettled([
     fetchTrending('all', 'week', { signal }),
     fetchTrending('movie', 'week', { signal }),
     fetchTrending('tv', 'week', { signal }),
@@ -333,23 +330,35 @@ export async function loadDiscoverySnapshot(
     fetchGenreList('tv', { signal })
   ]);
 
+  const trendingAll = settled[0].status === 'fulfilled' ? settled[0].value : [];
+  const trendingMovies = settled[1].status === 'fulfilled' ? settled[1].value : [];
+  const trendingTv = settled[2].status === 'fulfilled' ? settled[2].value : [];
+  const upcoming = settled[3].status === 'fulfilled' ? settled[3].value : [];
+  const nowPlaying = settled[4].status === 'fulfilled' ? settled[4].value : [];
+  const popularTv = settled[5].status === 'fulfilled' ? settled[5].value : [];
+  const onTheAir = settled[6].status === 'fulfilled' ? settled[6].value : [];
+  const topRatedMovies = settled[7].status === 'fulfilled' ? settled[7].value : [];
+  const topRatedTv = settled[8].status === 'fulfilled' ? settled[8].value : [];
+  const movieGenres = settled[9].status === 'fulfilled' ? settled[9].value : [];
+  const tvGenres = settled[10].status === 'fulfilled' ? settled[10].value : [];
+
   const dramaGenreId = tvGenres.find((genre) => genre.name === 'Drama')?.id;
 
   const [bollywoodMovies, asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh] = await Promise.all([
-    fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal }),
-    fetchDiscoverMovie({ withOriginalLanguage: 'ja' }, { signal }),
-    fetchDiscoverMovie({ withOriginalLanguage: 'ko' }, { signal }),
-    fetchDiscoverMovie({ withOriginalLanguage: 'zh' }, { signal }),
-    fetchDiscoverMovie({ withOriginalLanguage: 'th' }, { signal })
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal }), [], 'bollywood discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'ja' }, { signal }), [], 'japanese discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'ko' }, { signal }), [], 'korean discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'zh' }, { signal }), [], 'chinese discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'th' }, { signal }), [], 'thai discovery')
   ]);
 
   const asianMovies = mergeUniqueDiscoveryItems(asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh);
 
   const [koreanSeries, japaneseSeries, chineseSeries, thaiSeries] = await Promise.all([
-    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ko' }, { signal }),
-    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ja' }, { signal }),
-    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'zh' }, { signal }),
-    fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'th' }, { signal })
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ko' }, { signal }), [], 'k-drama discovery'),
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ja' }, { signal }), [], 'japanese series discovery'),
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'zh' }, { signal }), [], 'chinese series discovery'),
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'th' }, { signal }), [], 'thai series discovery')
   ]);
 
   const kDramaAndAsianSeries = mergeUniqueDiscoveryItems(
@@ -445,7 +454,11 @@ export async function loadDiscoverySnapshot(
       null;
 
     const selectedGenreItems = selectedGenre
-      ? applyStrictFilters(await fetchByGenre(selectedGenre.id, 'movie', { signal }), languageCodes, decadeRanges)
+      ? applyStrictFilters(
+          await settleOrDefault(fetchByGenre(selectedGenre.id, 'movie', { signal }), [], 'strict genre discovery'),
+          languageCodes,
+          decadeRanges
+        )
       : [];
 
     return {
@@ -459,7 +472,7 @@ export async function loadDiscoverySnapshot(
 
   const selectedGenre = curatedGenres[0] || movieGenres[0] || null;
   const selectedGenreItems = selectedGenre
-    ? await fetchByGenre(selectedGenre.id, 'movie', { signal })
+    ? await settleOrDefault(fetchByGenre(selectedGenre.id, 'movie', { signal }), [], 'genre picks')
     : [];
 
   const prioritizedSections: DiscoverySection[] = [

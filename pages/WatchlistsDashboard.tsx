@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
@@ -13,8 +13,6 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
-
-export const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -51,7 +49,6 @@ export function WatchlistsDashboard() {
   const { 
     folders, 
     renameFolder, 
-    setFolderColor, 
     setFolderIcon,
     deleteFolder, 
     deleteItem,
@@ -70,8 +67,15 @@ export function WatchlistsDashboard() {
   // Edit State
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
-  const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
   const [editFolderIcon, setEditFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+  const [syncBadgeVisible, setSyncBadgeVisible] = useState(false);
+  const [justSynced, setJustSynced] = useState(false);
+  const syncHideTimerRef = useRef<number | null>(null);
+  const syncSettledTimerRef = useRef<number | null>(null);
+  const editingFolder = useMemo(
+    () => folders.find((folder) => folder.id === editingFolderId) || null,
+    [editingFolderId, folders]
+  );
 
   // Deep-link: resolve :folderName param → activeFolderId once folders are loaded
   const [deepLinkResolved, setDeepLinkResolved] = useState(false);
@@ -139,9 +143,12 @@ export function WatchlistsDashboard() {
   const startEditFolder = (folder: WatchlistFolder) => {
     setEditingFolderId(folder.id);
     setEditFolderName(folder.name);
-    setEditFolderColor(folder.color || '#7c3aed');
     setEditFolderIcon(getWatchlistIconOption(folder.icon).key);
   };
+
+  const closeEditFolder = useCallback(() => {
+    setEditingFolderId(null);
+  }, []);
 
   const saveFolderEdits = () => {
     if (!editingFolderId) return;
@@ -152,14 +159,76 @@ export function WatchlistsDashboard() {
     if (trimmedName && trimmedName !== folder.name) {
       renameFolder(folder.id, trimmedName);
     }
-    if (editFolderColor !== folder.color) {
-      setFolderColor(folder.id, editFolderColor);
-    }
     if ((editFolderIcon || WATCHLIST_ICON_DEFAULT) !== (folder.icon || WATCHLIST_ICON_DEFAULT)) {
       setFolderIcon(folder.id, editFolderIcon);
     }
-    setEditingFolderId(null);
+    closeEditFolder();
   };
+
+  useEffect(() => {
+    if (!editingFolderId) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [editingFolderId]);
+
+  useEffect(() => {
+    if (!editingFolderId) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeEditFolder();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [closeEditFolder, editingFolderId]);
+
+  useEffect(() => {
+    if (!isCloud) {
+      setSyncBadgeVisible(false);
+      setJustSynced(false);
+      return;
+    }
+
+    if (syncHideTimerRef.current !== null) {
+      window.clearTimeout(syncHideTimerRef.current);
+      syncHideTimerRef.current = null;
+    }
+    if (syncSettledTimerRef.current !== null) {
+      window.clearTimeout(syncSettledTimerRef.current);
+      syncSettledTimerRef.current = null;
+    }
+
+    if (isSyncing) {
+      setSyncBadgeVisible(true);
+      setJustSynced(false);
+      return;
+    }
+
+    if (syncBadgeVisible) {
+      setJustSynced(true);
+      syncSettledTimerRef.current = window.setTimeout(() => {
+        setJustSynced(false);
+      }, 2200);
+      syncHideTimerRef.current = window.setTimeout(() => {
+        setSyncBadgeVisible(false);
+      }, 900);
+    }
+  }, [isCloud, isSyncing, syncBadgeVisible]);
+
+  useEffect(() => {
+    return () => {
+      if (syncHideTimerRef.current !== null) {
+        window.clearTimeout(syncHideTimerRef.current);
+      }
+      if (syncSettledTimerRef.current !== null) {
+        window.clearTimeout(syncSettledTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleDeleteFolder = (id: string, name: string, count: number) => {
     if (window.confirm(`Are you sure you want to delete "${name}" and its ${count} items?`)) {
@@ -193,9 +262,47 @@ export function WatchlistsDashboard() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Welcome, {displayName}</h1>
-            <p className="text-brand-text-light mt-1 flex items-center gap-2">
-              Your Cinematic Collection {isSyncing && <span className="text-xs text-brand-primary animate-pulse">(Syncing...)</span>}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <p className="text-brand-text-light">Your Cinematic Collection</p>
+              {isCloud ? (
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${
+                    isSyncing || syncBadgeVisible
+                      ? 'border-brand-primary/40 bg-brand-primary/10 text-brand-primary'
+                      : justSynced
+                        ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
+                        : 'border-white/15 bg-white/5 text-brand-text-light'
+                  }`}
+                >
+                  {isSyncing || syncBadgeVisible ? (
+                    <>
+                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
+                        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                      </svg>
+                      Syncing changes
+                    </>
+                  ) : justSynced ? (
+                    <>
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M5 12.5 9.2 17 19 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Synced
+                    </>
+                  ) : (
+                    <>
+                      <span className="h-2 w-2 rounded-full bg-brand-text-light/60" />
+                      Cloud connected
+                    </>
+                  )}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-brand-text-light">
+                  <span className="h-2 w-2 rounded-full bg-amber-300/90" />
+                  Local only
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -322,25 +429,7 @@ export function WatchlistsDashboard() {
               <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white shadow-lg">
                 <WatchlistIconBadge iconKey={activeFolder.icon} className="w-5 h-5" />
               </div>
-              {editingFolderId === activeFolder.id ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    value={editFolderName}
-                    onChange={(e) => setEditFolderName(e.target.value)}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-1 focus:ring-brand-primary"
-                    placeholder="Folder name"
-                    autoFocus
-                  />
-                  <button onClick={saveFolderEdits} className="p-1.5 rounded-md text-brand-primary hover:bg-brand-primary/20 transition-colors">
-                    <CheckIcon className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => setEditingFolderId(null)} className="p-1.5 rounded-md text-brand-text-light hover:text-white hover:bg-white/10 transition-colors">
-                    <XMarkIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              ) : (
-                <h2 className="text-3xl font-bold text-white tracking-tight">{activeFolder.name}</h2>
-              )}
+              <h2 className="text-3xl font-bold text-white tracking-tight">{activeFolder.name}</h2>
             </div>
             
             <div className="flex items-center gap-2">
@@ -361,27 +450,6 @@ export function WatchlistsDashboard() {
               </button>
             </div>
           </div>
-          
-          {editingFolderId === activeFolder.id && (
-            <div className="mb-8 p-4 glass-panel rounded-xl border border-white/5 space-y-4">
-              <div className="flex items-center gap-2 overflow-x-auto">
-                <span className="text-sm text-brand-text-light mr-2 flex-shrink-0">Theme Color:</span>
-                <div className="flex gap-2 min-w-max">
-                  {WATCHLIST_COLORS.map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setEditFolderColor(color)}
-                      className={`w-6 h-6 rounded-full border ${editFolderColor === color ? 'border-white ring-2 ring-white/50 scale-110' : 'border-transparent'} transition-all flex-shrink-0`}
-                      style={{ backgroundColor: color }}
-                      aria-label={`Color ${color}`}
-                    />
-                  ))}
-                </div>
-              </div>
-              <WatchlistIconPicker selectedIcon={editFolderIcon} onSelect={setEditFolderIcon} compactLabel="Folder icon" />
-            </div>
-          )}
 
           {activeFolder.items.length === 0 ? (
             <div className="glass-panel p-12 rounded-3xl text-center border border-white/5">
@@ -475,81 +543,112 @@ export function WatchlistsDashboard() {
                 </div>
               </div>
 
-              {/* Edit Mode Inline */}
-              {editingFolderId === folder.id ? (
-                <div className="relative z-10 mt-4 space-y-3 bg-black/40 p-3 rounded-xl border border-white/10 backdrop-blur-md">
-                  <input
-                    value={editFolderName}
-                    onChange={(e) => setEditFolderName(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-primary transition-shadow"
-                    placeholder="Folder name"
-                  />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2 w-full">
-                      <div className="flex gap-1.5">
-                        {WATCHLIST_COLORS.map(color => (
-                          <button
-                            key={color}
-                            type="button"
-                            onClick={() => setEditFolderColor(color)}
-                            className={`w-5 h-5 rounded-full border ${editFolderColor === color ? 'border-white ring-1 ring-white/50 scale-110' : 'border-transparent'} transition-all`}
-                            style={{ backgroundColor: color }}
-                            aria-label={`Color ${color}`}
-                          />
-                        ))}
-                      </div>
-                      <WatchlistIconPicker selectedIcon={editFolderIcon} onSelect={setEditFolderIcon} compactLabel="Folder icon" />
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditingFolderId(null)} className="p-1.5 rounded-md hover:bg-white/10 text-brand-text-light hover:text-white transition-colors">
-                        <XMarkIcon className="w-4 h-4" />
-                      </button>
-                      <button onClick={saveFolderEdits} className="p-1.5 rounded-md hover:bg-brand-primary/20 text-brand-primary transition-colors">
-                        <CheckIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+              <div className="relative z-10 mt-6 flex items-center justify-between">
+                <span className="text-sm text-brand-text-dark font-medium">
+                  {folder.items.length === 1 ? '1 item' : `${folder.items.length} items`}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      startEditFolder(folder);
+                    }}
+                    className="text-xs font-medium text-brand-text-light hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/10 inline-flex items-center gap-1.5 transition-all"
+                  >
+                    <EditIcon className="w-3.5 h-3.5" /> Edit
+                  </button>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDeleteFolder(folder.id, folder.name, folder.items.length);
+                    }}
+                    className="text-xs font-medium text-red-400 hover:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 inline-flex items-center gap-1.5 transition-all"
+                  >
+                    <TrashIcon className="w-3.5 h-3.5" /> Delete
+                  </button>
                 </div>
-              ) : (
-                <div className="relative z-10 mt-6 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <span className="text-sm text-brand-text-dark font-medium">
-                    {folder.items.length === 1 ? '1 item' : `${folder.items.length} items`}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => startEditFolder(folder)}
-                      className="text-xs font-medium text-brand-text-light hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/10 inline-flex items-center gap-1.5 transition-all"
-                    >
-                      <EditIcon className="w-3.5 h-3.5" /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteFolder(folder.id, folder.name, folder.items.length)}
-                      className="text-xs font-medium text-red-400 hover:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 inline-flex items-center gap-1.5 transition-all"
-                    >
-                      <TrashIcon className="w-3.5 h-3.5" /> Delete
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {/* Fallback for mobile / touch devices since hover is tricky */}
-              {!editingFolderId && (
-                <div className="sm:hidden relative z-10 mt-6 flex items-center justify-between">
-                  <span className="text-sm text-brand-text-dark font-medium">
-                    {folder.items.length === 1 ? '1 item' : `${folder.items.length} items`}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => startEditFolder(folder)} className="p-1.5 text-brand-text-light">
-                      <EditIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
       )}
       </div>
+      )}
+
+      {editingFolder && (
+        <div
+          className="fixed inset-0 z-[12000] bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-folder-title"
+          onClick={closeEditFolder}
+        >
+          <div
+            className="w-full sm:max-w-2xl bg-brand-surface border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl h-[88dvh] sm:h-[86dvh] max-h-[88dvh] sm:max-h-[86dvh] flex flex-col min-h-0 animate-scale-up"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+              <div className="min-w-0">
+                <h3 id="edit-folder-title" className="text-lg sm:text-xl font-bold text-white truncate">Edit folder</h3>
+                <p className="text-sm text-brand-text-dark truncate">{editingFolder.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditFolder}
+                className="p-2 rounded-lg hover:bg-white/10 text-white"
+                aria-label="Close edit folder"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5 space-y-5">
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white">
+                  <WatchlistIconBadge iconKey={editFolderIcon} className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm text-brand-text-dark">Preview</div>
+                  <div className="text-white font-semibold truncate">{editFolderName.trim() || 'Untitled folder'}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="folder-name-input" className="text-sm font-semibold text-white">Folder name</label>
+                <input
+                  id="folder-name-input"
+                  value={editFolderName}
+                  onChange={(event) => setEditFolderName(event.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  placeholder="New folder name"
+                  autoFocus
+                />
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <WatchlistIconPicker selectedIcon={editFolderIcon} onSelect={setEditFolderIcon} compactLabel="Folder icon" />
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-t border-white/10 bg-brand-surface/70 backdrop-blur-md flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeEditFolder}
+                className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveFolderEdits}
+                className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-secondary text-white font-semibold inline-flex items-center gap-2 transition-colors"
+              >
+                <CheckIcon className="w-4 h-4" />
+                Save changes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       
     </DashboardLayout>

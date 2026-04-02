@@ -85,7 +85,9 @@ const PosterCard: React.FC<PosterCardProps> = ({
             <span>{item.media_type === 'tv' ? 'Show' : 'Movie'}</span>
           </div>
         )}
-        <span className="discovery-poster-plus" aria-hidden="true">+</span>
+        {!(onQuickSaveToWatchlist || onToggleWatched) && (
+          <span className="discovery-poster-plus" aria-hidden="true">+</span>
+        )}
         {onQuickSaveToWatchlist && (
           <button
             type="button"

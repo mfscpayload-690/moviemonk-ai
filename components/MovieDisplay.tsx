@@ -387,45 +387,133 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [reviewsPage, setReviewsPage]        = useState(1);
     const [reviewsTotalPages, setRevTotal]     = useState(1);
     const [expandedReview, setExpandedRev]     = useState<string | null>(null);
+    const [reviewsSourceLabel, setReviewsSourceLabel] = useState<string>('TMDB');
 
-    useEffect(() => {
+    const normalizeTmdbReviews = useCallback((data: any): TmdbReview[] => {
+        const TMDB_IMG = 'https://image.tmdb.org/t/p/w92';
+        const raw: any[] = Array.isArray(data?.results) ? data.results : [];
+        return raw
+            .filter((entry: any) => entry?.content && entry.content.trim().length > 40)
+            .map((entry: any) => ({
+                id: entry.id,
+                author: entry.author || 'Anonymous',
+                avatar_url: entry.author_details?.avatar_path
+                    ? entry.author_details.avatar_path.startsWith('/')
+                        ? `${TMDB_IMG}${entry.author_details.avatar_path}`
+                        : entry.author_details.avatar_path
+                    : null,
+                rating: entry.author_details?.rating ?? null,
+                content: entry.content.trim(),
+                url: entry.url || null,
+                created_at: entry.created_at || null,
+            }));
+    }, []);
+
+    const fetchTmdbReviewsPage = useCallback(async (
+        mediaType: 'movie' | 'tv',
+        tmdbId: string,
+        page: number,
+        language?: string
+    ): Promise<{ reviews: TmdbReview[]; totalPages: number }> => {
+        const endpoint = `${mediaType}/${tmdbId}/reviews`;
+        const params = new URLSearchParams({
+            endpoint,
+            page: String(page)
+        });
+        if (language) params.set('language', language);
+        const response = await fetch(`/api/tmdb?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch TMDB reviews');
+        const data = await response.json();
+        return {
+            reviews: normalizeTmdbReviews(data),
+            totalPages: data?.total_pages ?? 1
+        };
+    }, [normalizeTmdbReviews]);
+
+    const dedupeReviews = useCallback((items: TmdbReview[]): TmdbReview[] => {
+        const seen = new Set<string>();
+        const deduped: TmdbReview[] = [];
+        for (const item of items) {
+            if (seen.has(item.id)) continue;
+            seen.add(item.id);
+            deduped.push(item);
+        }
+        return deduped;
+    }, []);
+
+    const loadReviews = useCallback(async () => {
         if (!movie?.tmdb_id) return;
         const mediaType = movie.tvShow ? 'tv' : 'movie';
-        let alive = true;
         setReviews([]);
+        setExpandedRev(null);
         setReviewsVisible(2);
         setReviewsPage(1);
         setRevTotal(1);
+        setReviewsSourceLabel('TMDB');
         setRevLoading(true);
-        const endpoint = `${mediaType}/${movie.tmdb_id}/reviews`;
-        fetch(`/api/tmdb?endpoint=${encodeURIComponent(endpoint)}&language=en-US&page=1`)
-            .then(r => r.json())
-            .then(data => {
-                if (!alive) return;
-                const TMDB_IMG = 'https://image.tmdb.org/t/p/w92';
-                const raw: any[] = Array.isArray(data.results) ? data.results : [];
-                const normalised: TmdbReview[] = raw
-                    .filter((r: any) => r.content && r.content.trim().length > 40)
-                    .map((r: any) => ({
-                        id: r.id,
-                        author: r.author || 'Anonymous',
-                        avatar_url: r.author_details?.avatar_path
-                            ? r.author_details.avatar_path.startsWith('/')
-                                ? `${TMDB_IMG}${r.author_details.avatar_path}`
-                                : r.author_details.avatar_path
-                            : null,
-                        rating: r.author_details?.rating ?? null,
-                        content: r.content.trim(),
-                        url: r.url || null,
-                        created_at: r.created_at || null,
-                    }));
-                setReviews(normalised);
-                setRevTotal(data.total_pages ?? 1);
-            })
-            .catch(() => { if (alive) setReviews([]); })
-            .finally(() => { if (alive) setRevLoading(false); });
-        return () => { alive = false; };
-    }, [movie?.tmdb_id, movie?.tvShow]);
+        const preferredLanguage = movie.language && movie.language.trim() ? movie.language.trim() : undefined;
+
+        try {
+            const primary = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, 1, 'en-US');
+            let merged = primary.reviews;
+            let sourceLabel = 'TMDB';
+
+            if (merged.length < 3) {
+                const fallbackLanguages = [undefined, preferredLanguage]
+                    .filter((language, index, arr) => {
+                        if (language === 'en-US') return false;
+                        return arr.indexOf(language) === index;
+                    });
+
+                for (const language of fallbackLanguages) {
+                    try {
+                        const next = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, 1, language);
+                        merged = dedupeReviews([...merged, ...next.reviews]);
+                    } catch {
+                        // Best-effort fallback, ignore per-language failure.
+                    }
+                }
+            }
+
+            if (merged.length < 2) {
+                try {
+                    const recEndpoint = `${mediaType}/${movie.tmdb_id}/recommendations`;
+                    const recResponse = await fetch(`/api/tmdb?endpoint=${encodeURIComponent(recEndpoint)}&language=en-US&page=1`);
+                    const recData = await recResponse.json();
+                    const recIds: number[] = Array.isArray(recData?.results)
+                        ? recData.results.slice(0, 4).map((entry: any) => entry?.id).filter(Boolean)
+                        : [];
+
+                    if (recIds.length > 0) sourceLabel = 'TMDB + Similar Titles';
+
+                    for (const recId of recIds) {
+                        if (merged.length >= 8) break;
+                        try {
+                            const related = await fetchTmdbReviewsPage(mediaType, String(recId), 1, 'en-US');
+                            merged = dedupeReviews([...merged, ...related.reviews]);
+                        } catch {
+                            // Ignore per-title review fetch failures.
+                        }
+                    }
+                } catch {
+                    // Keep base reviews only when recommendations fail.
+                }
+            }
+
+            setReviews(merged);
+            setRevTotal(primary.totalPages);
+            setReviewsSourceLabel(sourceLabel);
+        } catch {
+            setReviews([]);
+        } finally {
+            setRevLoading(false);
+        }
+    }, [dedupeReviews, fetchTmdbReviewsPage, movie?.language, movie?.tmdb_id, movie?.tvShow]);
+
+    useEffect(() => {
+        if (!movie?.tmdb_id) return;
+        void loadReviews();
+    }, [loadReviews, movie?.tmdb_id]);
 
     const renderCastItem = useCallback((member: CastMember) => (
         <div className="px-1 py-1">
@@ -832,23 +920,35 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             </div>
 
             {/* ── User Reviews — full-width below the grid ────────────────── */}
-            {(reviewsLoading || reviews.length > 0) && (
-                <div className="mt-10 pt-6 pb-8 border-t border-white/6 px-4 md:px-8">
+            <div className="mt-8 pb-8 px-4 md:px-8">
 
                     {/* Section header */}
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between mb-6 border-b border-white/6 pb-3">
+                        <div className="flex items-center gap-3 flex-wrap">
                             <svg className="w-5 h-5 text-brand-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z"/>
                             </svg>
                             <h2 className="text-lg font-bold text-white">User Reviews</h2>
                             {!reviewsLoading && reviews.length > 0 && (
-                                <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/8">
+                                <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
                                     {reviews.length}{reviewsTotalPages > 1 ? '+' : ''} review{reviews.length !== 1 ? 's' : ''}
                                 </span>
                             )}
+                            <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                Source: {reviewsSourceLabel}
+                            </span>
                         </div>
-                        <p className="text-[11px] text-brand-text-dark hidden sm:block">via The Movie Database</p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => void loadReviews()}
+                                disabled={reviewsLoading}
+                                className="text-[11px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10 disabled:opacity-60 transition-colors"
+                            >
+                                {reviewsLoading ? 'Refreshing…' : 'Refresh reviews'}
+                            </button>
+                            <p className="text-[11px] text-brand-text-dark hidden sm:block">Real user sentiment</p>
+                        </div>
                     </div>
 
                     {/* Skeleton */}
@@ -873,6 +973,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         </div>
                     ) : (
                         <>
+                            {reviews.length === 0 ? (
+                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
+                                    <p className="text-white font-semibold text-sm">No reviews available yet</p>
+                                    <p className="text-xs text-brand-text-dark mt-1">This title has limited public reviews right now.</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => void loadReviews()}
+                                        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-brand-text-light hover:text-white hover:bg-white/10 transition-colors"
+                                    >
+                                        Try again
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
                             {/* Review cards grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {reviews.slice(0, reviewsVisible).map(rev => {
@@ -948,42 +1062,25 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                             {(reviewsVisible < reviews.length || reviewsPage < reviewsTotalPages) && (
                                 <div className="flex justify-center mt-6">
                                     <button
-                                        onClick={() => {
-                                            // If we have more locally fetched, reveal 2 more
+                                        onClick={async () => {
                                             if (reviewsVisible < reviews.length) {
                                                 setReviewsVisible(v => Math.min(v + 2, reviews.length));
-                                            } else if (reviewsPage < reviewsTotalPages) {
-                                                // Fetch next page from TMDB
-                                                const nextPage = reviewsPage + 1;
-                                                const mediaType = movie?.tvShow ? 'tv' : 'movie';
-                                                const ep = `${mediaType}/${movie?.tmdb_id}/reviews`;
-                                                setRevLoadMore(true);
-                                                fetch(`/api/tmdb?endpoint=${encodeURIComponent(ep)}&language=en-US&page=${nextPage}`)
-                                                    .then(r => r.json())
-                                                    .then(data => {
-                                                        const TMDB_IMG = 'https://image.tmdb.org/t/p/w92';
-                                                        const raw: any[] = Array.isArray(data.results) ? data.results : [];
-                                                        const more: TmdbReview[] = raw
-                                                            .filter((r: any) => r.content && r.content.trim().length > 40)
-                                                            .map((r: any) => ({
-                                                                id: r.id,
-                                                                author: r.author || 'Anonymous',
-                                                                avatar_url: r.author_details?.avatar_path
-                                                                    ? r.author_details.avatar_path.startsWith('/')
-                                                                        ? `${TMDB_IMG}${r.author_details.avatar_path}`
-                                                                        : r.author_details.avatar_path
-                                                                    : null,
-                                                                rating: r.author_details?.rating ?? null,
-                                                                content: r.content.trim(),
-                                                                url: r.url || null,
-                                                                created_at: r.created_at || null,
-                                                            }));
-                                                        setReviews(prev => [...prev, ...more]);
-                                                        setReviewsVisible(prev => prev + 2);
-                                                        setReviewsPage(nextPage);
-                                                    })
-                                                    .catch(() => {})
-                                                    .finally(() => setRevLoadMore(false));
+                                                return;
+                                            }
+                                            if (reviewsPage >= reviewsTotalPages || !movie?.tmdb_id) return;
+
+                                            const nextPage = reviewsPage + 1;
+                                            const mediaType = movie?.tvShow ? 'tv' : 'movie';
+                                            setRevLoadMore(true);
+                                            try {
+                                                const next = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, nextPage, 'en-US');
+                                                setReviews(prev => dedupeReviews([...prev, ...next.reviews]));
+                                                setReviewsVisible(prev => prev + 2);
+                                                setReviewsPage(nextPage);
+                                            } catch {
+                                                // Keep existing reviews on transient errors.
+                                            } finally {
+                                                setRevLoadMore(false);
                                             }
                                         }}
                                         disabled={reviewsLoadingMore}
@@ -997,11 +1094,12 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     </button>
                                 </div>
                             )}
+                                </>
+                            )}
                             <p className="text-[11px] text-brand-text-dark text-center mt-4">Reviews sourced from The Movie Database (TMDB)</p>
                         </>
                     )}
                 </div>
-            )}
 
             {showWatchlistModal && modalRoot && ReactDOM.createPortal(
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">

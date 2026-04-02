@@ -22,6 +22,14 @@ import { parseAppRoute } from './lib/routeState';
 import { useWatched } from './hooks/useWatched';
 import { cacheGet, cacheSet, movieCacheKey, personCacheKey } from './lib/sessionCache';
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './components/WatchlistIconPicker';
+import {
+  QuickSaveTitle,
+  QUICK_SAVE_DEFAULT_COLOR,
+  buildQuickMovieData,
+  canSubmitQuickSave,
+  getClosedQuickSaveState,
+  getOpenedQuickSaveState
+} from './lib/quickSave';
 
 const debugLog = (...args: any[]) => {
   if (import.meta.env.DEV) {
@@ -31,36 +39,6 @@ const debugLog = (...args: any[]) => {
 
 type AppView = 'discovery' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
-
-type QuickSaveTitle = {
-  id: number;
-  media_type: 'movie' | 'tv';
-  title: string;
-  year?: string;
-  poster_url?: string | null;
-};
-
-const buildQuickMovieData = (item: QuickSaveTitle): MovieData => ({
-  tmdb_id: String(item.id),
-  title: item.title,
-  year: item.year || '',
-  type: item.media_type === 'tv' ? 'show' : 'movie',
-  media_type: item.media_type,
-  genres: [],
-  poster_url: item.poster_url || '',
-  backdrop_url: '',
-  trailer_url: '',
-  ratings: [],
-  cast: [],
-  crew: { director: '', writer: '', music: '' },
-  summary_short: '',
-  summary_medium: '',
-  summary_long_spoilers: '',
-  suspense_breaker: '',
-  where_to_watch: [],
-  extra_images: [],
-  ai_notes: ''
-});
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -86,8 +64,10 @@ const App: React.FC = () => {
   const [quickSaveTarget, setQuickSaveTarget] = useState<QuickSaveTitle | null>(null);
   const [quickSaveFolderId, setQuickSaveFolderId] = useState('');
   const [quickSaveNewFolderName, setQuickSaveNewFolderName] = useState('');
-  const [quickSaveNewFolderColor, setQuickSaveNewFolderColor] = useState('#7c3aed');
+  const [quickSaveNewFolderColor, setQuickSaveNewFolderColor] = useState(QUICK_SAVE_DEFAULT_COLOR);
   const [quickSaveNewFolderIcon, setQuickSaveNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+  const quickSaveDialogRef = useRef<HTMLDivElement | null>(null);
+  const quickSavePreviousFocusRef = useRef<HTMLElement | null>(null);
   const loadingStartedAtRef = useRef<number | null>(null);
   const loadingHideTimeoutRef = useRef<number | null>(null);
   const lastHandledRouteRef = useRef<string>('');
@@ -99,30 +79,107 @@ const App: React.FC = () => {
     isSyncing
   } = useCloudWatchlists();
 
+  const closeQuickSaveModal = useCallback(() => {
+    const next = getClosedQuickSaveState(WATCHLIST_ICON_DEFAULT);
+    setQuickSaveTarget(next.target);
+    setQuickSaveFolderId(next.folderId);
+    setQuickSaveNewFolderName(next.newFolderName);
+    setQuickSaveNewFolderColor(next.newFolderColor);
+    setQuickSaveNewFolderIcon(next.newFolderIcon);
+  }, []);
+
   // Lock body scroll when quick-save modal is open
   useEffect(() => {
     if (quickSaveTarget) {
+      const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = previousOverflow;
       };
     }
   }, [quickSaveTarget]);
+
+  useEffect(() => {
+    if (!quickSaveTarget) return;
+
+    quickSavePreviousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const modal = quickSaveDialogRef.current;
+    const focusableSelector = [
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[href]',
+      '[tabindex]:not([tabindex="-1"])'
+    ].join(', ');
+
+    const getFocusableElements = () => {
+      if (!modal) return [] as HTMLElement[];
+      return Array.from(modal.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (element) => element.tabIndex >= 0 && !element.hasAttribute('aria-hidden')
+      );
+    };
+
+    const initialFocusableElements = getFocusableElements();
+    if (initialFocusableElements.length > 0) {
+      initialFocusableElements[0].focus();
+    } else {
+      modal?.focus();
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!quickSaveDialogRef.current) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeQuickSaveModal();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        quickSaveDialogRef.current.focus();
+        return;
+      }
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (event.shiftKey) {
+        if (!active || active === first || !quickSaveDialogRef.current.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (!active || active === last || !quickSaveDialogRef.current.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      quickSavePreviousFocusRef.current?.focus();
+    };
+  }, [closeQuickSaveModal, quickSaveTarget]);
   const { isWatched, toggle: toggleWatched, watchedCount } = useWatched();
 
-  const resolveQuickSaveFolderId = useCallback(() => {
-    if (watchlists.length === 0) return null;
-    const preferredFolder = watchlists.find((folder) => /watchlist|saved|favorites?/i.test(folder.name));
-    return preferredFolder?.id || watchlists[0]?.id || null;
-  }, [watchlists]);
-
   const handleQuickSaveToWatchlist = useCallback((item: QuickSaveTitle) => {
-    setQuickSaveTarget(item);
-    setQuickSaveFolderId(resolveQuickSaveFolderId() || '');
-    setQuickSaveNewFolderName(watchlists.length === 0 ? 'Watchlist' : '');
-    setQuickSaveNewFolderColor('#7c3aed');
-    setQuickSaveNewFolderIcon(WATCHLIST_ICON_DEFAULT);
-  }, [resolveQuickSaveFolderId, watchlists.length]);
+    const next = getOpenedQuickSaveState(item, watchlists, WATCHLIST_ICON_DEFAULT);
+    setQuickSaveTarget(next.target);
+    setQuickSaveFolderId(next.folderId);
+    setQuickSaveNewFolderName(next.newFolderName);
+    setQuickSaveNewFolderColor(next.newFolderColor);
+    setQuickSaveNewFolderIcon(next.newFolderIcon);
+  }, [watchlists]);
 
   const handleConfirmQuickSave = useCallback(() => {
     if (!quickSaveTarget) return;
@@ -135,11 +192,8 @@ const App: React.FC = () => {
     if (!folderId) return;
 
     saveToFolder(folderId, buildQuickMovieData(quickSaveTarget), quickSaveTarget.title);
-    setQuickSaveTarget(null);
-    setQuickSaveFolderId('');
-    setQuickSaveNewFolderName('');
-    setQuickSaveNewFolderColor('#7c3aed');
-  }, [addFolder, quickSaveFolderId, quickSaveNewFolderColor, quickSaveNewFolderIcon, quickSaveNewFolderName, quickSaveTarget, saveToFolder]);
+    closeQuickSaveModal();
+  }, [addFolder, closeQuickSaveModal, quickSaveFolderId, quickSaveNewFolderColor, quickSaveNewFolderIcon, quickSaveNewFolderName, quickSaveTarget, saveToFolder]);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
@@ -598,93 +652,43 @@ const App: React.FC = () => {
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-3.5 glass-panel border-b-0 z-50">
+        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2.5 sm:py-2.5 glass-panel border-b-0 z-50">
           <button type="button" className="flex items-center gap-2.5 sm:gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
-            <Logo className="w-9 h-9 sm:w-10 sm:h-10 text-primary drop-shadow-glow" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gradient title-font tracking-tight">MovieMonk</h1>
+            <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
+            {/*
+            Previous cinematic wordmark:
+            <h1 className="brand-wordmark title-font text-xl sm:text-2xl font-bold tracking-tight">
+              <span className="brand-wordmark-prefix">Movie</span>
+              <span className="brand-wordmark-main">Monk</span>
+            </h1>
+            */}
+            {/*
+            Rejected studio wordmark:
+            <h1 className="brand-studio title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+              <span className="brand-studio-prefix">Movie</span>
+              <span className="brand-studio-title">Monk</span>
+            </h1>
+            */}
+            {/*
+            Rejected premiere wordmark:
+            <h1 className="brand-premiere text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+              <span className="brand-premiere-prefix">Movie</span>
+              <span className="brand-premiere-title">Monk</span>
+            </h1>
+            */}
+            <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+              <span className="brand-signature-movie">Movie</span>
+              <span className="brand-signature-monk">Monk</span>
+            </h1>
           </button>
-          <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-3">
+          <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-2">
             <DynamicSearchIsland
               onSearch={handleSendMessage}
               onSuggestionSelect={handleSuggestionSelect}
               isLoading={isLoading}
             />
           </div>
-          {quickSaveTarget && (
-            <div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="quick-save-title" onClick={() => setQuickSaveTarget(null)}>
-              <div className="w-full max-w-xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] my-4 flex flex-col animate-scale-up" onClick={(event) => event.stopPropagation()}>
-                <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
-                  <div>
-                    <h3 id="quick-save-title" className="text-lg font-bold text-white">Save to watchlist</h3>
-                    <p className="text-sm text-brand-text-dark mt-1 line-clamp-1">{quickSaveTarget.title}</p>
-                  </div>
-                  <button type="button" onClick={() => setQuickSaveTarget(null)} className="p-2 rounded-lg hover:bg-white/10 text-white" aria-label="Close save dialog">
-                    <XMarkIcon className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-w-0">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-brand-text-dark mb-3">Choose a folder</p>
-                    <div className="grid gap-2 max-h-56 overflow-y-auto pr-1">
-                      {watchlists.length > 0 ? watchlists.map((folder) => (
-                        <button
-                          key={folder.id}
-                          type="button"
-                          onClick={() => setQuickSaveFolderId(folder.id)}
-                          className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${quickSaveFolderId === folder.id ? 'border-brand-primary bg-brand-primary/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/8 border border-white/10 text-white">
-                              <WatchlistIconBadge iconKey={folder.icon} className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-white font-semibold truncate">{folder.name}</div>
-                              <div className="text-xs text-brand-text-dark">{folder.items.length} titles</div>
-                            </div>
-                          </div>
-                        </button>
-                      )) : (
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-brand-text-light">
-                          No watchlists yet. Create one below to save this title.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
-                    <div className="text-xs font-semibold uppercase tracking-widest text-brand-text-dark">Or create a new folder</div>
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                      <input
-                        value={quickSaveNewFolderName}
-                        onChange={(event) => setQuickSaveNewFolderName(event.target.value)}
-                        placeholder="New folder name"
-                        className="w-full rounded-lg bg-black/30 border border-white/10 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                      />
-                    </div>
-                    <WatchlistIconPicker selectedIcon={quickSaveNewFolderIcon} onSelect={setQuickSaveNewFolderIcon} compactLabel="Pick a folder icon" />
-                    <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>
-                  </div>
-
-                </div>
-
-                <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-white/10 bg-brand-surface/50 backdrop-blur-sm">
-                  <button type="button" onClick={() => setQuickSaveTarget(null)} className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium transition-colors">
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmQuickSave}
-                    className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-secondary text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    disabled={!quickSaveFolderId && !quickSaveNewFolderName.trim()}
-                  >
-                    Save Title
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="flex items-center justify-end gap-2 sm:gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-2.5">
             <AuthButton />
             <HeaderUtilityMenu
               user={user}
@@ -697,6 +701,92 @@ const App: React.FC = () => {
             />
           </div>
         </header>
+
+        {quickSaveTarget && (
+          <div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="quick-save-title" onClick={closeQuickSaveModal}>
+            <div
+              ref={quickSaveDialogRef}
+              tabIndex={-1}
+              className="w-full max-w-xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden h-[92dvh] max-h-[92dvh] sm:h-[88dvh] sm:max-h-[88dvh] flex flex-col min-h-0 animate-scale-up"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
+                <div>
+                  <h3 id="quick-save-title" className="text-lg font-bold text-white">Save to watchlist</h3>
+                  <p className="text-sm text-brand-text-dark mt-1 line-clamp-1">{quickSaveTarget.title}</p>
+                </div>
+                <button type="button" onClick={closeQuickSaveModal} className="p-2 rounded-lg hover:bg-white/10 text-white" aria-label="Close save dialog">
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 sm:p-6 space-y-5 overflow-y-auto overscroll-contain flex-1 min-h-0 min-w-0">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-brand-text-dark mb-3">Choose a folder</p>
+                  <div className="grid gap-2 max-h-56 overflow-y-auto pr-1">
+                    {watchlists.length > 0 ? watchlists.map((folder) => (
+                      <button
+                        key={folder.id}
+                        type="button"
+                        onClick={() => setQuickSaveFolderId(folder.id)}
+                        className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${quickSaveFolderId === folder.id ? 'border-brand-primary bg-brand-primary/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/8 border border-white/10 text-white">
+                            <WatchlistIconBadge iconKey={folder.icon} className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-white font-semibold truncate">{folder.name}</div>
+                            <div className="text-xs text-brand-text-dark">{folder.items.length} titles</div>
+                          </div>
+                        </div>
+                      </button>
+                    )) : (
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-brand-text-light">
+                        No watchlists yet. Create one below to save this title.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+                  <div className="text-xs font-semibold uppercase tracking-widest text-brand-text-dark">Or create a new folder</div>
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <input
+                      value={quickSaveNewFolderName}
+                      onChange={(event) => setQuickSaveNewFolderName(event.target.value)}
+                      placeholder="New folder name"
+                      className="w-full rounded-lg bg-black/30 border border-white/10 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                    />
+                  </div>
+                  <WatchlistIconPicker selectedIcon={quickSaveNewFolderIcon} onSelect={setQuickSaveNewFolderIcon} compactLabel="Pick a folder icon" />
+                  <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>
+                </div>
+
+              </div>
+
+              <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-white/10 bg-brand-surface/50 backdrop-blur-sm">
+                <button type="button" onClick={closeQuickSaveModal} className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium transition-colors">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmQuickSave}
+                  className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-secondary text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  disabled={!canSubmitQuickSave({
+                    target: quickSaveTarget,
+                    folderId: quickSaveFolderId,
+                    newFolderName: quickSaveNewFolderName,
+                    newFolderColor: quickSaveNewFolderColor,
+                    newFolderIcon: quickSaveNewFolderIcon
+                  })}
+                >
+                  Save Title
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Copy Toast Notification */}
         {

@@ -13,8 +13,11 @@ const mockFetch = jest.fn();
 (global as any).fetch = mockFetch;
 
 function okJson(payload: any) {
+  const body = JSON.stringify(payload);
   return {
     ok: true,
+    status: 200,
+    text: async () => body,
     json: async () => payload
   };
 }
