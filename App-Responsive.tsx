@@ -98,6 +98,16 @@ const App: React.FC = () => {
     isCloud,
     isSyncing
   } = useCloudWatchlists();
+
+  // Lock body scroll when quick-save modal is open
+  useEffect(() => {
+    if (quickSaveTarget) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'auto';
+      };
+    }
+  }, [quickSaveTarget]);
   const { isWatched, toggle: toggleWatched, watchedCount } = useWatched();
 
   const resolveQuickSaveFolderId = useCallback(() => {
@@ -601,9 +611,9 @@ const App: React.FC = () => {
             />
           </div>
           {quickSaveTarget && (
-            <div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quick-save-title" onClick={() => setQuickSaveTarget(null)}>
-              <div className="w-full max-w-xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
-                <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10">
+            <div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="quick-save-title" onClick={() => setQuickSaveTarget(null)}>
+              <div className="w-full max-w-xl bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[92dvh] my-4 flex flex-col animate-scale-up" onClick={(event) => event.stopPropagation()}>
+                <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
                   <div>
                     <h3 id="quick-save-title" className="text-lg font-bold text-white">Save to watchlist</h3>
                     <p className="text-sm text-brand-text-dark mt-1 line-clamp-1">{quickSaveTarget.title}</p>
@@ -613,7 +623,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-5">
+                <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 min-w-0">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-widest text-brand-text-dark mb-3">Choose a folder</p>
                     <div className="grid gap-2 max-h-56 overflow-y-auto pr-1">
@@ -656,19 +666,20 @@ const App: React.FC = () => {
                     <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3">
-                    <button type="button" onClick={() => setQuickSaveTarget(null)} className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium">
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmQuickSave}
-                      className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-secondary text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!quickSaveFolderId && !quickSaveNewFolderName.trim()}
-                    >
-                      Save Title
-                    </button>
-                  </div>
+                </div>
+
+                <div className="flex-shrink-0 flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-white/10 bg-brand-surface/50 backdrop-blur-sm">
+                  <button type="button" onClick={() => setQuickSaveTarget(null)} className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium transition-colors">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmQuickSave}
+                    className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-secondary text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={!quickSaveFolderId && !quickSaveNewFolderName.trim()}
+                  >
+                    Save Title
+                  </button>
                 </div>
               </div>
             </div>
