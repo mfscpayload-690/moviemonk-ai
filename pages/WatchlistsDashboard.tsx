@@ -7,6 +7,12 @@ import { loadProfileSettings } from '../lib/userSettings';
 import logoUrl from '../asset/android-chrome-192x192.png';
 import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon } from '../components/icons';
 import { WatchlistFolder } from '../types';
+import {
+  getWatchlistIconOption,
+  WatchlistIconBadge,
+  WatchlistIconPicker,
+  WATCHLIST_ICON_DEFAULT,
+} from '../components/WatchlistIconPicker';
 
 export const WATCHLIST_COLORS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
@@ -46,6 +52,7 @@ export function WatchlistsDashboard() {
     folders, 
     renameFolder, 
     setFolderColor, 
+    setFolderIcon,
     deleteFolder, 
     deleteItem,
     isCloud, 
@@ -64,6 +71,7 @@ export function WatchlistsDashboard() {
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderColor, setEditFolderColor] = useState('#7c3aed');
+  const [editFolderIcon, setEditFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
 
   // Deep-link: resolve :folderName param → activeFolderId once folders are loaded
   const [deepLinkResolved, setDeepLinkResolved] = useState(false);
@@ -132,6 +140,7 @@ export function WatchlistsDashboard() {
     setEditingFolderId(folder.id);
     setEditFolderName(folder.name);
     setEditFolderColor(folder.color || '#7c3aed');
+    setEditFolderIcon(getWatchlistIconOption(folder.icon).key);
   };
 
   const saveFolderEdits = () => {
@@ -145,6 +154,9 @@ export function WatchlistsDashboard() {
     }
     if (editFolderColor !== folder.color) {
       setFolderColor(folder.id, editFolderColor);
+    }
+    if ((editFolderIcon || WATCHLIST_ICON_DEFAULT) !== (folder.icon || WATCHLIST_ICON_DEFAULT)) {
+      setFolderIcon(folder.id, editFolderIcon);
     }
     setEditingFolderId(null);
   };
@@ -307,7 +319,9 @@ export function WatchlistsDashboard() {
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: activeFolder.color, boxShadow: `0 0 16px ${activeFolder.color}` }} />
+              <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white shadow-lg">
+                <WatchlistIconBadge iconKey={activeFolder.icon} className="w-5 h-5" />
+              </div>
               {editingFolderId === activeFolder.id ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -349,20 +363,23 @@ export function WatchlistsDashboard() {
           </div>
           
           {editingFolderId === activeFolder.id && (
-            <div className="mb-8 flex items-center gap-2 p-4 glass-panel rounded-xl border border-white/5 overflow-x-auto">
-              <span className="text-sm text-brand-text-light mr-2 flex-shrink-0">Theme Color:</span>
-              <div className="flex gap-2 min-w-max">
-                {WATCHLIST_COLORS.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setEditFolderColor(color)}
-                    className={`w-6 h-6 rounded-full border ${editFolderColor === color ? 'border-white ring-2 ring-white/50 scale-110' : 'border-transparent'} transition-all flex-shrink-0`}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Color ${color}`}
-                  />
-                ))}
+            <div className="mb-8 p-4 glass-panel rounded-xl border border-white/5 space-y-4">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <span className="text-sm text-brand-text-light mr-2 flex-shrink-0">Theme Color:</span>
+                <div className="flex gap-2 min-w-max">
+                  {WATCHLIST_COLORS.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setEditFolderColor(color)}
+                      className={`w-6 h-6 rounded-full border ${editFolderColor === color ? 'border-white ring-2 ring-white/50 scale-110' : 'border-transparent'} transition-all flex-shrink-0`}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Color ${color}`}
+                    />
+                  ))}
+                </div>
               </div>
+              <WatchlistIconPicker selectedIcon={editFolderIcon} onSelect={setEditFolderIcon} compactLabel="Folder icon" />
             </div>
           )}
 
@@ -448,7 +465,9 @@ export function WatchlistsDashboard() {
 
               <div className="relative z-10 flex justify-between items-start cursor-pointer" onClick={() => openFolder(folder.id)}>
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]" style={{ backgroundColor: folder.color, boxShadow: `0 0 12px ${folder.color}80` }} />
+                  <div className="w-9 h-9 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white">
+                    <WatchlistIconBadge iconKey={folder.icon} className="w-4.5 h-4.5" />
+                  </div>
                   <h3 className="text-lg font-bold text-white group-hover:text-brand-primary transition-colors pr-2 break-words max-w-[200px]">{folder.name}</h3>
                 </div>
                 <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-white/40">
@@ -466,17 +485,20 @@ export function WatchlistsDashboard() {
                     placeholder="Folder name"
                   />
                   <div className="flex items-center justify-between">
-                    <div className="flex gap-1.5">
-                      {WATCHLIST_COLORS.map(color => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => setEditFolderColor(color)}
-                          className={`w-5 h-5 rounded-full border ${editFolderColor === color ? 'border-white ring-1 ring-white/50 scale-110' : 'border-transparent'} transition-all`}
-                          style={{ backgroundColor: color }}
-                          aria-label={`Color ${color}`}
-                        />
-                      ))}
+                    <div className="space-y-2 w-full">
+                      <div className="flex gap-1.5">
+                        {WATCHLIST_COLORS.map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setEditFolderColor(color)}
+                            className={`w-5 h-5 rounded-full border ${editFolderColor === color ? 'border-white ring-1 ring-white/50 scale-110' : 'border-transparent'} transition-all`}
+                            style={{ backgroundColor: color }}
+                            aria-label={`Color ${color}`}
+                          />
+                        ))}
+                      </div>
+                      <WatchlistIconPicker selectedIcon={editFolderIcon} onSelect={setEditFolderIcon} compactLabel="Folder icon" />
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => setEditingFolderId(null)} className="p-1.5 rounded-md hover:bg-white/10 text-brand-text-light hover:text-white transition-colors">

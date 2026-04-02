@@ -1,6 +1,7 @@
 import { MovieData, WatchlistFolder, WatchlistItem } from '../types';
 
 export const WATCHLIST_STORAGE_KEY = 'moviemonk_watchlists_v1';
+export const WATCHLIST_DEFAULT_ICON = 'folder';
 
 const generateId = () => `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
@@ -9,12 +10,27 @@ const getMovieKey = (movie: MovieData) => {
   return `${movie.title}-${movie.year}-${movie.type}`.toLowerCase();
 };
 
+const normalizeFolder = (folder: any): WatchlistFolder | null => {
+  if (!folder || typeof folder !== 'object') return null;
+  if (!folder.id || !folder.name) return null;
+  const items = Array.isArray(folder.items) ? folder.items : [];
+  return {
+    id: String(folder.id),
+    name: String(folder.name),
+    color: typeof folder.color === 'string' && folder.color.trim() ? folder.color : '#7c3aed',
+    icon: typeof folder.icon === 'string' && folder.icon.trim() ? folder.icon : WATCHLIST_DEFAULT_ICON,
+    items
+  };
+};
+
 export function loadWatchlistsFromStorage(storage: Pick<Storage, 'getItem'>): WatchlistFolder[] {
   try {
     const raw = storage.getItem(WATCHLIST_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed.map(normalizeFolder).filter((folder): folder is WatchlistFolder => Boolean(folder))
+      : [];
   } catch {
     return [];
   }
@@ -30,13 +46,14 @@ export function saveWatchlistsToStorage(
 export function addFolderToWatchlists(
   folders: WatchlistFolder[],
   name: string,
-  color: string
+  color: string,
+  icon?: string
 ): { next: WatchlistFolder[]; folderId: string | null } {
   const trimmed = name.trim();
   if (!trimmed) return { next: folders, folderId: null };
   const folderId = generateId();
   return {
-    next: [{ id: folderId, name: trimmed, color: color || '#7c3aed', items: [] }, ...folders],
+    next: [{ id: folderId, name: trimmed, color: color || '#7c3aed', icon: icon || WATCHLIST_DEFAULT_ICON, items: [] }, ...folders],
     folderId
   };
 }

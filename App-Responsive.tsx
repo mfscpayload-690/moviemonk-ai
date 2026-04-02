@@ -21,6 +21,7 @@ import { initPerfDebug, useRenderCounter } from './lib/perfDebug';
 import { parseAppRoute } from './lib/routeState';
 import { useWatched } from './hooks/useWatched';
 import { cacheGet, cacheSet, movieCacheKey, personCacheKey } from './lib/sessionCache';
+import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './components/WatchlistIconPicker';
 
 const debugLog = (...args: any[]) => {
   if (import.meta.env.DEV) {
@@ -86,6 +87,7 @@ const App: React.FC = () => {
   const [quickSaveFolderId, setQuickSaveFolderId] = useState('');
   const [quickSaveNewFolderName, setQuickSaveNewFolderName] = useState('');
   const [quickSaveNewFolderColor, setQuickSaveNewFolderColor] = useState('#7c3aed');
+  const [quickSaveNewFolderIcon, setQuickSaveNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
   const loadingStartedAtRef = useRef<number | null>(null);
   const loadingHideTimeoutRef = useRef<number | null>(null);
   const lastHandledRouteRef = useRef<string>('');
@@ -109,6 +111,7 @@ const App: React.FC = () => {
     setQuickSaveFolderId(resolveQuickSaveFolderId() || '');
     setQuickSaveNewFolderName(watchlists.length === 0 ? 'Watchlist' : '');
     setQuickSaveNewFolderColor('#7c3aed');
+    setQuickSaveNewFolderIcon(WATCHLIST_ICON_DEFAULT);
   }, [resolveQuickSaveFolderId, watchlists.length]);
 
   const handleConfirmQuickSave = useCallback(() => {
@@ -116,7 +119,7 @@ const App: React.FC = () => {
 
     let folderId = quickSaveFolderId;
     if (!folderId && quickSaveNewFolderName.trim()) {
-      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderColor) || '';
+      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderColor, quickSaveNewFolderIcon) || '';
     }
 
     if (!folderId) return;
@@ -126,7 +129,7 @@ const App: React.FC = () => {
     setQuickSaveFolderId('');
     setQuickSaveNewFolderName('');
     setQuickSaveNewFolderColor('#7c3aed');
-  }, [addFolder, quickSaveFolderId, quickSaveNewFolderName, quickSaveNewFolderColor, quickSaveTarget, saveToFolder]);
+  }, [addFolder, quickSaveFolderId, quickSaveNewFolderColor, quickSaveNewFolderIcon, quickSaveNewFolderName, quickSaveTarget, saveToFolder]);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
@@ -621,11 +624,15 @@ const App: React.FC = () => {
                           onClick={() => setQuickSaveFolderId(folder.id)}
                           className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${quickSaveFolderId === folder.id ? 'border-brand-primary bg-brand-primary/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
                         >
-                          <div className="min-w-0">
-                            <div className="text-white font-semibold truncate">{folder.name}</div>
-                            <div className="text-xs text-brand-text-dark">{folder.items.length} titles</div>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/8 border border-white/10 text-white">
+                              <WatchlistIconBadge iconKey={folder.icon} className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-white font-semibold truncate">{folder.name}</div>
+                              <div className="text-xs text-brand-text-dark">{folder.items.length} titles</div>
+                            </div>
                           </div>
-                          <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: folder.color || '#7c3aed' }} />
                         </button>
                       )) : (
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-brand-text-light">
@@ -644,14 +651,8 @@ const App: React.FC = () => {
                         placeholder="New folder name"
                         className="w-full rounded-lg bg-black/30 border border-white/10 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary"
                       />
-                      <input
-                        type="color"
-                        value={quickSaveNewFolderColor}
-                        onChange={(event) => setQuickSaveNewFolderColor(event.target.value)}
-                        className="h-12 w-full sm:w-16 rounded-lg bg-transparent border border-white/10 cursor-pointer"
-                        aria-label="Folder color"
-                      />
                     </div>
+                    <WatchlistIconPicker selectedIcon={quickSaveNewFolderIcon} onSelect={setQuickSaveNewFolderIcon} compactLabel="Pick a folder icon" />
                     <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>
                   </div>
 

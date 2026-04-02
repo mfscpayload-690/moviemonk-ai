@@ -52,41 +52,43 @@ const SimilarCarousel: React.FC<SimilarCarouselProps> = ({ label, items, onOpenA
                 <div className="w-full h-full bg-white/10" />
               )}
               <div className={`absolute inset-0 transition ${hoverIndex === idx ? 'bg-black/20' : 'bg-transparent'}`} />
-              {(onQuickSaveToWatchlist || onToggleWatched) && (
-                <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-                  {onQuickSaveToWatchlist ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onQuickSaveToWatchlist(it);
-                      }}
-                      className="h-7 w-7 rounded-full bg-black/60 border border-white/15 text-white/80 hover:bg-violet-500/90 hover:text-white flex items-center justify-center shadow-lg"
-                      aria-label={`Save ${it.title} to watchlist`}
-                      title="Save to watchlist"
-                    >
-                      <TagIcon className="h-3.5 w-3.5" />
-                    </button>
-                  ) : <span />}
-                  {onToggleWatched ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onToggleWatched(it);
-                      }}
-                      className={`h-7 w-7 rounded-full border flex items-center justify-center shadow-lg transition-colors ${isWatched?.(it.id, it.media_type) ? 'bg-green-500 border-green-400 text-white' : 'bg-black/60 border-white/15 text-white/80 hover:bg-green-500/90 hover:text-white'}`}
-                      aria-label={isWatched?.(it.id, it.media_type) ? 'Mark as unwatched' : 'Mark as watched'}
-                      title={isWatched?.(it.id, it.media_type) ? 'Watched ✓' : 'Mark as watched'}
-                    >
-                      <WatchedIcon className="h-3.5 w-3.5" filled={Boolean(isWatched?.(it.id, it.media_type))} />
-                    </button>
-                  ) : <span />}
-                </div>
-              )}
             </div>
             <p className="mt-2 text-xs font-semibold text-white line-clamp-2">{it.title}</p>
             {it.year && <p className="text-[11px] text-brand-text-dark">{it.year}</p>}
+            {(onQuickSaveToWatchlist || onToggleWatched) && (
+              <div className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150">
+                {onQuickSaveToWatchlist ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onQuickSaveToWatchlist(it);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold text-violet-300 hover:bg-violet-500/20 hover:text-white"
+                    aria-label={`Save ${it.title} to watchlist`}
+                    title="Save to watchlist"
+                  >
+                    <TagIcon className="h-3 w-3" />
+                    Save
+                  </button>
+                ) : null}
+                {onToggleWatched ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleWatched(it);
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${isWatched?.(it.id, it.media_type) ? 'border-green-500/40 bg-green-500/15 text-green-300 hover:bg-green-500/25' : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'}`}
+                    aria-label={isWatched?.(it.id, it.media_type) ? 'Mark as unwatched' : 'Mark as watched'}
+                    title={isWatched?.(it.id, it.media_type) ? 'Watched ✓' : 'Mark as watched'}
+                  >
+                    <WatchedIcon className="h-3 w-3" filled={Boolean(isWatched?.(it.id, it.media_type))} />
+                    {isWatched?.(it.id, it.media_type) ? 'Watched' : 'Watched'}
+                  </button>
+                ) : null}
+              </div>
+            )}
           </div>
         ))}
       </div>

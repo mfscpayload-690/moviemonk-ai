@@ -9,6 +9,7 @@ import { VirtualizedList } from './VirtualizedList';
 import { useRenderCounter } from '../lib/perfDebug';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
+import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './WatchlistIconPicker';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -18,7 +19,7 @@ interface MovieDisplayProps {
     onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
     onQuickSearch: (title: string) => void;
     watchlists: WatchlistFolder[];
-    onCreateWatchlist: (name: string, color: string) => string | null;
+    onCreateWatchlist: (name: string, color: string, icon?: string) => string | null;
     onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
     isWatched?: boolean;
     onToggleWatched?: () => void;
@@ -199,6 +200,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [selectedFolderId, setSelectedFolderId] = useState('');
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
+    const [newFolderIcon, setNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
     const [customSavedTitle, setCustomSavedTitle] = useState('');
     const [showRelatedModal, setShowRelatedModal] = useState(false);
     const heroPosterSrc = movie?.poster_url || movie?.backdrop_url || movie?.extra_images?.[0] || '';
@@ -242,6 +244,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         }
         setNewFolderName('');
         setNewFolderColor('#7c3aed');
+        setNewFolderIcon(WATCHLIST_ICON_DEFAULT);
     }, [movie, watchlists]);
 
     // When opening the modal, clear selection to force explicit choice
@@ -282,7 +285,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         if (!movie) return;
         let folderId = selectedFolderId;
         if (!folderId && newFolderName.trim()) {
-            const createdId = onCreateWatchlist(newFolderName, newFolderColor);
+            const createdId = onCreateWatchlist(newFolderName, newFolderColor, newFolderIcon);
             if (createdId) {
                 folderId = createdId;
                 setSelectedFolderId(createdId);
@@ -1058,18 +1061,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                             {newFolderNameError && (
                                 <p className="text-xs text-red-400">{newFolderNameError}</p>
                             )}
-                            <div className="flex items-center gap-2">
-                                {COLOR_PRESETS.map(color => (
-                                    <button
-                                        key={color}
-                                        type="button"
-                                        onClick={() => setNewFolderColor(color)}
-                                        className={`w-7 h-7 rounded-full border ${newFolderColor === color ? 'border-white ring-2 ring-white/80' : 'border-white/20'}`}
-                                        style={{ backgroundColor: color }}
-                                        aria-label={`Choose ${color}`}
-                                    />
-                                ))}
-                            </div>
+                            <WatchlistIconPicker selectedIcon={newFolderIcon} onSelect={setNewFolderIcon} compactLabel="Pick a folder icon" />
+                            <p className="text-xs text-brand-text-dark">Pick an icon so the folder stands out on your watchlists page.</p>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 pt-2">
@@ -1080,14 +1073,18 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                         const folder = watchlists.find(f => f.id === selectedFolderId);
                                         return folder ? (
                                             <span className="inline-flex items-center gap-2">
-                                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white/10 text-white">
+                                                    <WatchlistIconBadge iconKey={folder.icon || WATCHLIST_ICON_DEFAULT} className="h-3 w-3" />
+                                                </span>
                                                 <span>Saving to: <span className="text-white font-semibold">{folder.name}</span></span>
                                             </span>
                                         ) : null;
                                     })()
                                 ) : newFolderName.trim().length > 0 ? (
                                     <span className="inline-flex items-center gap-2">
-                                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: newFolderColor }}></span>
+                                        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white/10 text-white">
+                                            <WatchlistIconBadge iconKey={newFolderIcon} className="h-3 w-3" />
+                                        </span>
                                         <span>Saving to new: <span className="text-white font-semibold">{newFolderName.trim()}</span></span>
                                     </span>
                                 ) : (

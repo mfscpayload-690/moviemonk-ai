@@ -224,6 +224,7 @@ export interface WatchlistFolder {
   id: string;
   name: string;
   color: string;
+  icon?: string;
   items: WatchlistItem[];
 }
 

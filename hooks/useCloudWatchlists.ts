@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MovieData, WatchlistFolder, WatchlistItem } from '../types';
 import { useWatchlists } from './useWatchlists';
-import { WATCHLIST_STORAGE_KEY, loadWatchlistsFromStorage, saveWatchlistsToStorage } from './watchlistStore';
+import { WATCHLIST_DEFAULT_ICON, WATCHLIST_STORAGE_KEY, loadWatchlistsFromStorage, saveWatchlistsToStorage } from './watchlistStore';
 import { useAuth } from '../contexts/AuthContext';
 import {
   addCloudFolder,
@@ -10,6 +10,7 @@ import {
   fetchCloudWatchlists,
   renameCloudFolder,
   saveCloudItem,
+  updateCloudFolderIcon,
   updateCloudFolderColor
 } from '../services/watchlistSync';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -82,7 +83,7 @@ export function useCloudWatchlists() {
   const cloudApi = useMemo(
     () => ({
       folders: cloudFolders,
-      addFolder: (name: string, color: string) => {
+      addFolder: (name: string, color: string, icon?: string) => {
         const trimmed = name.trim();
         if (!trimmed || !user?.id) return null;
         const folderId = crypto.randomUUID();
@@ -90,6 +91,7 @@ export function useCloudWatchlists() {
           id: folderId,
           name: trimmed,
           color: color || '#7c3aed',
+          icon: icon || WATCHLIST_DEFAULT_ICON,
           items: []
         };
         updateCloudState((prev) => [nextFolder, ...prev]);
@@ -148,6 +150,14 @@ export function useCloudWatchlists() {
         updateCloudState((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, color } : folder)));
         void updateCloudFolderColor(folderId, color).catch((error) => {
           console.warn('Failed to update cloud folder color', error);
+          refreshCloud();
+        });
+      },
+      setFolderIcon: (folderId: string, icon: string) => {
+        if (!icon) return;
+        updateCloudState((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, icon } : folder)));
+        void updateCloudFolderIcon(folderId, icon).catch((error) => {
+          console.warn('Failed to update cloud folder icon', error);
           refreshCloud();
         });
       },
@@ -217,6 +227,7 @@ export function useCloudWatchlists() {
       refresh: local.refresh,
       renameFolder: local.renameFolder,
       setFolderColor: local.setFolderColor,
+      setFolderIcon: local.setFolderIcon,
       moveItem: local.moveItem,
       deleteItem: local.deleteItem,
       deleteFolder: deleteLocalFolder,

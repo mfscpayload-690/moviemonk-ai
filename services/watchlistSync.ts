@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { WatchlistFolder, WatchlistItem } from '../types';
+import { WATCHLIST_DEFAULT_ICON } from '../hooks/watchlistStore';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -19,6 +20,7 @@ type CloudFolderRow = {
   user_id: string;
   name: string;
   color: string;
+  icon?: string | null;
   created_at?: string;
 };
 
@@ -41,11 +43,27 @@ function getSupabaseOrThrow() {
 
 export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFolder[]> {
   const client = getSupabaseOrThrow();
-  const { data: folderRows, error: folderError } = await client
+  let folderRows: any[] | null = null;
+  let folderError: any = null;
+
+  const folderQueryWithIcon = await client
     .from('watchlist_folders')
-    .select('id, user_id, name, color, created_at')
+    .select('id, user_id, name, color, icon, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
+
+  folderRows = folderQueryWithIcon.data;
+  folderError = folderQueryWithIcon.error;
+
+  if (folderError && /column .*icon|icon does not exist|schema cache/i.test(String(folderError?.message || folderError))) {
+    const fallbackQuery = await client
+      .from('watchlist_folders')
+      .select('id, user_id, name, color, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    folderRows = fallbackQuery.data;
+    folderError = fallbackQuery.error;
+  }
 
   if (folderError) throw folderError;
   if (!folderRows || folderRows.length === 0) return [];
@@ -76,6 +94,7 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
     id: folder.id,
     name: folder.name,
     color: folder.color || '#7c3aed',
+    icon: folder.icon || WATCHLIST_DEFAULT_ICON,
     items: itemsByFolder.get(folder.id) || []
   }));
 }
@@ -84,15 +103,26 @@ export async function uploadWatchlistsToCloud(userId: string, folders: Watchlist
   const client = getSupabaseOrThrow();
   for (const folder of folders) {
     const folderId = ensureUuid(folder.id);
-    const { error: folderError } = await client.from('watchlist_folders').upsert(
+    const payload: Record<string, any> = {
+      id: folderId,
+      user_id: userId,
+      name: folder.name,
+      color: folder.color || '#7c3aed',
+      icon: folder.icon || WATCHLIST_DEFAULT_ICON,
+    };
+
+    let { error: folderError } = await client.from('watchlist_folders').upsert(
       {
-        id: folderId,
-        user_id: userId,
-        name: folder.name,
-        color: folder.color || '#7c3aed'
+        ...payload
       },
       { onConflict: 'id' }
     );
+
+    if (folderError && /column .*icon|icon does not exist|schema cache/i.test(String(folderError?.message || folderError))) {
+      delete payload.icon;
+      const retry = await client.from('watchlist_folders').upsert(payload, { onConflict: 'id' });
+      folderError = retry.error;
+    }
 
     if (folderError) throw folderError;
 
@@ -119,16 +149,26 @@ export async function addCloudFolder(
   userId: string,
   name: string,
   color: string,
+  icon = WATCHLIST_DEFAULT_ICON,
   folderId = crypto.randomUUID()
 ): Promise<string> {
   const client = getSupabaseOrThrow();
   const safeId = ensureUuid(folderId);
-  const { error } = await client.from('watchlist_folders').insert({
+  const payload: Record<string, any> = {
     id: safeId,
     user_id: userId,
     name: name.trim(),
-    color: color || '#7c3aed'
-  });
+    color: color || '#7c3aed',
+    icon,
+  };
+
+  let { error } = await client.from('watchlist_folders').insert(payload);
+
+  if (error && /column .*icon|icon does not exist|schema cache/i.test(String(error?.message || error))) {
+    delete payload.icon;
+    const retry = await client.from('watchlist_folders').insert(payload);
+    error = retry.error;
+  }
 
   if (error) throw error;
   return safeId;
@@ -172,6 +212,21 @@ export async function updateCloudFolderColor(folderId: string, color: string): P
     .from('watchlist_folders')
     .update({ color, updated_at: new Date().toISOString() })
     .eq('id', folderId);
+  if (error) throw error;
+}
+
+export async function updateCloudFolderIcon(folderId: string, icon: string): Promise<void> {
+  const client = getSupabaseOrThrow();
+  let { error } = await client
+    .from('watchlist_folders')
+    .update({ icon, updated_at: new Date().toISOString() })
+    .eq('id', folderId);
+
+  // If the icon column is not deployed yet, treat as non-fatal.
+  if (error && /column .*icon|icon does not exist|schema cache/i.test(String(error?.message || error))) {
+    error = null;
+  }
+
   if (error) throw error;
 }
 

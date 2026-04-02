@@ -43,8 +43,8 @@ export function useWatchlists() {
     setFolders(prev => updater(prev));
   };
 
-  const addFolder = (name: string, color: string) => {
-    const { folderId, next } = addFolderToWatchlists(folders, name, color);
+  const addFolder = (name: string, color: string, icon?: string) => {
+    const { folderId, next } = addFolderToWatchlists(folders, name, color, icon);
     if (!folderId) return null;
     setFolders(next);
     return folderId;
@@ -64,6 +64,12 @@ export function useWatchlists() {
     const nextColor = color && color.trim() ? color : undefined;
     if (!nextColor) return;
     persist(prev => prev.map(f => f.id === folderId ? { ...f, color: nextColor } : f));
+  };
+
+  const setFolderIcon = (folderId: string, icon: string) => {
+    const nextIcon = icon && icon.trim() ? icon : undefined;
+    if (!nextIcon) return;
+    persist(prev => prev.map(f => f.id === folderId ? { ...f, icon: nextIcon } : f));
   };
 
   const moveItem = (fromFolderId: string, itemId: string, toFolderId: string) => {
@@ -113,6 +119,7 @@ export function useWatchlists() {
     refresh,
     renameFolder,
     setFolderColor,
+    setFolderIcon,
     moveItem,
     deleteItem
   };
