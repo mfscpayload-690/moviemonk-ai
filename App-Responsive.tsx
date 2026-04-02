@@ -652,19 +652,19 @@ const App: React.FC = () => {
     <>
       <div className="app-container">
         {/* Header */}
-        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-3.5 glass-panel border-b-0 z-50">
+        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2.5 sm:py-2.5 glass-panel border-b-0 z-50">
           <button type="button" className="flex items-center gap-2.5 sm:gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
-            <Logo className="w-9 h-9 sm:w-10 sm:h-10 text-primary drop-shadow-glow" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gradient title-font tracking-tight">MovieMonk</h1>
+            <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
+            <h1 className="text-xl sm:text-[1.9rem] font-bold text-gradient title-font tracking-tight">MovieMonk</h1>
           </button>
-          <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-3">
+          <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-2">
             <DynamicSearchIsland
               onSearch={handleSendMessage}
               onSuggestionSelect={handleSuggestionSelect}
               isLoading={isLoading}
             />
           </div>
-          <div className="flex items-center justify-end gap-2 sm:gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-2.5">
             <AuthButton />
             <HeaderUtilityMenu
               user={user}
