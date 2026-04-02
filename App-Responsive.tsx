@@ -82,6 +82,10 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('discovery');
   const [globalLoadingVisible, setGlobalLoadingVisible] = useState(false);
   const [shortlistCandidates, setShortlistCandidates] = useState<AmbiguousCandidate[] | null>(null);
+  const [quickSaveTarget, setQuickSaveTarget] = useState<QuickSaveTitle | null>(null);
+  const [quickSaveFolderId, setQuickSaveFolderId] = useState('');
+  const [quickSaveNewFolderName, setQuickSaveNewFolderName] = useState('');
+  const [quickSaveNewFolderColor, setQuickSaveNewFolderColor] = useState('#7c3aed');
   const loadingStartedAtRef = useRef<number | null>(null);
   const loadingHideTimeoutRef = useRef<number | null>(null);
   const lastHandledRouteRef = useRef<string>('');
@@ -101,13 +105,28 @@ const App: React.FC = () => {
   }, [watchlists]);
 
   const handleQuickSaveToWatchlist = useCallback((item: QuickSaveTitle) => {
-    let folderId = resolveQuickSaveFolderId();
-    if (!folderId) {
-      folderId = addFolder('Watchlist', '#7c3aed');
+    setQuickSaveTarget(item);
+    setQuickSaveFolderId(resolveQuickSaveFolderId() || '');
+    setQuickSaveNewFolderName(watchlists.length === 0 ? 'Watchlist' : '');
+    setQuickSaveNewFolderColor('#7c3aed');
+  }, [resolveQuickSaveFolderId, watchlists.length]);
+
+  const handleConfirmQuickSave = useCallback(() => {
+    if (!quickSaveTarget) return;
+
+    let folderId = quickSaveFolderId;
+    if (!folderId && quickSaveNewFolderName.trim()) {
+      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderColor) || '';
     }
+
     if (!folderId) return;
-    saveToFolder(folderId, buildQuickMovieData(item), item.title);
-  }, [addFolder, resolveQuickSaveFolderId, saveToFolder]);
+
+    saveToFolder(folderId, buildQuickMovieData(quickSaveTarget), quickSaveTarget.title);
+    setQuickSaveTarget(null);
+    setQuickSaveFolderId('');
+    setQuickSaveNewFolderName('');
+    setQuickSaveNewFolderColor('#7c3aed');
+  }, [addFolder, quickSaveFolderId, quickSaveNewFolderName, quickSaveNewFolderColor, quickSaveTarget, saveToFolder]);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
@@ -578,6 +597,81 @@ const App: React.FC = () => {
               isLoading={isLoading}
             />
           </div>
+          {quickSaveTarget && (
+            <div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quick-save-title" onClick={() => setQuickSaveTarget(null)}>
+              <div className="w-full max-w-xl bg-brand-surface border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
+                <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10">
+                  <div>
+                    <h3 id="quick-save-title" className="text-lg font-bold text-white">Save to watchlist</h3>
+                    <p className="text-sm text-brand-text-dark mt-1 line-clamp-1">{quickSaveTarget.title}</p>
+                  </div>
+                  <button type="button" onClick={() => setQuickSaveTarget(null)} className="p-2 rounded-lg hover:bg-white/10 text-white" aria-label="Close save dialog">
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-4 sm:p-6 space-y-5">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-brand-text-dark mb-3">Choose a folder</p>
+                    <div className="grid gap-2 max-h-56 overflow-y-auto pr-1">
+                      {watchlists.length > 0 ? watchlists.map((folder) => (
+                        <button
+                          key={folder.id}
+                          type="button"
+                          onClick={() => setQuickSaveFolderId(folder.id)}
+                          className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${quickSaveFolderId === folder.id ? 'border-brand-primary bg-brand-primary/10' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
+                        >
+                          <div className="min-w-0">
+                            <div className="text-white font-semibold truncate">{folder.name}</div>
+                            <div className="text-xs text-brand-text-dark">{folder.items.length} titles</div>
+                          </div>
+                          <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: folder.color || '#7c3aed' }} />
+                        </button>
+                      )) : (
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-brand-text-light">
+                          No watchlists yet. Create one below to save this title.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <div className="text-xs font-semibold uppercase tracking-widest text-brand-text-dark">Or create a new folder</div>
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <input
+                        value={quickSaveNewFolderName}
+                        onChange={(event) => setQuickSaveNewFolderName(event.target.value)}
+                        placeholder="New folder name"
+                        className="w-full rounded-lg bg-black/30 border border-white/10 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                      />
+                      <input
+                        type="color"
+                        value={quickSaveNewFolderColor}
+                        onChange={(event) => setQuickSaveNewFolderColor(event.target.value)}
+                        className="h-12 w-full sm:w-16 rounded-lg bg-transparent border border-white/10 cursor-pointer"
+                        aria-label="Folder color"
+                      />
+                    </div>
+                    <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3">
+                    <button type="button" onClick={() => setQuickSaveTarget(null)} className="px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium">
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmQuickSave}
+                      className="px-4 py-2.5 rounded-lg bg-brand-primary hover:bg-brand-secondary text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!quickSaveFolderId && !quickSaveNewFolderName.trim()}
+                    >
+                      Save Title
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-end gap-2 sm:gap-3">
             <AuthButton />
             <HeaderUtilityMenu
@@ -675,6 +769,7 @@ const App: React.FC = () => {
                 });
               }}
               isRelatedWatched={(tmdbId, mediaType) => isWatched(tmdbId, mediaType)}
+              onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
             />
           )}
 

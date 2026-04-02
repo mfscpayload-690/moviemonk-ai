@@ -24,6 +24,7 @@ interface MovieDisplayProps {
     onToggleWatched?: () => void;
     onToggleRelatedWatched?: (entry: { tmdb_id: string; media_type: 'movie' | 'tv'; title: string; poster_url?: string | null; year?: string | null; }) => void;
     isRelatedWatched?: (tmdbId: string, mediaType: 'movie' | 'tv') => boolean;
+    onQuickSaveToWatchlist?: (entry: { id: number; media_type: 'movie' | 'tv'; title: string; year?: string; poster_url?: string | null; }) => void;
 }
 
 const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
@@ -183,7 +184,7 @@ const DISCOVER_TITLES = [
 
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched, onToggleRelatedWatched, isRelatedWatched }) => {
+const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched, onToggleRelatedWatched, isRelatedWatched, onQuickSaveToWatchlist }) => {
     useRenderCounter('MovieDisplay');
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
@@ -292,43 +293,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         setShowWatchlistModal(false);
     };
 
-    const resolveQuickSaveFolderId = () => {
-        if (watchlists.length === 0) return null;
-        const preferredFolder = watchlists.find((folder) => /watchlist|saved|favorites?/i.test(folder.name));
-        return preferredFolder?.id || watchlists[0]?.id || null;
-    };
-
-    const buildRelatedQuickMovie = (item: any): MovieData => ({
-        tmdb_id: String(item.id),
-        title: item.title,
-        year: item.year || '',
-        type: item.media_type === 'tv' ? 'show' : 'movie',
-        media_type: item.media_type,
-        genres: [],
-        poster_url: item.poster_url || '',
-        backdrop_url: '',
-        trailer_url: '',
-        ratings: [],
-        cast: [],
-        crew: { director: '', writer: '', music: '' },
-        summary_short: '',
-        summary_medium: '',
-        summary_long_spoilers: '',
-        suspense_breaker: '',
-        where_to_watch: [],
-        extra_images: [],
-        ai_notes: ''
-    });
-
-    const handleQuickSaveRelated = (item: any) => {
-        let folderId = resolveQuickSaveFolderId();
-        if (!folderId) {
-            folderId = onCreateWatchlist('Watchlist', '#7c3aed');
-        }
-        if (!folderId) return;
-        onSaveToWatchlist(folderId, buildRelatedQuickMovie(item), item.title);
-    };
-
     const handleToggleRelatedWatched = (item: any) => {
         onToggleRelatedWatched?.({
             tmdb_id: String(item.id),
@@ -367,14 +331,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     ) : (
                         <div className={`w-full h-full bg-white/10 ${context === 'modal' ? 'flex items-center justify-center p-2 text-center text-brand-text-dark text-[10px]' : ''}`}>{context === 'modal' ? item.title : null}</div>
                     )}
-                    {(onToggleRelatedWatched || onSaveToWatchlist) && (
+                    {(onToggleRelatedWatched || onQuickSaveToWatchlist) && (
                         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
-                            {onSaveToWatchlist ? (
+                            {onQuickSaveToWatchlist ? (
                                 <button
                                     type="button"
                                     onClick={(event) => {
                                         event.stopPropagation();
-                                        handleQuickSaveRelated(item);
+                                        onQuickSaveToWatchlist(item);
                                     }}
                                     className="h-7 w-7 rounded-full bg-black/60 border border-white/15 text-white/80 hover:bg-violet-500/90 hover:text-white flex items-center justify-center shadow-lg"
                                     aria-label={`Save ${item.title} to watchlist`}
