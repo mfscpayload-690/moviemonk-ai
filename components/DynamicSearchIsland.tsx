@@ -57,7 +57,8 @@ const getTodayKey = (): string => {
 };
 
 const normalizeTrendingSuggestion = (item: any, trendLabel: string): TrendingSuggestionItem | null => {
-  if (!item || typeof item.id !== 'number' || item.media_type !== 'movie') return null;
+  if (!item || typeof item.id !== 'number') return null;
+  if (item.media_type && item.media_type !== 'movie') return null;
   const title = typeof item.title === 'string' ? item.title.trim() : '';
   if (!title) return null;
 
@@ -82,19 +83,67 @@ const normalizeTrendingSuggestion = (item: any, trendLabel: string): TrendingSug
   };
 };
 
-const pickTrendingMix = (results: any[]): TrendingSuggestionItem[] => {
-  const movies = Array.isArray(results)
-    ? results.filter((item: any) => item?.media_type === 'movie' || (!item?.media_type && item?.title))
+const fetchTmdbResults = async (
+  endpoint: string,
+  params: Record<string, string | number | undefined> = {}
+): Promise<any[]> => {
+  const query = new URLSearchParams();
+  query.set('endpoint', endpoint);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.set(key, String(value));
+    }
+  });
+
+  try {
+    const response = await fetch(`/api/tmdb?${query.toString()}`);
+    if (!response.ok) return [];
+    const payload = await response.json();
+    return Array.isArray(payload?.results) ? payload.results : [];
+  } catch {
+    return [];
+  }
+};
+
+const findFirstByLanguage = (items: any[], languages: Set<string>): any | null => {
+  for (const item of items) {
+    const lang = String(item?.original_language || '').toLowerCase();
+    if (languages.has(lang)) {
+      return item;
+    }
+  }
+  return null;
+};
+
+const pickTrendingMix = (
+  baseResults: any[],
+  eastAsianCandidate: any | null,
+  indianCandidate: any | null
+): TrendingSuggestionItem[] => {
+  const movies = Array.isArray(baseResults)
+    ? baseResults.filter((item: any) => item?.media_type === 'movie' || (!item?.media_type && item?.title))
     : [];
 
   const english = movies.filter((item: any) => item?.original_language === 'en');
-  const eastAsian = movies.filter((item: any) => EAST_ASIAN_LANGUAGES.has(String(item?.original_language || '')));
-  const indian = movies.filter((item: any) => INDIAN_LANGUAGES.has(String(item?.original_language || '')));
+  const eastAsianFromBase = findFirstByLanguage(movies, EAST_ASIAN_LANGUAGES);
+  const indianFromBase = findFirstByLanguage(movies, INDIAN_LANGUAGES);
+  const pickedEastAsian = eastAsianCandidate || eastAsianFromBase;
+  const pickedIndian = indianCandidate || indianFromBase;
 
   const pickedIds = new Set<number>();
   const picked: TrendingSuggestionItem[] = [];
 
-  const pushFromBucket = (bucket: any[], count: number, labelFor: (item: any) => string) => {
+  const pushOne = (item: any | null, labelFor: (item: any) => string) => {
+    if (!item || picked.length >= DAILY_TRENDING_LIMIT) return;
+    if (pickedIds.has(item.id)) return;
+    const normalized = normalizeTrendingSuggestion(item, labelFor(item));
+    if (!normalized) return;
+    picked.push(normalized);
+    pickedIds.add(normalized.id);
+  };
+
+  const pushFromBucket = (bucket: any[], initialCount: number, labelFor: (item: any) => string) => {
+    let count = initialCount;
     for (const item of bucket) {
       if (picked.length >= DAILY_TRENDING_LIMIT || count <= 0) break;
       if (pickedIds.has(item.id)) continue;
@@ -107,8 +156,8 @@ const pickTrendingMix = (results: any[]): TrendingSuggestionItem[] => {
   };
 
   pushFromBucket(english, DAILY_TRENDING_ENGLISH_COUNT, () => 'English trending');
-  pushFromBucket(eastAsian, 1, (item) => item?.original_language === 'ko' ? 'Korean pick' : 'Japanese pick');
-  pushFromBucket(indian, 1, () => 'Indian pick');
+  pushOne(pickedEastAsian, (item) => item?.original_language === 'ko' ? 'Korean pick' : 'Japanese pick');
+  pushOne(pickedIndian, () => 'Indian pick');
 
   if (picked.length < DAILY_TRENDING_LIMIT) {
     pushFromBucket(english, DAILY_TRENDING_LIMIT, () => 'English trending');
@@ -141,6 +190,7 @@ const readDailyTrendingCache = (): TrendingSuggestionItem[] => {
 };
 
 const writeDailyTrendingCache = (items: TrendingSuggestionItem[]) => {
+  if (items.length === 0) return;
   try {
     localStorage.setItem(STORAGE_KEY_DAILY_TRENDING, JSON.stringify({
       day: getTodayKey(),
@@ -162,6 +212,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   const [dailyTrending, setDailyTrending] = useState<TrendingSuggestionItem[]>([]);
   const [showTrending, setShowTrending] = useState(false);
   const [isTrendingLoading, setIsTrendingLoading] = useState(false);
+  const [trendingLoadError, setTrendingLoadError] = useState<string | null>(null);
   const [inlinePrompt, setInlinePrompt] = useState<string | null>(null);
 
   const debouncedQuery = useDebounce(query, SUGGEST_DEBOUNCE_MS);
@@ -297,17 +348,81 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     handleCollapse();
   };
 
-  const fetchDailyTrending = async (): Promise<TrendingSuggestionItem[]> => {
-    const cached = readDailyTrendingCache();
-    if (cached.length > 0) return cached;
+  const fetchDailyTrending = async (forceRefresh = false): Promise<TrendingSuggestionItem[]> => {
+    if (!forceRefresh) {
+      const cached = readDailyTrendingCache();
+      if (cached.length > 0) return cached;
+    }
 
-    const response = await fetch('/api/tmdb?endpoint=trending/movie/day&language=en-US&page=1');
-    if (!response.ok) return [];
+    const [baseTrending, eastAsianDiscover, indianDiscover] = await Promise.all([
+      fetchTmdbResults('trending/movie/day', { language: 'en-US', page: 1 }),
+      (async () => {
+        const korean = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          with_original_language: 'ko',
+          page: 1
+        });
+        if (korean.length > 0) return korean[0];
 
-    const payload = await response.json();
-    const nextItems = pickTrendingMix(payload?.results || []);
+        const japanese = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          with_original_language: 'ja',
+          page: 1
+        });
+        return japanese[0] || null;
+      })(),
+      (async () => {
+        const hindi = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          with_original_language: 'hi',
+          page: 1
+        });
+        if (hindi.length > 0) return hindi[0];
+
+        const indianRegional = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          region: 'IN',
+          page: 1
+        });
+        return indianRegional[0] || null;
+      })()
+    ]);
+
+    const nextItems = pickTrendingMix(baseTrending, eastAsianDiscover, indianDiscover);
     writeDailyTrendingCache(nextItems);
     return nextItems;
+  };
+
+  const loadDailyTrending = async (forceRefresh = false) => {
+    setIsTrendingLoading(true);
+    setTrendingLoadError(null);
+
+    try {
+      const items = await fetchDailyTrending(forceRefresh);
+      setDailyTrending(items);
+      trendingLoadedRef.current = items.length > 0;
+      if (items.length === 0) {
+        setTrendingLoadError('Could not load trending picks right now.');
+      }
+    } catch {
+      setDailyTrending([]);
+      trendingLoadedRef.current = false;
+      setTrendingLoadError('Could not load trending picks right now.');
+    } finally {
+      setIsTrendingLoading(false);
+    }
   };
 
   const fetchSuggestions = async (rawQuery: string): Promise<SuggestionItem[]> => {
@@ -365,32 +480,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
   useEffect(() => {
     if (!isExpanded) return;
-
-    if (!trendingLoadedRef.current && !isTrendingLoading) {
-      let isCancelled = false;
-      setIsTrendingLoading(true);
-      fetchDailyTrending()
-        .then((items) => {
-          if (isCancelled) return;
-          setDailyTrending(items);
-          trendingLoadedRef.current = true;
-        })
-        .catch(() => {
-          if (isCancelled) return;
-          setDailyTrending([]);
-          trendingLoadedRef.current = true;
-        })
-        .finally(() => {
-          if (!isCancelled) {
-            setIsTrendingLoading(false);
-          }
-        });
-
-      return () => {
-        isCancelled = true;
-      };
+    if (!trendingLoadedRef.current) {
+      void loadDailyTrending();
     }
-  }, [isExpanded, isTrendingLoading]);
+  }, [isExpanded]);
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -401,7 +494,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     if (trimmed.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
-      setShowTrending(isTrendingLoading || dailyTrending.length > 0);
+      setShowTrending(isTrendingLoading || dailyTrending.length > 0 || Boolean(trendingLoadError));
       setHighlightedIndex(-1);
       setIsSuggesting(false);
       setInlinePrompt(null);
@@ -431,7 +524,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     return () => {
       isCancelled = true;
     };
-  }, [dailyTrending.length, debouncedQuery, isExpanded, isTrendingLoading]);
+  }, [dailyTrending.length, debouncedQuery, isExpanded, isTrendingLoading, trendingLoadError]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
@@ -558,7 +651,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               onFocus={() => {
                 if (suggestions.length > 0) {
                   setShowSuggestions(true);
-                } else if (query.trim().length < 2 && (dailyTrending.length > 0 || isTrendingLoading)) {
+                } else if (query.trim().length < 2 && (dailyTrending.length > 0 || isTrendingLoading || Boolean(trendingLoadError))) {
                   setShowTrending(true);
                 }
               }}
@@ -600,6 +693,18 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                 {isTrendingLoading && (
                   <div className="trending-loading-row">Loading daily picks...</div>
                 )}
+                {!isTrendingLoading && trendingLoadError && (
+                  <div className="trending-error-row">
+                    <span>{trendingLoadError}</span>
+                    <button
+                      type="button"
+                      className="trending-retry-btn"
+                      onClick={() => void loadDailyTrending(true)}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
                 {!isTrendingLoading && dailyTrending.map((suggestion) => {
                   const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
                   return (
@@ -624,7 +729,6 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                       <div className="suggest-meta">
                         <div className="suggest-title-row">
                           <span className="suggest-title">{suggestion.title}</span>
-                          <span className="trending-chip">{suggestion.trendLabel}</span>
                         </div>
                         <div className="suggest-subtitle">
                           {suggestion.year && <span>{suggestion.year}</span>}
