@@ -296,6 +296,47 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
+.trending-dropdown {
+  margin-top: 0.625rem;
+}
+
+.trending-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  background: linear-gradient(180deg, rgba(17, 17, 27, 0.98) 0%, rgba(17, 17, 27, 0.88) 100%);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.16);
+}
+
+.trending-title {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ddd6fe;
+  font-weight: 700;
+}
+
+.trending-caption {
+  font-size: 0.7rem;
+  color: rgba(209, 213, 219, 0.72);
+}
+
+.trending-loading-row {
+  padding: 0.75rem;
+  font-size: 0.82rem;
+  color: #9ca3af;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trending-row {
+    animation: search-slide-up 0.25s ease both;
+  }
+}
+
 @media (max-width: 639px) {
   .suggest-dropdown {
     max-height: min(52vh, 500px);
@@ -328,14 +369,20 @@
 
 .suggest-poster-wrap {
   flex-shrink: 0;
-  width: 48px;
-  height: 56px;
+  width: 64px;
+  height: 38px;
   border-radius: 0.5rem;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.suggest-poster-wrap.is-title {
+  width: 64px;
+  height: 38px;
 }
 
 .suggest-poster-wrap.is-person {
@@ -400,6 +447,22 @@
   display: flex;
   gap: 0.375rem;
   align-items: center;
+}
+
+.trending-chip {
+  font-size: 0.64rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #f5d0fe;
+  background: rgba(168, 85, 247, 0.22);
+  border: 1px solid rgba(217, 70, 239, 0.28);
+  border-radius: 999px;
+  padding: 0.17rem 0.46rem;
+  flex-shrink: 0;
+  max-width: 126px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .suggest-role-chip {
