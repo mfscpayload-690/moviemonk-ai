@@ -824,6 +824,7 @@ const App: React.FC = () => {
                   year: item.year ?? null,
                 })}
                 onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+                watchlists={watchlists}
               />
             </>
           ) : currentView === 'person' && personData ? (

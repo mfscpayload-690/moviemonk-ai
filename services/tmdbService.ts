@@ -18,6 +18,21 @@ const OMDB_PROXY = (typeof window !== 'undefined')
       : `${window.location.origin}/api/omdb`)
   : process.env.OMDB_PROXY || 'http://localhost:3000/api/omdb';
 
+function getPreferredWatchRegion(): string {
+  if (typeof window === 'undefined') return 'US';
+  const localeCandidates = Array.isArray(navigator.languages) && navigator.languages.length > 0
+    ? navigator.languages
+    : [navigator.language];
+  for (const locale of localeCandidates) {
+    if (typeof locale !== 'string') continue;
+    const region = locale.split('-')[1];
+    if (region && /^[A-Za-z]{2}$/.test(region)) {
+      return region.toUpperCase();
+    }
+  }
+  return 'US';
+}
+
 function buildImageUrl(path: string | null | undefined, size: 'w500'|'w780'|'original' = 'original'): string {
   if (!path) return '';
   return `${IMG_BASE}/${size}${path}`;
@@ -406,44 +421,73 @@ async function fetchOMDBRatings(imdbId: string): Promise<Rating[]> {
 async function fetchWatchProviders(mediaType: 'movie'|'tv', id: number): Promise<WatchOption[]> {
   try {
     const data = await tmdbFetch(`/${mediaType}/${id}/watch/providers`);
-    const us = data?.results?.US;
-    if (!us) return [];
-    
-    const providers: WatchOption[] = [];
-    
-    // Streaming (subscription)
-    (us.flatrate || []).forEach((p: any) => {
-      providers.push({
-        platform: p.provider_name,
-        link: us.link || '',
-        type: 'subscription'
+    const resultMap = data?.results || {};
+    const preferredRegion = getPreferredWatchRegion();
+    const regionPriority = [preferredRegion, 'US', 'IN', 'GB'];
+    const selectedRegion = regionPriority.find((region) => resultMap?.[region]) || Object.keys(resultMap)[0];
+    const market = selectedRegion ? resultMap[selectedRegion] : null;
+    if (!market) return [];
+
+    const checkedAt = new Date().toISOString();
+    const providerSignals = new Map<string, { types: Set<WatchOption['type']>; platform: string; typeRank: number }>();
+    const typePriority: Record<WatchOption['type'], number> = {
+      subscription: 0,
+      free: 1,
+      rent: 2,
+      buy: 3
+    };
+    const typeBaseConfidence: Record<WatchOption['type'], number> = {
+      subscription: 86,
+      free: 83,
+      rent: 78,
+      buy: 76
+    };
+
+    const collect = (bucket: any[], type: WatchOption['type']) => {
+      (bucket || []).forEach((entry: any) => {
+        const platform = typeof entry?.provider_name === 'string' ? entry.provider_name.trim() : '';
+        if (!platform) return;
+        const key = platform.toLowerCase();
+        const current = providerSignals.get(key);
+        if (!current) {
+          providerSignals.set(key, {
+            platform,
+            types: new Set<WatchOption['type']>([type]),
+            typeRank: typePriority[type]
+          });
+          return;
+        }
+        current.types.add(type);
+        if (typePriority[type] < current.typeRank) {
+          current.typeRank = typePriority[type];
+        }
       });
-    });
-    
-    // Rent
-    (us.rent || []).forEach((p: any) => {
-      providers.push({
-        platform: p.provider_name,
-        link: us.link || '',
-        type: 'rent'
-      });
-    });
-    
-    // Buy
-    (us.buy || []).forEach((p: any) => {
-      providers.push({
-        platform: p.provider_name,
-        link: us.link || '',
-        type: 'buy'
-      });
-    });
-    
-    // Deduplicate by platform name
-    const unique = providers.filter((p, i, arr) => 
-      arr.findIndex(x => x.platform === p.platform) === i
-    );
-    
-    return unique.slice(0, 8); // Limit to 8 providers
+    };
+
+    collect(market.flatrate, 'subscription');
+    collect(market.free, 'free');
+    collect(market.rent, 'rent');
+    collect(market.buy, 'buy');
+
+    const providers: WatchOption[] = Array.from(providerSignals.values())
+      .map((entry) => {
+        const orderedType = (['subscription', 'free', 'rent', 'buy'] as WatchOption['type'][]).find((type) => entry.types.has(type)) || 'subscription';
+        const confidenceBoost = Math.min(10, (entry.types.size - 1) * 5);
+        const linkBoost = market.link ? 4 : 0;
+        const confidence = Math.min(98, typeBaseConfidence[orderedType] + confidenceBoost + linkBoost);
+
+        return {
+          platform: entry.platform,
+          link: market.link || '',
+          type: orderedType,
+          confidence,
+          last_checked_at: checkedAt,
+          region: selectedRegion
+        };
+      })
+      .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+
+    return providers.slice(0, 8);
   } catch (e) {
     console.warn('TMDB watch providers error:', e);
     return [];

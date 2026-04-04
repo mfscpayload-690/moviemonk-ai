@@ -74,7 +74,12 @@ const sanitizeWhereToWatch = (value: unknown): WatchOption[] => {
       return {
         platform,
         link,
-        type: normalizeWatchType(data.type)
+        type: normalizeWatchType(data.type),
+        confidence: typeof data.confidence === 'number'
+          ? Math.max(0, Math.min(100, Math.round(data.confidence)))
+          : undefined,
+        last_checked_at: toStringSafe(data.last_checked_at) || undefined,
+        region: toStringSafe(data.region) || undefined
       };
     })
     .filter((item): item is WatchOption => item !== null)

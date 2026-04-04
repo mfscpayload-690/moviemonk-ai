@@ -269,14 +269,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 return {
                     platform: option,
                     link: '#',
-                    type: 'subscription' as const
+                    type: 'subscription' as const,
+                    confidence: undefined,
+                    last_checked_at: undefined,
+                    region: undefined
                 };
             }
             // If object but missing fields, add defaults
             return {
                 platform: option.platform || 'Unknown',
                 link: option.link || '#',
-                type: option.type || 'subscription'
+                type: option.type || 'subscription',
+                confidence: typeof option.confidence === 'number' ? Math.max(0, Math.min(100, Math.round(option.confidence))) : undefined,
+                last_checked_at: typeof option.last_checked_at === 'string' ? option.last_checked_at : undefined,
+                region: typeof option.region === 'string' ? option.region.toUpperCase() : undefined
             };
         })
         : [];
@@ -1460,6 +1466,22 @@ const CrewCard: React.FC<{ name: string; role: string; onClick: () => void }> = 
     );
 }
 
+const formatRelativeCheckedAt = (checkedAt?: string): string => {
+    if (!checkedAt) return 'Checked recently';
+    const timestamp = Date.parse(checkedAt);
+    if (!Number.isFinite(timestamp)) return 'Checked recently';
+
+    const diffMs = Date.now() - timestamp;
+    if (diffMs < 60_000) return 'Checked just now';
+    const minutes = Math.floor(diffMs / 60_000);
+    if (minutes < 60) return `Checked ${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Checked ${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `Checked ${days}d ago`;
+    return `Checked ${new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+};
+
 const watchTypeIcons: Record<WatchOption['type'], React.FC<{ className?: string }>> = {
     subscription: TvIcon,
     rent: TicketIcon,
@@ -1499,6 +1521,15 @@ const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
     const key = option.platform.toLowerCase().trim();
     const Logo = platformLogos[key];
     const platformClass = platformColorClasses[key] || '';
+    const confidence = typeof option.confidence === 'number'
+        ? Math.max(0, Math.min(100, Math.round(option.confidence)))
+        : null;
+    const confidenceToneClass = confidence !== null && confidence >= 85
+        ? 'text-emerald-300'
+        : confidence !== null && confidence >= 75
+            ? 'text-amber-300'
+            : 'text-rose-300';
+    const checkedLabel = formatRelativeCheckedAt(option.last_checked_at);
 
     return (
         <a
@@ -1523,6 +1554,19 @@ const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
                 <div className="flex-1 min-w-0">
                     <p className="text-xs md:text-sm font-semibold text-brand-text-light truncate" title={option.platform}>{option.platform}</p>
                     <p className="text-xs text-accessible-muted capitalize">{option.type}</p>
+                    <div className="mt-1 flex items-center gap-2 text-[10px] md:text-[11px]">
+                        <span className={`font-semibold ${confidenceToneClass}`}>
+                            {confidence !== null ? `${confidence}% confidence` : 'Confidence pending'}
+                        </span>
+                        <span className="text-brand-text-dark">•</span>
+                        <span className="text-brand-text-dark">{checkedLabel}</span>
+                        {option.region && (
+                            <>
+                                <span className="text-brand-text-dark">•</span>
+                                <span className="text-brand-text-dark">Region {option.region}</span>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
             <div className="flex justify-end">

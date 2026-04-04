@@ -2110,6 +2110,40 @@ a:focus-visible {
     margin-bottom: 0.85rem;
 }
 
+.release-radar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--discovery-border);
+    border-radius: 999px;
+    padding: 0.2rem;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.release-radar-pill {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--discovery-text-secondary);
+    font-size: 0.76rem;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+    padding: 0.32rem 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.release-radar-pill:hover {
+    color: var(--discovery-text-primary);
+}
+
+.release-radar-pill.is-active {
+    color: #fff;
+    border-color: rgba(167, 139, 250, 0.45);
+    background: linear-gradient(120deg, rgba(124, 58, 237, 0.35), rgba(236, 72, 153, 0.28));
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.24);
+}
+
 .discovery-section-kicker {
     font-size: 0.7rem;
     letter-spacing: 0.08em;
@@ -2702,6 +2736,10 @@ a:focus-visible {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.4rem;
+    }
+
+    .release-radar-toggle {
+        align-self: flex-start;
     }
 
     .discovery-carousel-controls {
