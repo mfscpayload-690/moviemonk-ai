@@ -1,9 +1,12 @@
 import { DiscoveryItem, WatchlistFolder } from '../types';
 
-const RELEASE_RADAR_CACHE_KEY = 'moviemonk_release_radar_v2';
-const MAX_RADAR_ITEMS_DAILY = 12;
-const MAX_RADAR_ITEMS_WEEKLY = 20;
+const RELEASE_RADAR_CACHE_KEY = 'moviemonk_release_radar_v3';
+const RELEASE_RADAR_LIMIT = 12;
+const RELEASE_WINDOW_DAYS = 45;
 const DEFAULT_PROFILE_GENRES = ['Action', 'Drama', 'Science Fiction'];
+const BANNED_TV_GENRES = '99,10764,10767,10763';
+const BANNED_MOVIE_GENRES = '99';
+const BANNED_KEYWORD_PATTERN = /\b(wwe|nxt|wrestl|ufc|boxing|stand\s*&\s*deliver|countdown|world\s*tour|encore|concert|live\s*event|sports?|documentary|docu-?series|short\s*film)\b/i;
 
 type ReleaseRadarProfile = {
   genres: string[];
@@ -13,15 +16,13 @@ type ReleaseRadarProfile = {
 type CachedReleaseRadar = {
   day: string;
   profileKey: string;
-  daily: DiscoveryItem[];
-  weekly: DiscoveryItem[];
+  items: DiscoveryItem[];
   checkedAt: string;
   profile: ReleaseRadarProfile;
 };
 
-type ReleaseRadarSnapshot = {
-  daily: DiscoveryItem[];
-  weekly: DiscoveryItem[];
+export type ReleaseRadarSnapshot = {
+  items: DiscoveryItem[];
   checkedAt: string;
   profile: ReleaseRadarProfile;
 };
@@ -30,11 +31,6 @@ type RadarCandidate = DiscoveryItem & {
   releaseDate: string;
   overlapScore: number;
   popularity: number;
-};
-
-type NormalizedBucket = {
-  key: string;
-  items: RadarCandidate[];
 };
 
 function toDayKey(date: Date = new Date()): string {
@@ -100,7 +96,7 @@ function readCache(profileKey: string): CachedReleaseRadar | null {
     const parsed = JSON.parse(raw) as CachedReleaseRadar;
     if (!parsed || parsed.day !== toDayKey()) return null;
     if (parsed.profileKey !== profileKey) return null;
-    if (!Array.isArray(parsed.daily) || !Array.isArray(parsed.weekly)) return null;
+    if (!Array.isArray(parsed.items)) return null;
     return parsed;
   } catch {
     return null;
@@ -112,8 +108,7 @@ function writeCache(profileKey: string, snapshot: ReleaseRadarSnapshot): void {
     const payload: CachedReleaseRadar = {
       day: toDayKey(),
       profileKey,
-      daily: snapshot.daily,
-      weekly: snapshot.weekly,
+      items: snapshot.items,
       checkedAt: snapshot.checkedAt,
       profile: snapshot.profile
     };
@@ -180,11 +175,10 @@ function normalizeCandidate(raw: any, genreIds: Set<number>, mediaTypeHint?: 'mo
   if (!raw || typeof raw?.id !== 'number') return null;
 
   const mediaType: 'movie' | 'tv' =
-    raw?.media_type === 'tv' ||
-    mediaTypeHint === 'tv' ||
-    (!raw?.title && typeof raw?.name === 'string')
+    raw?.media_type === 'tv' || mediaTypeHint === 'tv' || (!raw?.title && typeof raw?.name === 'string')
       ? 'tv'
       : 'movie';
+
   const title = mediaType === 'movie'
     ? (typeof raw?.title === 'string' ? raw.title.trim() : '')
     : (typeof raw?.name === 'string' ? raw.name.trim() : '');
@@ -199,6 +193,10 @@ function normalizeCandidate(raw: any, genreIds: Set<number>, mediaTypeHint?: 'mo
     ? raw.genre_ids.filter((id: unknown) => typeof id === 'number')
     : [];
   const overlapScore = genreList.reduce((score: number, genreId: number) => score + (genreIds.has(genreId) ? 1 : 0), 0);
+
+  const textForFiltering = `${title} ${(typeof raw?.overview === 'string' ? raw.overview : '')}`.toLowerCase();
+  if (BANNED_KEYWORD_PATTERN.test(textForFiltering)) return null;
+  if (raw?.adult === true) return null;
 
   return {
     id: raw.id,
@@ -228,12 +226,11 @@ function withinWindow(releaseDate: string, start: string, end: string): boolean 
 
 function normalizeBucket(
   rawItems: any[],
-  key: string,
   genreIds: Set<number>,
   startDate: string,
   endDate: string,
   mediaTypeHint?: 'movie' | 'tv'
-): NormalizedBucket {
+): RadarCandidate[] {
   const seen = new Set<string>();
   const items: RadarCandidate[] = [];
 
@@ -241,9 +238,11 @@ function normalizeBucket(
     const candidate = normalizeCandidate(raw, genreIds, mediaTypeHint);
     if (!candidate) return;
     if (!withinWindow(candidate.releaseDate, startDate, endDate)) return;
-    const candidateKey = `${candidate.media_type}-${candidate.id}`;
-    if (seen.has(candidateKey)) return;
-    seen.add(candidateKey);
+    if (!candidate.poster_url) return;
+
+    const key = `${candidate.media_type}-${candidate.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
     items.push(candidate);
   });
 
@@ -254,167 +253,139 @@ function normalizeBucket(
     return b.popularity - a.popularity;
   });
 
-  return { key, items };
+  return items;
 }
 
-function composeBalancedRadar(
-  limit: number,
-  buckets: Record<string, RadarCandidate[]>
+function pushUnique(target: RadarCandidate[], source: RadarCandidate[], count: number): void {
+  if (count <= 0) return;
+  const existing = new Set(target.map((item) => `${item.media_type}-${item.id}`));
+  let remaining = count;
+  for (const item of source) {
+    if (remaining <= 0) break;
+    const key = `${item.media_type}-${item.id}`;
+    if (existing.has(key)) continue;
+    existing.add(key);
+    target.push(item);
+    remaining -= 1;
+  }
+}
+
+function buildReleaseRadar(
+  hollywood: RadarCandidate[],
+  eastAsian: RadarCandidate[],
+  indian: RadarCandidate[],
+  personalized: RadarCandidate[],
+  fallback: RadarCandidate[]
 ): DiscoveryItem[] {
-  const selected: RadarCandidate[] = [];
-  const seen = new Set<string>();
+  const chosen: RadarCandidate[] = [];
 
-  const pushFrom = (items: RadarCandidate[], count: number, preferMediaType?: 'movie' | 'tv') => {
-    let remaining = count;
-    if (remaining <= 0) return;
+  // Must-have regional diversity.
+  pushUnique(chosen, eastAsian, 1);
+  pushUnique(chosen, indian, 1);
 
-    const ordered = preferMediaType
-      ? [...items].sort((a, b) => Number(b.media_type === preferMediaType) - Number(a.media_type === preferMediaType))
-      : items;
+  // Main body is mostly Hollywood movies/series.
+  pushUnique(chosen, hollywood, 8);
 
-    for (const item of ordered) {
-      if (remaining <= 0 || selected.length >= limit) break;
-      const key = `${item.media_type}-${item.id}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      selected.push(item);
-      remaining -= 1;
-    }
-  };
+  // Personalization adds precision when watchlists exist.
+  pushUnique(chosen, personalized, 2);
 
-  // Guaranteed diversity first.
-  pushFrom(buckets.eastAsian, 1);
-  // Explicitly prioritize Indian movie for Bollywood intent.
-  pushFrom(buckets.indianMovies, 1, 'movie');
-  // Mostly Hollywood movies/series.
-  const hollywoodTarget = Math.max(0, Math.floor(limit * 0.7));
-  pushFrom(buckets.hollywood, hollywoodTarget);
-  // Personalized reinforcement if available.
-  pushFrom(buckets.personalized, Math.max(0, Math.floor(limit * 0.2)));
-  // Fill remaining with global merged candidates.
-  pushFrom(buckets.all, limit);
+  // Fill to target.
+  pushUnique(chosen, fallback, RELEASE_RADAR_LIMIT);
 
-  return selected
-    .slice(0, limit)
+  return chosen
+    .slice(0, RELEASE_RADAR_LIMIT)
     .map(({ releaseDate: _releaseDate, overlapScore: _overlapScore, popularity: _popularity, ...item }) => item);
 }
 
-async function fetchRadarWindow(
-  daysAhead: number,
-  genreIds: number[],
-  actorIds: number[]
-): Promise<DiscoveryItem[]> {
+async function fetchReleaseRadarItems(genreIds: number[], actorIds: number[]): Promise<DiscoveryItem[]> {
   const now = new Date();
   const startDate = toIsoDate(now);
-  const endDate = toIsoDate(addDays(now, daysAhead));
+  const endDate = toIsoDate(addDays(now, RELEASE_WINDOW_DAYS));
+  const genreSet = new Set<number>(genreIds);
 
-  const movieDateParams = {
+  const movieParams = {
     language: 'en-US',
     sort_by: 'primary_release_date.asc',
     include_adult: 'false',
     include_video: 'false',
+    with_runtime_gte: 70,
+    without_genres: BANNED_MOVIE_GENRES,
     page: 1,
     'primary_release_date.gte': startDate,
     'primary_release_date.lte': endDate
   } as Record<string, string | number | undefined>;
 
-  const tvDateParams = {
+  const tvParams = {
     language: 'en-US',
     sort_by: 'first_air_date.asc',
     include_adult: 'false',
+    without_genres: BANNED_TV_GENRES,
     page: 1,
     'first_air_date.gte': startDate,
     'first_air_date.lte': endDate
   } as Record<string, string | number | undefined>;
 
-  const calls = await Promise.all([
-    fetchTmdbResults('discover/movie', { ...movieDateParams, with_original_language: 'en' }),
-    fetchTmdbResults('discover/tv', { ...tvDateParams, with_original_language: 'en' }),
-
-    fetchTmdbResults('discover/movie', { ...movieDateParams, with_original_language: 'ko' }),
-    fetchTmdbResults('discover/movie', { ...movieDateParams, with_original_language: 'ja' }),
-    fetchTmdbResults('discover/movie', { ...movieDateParams, with_original_language: 'zh' }),
-    fetchTmdbResults('discover/tv', { ...tvDateParams, with_original_language: 'ko' }),
-    fetchTmdbResults('discover/tv', { ...tvDateParams, with_original_language: 'ja' }),
-    fetchTmdbResults('discover/tv', { ...tvDateParams, with_original_language: 'zh' }),
-
-    fetchTmdbResults('discover/movie', { ...movieDateParams, with_original_language: 'hi' }),
-    fetchTmdbResults('discover/movie', { ...movieDateParams, region: 'IN' }),
-    fetchTmdbResults('discover/tv', { ...tvDateParams, with_original_language: 'hi' }),
-
-    genreIds.length > 0
-      ? fetchTmdbResults('discover/movie', { ...movieDateParams, with_genres: genreIds.join(',') })
-      : Promise.resolve([]),
-    actorIds.length > 0
-      ? fetchTmdbResults('discover/movie', { ...movieDateParams, with_cast: actorIds.join(',') })
-      : Promise.resolve([]),
-
-    fetchTmdbResults('movie/upcoming', { language: 'en-US', page: 1 })
-  ]);
-
-  const genreSet = new Set<number>(genreIds);
   const [
     hollywoodMoviesRaw,
-    hollywoodTvRaw,
+    hollywoodSeriesRaw,
     koMoviesRaw,
     jaMoviesRaw,
     zhMoviesRaw,
-    koTvRaw,
-    jaTvRaw,
-    zhTvRaw,
-    indianHiMoviesRaw,
-    indianRegionMoviesRaw,
-    indianHiTvRaw,
+    koSeriesRaw,
+    jaSeriesRaw,
+    zhSeriesRaw,
+    indianMoviesHiRaw,
+    indianMoviesRegionRaw,
+    indianSeriesRaw,
     personalizedGenresRaw,
-    personalizedActorsRaw,
-    upcomingRaw
-  ] = calls;
+    personalizedActorsRaw
+  ] = await Promise.all([
+    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'en' }),
+    fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'en' }),
 
-  const hollywoodMovies = normalizeBucket(hollywoodMoviesRaw, 'hollywood-movies', genreSet, startDate, endDate, 'movie').items;
-  const hollywoodTv = normalizeBucket(hollywoodTvRaw, 'hollywood-tv', genreSet, startDate, endDate, 'tv').items;
+    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'ko' }),
+    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'ja' }),
+    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'zh' }),
+    fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'ko' }),
+    fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'ja' }),
+    fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'zh' }),
 
-  const eastAsianMovies = [
-    ...normalizeBucket(koMoviesRaw, 'ko-movies', genreSet, startDate, endDate, 'movie').items,
-    ...normalizeBucket(jaMoviesRaw, 'ja-movies', genreSet, startDate, endDate, 'movie').items,
-    ...normalizeBucket(zhMoviesRaw, 'zh-movies', genreSet, startDate, endDate, 'movie').items
+    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'hi' }),
+    fetchTmdbResults('discover/movie', { ...movieParams, region: 'IN' }),
+    fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'hi' }),
+
+    genreIds.length > 0
+      ? fetchTmdbResults('discover/movie', { ...movieParams, with_genres: genreIds.join(',') })
+      : Promise.resolve([]),
+    actorIds.length > 0
+      ? fetchTmdbResults('discover/movie', { ...movieParams, with_cast: actorIds.join(',') })
+      : Promise.resolve([])
+  ]);
+
+  const hollywood = [
+    ...normalizeBucket(hollywoodMoviesRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(hollywoodSeriesRaw, genreSet, startDate, endDate, 'tv')
   ];
-  const eastAsianTv = [
-    ...normalizeBucket(koTvRaw, 'ko-tv', genreSet, startDate, endDate, 'tv').items,
-    ...normalizeBucket(jaTvRaw, 'ja-tv', genreSet, startDate, endDate, 'tv').items,
-    ...normalizeBucket(zhTvRaw, 'zh-tv', genreSet, startDate, endDate, 'tv').items
+  const eastAsian = [
+    ...normalizeBucket(koMoviesRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(jaMoviesRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(zhMoviesRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(koSeriesRaw, genreSet, startDate, endDate, 'tv'),
+    ...normalizeBucket(jaSeriesRaw, genreSet, startDate, endDate, 'tv'),
+    ...normalizeBucket(zhSeriesRaw, genreSet, startDate, endDate, 'tv')
   ];
-
-  const indianMovies = [
-    ...normalizeBucket(indianHiMoviesRaw, 'indian-hi-movies', genreSet, startDate, endDate, 'movie').items,
-    ...normalizeBucket(indianRegionMoviesRaw, 'indian-region-movies', genreSet, startDate, endDate, 'movie').items
+  const indian = [
+    ...normalizeBucket(indianMoviesHiRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(indianMoviesRegionRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(indianSeriesRaw, genreSet, startDate, endDate, 'tv')
   ];
-  const indianTv = normalizeBucket(indianHiTvRaw, 'indian-hi-tv', genreSet, startDate, endDate, 'tv').items;
-
   const personalized = [
-    ...normalizeBucket(personalizedGenresRaw, 'personalized-genres', genreSet, startDate, endDate, 'movie').items,
-    ...normalizeBucket(personalizedActorsRaw, 'personalized-actors', genreSet, startDate, endDate, 'movie').items
+    ...normalizeBucket(personalizedGenresRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(personalizedActorsRaw, genreSet, startDate, endDate, 'movie')
   ];
-  const upcoming = normalizeBucket(upcomingRaw, 'upcoming', genreSet, startDate, endDate, 'movie').items;
+  const fallback = [...hollywood, ...eastAsian, ...indian, ...personalized];
 
-  const all = [
-    ...hollywoodMovies,
-    ...hollywoodTv,
-    ...eastAsianMovies,
-    ...eastAsianTv,
-    ...indianMovies,
-    ...indianTv,
-    ...personalized,
-    ...upcoming
-  ];
-
-  const limit = daysAhead <= 2 ? MAX_RADAR_ITEMS_DAILY : MAX_RADAR_ITEMS_WEEKLY;
-  return composeBalancedRadar(limit, {
-    hollywood: [...hollywoodMovies, ...hollywoodTv],
-    eastAsian: [...eastAsianMovies, ...eastAsianTv],
-    indianMovies,
-    personalized,
-    all
-  });
+  return buildReleaseRadar(hollywood, eastAsian, indian, personalized, fallback);
 }
 
 export function hasRadarInputs(watchlists: WatchlistFolder[]): boolean {
@@ -427,8 +398,7 @@ export async function loadReleaseRadarSnapshot(watchlists: WatchlistFolder[]): P
   const cached = readCache(profileKey);
   if (cached) {
     return {
-      daily: cached.daily,
-      weekly: cached.weekly,
+      items: cached.items,
       checkedAt: cached.checkedAt,
       profile: cached.profile
     };
@@ -443,14 +413,9 @@ export async function loadReleaseRadarSnapshot(watchlists: WatchlistFolder[]): P
     .map((genre) => genreMap.get(genre.trim().toLowerCase()))
     .filter((id): id is number => typeof id === 'number');
 
-  const [daily, weekly] = await Promise.all([
-    fetchRadarWindow(2, genreIds, actorIds),
-    fetchRadarWindow(10, genreIds, actorIds)
-  ]);
-
+  const items = await fetchReleaseRadarItems(genreIds, actorIds);
   const snapshot: ReleaseRadarSnapshot = {
-    daily,
-    weekly,
+    items,
     checkedAt: new Date().toISOString(),
     profile
   };

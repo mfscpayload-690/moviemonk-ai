@@ -37,14 +37,10 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   } = useDiscovery();
 
   const heroCandidates = heroItems.length ? heroItems : (sections[0]?.items || []).slice(0, 5);
-  const [radarWindow, setRadarWindow] = useState<'daily' | 'weekly'>('weekly');
-  const [radarDaily, setRadarDaily] = useState<DiscoveryItem[]>([]);
-  const [radarWeekly, setRadarWeekly] = useState<DiscoveryItem[]>([]);
+  const [radarItems, setRadarItems] = useState<DiscoveryItem[]>([]);
   const [radarLoading, setRadarLoading] = useState(false);
   const [radarError, setRadarError] = useState<string | null>(null);
   const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
-  const [radarEnabled] = useState(true);
-  const activeRadarItems = radarWindow === 'daily' ? radarDaily : radarWeekly;
 
   const handleSectionVisible = useCallback((sectionKey: string, title: string, itemCount: number) => {
     recordDiscoverySectionRendered(sectionKey, title, itemCount);
@@ -72,16 +68,14 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
 
     try {
       const snapshot = await loadReleaseRadarSnapshot(watchlists);
-      setRadarDaily(snapshot.daily);
-      setRadarWeekly(snapshot.weekly);
+      setRadarItems(snapshot.items);
       setRadarCheckedAt(snapshot.checkedAt);
-      if (snapshot.daily.length === 0 && snapshot.weekly.length === 0) {
-        setRadarError('No upcoming matches found for your saved taste yet.');
+      if (snapshot.items.length === 0) {
+        setRadarError('No accurate upcoming releases found right now.');
       }
     } catch {
       setRadarError('Release radar is temporarily unavailable.');
-      setRadarDaily([]);
-      setRadarWeekly([]);
+      setRadarItems([]);
       setRadarCheckedAt('');
     } finally {
       setRadarLoading(false);
@@ -116,64 +110,37 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
         </section>
       )}
 
-      {radarEnabled && (
-        <section className="discovery-section">
-          <div className="discovery-section-heading">
+      <section className="discovery-section">
+        {radarCheckedLabel && <p className="discovery-genre-caption mb-2">{radarCheckedLabel}</p>}
+
+        {radarError && !radarLoading && (
+          <div className="discovery-error" role="status">
             <div>
-              <h2 className="discovery-section-title">Release Radar</h2>
-              {radarCheckedLabel && <p className="discovery-genre-caption">{radarCheckedLabel}</p>}
+              <p className="discovery-error-copy">{radarError}</p>
             </div>
-            <div className="release-radar-toggle" role="tablist" aria-label="Release radar window">
-              <button
-                type="button"
-                className={`release-radar-pill ${radarWindow === 'daily' ? 'is-active' : ''}`}
-                onClick={() => setRadarWindow('daily')}
-                role="tab"
-                aria-selected={radarWindow === 'daily'}
-              >
-                Daily
-              </button>
-              <button
-                type="button"
-                className={`release-radar-pill ${radarWindow === 'weekly' ? 'is-active' : ''}`}
-                onClick={() => setRadarWindow('weekly')}
-                role="tab"
-                aria-selected={radarWindow === 'weekly'}
-              >
-                Weekly
-              </button>
-            </div>
+            <button type="button" className="discovery-cta discovery-cta-secondary" onClick={() => void loadRadar()}>
+              Retry
+            </button>
           </div>
+        )}
 
-          {radarError && !radarLoading && (
-            <div className="discovery-error" role="status">
-              <div>
-                <p className="discovery-error-copy">{radarError}</p>
-              </div>
-              <button type="button" className="discovery-cta discovery-cta-secondary" onClick={() => void loadRadar()}>
-                Retry
-              </button>
-            </div>
-          )}
-
-          {(radarLoading || activeRadarItems.length > 0) && (
-            <ContentCarousel
-              sectionKey={`release-radar-${radarWindow}`}
-              title={radarWindow === 'daily' ? 'Next 48 Hours' : 'Next 10 Days'}
-              items={activeRadarItems}
-              isLoading={radarLoading}
-              onSectionVisible={handleSectionVisible}
-              onSectionSkipped={handleSectionSkipped}
-              onCardView={handleCardView}
-              onCardOpen={handleCardOpen}
-              onOpenTitle={onOpenTitle}
-              isWatched={isWatched}
-              onToggleWatched={onToggleWatched}
-              onQuickSaveToWatchlist={onQuickSaveToWatchlist}
-            />
-          )}
-        </section>
-      )}
+        {(radarLoading || radarItems.length > 0) && (
+          <ContentCarousel
+            sectionKey="release-radar"
+            title="Release Radar"
+            items={radarItems}
+            isLoading={radarLoading}
+            onSectionVisible={handleSectionVisible}
+            onSectionSkipped={handleSectionSkipped}
+            onCardView={handleCardView}
+            onCardOpen={handleCardOpen}
+            onOpenTitle={onOpenTitle}
+            isWatched={isWatched}
+            onToggleWatched={onToggleWatched}
+            onQuickSaveToWatchlist={onQuickSaveToWatchlist}
+          />
+        )}
+      </section>
 
       {sections.map((section) => (
         <ContentCarousel

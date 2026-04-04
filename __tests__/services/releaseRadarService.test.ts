@@ -29,6 +29,8 @@ function daysFromNow(days: number): string {
 function okJson(payload: any) {
   return {
     ok: true,
+    status: 200,
+    text: async () => JSON.stringify(payload),
     json: async () => payload
   };
 }
@@ -112,8 +114,6 @@ describe('releaseRadarService', () => {
       const query = url.searchParams.get('query');
       const withCast = url.searchParams.get('with_cast');
       const withOriginalLanguage = url.searchParams.get('with_original_language');
-      const lte = url.searchParams.get('primary_release_date.lte');
-      const firstAirLte = url.searchParams.get('first_air_date.lte');
 
       if (endpoint === 'genre/movie/list') {
         return Promise.resolve(okJson({ genres: [{ id: 28, name: 'Action' }, { id: 53, name: 'Thriller' }] }));
@@ -127,92 +127,86 @@ describe('releaseRadarService', () => {
       }
 
       if (endpoint === 'discover/movie') {
-        const withinDaily = typeof lte === 'string' && lte <= daysFromNow(2);
         if (withCast) {
           return Promise.resolve(okJson({
-            results: withinDaily
-              ? [makeMovieResult(401, 'Cast Match Daily', daysFromNow(1), [28])]
-              : [makeMovieResult(402, 'Cast Match Weekly', daysFromNow(6), [28])]
+            results: [makeMovieResult(401, 'Cast Match Soon', daysFromNow(8), [28])]
           }));
         }
 
         if (withOriginalLanguage === 'ko') {
           return Promise.resolve(okJson({
-            results: [makeMovieResult(610, 'Seoul Drift', withinDaily ? daysFromNow(1) : daysFromNow(6), [28], 'ko')]
+            results: [makeMovieResult(610, 'Seoul Drift', daysFromNow(9), [28], 'ko')]
           }));
         }
         if (withOriginalLanguage === 'ja') {
           return Promise.resolve(okJson({
-            results: [makeMovieResult(611, 'Tokyo Pulse', withinDaily ? daysFromNow(2) : daysFromNow(7), [28], 'ja')]
+            results: [makeMovieResult(611, 'Tokyo Pulse', daysFromNow(11), [28], 'ja')]
           }));
         }
         if (withOriginalLanguage === 'zh') {
           return Promise.resolve(okJson({
-            results: [makeMovieResult(612, 'Dragon City', withinDaily ? daysFromNow(2) : daysFromNow(8), [28], 'zh')]
+            results: [makeMovieResult(612, 'Dragon City', daysFromNow(12), [28], 'zh')]
           }));
         }
         if (withOriginalLanguage === 'hi') {
           return Promise.resolve(okJson({
-            results: [makeMovieResult(710, 'Mumbai Heat', withinDaily ? daysFromNow(1) : daysFromNow(6), [53], 'hi')]
+            results: [makeMovieResult(710, 'Mumbai Heat', daysFromNow(10), [53], 'hi')]
           }));
         }
         if (withOriginalLanguage === 'en') {
           return Promise.resolve(okJson({
-            results: withinDaily
-              ? [makeMovieResult(301, 'Hollywood Daily One', daysFromNow(1), [28], 'en'), makeMovieResult(302, 'Hollywood Daily Two', daysFromNow(2), [28], 'en')]
-              : [makeMovieResult(303, 'Hollywood Weekly One', daysFromNow(5), [28], 'en'), makeMovieResult(304, 'Hollywood Weekly Two', daysFromNow(8), [28], 'en')]
+            results: [
+              makeMovieResult(301, 'Hollywood One', daysFromNow(4), [28], 'en'),
+              makeMovieResult(302, 'Hollywood Two', daysFromNow(5), [28], 'en'),
+              makeMovieResult(303, 'Hollywood Three', daysFromNow(6), [28], 'en'),
+              makeMovieResult(304, 'Hollywood Four', daysFromNow(7), [28], 'en'),
+              makeMovieResult(305, 'Hollywood Five', daysFromNow(13), [28], 'en'),
+              makeMovieResult(306, 'WWE Countdown Slam', daysFromNow(14), [28], 'en')
+            ]
           }));
         }
 
         return Promise.resolve(okJson({
-          results: withinDaily
-            ? [makeMovieResult(301, 'Genre Match Daily', daysFromNow(2), [28])]
-            : [makeMovieResult(302, 'Genre Match Weekly', daysFromNow(8), [28])]
+          results: [
+            makeMovieResult(901, 'Genre Match One', daysFromNow(15), [28]),
+            makeMovieResult(902, 'Documentary Nights', daysFromNow(16), [99])
+          ]
         }));
       }
 
       if (endpoint === 'discover/tv') {
-        const withinDaily = typeof firstAirLte === 'string' && firstAirLte <= daysFromNow(2);
         if (withOriginalLanguage === 'en') {
           return Promise.resolve(okJson({
-            results: withinDaily
-              ? [makeTvResult(801, 'Hollywood Series Daily', daysFromNow(1))]
-              : [makeTvResult(802, 'Hollywood Series Weekly', daysFromNow(6))]
+            results: [
+              makeTvResult(801, 'Hollywood Series One', daysFromNow(3)),
+              makeTvResult(802, 'Hollywood Series Two', daysFromNow(8))
+            ]
           }));
         }
         if (withOriginalLanguage === 'ko') {
           return Promise.resolve(okJson({
-            results: [makeTvResult(811, 'K-Drama Pulse', withinDaily ? daysFromNow(1) : daysFromNow(7), [18], 'ko')]
+            results: [makeTvResult(811, 'K-Drama Pulse', daysFromNow(10), [18], 'ko')]
           }));
         }
         if (withOriginalLanguage === 'ja') {
           return Promise.resolve(okJson({
-            results: [makeTvResult(812, 'J-Drama Notes', withinDaily ? daysFromNow(2) : daysFromNow(8), [18], 'ja')]
+            results: [makeTvResult(812, 'J-Drama Notes', daysFromNow(11), [18], 'ja')]
           }));
         }
         if (withOriginalLanguage === 'zh') {
           return Promise.resolve(okJson({
-            results: [makeTvResult(813, 'C-Drama Vibes', withinDaily ? daysFromNow(2) : daysFromNow(9), [18], 'zh')]
+            results: [makeTvResult(813, 'C-Drama Vibes', daysFromNow(12), [18], 'zh')]
           }));
         }
         if (withOriginalLanguage === 'hi') {
           return Promise.resolve(okJson({
-            results: [makeTvResult(821, 'Hindi Series Spark', withinDaily ? daysFromNow(2) : daysFromNow(9), [18], 'hi')]
+            results: [makeTvResult(821, 'Hindi Series Spark', daysFromNow(12), [18], 'hi')]
           }));
         }
         return Promise.resolve(okJson({ results: [] }));
       }
 
-      if (endpoint === 'movie/upcoming') {
-        return Promise.resolve(okJson({
-          results: [
-            makeMovieResult(501, 'Upcoming A', daysFromNow(1), [28]),
-            makeMovieResult(502, 'Upcoming B', daysFromNow(7), [53])
-          ]
-        }));
-      }
-
-      return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+      return Promise.resolve({ ok: false, status: 404, text: async () => '{}', json: async () => ({}) });
     });
   });
 
@@ -221,26 +215,28 @@ describe('releaseRadarService', () => {
     expect(hasRadarInputs([{ ...watchlists[0], items: [] }])).toBe(false);
   });
 
-  it('loads daily and weekly radar items and reuses daily cache', async () => {
+  it('loads a single release radar list, filters noisy entries, and reuses cache', async () => {
     const first = await loadReleaseRadarSnapshot(watchlists);
-    expect(first.daily.length).toBeGreaterThan(0);
-    expect(first.weekly.length).toBeGreaterThan(0);
-    expect(first.daily.some((item) => item.original_language === 'ko' || item.original_language === 'ja' || item.original_language === 'zh')).toBe(true);
-    expect(first.daily.some((item) => item.original_language === 'hi')).toBe(true);
-    expect(first.daily.filter((item) => item.original_language === 'en').length).toBeGreaterThan(0);
-    expect(first.weekly.some((item) => item.media_type === 'tv')).toBe(true);
+    expect(first.items.length).toBeGreaterThan(0);
+    expect(first.items.length).toBeLessThanOrEqual(12);
+    expect(first.items.some((item) => item.original_language === 'ko' || item.original_language === 'ja' || item.original_language === 'zh')).toBe(true);
+    expect(first.items.some((item) => item.original_language === 'hi')).toBe(true);
+    expect(first.items.filter((item) => item.original_language === 'en').length).toBeGreaterThan(0);
+    expect(first.items.some((item) => item.media_type === 'tv')).toBe(true);
+    expect(first.items.some((item) => /wwe|countdown/i.test(item.title))).toBe(false);
+    expect(first.items.some((item) => /documentary/i.test(item.title))).toBe(false);
 
     const fetchCountAfterFirst = mockFetch.mock.calls.length;
     const second = await loadReleaseRadarSnapshot(watchlists);
-    expect(second.daily.length).toBeGreaterThan(0);
+    expect(second.items.length).toBeGreaterThan(0);
     expect(mockFetch.mock.calls.length).toBe(fetchCountAfterFirst);
   });
 
   it('returns radar data for guests without watchlists', async () => {
     const guestSnapshot = await loadReleaseRadarSnapshot([]);
-    expect(guestSnapshot.daily.length).toBeGreaterThan(0);
-    expect(guestSnapshot.weekly.length).toBeGreaterThan(0);
-    expect(guestSnapshot.daily.some((item) => item.original_language === 'ko' || item.original_language === 'ja' || item.original_language === 'zh')).toBe(true);
-    expect(guestSnapshot.daily.some((item) => item.original_language === 'hi')).toBe(true);
+    expect(guestSnapshot.items.length).toBeGreaterThan(0);
+    expect(guestSnapshot.items.length).toBeLessThanOrEqual(12);
+    expect(guestSnapshot.items.some((item) => item.original_language === 'ko' || item.original_language === 'ja' || item.original_language === 'zh')).toBe(true);
+    expect(guestSnapshot.items.some((item) => item.original_language === 'hi')).toBe(true);
   });
 });
