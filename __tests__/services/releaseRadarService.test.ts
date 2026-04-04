@@ -114,6 +114,7 @@ describe('releaseRadarService', () => {
       const query = url.searchParams.get('query');
       const withCast = url.searchParams.get('with_cast');
       const withOriginalLanguage = url.searchParams.get('with_original_language');
+      const page = url.searchParams.get('page');
 
       if (endpoint === 'genre/movie/list') {
         return Promise.resolve(okJson({ genres: [{ id: 28, name: 'Action' }, { id: 53, name: 'Thriller' }] }));
@@ -149,6 +150,11 @@ describe('releaseRadarService', () => {
           }));
         }
         if (withOriginalLanguage === 'hi') {
+          if (page === '2') {
+            return Promise.resolve(okJson({
+              results: [makeMovieResult(711, 'Delhi Nights', daysFromNow(12), [53], 'hi')]
+            }));
+          }
           return Promise.resolve(okJson({
             results: [makeMovieResult(710, 'Mumbai Heat', daysFromNow(10), [53], 'hi')]
           }));
@@ -169,7 +175,8 @@ describe('releaseRadarService', () => {
         return Promise.resolve(okJson({
           results: [
             makeMovieResult(901, 'Genre Match One', daysFromNow(15), [28]),
-            makeMovieResult(902, 'Documentary Nights', daysFromNow(16), [99])
+            makeMovieResult(902, 'Documentary Nights', daysFromNow(16), [99]),
+            makeMovieResult(903, 'Tamil Storm', daysFromNow(17), [28], 'ta')
           ]
         }));
       }
@@ -221,10 +228,12 @@ describe('releaseRadarService', () => {
     expect(first.items.length).toBeLessThanOrEqual(12);
     expect(first.items.some((item) => item.original_language === 'ko' || item.original_language === 'ja' || item.original_language === 'zh')).toBe(true);
     expect(first.items.some((item) => item.original_language === 'hi')).toBe(true);
+    expect(first.items.filter((item) => item.original_language === 'hi').length).toBeGreaterThanOrEqual(1);
     expect(first.items.filter((item) => item.original_language === 'en').length).toBeGreaterThan(0);
     expect(first.items.some((item) => item.media_type === 'tv')).toBe(true);
     expect(first.items.some((item) => /wwe|countdown/i.test(item.title))).toBe(false);
     expect(first.items.some((item) => /documentary/i.test(item.title))).toBe(false);
+    expect(first.items.some((item) => ['ta', 'te', 'ml', 'kn'].includes(item.original_language || ''))).toBe(false);
 
     const fetchCountAfterFirst = mockFetch.mock.calls.length;
     const second = await loadReleaseRadarSnapshot(watchlists);
@@ -238,5 +247,6 @@ describe('releaseRadarService', () => {
     expect(guestSnapshot.items.length).toBeLessThanOrEqual(12);
     expect(guestSnapshot.items.some((item) => item.original_language === 'ko' || item.original_language === 'ja' || item.original_language === 'zh')).toBe(true);
     expect(guestSnapshot.items.some((item) => item.original_language === 'hi')).toBe(true);
+    expect(guestSnapshot.items.some((item) => ['ta', 'te', 'ml', 'kn'].includes(item.original_language || ''))).toBe(false);
   });
 });

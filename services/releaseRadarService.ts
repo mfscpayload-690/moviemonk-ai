@@ -1,12 +1,13 @@
 import { DiscoveryItem, WatchlistFolder } from '../types';
 
-const RELEASE_RADAR_CACHE_KEY = 'moviemonk_release_radar_v3';
+const RELEASE_RADAR_CACHE_KEY = 'moviemonk_release_radar_v4';
 const RELEASE_RADAR_LIMIT = 12;
 const RELEASE_WINDOW_DAYS = 45;
 const DEFAULT_PROFILE_GENRES = ['Action', 'Drama', 'Science Fiction'];
 const BANNED_TV_GENRES = '99,10764,10767,10763';
 const BANNED_MOVIE_GENRES = '99';
 const BANNED_KEYWORD_PATTERN = /\b(wwe|nxt|wrestl|ufc|boxing|stand\s*&\s*deliver|countdown|world\s*tour|encore|concert|live\s*event|sports?|documentary|docu-?series|short\s*film)\b/i;
+const BLOCKED_INDIC_LANGUAGES = new Set(['ta', 'te', 'ml', 'kn']);
 
 type ReleaseRadarProfile = {
   genres: string[];
@@ -195,14 +196,16 @@ function normalizeCandidate(raw: any, genreIds: Set<number>, mediaTypeHint?: 'mo
   const overlapScore = genreList.reduce((score: number, genreId: number) => score + (genreIds.has(genreId) ? 1 : 0), 0);
 
   const textForFiltering = `${title} ${(typeof raw?.overview === 'string' ? raw.overview : '')}`.toLowerCase();
+  const originalLanguage = typeof raw?.original_language === 'string' ? raw.original_language.toLowerCase() : undefined;
   if (BANNED_KEYWORD_PATTERN.test(textForFiltering)) return null;
   if (raw?.adult === true) return null;
+  if (originalLanguage && BLOCKED_INDIC_LANGUAGES.has(originalLanguage)) return null;
 
   return {
     id: raw.id,
     tmdb_id: String(raw.id),
     media_type: mediaType,
-    original_language: typeof raw?.original_language === 'string' ? raw.original_language : undefined,
+    original_language: originalLanguage,
     title,
     year: releaseDate.slice(0, 4),
     overview: typeof raw?.overview === 'string' ? raw.overview : '',
@@ -281,7 +284,7 @@ function buildReleaseRadar(
 
   // Must-have regional diversity.
   pushUnique(chosen, eastAsian, 1);
-  pushUnique(chosen, indian, 1);
+  pushUnique(chosen, indian, 2);
 
   // Main body is mostly Hollywood movies/series.
   pushUnique(chosen, hollywood, 8);
@@ -334,9 +337,8 @@ async function fetchReleaseRadarItems(genreIds: number[], actorIds: number[]): P
     koSeriesRaw,
     jaSeriesRaw,
     zhSeriesRaw,
-    indianMoviesHiRaw,
-    indianMoviesRegionRaw,
-    indianSeriesRaw,
+    indianMoviesHiPageOneRaw,
+    indianMoviesHiPageTwoRaw,
     personalizedGenresRaw,
     personalizedActorsRaw
   ] = await Promise.all([
@@ -350,9 +352,8 @@ async function fetchReleaseRadarItems(genreIds: number[], actorIds: number[]): P
     fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'ja' }),
     fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'zh' }),
 
-    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'hi' }),
-    fetchTmdbResults('discover/movie', { ...movieParams, region: 'IN' }),
-    fetchTmdbResults('discover/tv', { ...tvParams, with_original_language: 'hi' }),
+    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'hi', with_origin_country: 'IN', page: 1 }),
+    fetchTmdbResults('discover/movie', { ...movieParams, with_original_language: 'hi', with_origin_country: 'IN', page: 2 }),
 
     genreIds.length > 0
       ? fetchTmdbResults('discover/movie', { ...movieParams, with_genres: genreIds.join(',') })
@@ -375,9 +376,8 @@ async function fetchReleaseRadarItems(genreIds: number[], actorIds: number[]): P
     ...normalizeBucket(zhSeriesRaw, genreSet, startDate, endDate, 'tv')
   ];
   const indian = [
-    ...normalizeBucket(indianMoviesHiRaw, genreSet, startDate, endDate, 'movie'),
-    ...normalizeBucket(indianMoviesRegionRaw, genreSet, startDate, endDate, 'movie'),
-    ...normalizeBucket(indianSeriesRaw, genreSet, startDate, endDate, 'tv')
+    ...normalizeBucket(indianMoviesHiPageOneRaw, genreSet, startDate, endDate, 'movie'),
+    ...normalizeBucket(indianMoviesHiPageTwoRaw, genreSet, startDate, endDate, 'movie')
   ];
   const personalized = [
     ...normalizeBucket(personalizedGenresRaw, genreSet, startDate, endDate, 'movie'),
@@ -422,4 +422,3 @@ export async function loadReleaseRadarSnapshot(watchlists: WatchlistFolder[]): P
   writeCache(profileKey, snapshot);
   return snapshot;
 }
-
