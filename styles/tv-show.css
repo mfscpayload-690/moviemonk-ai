@@ -143,6 +143,96 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+.tv-watch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.tv-watch-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.9rem;
+  color: white;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.tv-watch-card:hover {
+  border-color: rgba(139, 92, 246, 0.55);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.16), rgba(255, 255, 255, 0.06));
+  transform: translateY(-1px);
+}
+
+.tv-watch-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tv-watch-platform {
+  font-size: 0.95rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-watch-type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(221, 214, 254, 0.9);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: rgba(124, 58, 237, 0.2);
+  border-radius: 999px;
+  padding: 0.14rem 0.45rem;
+}
+
+.tv-watch-meta {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  color: rgba(203, 213, 225, 0.86);
+}
+
+.tv-watch-dot {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.tv-watch-confidence {
+  color: rgba(252, 211, 77, 0.95);
+  font-weight: 600;
+}
+
+.tv-watch-confidence.high {
+  color: rgba(52, 211, 153, 0.95);
+}
+
+.tv-watch-cta {
+  margin-top: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(221, 214, 254, 0.95);
+}
+
+.tv-watch-empty {
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 1rem;
+  color: rgba(203, 213, 225, 0.88);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.9rem;
+}
+
 /* Season Selector */
 .season-selector-header {
   display: flex;

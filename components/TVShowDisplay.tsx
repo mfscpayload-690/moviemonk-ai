@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview } from '../types';
+import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview, WatchOption } from '../types';
 import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon } from './icons';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
@@ -54,6 +54,22 @@ const formatDisplayLanguage = (value?: string): string => {
     return normalized;
 };
 
+const formatRelativeCheckedAt = (checkedAt?: string): string => {
+    if (!checkedAt) return 'Checked recently';
+    const timestamp = Date.parse(checkedAt);
+    if (!Number.isFinite(timestamp)) return 'Checked recently';
+
+    const diffMs = Date.now() - timestamp;
+    if (diffMs < 60_000) return 'Checked just now';
+    const minutes = Math.floor(diffMs / 60_000);
+    if (minutes < 60) return `Checked ${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Checked ${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `Checked ${days}d ago`;
+    return `Checked ${new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+};
+
 const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false, onToggleWatched }) => {
     const [selectedSeason, setSelectedSeason] = useState(1);
     const [expandedEpisode, setExpandedEpisode] = useState<number | null>(null);
@@ -70,6 +86,16 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
     const seasonsData = tvShow.seasons || [];
     const selectedSeasonData = seasonsData.find(s => s.number === selectedSeason);
     const episodesForSeason = (tvShow.episodes || []).filter(e => e.season === selectedSeason);
+    const safeWhereToWatch: WatchOption[] = Array.isArray(movie.where_to_watch)
+        ? movie.where_to_watch.map((option: any) => ({
+            platform: option?.platform || 'Unknown',
+            link: option?.link || '#',
+            type: option?.type || 'subscription',
+            confidence: typeof option?.confidence === 'number' ? Math.max(0, Math.min(100, Math.round(option.confidence))) : undefined,
+            last_checked_at: typeof option?.last_checked_at === 'string' ? option.last_checked_at : undefined,
+            region: typeof option?.region === 'string' ? option.region.toUpperCase() : undefined
+        }))
+        : [];
     const languageLabel = formatDisplayLanguage(movie.language || tvShow.language);
     const premieredYear = tvShow.premiered ? new Date(tvShow.premiered).getFullYear().toString() : movie.year;
     const headerMetaParts = [
@@ -309,6 +335,49 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                     <p className="tv-show-summary">{movie.summary_medium}</p>
                 </div>
             )}
+
+            <div className="tv-show-section">
+                <h2>Where to Watch</h2>
+                {safeWhereToWatch.length > 0 ? (
+                    <div className="tv-watch-grid">
+                        {safeWhereToWatch.map((option) => (
+                            <a
+                                key={`${option.platform}-${option.type}`}
+                                href={option.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="tv-watch-card"
+                            >
+                                <div className="tv-watch-top">
+                                    <span className="tv-watch-platform">{option.platform}</span>
+                                    <span className="tv-watch-type">{option.type}</span>
+                                </div>
+                                <div className="tv-watch-meta">
+                                    <span className={typeof option.confidence === 'number' && option.confidence >= 85 ? 'tv-watch-confidence high' : 'tv-watch-confidence'}>
+                                        {typeof option.confidence === 'number' ? `${option.confidence}% confidence` : 'Confidence pending'}
+                                    </span>
+                                    <span className="tv-watch-dot">•</span>
+                                    <span>{formatRelativeCheckedAt(option.last_checked_at)}</span>
+                                    {option.region && (
+                                        <>
+                                            <span className="tv-watch-dot">•</span>
+                                            <span>Region {option.region}</span>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="tv-watch-cta">
+                                    <PlayIcon className="icon-tiny" />
+                                    <span>Open</span>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="tv-watch-empty">
+                        Streaming info is not available for this title right now.
+                    </div>
+                )}
+            </div>
 
             {/* Season Selector */}
             <div className="tv-show-section">

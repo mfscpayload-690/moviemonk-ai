@@ -65,17 +65,23 @@ const sanitizeRatings = (value: unknown): Rating[] => {
 const sanitizeWhereToWatch = (value: unknown): WatchOption[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((item) => {
+    .map((item): WatchOption | null => {
       if (!item || typeof item !== 'object') return null;
       const data = item as Record<string, unknown>;
       const platform = toStringSafe(data.platform).trim();
       const link = toStringSafe(data.link).trim();
       if (!platform && !link) return null;
-      return {
+      const normalized: WatchOption = {
         platform,
         link,
-        type: normalizeWatchType(data.type)
+        type: normalizeWatchType(data.type),
+        confidence: typeof data.confidence === 'number'
+          ? Math.max(0, Math.min(100, Math.round(data.confidence)))
+          : undefined,
+        last_checked_at: toStringSafe(data.last_checked_at) || undefined,
+        region: toStringSafe(data.region) || undefined
       };
+      return normalized;
     })
     .filter((item): item is WatchOption => item !== null)
     .slice(0, 20);

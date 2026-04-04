@@ -38,6 +38,9 @@ export interface WatchOption {
   platform: string;
   link: string;
   type: 'subscription' | 'rent' | 'free' | 'buy';
+  confidence?: number;
+  last_checked_at?: string;
+  region?: string;
 }
 
 export interface DiscoveryItem {
