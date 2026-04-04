@@ -34,9 +34,172 @@ interface DynamicSearchIslandProps {
 }
 
 const STORAGE_KEY_ANALYSIS = 'moviemonk_analysis_mode';
+const STORAGE_KEY_DAILY_TRENDING = 'moviemonk_daily_trending_searches_v1';
 const SUGGEST_DEBOUNCE_MS = 150;
 const SUGGEST_CACHE_TTL_MS = 45 * 1000;
 const AUTO_SELECT_CONFIDENCE = 0.82;
+const DAILY_TRENDING_LIMIT = 6;
+const DAILY_TRENDING_ENGLISH_COUNT = 4;
+
+type TrendingSuggestionItem = SuggestionItem & {
+  trendLabel: string;
+  banner_url?: string;
+};
+
+const EAST_ASIAN_LANGUAGES = new Set(['ko', 'ja']);
+const INDIAN_LANGUAGES = new Set(['hi', 'ta', 'te', 'ml', 'kn', 'bn', 'mr', 'gu', 'pa']);
+
+const getTodayKey = (): string => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+};
+
+const normalizeTrendingSuggestion = (item: any, trendLabel: string): TrendingSuggestionItem | null => {
+  if (!item || typeof item.id !== 'number') return null;
+  if (item.media_type && item.media_type !== 'movie') return null;
+  const title = typeof item.title === 'string' ? item.title.trim() : '';
+  if (!title) return null;
+
+  const year = typeof item.release_date === 'string' && item.release_date.length >= 4
+    ? item.release_date.slice(0, 4)
+    : undefined;
+
+  return {
+    id: item.id,
+    title,
+    year,
+    type: 'movie',
+    media_type: 'movie',
+    poster_url: typeof item.poster_path === 'string' && item.poster_path
+      ? `https://image.tmdb.org/t/p/w154${item.poster_path}`
+      : undefined,
+    banner_url: typeof item.backdrop_path === 'string' && item.backdrop_path
+      ? `https://image.tmdb.org/t/p/w300${item.backdrop_path}`
+      : undefined,
+    confidence: 0.99,
+    trendLabel
+  };
+};
+
+const fetchTmdbResults = async (
+  endpoint: string,
+  params: Record<string, string | number | undefined> = {}
+): Promise<any[]> => {
+  const query = new URLSearchParams();
+  query.set('endpoint', endpoint);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.set(key, String(value));
+    }
+  });
+
+  try {
+    const response = await fetch(`/api/tmdb?${query.toString()}`);
+    if (!response.ok) return [];
+    const payload = await response.json();
+    return Array.isArray(payload?.results) ? payload.results : [];
+  } catch {
+    return [];
+  }
+};
+
+const findFirstByLanguage = (items: any[], languages: Set<string>): any | null => {
+  for (const item of items) {
+    const lang = String(item?.original_language || '').toLowerCase();
+    if (languages.has(lang)) {
+      return item;
+    }
+  }
+  return null;
+};
+
+const pickTrendingMix = (
+  baseResults: any[],
+  eastAsianCandidate: any | null,
+  indianCandidate: any | null
+): TrendingSuggestionItem[] => {
+  const movies = Array.isArray(baseResults)
+    ? baseResults.filter((item: any) => item?.media_type === 'movie' || (!item?.media_type && item?.title))
+    : [];
+
+  const english = movies.filter((item: any) => item?.original_language === 'en');
+  const eastAsianFromBase = findFirstByLanguage(movies, EAST_ASIAN_LANGUAGES);
+  const indianFromBase = findFirstByLanguage(movies, INDIAN_LANGUAGES);
+  const pickedEastAsian = eastAsianCandidate || eastAsianFromBase;
+  const pickedIndian = indianCandidate || indianFromBase;
+
+  const pickedIds = new Set<number>();
+  const picked: TrendingSuggestionItem[] = [];
+
+  const pushOne = (item: any | null, labelFor: (item: any) => string) => {
+    if (!item || picked.length >= DAILY_TRENDING_LIMIT) return;
+    if (pickedIds.has(item.id)) return;
+    const normalized = normalizeTrendingSuggestion(item, labelFor(item));
+    if (!normalized) return;
+    picked.push(normalized);
+    pickedIds.add(normalized.id);
+  };
+
+  const pushFromBucket = (bucket: any[], initialCount: number, labelFor: (item: any) => string) => {
+    let count = initialCount;
+    for (const item of bucket) {
+      if (picked.length >= DAILY_TRENDING_LIMIT || count <= 0) break;
+      if (pickedIds.has(item.id)) continue;
+      const normalized = normalizeTrendingSuggestion(item, labelFor(item));
+      if (!normalized) continue;
+      picked.push(normalized);
+      pickedIds.add(normalized.id);
+      count -= 1;
+    }
+  };
+
+  pushFromBucket(english, DAILY_TRENDING_ENGLISH_COUNT, () => 'English trending');
+  pushOne(pickedEastAsian, (item) => item?.original_language === 'ko' ? 'Korean pick' : 'Japanese pick');
+  pushOne(pickedIndian, () => 'Indian pick');
+
+  if (picked.length < DAILY_TRENDING_LIMIT) {
+    pushFromBucket(english, DAILY_TRENDING_LIMIT, () => 'English trending');
+  }
+
+  if (picked.length < DAILY_TRENDING_LIMIT) {
+    pushFromBucket(movies, DAILY_TRENDING_LIMIT, (item) => {
+      const language = String(item?.original_language || '').toLowerCase();
+      if (language === 'en') return 'English trending';
+      if (language === 'ko') return 'Korean pick';
+      if (language === 'ja') return 'Japanese pick';
+      if (INDIAN_LANGUAGES.has(language)) return 'Indian pick';
+      return 'Global trending';
+    });
+  }
+
+  return picked.slice(0, DAILY_TRENDING_LIMIT);
+};
+
+const readDailyTrendingCache = (): TrendingSuggestionItem[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_DAILY_TRENDING);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { day?: string; items?: TrendingSuggestionItem[] };
+    if (parsed?.day !== getTodayKey() || !Array.isArray(parsed?.items)) return [];
+    return parsed.items.filter((item) => typeof item?.title === 'string' && typeof item?.id === 'number');
+  } catch {
+    return [];
+  }
+};
+
+const writeDailyTrendingCache = (items: TrendingSuggestionItem[]) => {
+  if (items.length === 0) return;
+  try {
+    localStorage.setItem(STORAGE_KEY_DAILY_TRENDING, JSON.stringify({
+      day: getTodayKey(),
+      items
+    }));
+  } catch {
+    // Ignore localStorage failures in private mode / quota pressure.
+  }
+};
 
 const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onSuggestionSelect, isLoading }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -46,6 +209,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [dailyTrending, setDailyTrending] = useState<TrendingSuggestionItem[]>([]);
+  const [showTrending, setShowTrending] = useState(false);
+  const [isTrendingLoading, setIsTrendingLoading] = useState(false);
+  const [trendingLoadError, setTrendingLoadError] = useState<string | null>(null);
   const [inlinePrompt, setInlinePrompt] = useState<string | null>(null);
 
   const debouncedQuery = useDebounce(query, SUGGEST_DEBOUNCE_MS);
@@ -57,6 +224,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   const suggestCacheRef = useRef<Map<string, { createdAt: number; data: SuggestionItem[] }>>(new Map());
   const inFlightRef = useRef<Map<string, Promise<SuggestionItem[]>>>(new Map());
   const latestQueryRef = useRef('');
+  const trendingLoadedRef = useRef(false);
 
   // Load persisted preferences on mount
   useEffect(() => {
@@ -129,6 +297,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     setQuery('');
     setInlinePrompt(null);
     setShowSuggestions(false);
+    setShowTrending(false);
     setSuggestions([]);
     setHighlightedIndex(-1);
     if (abortRef.current) {
@@ -177,6 +346,83 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
     onSearch(suggestion.title, analysisMode === 'complex' ? QueryComplexity.COMPLEX : QueryComplexity.SIMPLE);
     handleCollapse();
+  };
+
+  const fetchDailyTrending = async (forceRefresh = false): Promise<TrendingSuggestionItem[]> => {
+    if (!forceRefresh) {
+      const cached = readDailyTrendingCache();
+      if (cached.length > 0) return cached;
+    }
+
+    const [baseTrending, eastAsianDiscover, indianDiscover] = await Promise.all([
+      fetchTmdbResults('trending/movie/day', { language: 'en-US', page: 1 }),
+      (async () => {
+        const korean = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          with_original_language: 'ko',
+          page: 1
+        });
+        if (korean.length > 0) return korean[0];
+
+        const japanese = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          with_original_language: 'ja',
+          page: 1
+        });
+        return japanese[0] || null;
+      })(),
+      (async () => {
+        const hindi = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          with_original_language: 'hi',
+          page: 1
+        });
+        if (hindi.length > 0) return hindi[0];
+
+        const indianRegional = await fetchTmdbResults('discover/movie', {
+          language: 'en-US',
+          sort_by: 'popularity.desc',
+          include_adult: 'false',
+          include_video: 'false',
+          region: 'IN',
+          page: 1
+        });
+        return indianRegional[0] || null;
+      })()
+    ]);
+
+    const nextItems = pickTrendingMix(baseTrending, eastAsianDiscover, indianDiscover);
+    writeDailyTrendingCache(nextItems);
+    return nextItems;
+  };
+
+  const loadDailyTrending = async (forceRefresh = false) => {
+    setIsTrendingLoading(true);
+    setTrendingLoadError(null);
+
+    try {
+      const items = await fetchDailyTrending(forceRefresh);
+      setDailyTrending(items);
+      trendingLoadedRef.current = items.length > 0;
+      if (items.length === 0) {
+        setTrendingLoadError('Could not load trending picks right now.');
+      }
+    } catch {
+      setDailyTrending([]);
+      trendingLoadedRef.current = false;
+      setTrendingLoadError('Could not load trending picks right now.');
+    } finally {
+      setIsTrendingLoading(false);
+    }
   };
 
   const fetchSuggestions = async (rawQuery: string): Promise<SuggestionItem[]> => {
@@ -234,6 +480,13 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
   useEffect(() => {
     if (!isExpanded) return;
+    if (!trendingLoadedRef.current) {
+      void loadDailyTrending();
+    }
+  }, [isExpanded]);
+
+  useEffect(() => {
+    if (!isExpanded) return;
 
     const trimmed = debouncedQuery.trim();
     latestQueryRef.current = trimmed;
@@ -241,10 +494,14 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     if (trimmed.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
+      setShowTrending(isTrendingLoading || dailyTrending.length > 0 || Boolean(trendingLoadError));
       setHighlightedIndex(-1);
+      setIsSuggesting(false);
       setInlinePrompt(null);
       return;
     }
+
+    setShowTrending(false);
 
     let isCancelled = false;
 
@@ -267,7 +524,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     return () => {
       isCancelled = true;
     };
-  }, [debouncedQuery, isExpanded]);
+  }, [dailyTrending.length, debouncedQuery, isExpanded, isTrendingLoading, trendingLoadError]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
@@ -386,11 +643,16 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
+                if (e.target.value.trim().length >= 2) {
+                  setShowTrending(false);
+                }
                 setInlinePrompt(null);
               }}
               onFocus={() => {
                 if (suggestions.length > 0) {
                   setShowSuggestions(true);
+                } else if (query.trim().length < 2 && (dailyTrending.length > 0 || isTrendingLoading || Boolean(trendingLoadError))) {
+                  setShowTrending(true);
                 }
               }}
               onKeyDown={handleKeyDown}
@@ -423,6 +685,63 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
             )}
             {isSuggesting && !isLoading && <div className="suggest-loading">Searching...</div>}
 
+            {showTrending && query.trim().length < 2 && (
+              <div className="suggest-dropdown trending-dropdown" role="listbox" aria-label="Daily trending searches">
+                <div className="trending-header">
+                  <span className="trending-title">Trending Searches</span>
+                </div>
+                {isTrendingLoading && (
+                  <div className="trending-loading-row">Loading daily picks...</div>
+                )}
+                {!isTrendingLoading && trendingLoadError && (
+                  <div className="trending-error-row">
+                    <span>{trendingLoadError}</span>
+                    <button
+                      type="button"
+                      className="trending-retry-btn"
+                      onClick={() => void loadDailyTrending(true)}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+                {!isTrendingLoading && dailyTrending.map((suggestion) => {
+                  const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                  return (
+                    <button
+                      type="button"
+                      key={`trending-${suggestion.id}`}
+                      role="option"
+                      className="suggest-row trending-row"
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                    >
+                      <div className="suggest-poster-wrap is-title">
+                        {suggestion.banner_url ? (
+                          <img src={suggestion.banner_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                        ) : suggestion.poster_url ? (
+                          <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                        ) : (
+                          <div className="suggest-poster placeholder">
+                            <IconComponent size={24} className="poster-icon" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="suggest-meta">
+                        <div className="suggest-title-row">
+                          <span className="suggest-title">{suggestion.title}</span>
+                        </div>
+                        <div className="suggest-subtitle">
+                          {suggestion.year && <span>{suggestion.year}</span>}
+                          <span>•</span>
+                          <span className="capitalize">movie</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Suggestions Dropdown with Icons */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
@@ -448,7 +767,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
                       onClick={() => handleSuggestionSelect(suggestion)}
                     >
                       {/* Poster */}
-                      <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : ''}`}>
+                      <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : 'is-title'}`}>
                         {suggestion.poster_url ? (
                           <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                         ) : (
