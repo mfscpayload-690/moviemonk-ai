@@ -4,7 +4,7 @@ import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
 import { useDiscovery } from '../hooks/useDiscovery';
-import { hasRadarInputs, loadReleaseRadarSnapshot } from '../services/releaseRadarService';
+import { loadReleaseRadarSnapshot } from '../services/releaseRadarService';
 import {
   recordDiscoveryCardOpened,
   recordDiscoveryCardViewed,
@@ -43,7 +43,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   const [radarLoading, setRadarLoading] = useState(false);
   const [radarError, setRadarError] = useState<string | null>(null);
   const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
-  const [radarEnabled, setRadarEnabled] = useState(false);
+  const [radarEnabled] = useState(true);
   const activeRadarItems = radarWindow === 'daily' ? radarDaily : radarWeekly;
 
   const handleSectionVisible = useCallback((sectionKey: string, title: string, itemCount: number) => {
@@ -67,29 +67,11 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   }, []);
 
   const loadRadar = useCallback(async () => {
-    if (!hasRadarInputs(watchlists)) {
-      setRadarEnabled(false);
-      setRadarError(null);
-      setRadarDaily([]);
-      setRadarWeekly([]);
-      setRadarCheckedAt('');
-      return;
-    }
-
-    setRadarEnabled(true);
     setRadarLoading(true);
     setRadarError(null);
 
     try {
       const snapshot = await loadReleaseRadarSnapshot(watchlists);
-      if (!snapshot) {
-        setRadarDaily([]);
-        setRadarWeekly([]);
-        setRadarCheckedAt('');
-        setRadarError('Save a few more titles to unlock personalized release radar.');
-        return;
-      }
-
       setRadarDaily(snapshot.daily);
       setRadarWeekly(snapshot.weekly);
       setRadarCheckedAt(snapshot.checkedAt);
