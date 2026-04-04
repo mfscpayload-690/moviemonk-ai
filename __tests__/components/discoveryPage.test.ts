@@ -17,7 +17,8 @@ const mockUseDiscovery = useDiscovery as jest.Mock;
 function renderPage() {
   return renderToStaticMarkup(
     React.createElement(DiscoveryPage, {
-      onOpenTitle: () => undefined
+      onOpenTitle: () => undefined,
+      watchlists: []
     })
   );
 }
