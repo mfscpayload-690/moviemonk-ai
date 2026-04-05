@@ -888,6 +888,13 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
         </form>
         </div>
       </div>
+      <FilterPanel
+        filters={filters}
+        onFiltersChange={setFilters}
+        onClose={() => setShowFilters(false)}
+        genres={genres}
+        isOpen={showFilters}
+      />
     </>
   );
 };

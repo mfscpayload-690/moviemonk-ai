@@ -1,7 +1,15 @@
-import type { VercelRequest, VercelResponse } from './_utils/vercel';
-import { applyCors } from './_utils/cors';
-import { sendApiError } from './_utils/http';
-import { v4 as uuidv4 } from 'uuid';
+import type { VercelRequest, VercelResponse } from '../_utils/vercel';
+import { applyCors } from '../_utils/cors';
+import { sendApiError } from '../_utils/http';
+
+// Simple ID generator (replaces uuid which isn't available)
+const generateId = (): string => {
+  return Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+};
+
+const generatetoken = (): string => {
+  return Math.random().toString(36).substring(2, 8); // Short token for URLs
+};
 
 // In-memory store (in production, use Supabase)
 // Structure: { token: { folderId, folderName, folderColor?, folderIcon?, items, created_by, created_at } }
@@ -63,11 +71,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Generate unique share token
-      const shareToken = uuidv4().split('-')[0]; // Short token for URLs
+      const shareToken = generatetoken();
 
       // Store shared watchlist
       const sharedData = {
-        id: uuidv4(),
+        id: generateId(),
         folderName,
         folderColor,
         folderIcon,

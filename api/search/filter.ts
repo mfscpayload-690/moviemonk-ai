@@ -1,7 +1,7 @@
-import type { VercelRequest, VercelResponse } from './_utils/vercel';
-import { getCache, setCache, withCacheKey } from '../lib/cache';
-import { applyCors } from './_utils/cors';
-import { sendApiError } from './_utils/http';
+import type { VercelRequest, VercelResponse } from '../_utils/vercel';
+import { getCache, setCache, withCacheKey } from '../../lib/cache';
+import { applyCors } from '../_utils/cors';
+import { sendApiError } from '../_utils/http';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const params: Record<string, any> = {
       page,
       sort_by: sortBy,
-      include_adult: false,
+      include_adult: 'false',
       language: 'en-US'
     };
 
@@ -97,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           query: q,
           page,
           language: 'en-US',
-          include_adult: false
+          include_adult: 'false'
         });
 
         // Apply additional filters to search results
