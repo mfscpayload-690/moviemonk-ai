@@ -878,18 +878,18 @@ const App: React.FC = () => {
           )}
 
           {/* Global Footer */}
-          <footer className="w-full py-6 mt-12 text-center border-t border-white/10 text-brand-text-light/60 text-sm flex flex-col items-center gap-2 px-4">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-              <span>MovieMonk v2.8.0 · MIT License</span>
-              <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-white/20"></span>
+          <footer className="w-full py-2.5 mt-6 text-center border-t border-white/10 text-brand-text-light/50 text-xs px-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3">
+              <span className="whitespace-nowrap">MovieMonk v2.8.0 · MIT License</span>
+              <span className="hidden sm:inline-block w-0.5 h-0.5 rounded-full bg-white/20"></span>
               <a 
                 href="https://github.com/mfscpayload-690/moviemonk-ai" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 hover:text-white transition-colors py-1 group"
+                className="inline-flex items-center gap-1 hover:text-white transition-colors group"
                 aria-label="GitHub Repository"
               >
-                <GithubIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <GithubIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                 <span>Contribute</span>
               </a>
             </div>
