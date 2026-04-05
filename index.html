@@ -35,6 +35,7 @@
             'fade-in': 'fadeIn 0.5s ease-in-out',
             'slide-up': 'slideUp 0.5s ease-in-out',
             'spin': 'spin 1s linear infinite',
+            'skeleton-shimmer': 'skeletonShimmer 1.8s ease-in-out infinite'
           },
           keyframes: {
             fadeIn: {
@@ -49,6 +50,11 @@
               'from': { transform: 'rotate(0deg)' },
               'to': { transform: 'rotate(360deg)' },
             },
+            skeletonShimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '50%': { backgroundPosition: '200% 0' },
+              '100%': { backgroundPosition: '-200% 0' },
+            }
           }
         }
       }

@@ -2584,6 +2584,28 @@ a:focus-visible {
     border-radius: 10px;
 }
 
+.discovery-skeleton.skeleton-shimmer {
+    animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    50% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.discovery-skeleton-poster-compact {
+    width: clamp(100px, 15vw, 160px);
+    aspect-ratio: 2 / 3;
+    border-radius: 10px;
+}
+
 .discovery-hero-skeleton {
     min-height: clamp(22rem, 58vw, 31rem);
     border-radius: 18px;
