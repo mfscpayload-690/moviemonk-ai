@@ -24,7 +24,19 @@ export function parseAppRoute(pathname: string, search: string): ParsedRoute {
 
   if (normalizedPath === '/') {
     const q = params.get('q');
-    if (q) return { kind: 'search', query: q };
+    const type = params.get('type');
+    const id = params.get('id');
+    
+    if (q) {
+      // Handle typed deep links: ?q=title&type=show&year=year or ?q=name&type=person&id=123
+      if (type === 'show' || type === 'tv') {
+        return { kind: 'search', query: q };
+      }
+      if (type === 'person' && id) {
+        return { kind: 'person', id: Number(id) };
+      }
+      return { kind: 'search', query: q };
+    }
     return { kind: 'home' };
   }
   if (normalizedPath === '/search') return { kind: 'search', query: params.get('q') || '' };

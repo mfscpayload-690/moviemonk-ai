@@ -309,7 +309,8 @@ const App: React.FC = () => {
     let shareUrl = window.location.origin;
 
     if (movieData) {
-      shareUrl += `?q=${encodeURIComponent(movieData.title)}&type=movie&year=${movieData.year}`;
+      const contentType = movieData.tvShow ? 'show' : 'movie';
+      shareUrl += `?q=${encodeURIComponent(movieData.title)}&type=${contentType}&year=${movieData.year}`;
     } else if (personData) {
       const personName = personData?.person?.name || personData?.name || '';
       const personId = personData?.person?.id || personData?.id;

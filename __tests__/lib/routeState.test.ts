@@ -14,6 +14,30 @@ describe('parseAppRoute', () => {
     expect(parseAppRoute('/person/31', '')).toEqual({ kind: 'person', id: 31 });
   });
 
+  it('parses TV route', () => {
+    expect(parseAppRoute('/tv/1399', '')).toEqual({ kind: 'tv', id: 1399 });
+  });
+
+  it('parses shared typed deep links', () => {
+    // Shared movie link
+    expect(parseAppRoute('/', '?q=Inception&type=movie&year=2010')).toEqual({ 
+      kind: 'search', 
+      query: 'Inception' 
+    });
+    
+    // Shared show link
+    expect(parseAppRoute('/', '?q=Breaking%20Bad&type=show&year=2008')).toEqual({ 
+      kind: 'search', 
+      query: 'Breaking Bad' 
+    });
+    
+    // Shared person direct link
+    expect(parseAppRoute('/', '?q=Leonardo%20DiCaprio&type=person&id=6193')).toEqual({ 
+      kind: 'person', 
+      id: 6193 
+    });
+  });
+
   it('returns unknown for unsupported paths', () => {
     expect(parseAppRoute('/foo/bar', '')).toEqual({ kind: 'unknown' });
   });
