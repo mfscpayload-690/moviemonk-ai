@@ -6,6 +6,8 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import './styles/modern.css';
 import './styles/dynamic-search-island.css';
+import './styles/filter-panel.css';
+import './styles/shared-watchlist.css';
 import AppRoutes from './AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
 

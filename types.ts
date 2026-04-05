@@ -273,3 +273,45 @@ export interface SuggestionItem {
   known_for_department?: string;
   known_for_titles?: string[];
 }
+
+// Advanced Filters for search refinement
+export interface SearchFilters {
+  genres?: number[]; // TMDB genre IDs
+  yearMin?: number;
+  yearMax?: number;
+  ratingMin?: number; // 0–10
+  languages?: string[]; // ISO 639-1 codes
+  sortBy?: 'popularity.desc' | 'vote_average.desc' | 'release_date.desc' | 'title.asc';
+  includeAdult?: boolean;
+  runtimeMin?: number; // minutes
+  runtimeMax?: number;
+  withCast?: string; // Person IDs
+  withCrew?: string;
+  status?: 'returning' | 'planned' | 'in_production' | 'ended' | 'cancelled'; // TV only
+}
+
+// Watchlist Sharing
+export interface SharedWatchlist {
+  id: string; // Unique share ID (uuid)
+  folderId: string; // Reference to original local folder  
+  folderName: string;
+  folderColor?: string;
+  folderIcon?: string;
+  items: WatchlistItem[];
+  created_by: string; // User ID
+  created_at: string; // ISO timestamp
+  expires_at?: string; // Optional expiration
+  is_public: boolean;
+  share_token: string; // For URL: /watchlists/share?token=xxx
+  view_count: number;
+}
+
+export interface SharedWatchlistView {
+  folderName: string;
+  folderColor?: string;
+  folderIcon?: string;
+  items: WatchlistItem[];
+  shared_by: string;
+  created_at: string;
+  item_count: number;
+}

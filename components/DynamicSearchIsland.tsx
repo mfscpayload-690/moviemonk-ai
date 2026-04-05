@@ -11,9 +11,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
-import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb } from 'lucide-react';
-import { QueryComplexity, SuggestionItem } from '../types';
+import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb, Settings } from 'lucide-react';
+import { QueryComplexity, SuggestionItem, SearchFilters, DiscoveryGenre } from '../types';
 import { SearchIcon, SendIcon } from './icons';
+import { FilterPanel } from './FilterPanel';
 import { getNextHighlightIndex, inferInteractionIntent, resolveEnterAction } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
@@ -214,6 +215,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   const [isTrendingLoading, setIsTrendingLoading] = useState(false);
   const [trendingLoadError, setTrendingLoadError] = useState<string | null>(null);
   const [inlinePrompt, setInlinePrompt] = useState<string | null>(null);
+  const [filters, setFilters] = useState<SearchFilters>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [genres, setGenres] = useState<DiscoveryGenre[]>([]);
 
   const debouncedQuery = useDebounce(query, SUGGEST_DEBOUNCE_MS);
 
@@ -232,6 +236,20 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     if (savedAnalysis && (savedAnalysis === 'quick' || savedAnalysis === 'complex')) {
       setAnalysisMode(savedAnalysis);
     }
+
+    // Fetch genres for filter
+    const fetchGenres = async () => {
+      try {
+        const res = await fetch('/api/tmdb?endpoint=genre/movie/list');
+        const data = await res.json();
+        if (Array.isArray(data?.genres)) {
+          setGenres(data.genres);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch genres:', err);
+      }
+    };
+    fetchGenres();
   }, []);
 
   // Focus input when expanded
@@ -665,6 +683,18 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               aria-activedescendant={highlightedIndex >= 0 ? `search-suggestion-${highlightedIndex}` : undefined}
               className="search-input has-icons"
             />
+            <button
+              type="button"
+              onClick={() => setShowFilters(true)}
+              className="search-input-action filter-button"
+              aria-label="Open search filters"
+              title="Advanced Filters"
+            >
+              <Settings size={18} />
+              {Object.keys(filters).length > 0 && (
+                <span className="filter-badge" title="Filters applied">{Object.keys(filters).length}</span>
+              )}
+            </button>
             {isLoading ? (
               <button type="button" className="search-input-action" disabled aria-label="Searching">
                 <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">

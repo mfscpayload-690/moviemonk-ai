@@ -13,6 +13,7 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
+import { Share2, Copy, Check } from 'lucide-react';
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -76,6 +77,12 @@ export function WatchlistsDashboard() {
     () => folders.find((folder) => folder.id === editingFolderId) || null,
     [editingFolderId, folders]
   );
+
+  // Share State
+  const [sharingFolderId, setSharingFolderId] = useState<string | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Deep-link: resolve :folderName param → activeFolderId once folders are loaded
   const [deepLinkResolved, setDeepLinkResolved] = useState(false);
@@ -233,6 +240,47 @@ export function WatchlistsDashboard() {
   const handleDeleteFolder = (id: string, name: string, count: number) => {
     if (window.confirm(`Are you sure you want to delete "${name}" and its ${count} items?`)) {
       deleteFolder(id);
+    }
+  };
+
+  const handleShareFolder = async (folder: WatchlistFolder) => {
+    try {
+      setShareLoading(true);
+      setSharingFolderId(folder.id);
+      setShareLink(null);
+
+      const response = await fetch('/api/watchlists/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folderName: folder.name,
+          folderColor: folder.color,
+          folderIcon: folder.icon,
+          items: folder.items,
+          created_by: displayName || 'MovieMonk User'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create share link');
+      }
+
+      const data = await response.json();
+      setShareLink(data.share_url);
+    } catch (err) {
+      console.error('Share error:', err);
+      alert('Failed to create share link. Please try again.');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShareLink = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink).then(() => {
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      });
     }
   };
 
@@ -432,7 +480,14 @@ export function WatchlistsDashboard() {
               <h2 className="text-3xl font-bold text-white tracking-tight">{activeFolder.name}</h2>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button 
+                onClick={() => handleShareFolder(activeFolder)}
+                disabled={shareLoading}
+                className="px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                <Share2 size={16} /> {shareLoading ? 'Creating link...' : 'Share'}
+              </button>
               <button 
                 onClick={() => startEditFolder(activeFolder)}
                 className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-2 text-sm font-medium transition-colors"
@@ -645,6 +700,76 @@ export function WatchlistsDashboard() {
               >
                 <CheckIcon className="w-4 h-4" />
                 Save changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {shareLink && (
+        <div
+          className="fixed inset-0 z-[12000] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-modal-title"
+          onClick={() => {
+            setSharingFolderId(null);
+            setShareLink(null);
+          }}
+        >
+          <div
+            className="bg-brand-surface border border-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="share-modal-title" className="text-xl font-bold text-white mb-4">
+              Share Watchlist
+            </h3>
+            
+            <p className="text-sm text-brand-text-light mb-4">
+              Anyone with this link can view your "{activeFolder?.name}" watchlist:
+            </p>
+
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4 flex items-center gap-3">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="flex-1 bg-transparent text-sm text-white outline-none"
+              />
+              <button
+                onClick={handleCopyShareLink}
+                className="flex-shrink-0 p-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                {shareCopied ? (
+                  <Check size={18} className="text-emerald-400" />
+                ) : (
+                  <Copy size={18} className="text-brand-text-light hover:text-white" />
+                )}
+              </button>
+            </div>
+
+            <p className="text-xs text-brand-text-dark mb-6">
+              {shareCopied ? '✓ Link copied to clipboard' : 'Click the copy icon to share'}
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setSharingFolderId(null);
+                  setShareLink(null);
+                }}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white font-medium transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  window.open(shareLink, '_blank');
+                }}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition-colors"
+              >
+                View Link
               </button>
             </div>
           </div>

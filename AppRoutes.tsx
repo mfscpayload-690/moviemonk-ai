@@ -9,6 +9,7 @@ import {
   SettingsHubPage
 } from './pages/SettingsPages';
 import { WatchlistsDashboard } from './pages/WatchlistsDashboard';
+import { SharedWatchlistView } from './components/SharedWatchlistView';
 
 export default function AppRoutes() {
   return (
@@ -20,6 +21,8 @@ export default function AppRoutes() {
       <Route path="/person/:id" element={<App />} />
       <Route path="/watchlists" element={<WatchlistsDashboard />} />
       <Route path="/watchlists/:folderName" element={<WatchlistsDashboard />} />
+      <Route path="/watchlists/share" element={<SharedWatchlistView />} />
+      <Route path="/watchlists/share/:token" element={<SharedWatchlistView />} />
       <Route path="/settings" element={<SettingsHubPage />} />
       <Route path="/settings/profile" element={<ProfileSettingsPage />} />
       <Route path="/settings/preferences" element={<PreferenceSettingsPage />} />
