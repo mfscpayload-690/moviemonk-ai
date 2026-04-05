@@ -641,7 +641,12 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   // Expanded panel state
   return (
     <>
-      <div className="search-island-backdrop" onClick={handleCollapse} aria-hidden="true" />
+      <div 
+        className="search-island-backdrop" 
+        onClick={() => !showFilters && handleCollapse()} 
+        aria-hidden="true"
+        style={{ opacity: showFilters ? 0 : 1 }}
+      />
       <div
         ref={islandRef}
         className={`search-island expanded ${shouldExpandForResults ? 'has-results' : 'is-compact'}`}

@@ -246,6 +246,8 @@
   transform: translateY(-50%);
   width: 34px;
   height: 34px;
+    min-height: 34px;
+    min-width: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,8 +257,9 @@
   color: #c4b5fd;
   cursor: pointer;
   transition: all 0.2s ease;
-  z-index: 2;
+  z-index: 4;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .search-input-action:hover:not(:disabled) {
@@ -272,26 +275,29 @@
 }
 
 .filter-button {
+  position: absolute !important;
   right: 3.5rem !important;
-  position: relative !important;
+  top: 50% !important;
   transform: translateY(-50%) !important;
+  z-index: 3 !important;
 }
 
 .filter-badge {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -8px;
+  right: -8px;
   background: #10b981;
   color: white;
   font-size: 0.625rem;
   font-weight: 700;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(20, 20, 28, 0.9);
+  border: 2px solid rgba(20, 20, 28, 0.95);
+  font-weight: 600;
 }
 
 .suggest-loading {
@@ -312,6 +318,8 @@
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(139, 92, 246, 0.2);
+    padding-right: 3.5rem;
+    flex-shrink: 0;
   backdrop-filter: blur(8px);
   max-height: min(58vh, 520px);
   overflow-y: auto;
