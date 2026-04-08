@@ -235,7 +235,7 @@ function buildDidYouMean(query: string, page1MappedTitles: SearchResultRecord[])
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const obs = beginRequestObservation(req, res, '/api/search');
-  const { originAllowed } = applyCors(req, res, 'GET, OPTIONS');
+  const { originAllowed } = applyCors(req, res, 'GET, POST, OPTIONS');
 
   if (req.headers.origin && !originAllowed) {
     obs.finish(403, { reason: 'forbidden_origin' });
@@ -247,25 +247,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(204).end();
   }
 
-  if (req.method !== 'GET') {
+  if (!['GET', 'POST'].includes(req.method || '')) {
     obs.finish(405, { error_code: 'method_not_allowed' });
     return sendApiError(res, 405, 'method_not_allowed', 'Method not allowed');
   }
 
-  const q = String(req.query.q || '').trim();
+  const input = req.method === 'POST' ? (req.body || {}) : req.query;
+
+  const q = String(input.q || '').trim();
   if (q.length < 1) {
     obs.finish(400, { error_code: 'missing_query' });
     return sendApiError(res, 400, 'missing_query', 'Query is required');
   }
 
-  const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
-  const mediaTypeFilter = normalizeMediaTypeFilter(String(req.query.type || 'all'));
-  const sortBy = String(req.query.sortBy || 'popularity.desc');
-  const genreFilters = parseGenreFilters(req.query.genres ?? req.query.genre);
-  const ratingMin = parseNumber(req.query.ratingMin);
-  const yearMinRaw = parseNumber(req.query.yearMin);
-  const yearMaxRaw = parseNumber(req.query.yearMax);
-  const exactYear = parseNumber(req.query.year);
+  const page = Math.max(1, parseInt(String(input.page || '1'), 10) || 1);
+  const mediaTypeFilter = normalizeMediaTypeFilter(String(input.type || 'all'));
+  const sortBy = String(input.sortBy || 'popularity.desc');
+  const genreFilters = parseGenreFilters(input.genres ?? input.genre);
+  const ratingMin = parseNumber(input.ratingMin);
+  const yearMinRaw = parseNumber(input.yearMin);
+  const yearMaxRaw = parseNumber(input.yearMax);
+  const exactYear = parseNumber(input.year);
   const yearMin = exactYear ?? yearMinRaw;
   const yearMax = exactYear ?? yearMaxRaw;
 

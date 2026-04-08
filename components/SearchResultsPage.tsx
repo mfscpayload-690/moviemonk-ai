@@ -84,17 +84,21 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       setError(null);
 
       try {
-        const params = new URLSearchParams();
-        params.set('q', query.trim());
-        params.set('page', String(page));
-        params.set('type', typeFilter);
-        params.set('sortBy', sortBy);
-        if (genreFilter) params.set('genres', genreFilter);
-        if (yearMin) params.set('yearMin', yearMin);
-        if (yearMax) params.set('yearMax', yearMax);
-        if (ratingMin) params.set('ratingMin', ratingMin);
-
-        const response = await fetch(`/api/search?${params.toString()}`, { signal: controller.signal });
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            q: query.trim(),
+            page,
+            type: typeFilter,
+            sortBy,
+            genres: genreFilter || undefined,
+            yearMin: yearMin || undefined,
+            yearMax: yearMax || undefined,
+            ratingMin: ratingMin || undefined
+          })
+        });
         if (!response.ok) throw new Error(`Search failed (${response.status})`);
         const data = (await response.json()) as SearchPageResponse;
         setPayload(data);
@@ -413,7 +417,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                         <div className="search-result-meta">
                           <span>{item.year || 'TBA'}</span>
                           <span>{item.type === 'show' ? 'TV' : 'Movie'}</span>
-                          <RatingDisplay score={item.rating} size="sm" compact />
+                          <RatingDisplay score={item.rating ?? null} size="sm" compact />
                         </div>
                         <p>{item.summary_snippet || item.overview || 'No synopsis available yet.'}</p>
                       </div>
