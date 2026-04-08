@@ -2194,6 +2194,7 @@ a:focus-visible {
     background:
         linear-gradient(165deg, rgba(0, 0, 0, 0.22) 10%, rgba(0, 0, 0, 0.82) 80%),
         linear-gradient(90deg, rgba(0, 0, 0, 0.82) 20%, rgba(0, 0, 0, 0.2) 75%);
+    transition: background 320ms ease, opacity 320ms ease;
 }
 
 .discovery-hero-copy {
@@ -2203,6 +2204,7 @@ a:focus-visible {
     left: 0;
     width: min(100%, 52rem);
     padding: 1.5rem;
+    transition: opacity 320ms ease, transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .discovery-hero-kicker {
@@ -2354,6 +2356,24 @@ a:focus-visible {
 
     to {
         transform: scaleX(1);
+    }
+}
+
+@keyframes heroAmbientPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.12),
+            0 16px 42px rgba(56, 189, 248, 0.2),
+            0 10px 30px rgba(236, 72, 153, 0.16),
+            0 22px 56px rgba(129, 140, 248, 0.14);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.14),
+            0 20px 48px rgba(56, 189, 248, 0.28),
+            0 12px 34px rgba(236, 72, 153, 0.22),
+            0 26px 64px rgba(129, 140, 248, 0.2);
     }
 }
 
@@ -2741,6 +2761,45 @@ a:focus-visible {
 
     .discovery-hero-copy {
         padding: 1rem 1rem 3rem;
+    }
+
+    .discovery-hero-wrapper.is-preview-active {
+        animation: heroAmbientPulse 3.2s ease-in-out infinite;
+    }
+
+    .discovery-hero-overlay.is-preview-playing {
+        background:
+            linear-gradient(160deg, rgba(0, 0, 0, 0.14) 8%, rgba(0, 0, 0, 0.5) 82%),
+            linear-gradient(90deg, rgba(0, 0, 0, 0.34) 18%, rgba(0, 0, 0, 0.1) 78%);
+    }
+
+    .discovery-hero-copy .discovery-hero-kicker,
+    .discovery-hero-copy .discovery-hero-title,
+    .discovery-hero-copy .discovery-hero-meta,
+    .discovery-hero-copy .discovery-hero-overview {
+        transition: opacity 320ms ease, transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 320ms ease;
+    }
+
+    .discovery-hero-copy.is-preview-playing .discovery-hero-kicker,
+    .discovery-hero-copy.is-preview-playing .discovery-hero-title,
+    .discovery-hero-copy.is-preview-playing .discovery-hero-meta,
+    .discovery-hero-copy.is-preview-playing .discovery-hero-overview {
+        opacity: 0;
+        transform: translateY(10px);
+        filter: blur(2px);
+        pointer-events: none;
+    }
+
+    .discovery-hero-copy.is-preview-playing .discovery-hero-actions {
+        transform: translateY(3px);
+        transition: transform 320ms ease;
+    }
+
+    .discovery-hero-copy.is-preview-playing .discovery-cta-secondary {
+        background: rgba(6, 8, 14, 0.58);
+        border-color: rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
     }
 
     .discovery-hero-dots-global {

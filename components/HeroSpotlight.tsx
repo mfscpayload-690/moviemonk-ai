@@ -211,9 +211,17 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
     );
   }
 
+  const activeItem = items[activeIndex];
+  const activePreviewUrl = activeItem ? previewUrlByItem[toHeroItemKey(activeItem)] : null;
+  const isActivePreviewPlaying = Boolean(
+    isTrailerPreviewEnabled
+    && isPreviewReady
+    && activePreviewUrl
+  );
+
   return (
     <section
-      className="discovery-hero-wrapper"
+      className={`discovery-hero-wrapper ${isActivePreviewPlaying ? 'is-preview-active' : ''}`}
       tabIndex={0}
       aria-roledescription="carousel"
       aria-label="Featured discovery titles"
@@ -279,8 +287,8 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                   />
                 </div>
               )}
-              <div className="discovery-hero-overlay" />
-              <div className="discovery-hero-copy">
+              <div className={`discovery-hero-overlay ${shouldShowPreview ? 'is-preview-playing' : ''}`} />
+              <div className={`discovery-hero-copy ${shouldShowPreview ? 'is-preview-playing' : ''}`}>
                 <p className="discovery-hero-kicker">Featured This Week</p>
                 <h2 className="discovery-hero-title">{item.title}</h2>
                 <div className="discovery-hero-meta">
