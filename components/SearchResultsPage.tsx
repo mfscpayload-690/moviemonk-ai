@@ -5,9 +5,6 @@ import RatingDisplay from './RatingDisplay';
 import { TagIcon, WatchedIcon } from './icons';
 import '../styles/search-results-page.css';
 
-type SortBy = 'popularity.desc' | 'vote_average.desc' | 'release_date.desc' | 'title.asc';
-type TypeFilter = 'all' | 'movie' | 'tv';
-
 interface SearchResultsPageProps {
   query: string;
   onSearchQuery: (nextQuery: string) => void;
@@ -52,12 +49,6 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   onQuickSaveToWatchlist
 }) => {
   const [page, setPage] = useState(1);
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
-  const [sortBy, setSortBy] = useState<SortBy>('popularity.desc');
-  const [genreFilter, setGenreFilter] = useState<string>('');
-  const [yearMin, setYearMin] = useState('');
-  const [yearMax, setYearMax] = useState('');
-  const [ratingMin, setRatingMin] = useState('');
   const [payload, setPayload] = useState<SearchPageResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +59,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   useEffect(() => {
     setPage(1);
-  }, [normalizedQuery, typeFilter, sortBy, genreFilter, yearMin, yearMax, ratingMin]);
+  }, [normalizedQuery]);
 
   useEffect(() => {
     if (!normalizedQuery) {
@@ -90,13 +81,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           signal: controller.signal,
           body: JSON.stringify({
             q: query.trim(),
-            page,
-            type: typeFilter,
-            sortBy,
-            genres: genreFilter || undefined,
-            yearMin: yearMin || undefined,
-            yearMax: yearMax || undefined,
-            ratingMin: ratingMin || undefined
+            page
           })
         });
         if (!response.ok) throw new Error(`Search failed (${response.status})`);
@@ -127,35 +112,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
     void load();
     return () => controller.abort();
-  }, [query, normalizedQuery, page, typeFilter, sortBy, genreFilter, yearMin, yearMax, ratingMin]);
-
-  const availableGenres = useMemo(() => {
-    const genreMap = new Map<number, string>();
-    const collect = (item: SearchResult | null) => {
-      if (!item?.genre_ids || !item?.genres) return;
-      item.genre_ids.forEach((id, idx) => {
-        const name = item.genres?.[idx];
-        if (typeof id === 'number' && typeof name === 'string' && name.trim()) {
-          genreMap.set(id, name);
-        }
-      });
-    };
-
-    collect(payload?.hero ?? null);
-    (payload?.results || []).forEach((item) => collect(item));
-
-    return Array.from(genreMap.entries())
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [payload]);
-
-  useEffect(() => {
-    if (!genreFilter) return;
-    const asNumber = Number(genreFilter);
-    if (!availableGenres.some((genre) => genre.id === asNumber)) {
-      setGenreFilter('');
-    }
-  }, [availableGenres, genreFilter]);
+  }, [query, normalizedQuery, page]);
 
   useEffect(() => {
     const hero = payload?.hero;
@@ -221,77 +178,6 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               {payload.total_results.toLocaleString()} total matches on TMDB
             </p>
           )}
-        </div>
-
-        <div className="search-page-controls">
-          <label className="search-page-control">
-            <span>Type</span>
-            <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as TypeFilter)}>
-              <option value="all">All</option>
-              <option value="movie">Movies</option>
-              <option value="tv">Shows</option>
-            </select>
-          </label>
-
-          <label className="search-page-control">
-            <span>Sort</span>
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as SortBy)}>
-              <option value="popularity.desc">Popularity</option>
-              <option value="vote_average.desc">Rating</option>
-              <option value="release_date.desc">Newest</option>
-              <option value="title.asc">Title A-Z</option>
-            </select>
-          </label>
-
-          <label className="search-page-control">
-            <span>Genre</span>
-            <select value={genreFilter} onChange={(event) => setGenreFilter(event.target.value)}>
-              <option value="">Any</option>
-              {availableGenres.map((genre) => (
-                <option key={genre.id} value={genre.id}>{genre.name}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="search-page-control">
-            <span>Year from</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1900}
-              max={2100}
-              value={yearMin}
-              onChange={(event) => setYearMin(event.target.value)}
-              placeholder="1900"
-            />
-          </label>
-
-          <label className="search-page-control">
-            <span>Year to</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1900}
-              max={2100}
-              value={yearMax}
-              onChange={(event) => setYearMax(event.target.value)}
-              placeholder="2026"
-            />
-          </label>
-
-          <label className="search-page-control">
-            <span>Min rating</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              max={10}
-              step={0.5}
-              value={ratingMin}
-              onChange={(event) => setRatingMin(event.target.value)}
-              placeholder="7"
-            />
-          </label>
         </div>
       </section>
 
