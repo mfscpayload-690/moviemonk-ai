@@ -1,25 +1,27 @@
-/* Filter Panel Styles */
+/* Filter Panel Styles — Dark theme matching MovieMonk */
 
 .filter-panel-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
   padding-top: 60px;
-  z-index: 70;
+  z-index: 200; /* Above search island overlay (z-index ~100) */
+  backdrop-filter: blur(2px);
 }
 
 .filter-panel-container {
-  background: white;
+  background: #1a1a2e;
   width: 100%;
-  max-width: 360px;
+  max-width: 340px;
   height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
-  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
-  animation: slideInRight 0.3s ease-out;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+  animation: slideInRight 0.25s ease-out;
+  border-left: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 @keyframes slideInRight {
@@ -37,73 +39,79 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(139, 92, 246, 0.08);
 }
 
 .filter-panel-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: #e2e8f0;
   margin: 0;
+  letter-spacing: 0.01em;
 }
 
 .filter-panel-close {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
-  color: #6b7280;
-  transition: color 0.2s;
+  padding: 6px;
+  color: #94a3b8;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
 }
 
 .filter-panel-close:hover {
-  color: #1f2937;
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .filter-panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 0;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
 }
 
 .filter-section {
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .filter-section-header {
   width: 100%;
-  padding: 12px 16px;
+  padding: 11px 16px;
   background: none;
   border: none;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: #cbd5e1;
   transition: background 0.2s;
 }
 
 .filter-section-header:hover {
-  background: #f9fafb;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .filter-section-header svg {
   transition: transform 0.2s;
+  color: #64748b;
 }
 
 .filter-section-content {
-  padding: 8px 16px 12px;
+  padding: 6px 16px 12px;
 }
 
-/* Genre Grid */
+/* Genre Grid — always 2 columns */
 .genre-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 4px;
 }
 
 .genre-checkbox {
@@ -111,25 +119,25 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  padding: 6px;
+  padding: 5px 6px;
   border-radius: 4px;
   transition: background 0.2s;
 }
 
 .genre-checkbox:hover {
-  background: #f3f4f6;
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .genre-checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: #8b5cf6;
 }
 
 .genre-checkbox span {
-  font-size: 13px;
-  color: #374151;
+  font-size: 12.5px;
+  color: #cbd5e1;
 }
 
 /* Year Inputs */
@@ -141,64 +149,65 @@
 
 .year-input {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
-  font-size: 14px;
-  color: #1f2937;
+  font-size: 13px;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .year-input::placeholder {
-  color: #9ca3af;
+  color: #64748b;
 }
 
 .year-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
 }
 
 .year-separator {
-  font-size: 13px;
-  color: #9ca3af;
+  font-size: 12px;
+  color: #64748b;
   flex-shrink: 0;
 }
 
 /* Rating Buttons */
 .rating-buttons {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .rating-btn {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
-  background: white;
-  font-size: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: #cbd5e1;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .rating-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #8b5cf6;
+  color: #a78bfa;
 }
 
 .rating-btn.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+  background: #8b5cf6;
+  border-color: #8b5cf6;
   color: white;
 }
 
-/* Language Grid */
+/* Language Grid — always 2 columns */
 .language-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 4px;
 }
 
 .language-checkbox {
@@ -206,32 +215,32 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  padding: 6px;
+  padding: 5px 6px;
   border-radius: 4px;
   transition: background 0.2s;
 }
 
 .language-checkbox:hover {
-  background: #f3f4f6;
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .language-checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: #8b5cf6;
 }
 
 .language-checkbox span {
-  font-size: 13px;
-  color: #374151;
+  font-size: 12.5px;
+  color: #cbd5e1;
 }
 
 /* Sort Options */
 .sort-options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .sort-radio {
@@ -239,80 +248,89 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  padding: 6px;
+  padding: 5px 6px;
   border-radius: 4px;
   transition: background 0.2s;
 }
 
 .sort-radio:hover {
-  background: #f3f4f6;
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .sort-radio input[type="radio"] {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: #8b5cf6;
 }
 
 .sort-radio span {
-  font-size: 14px;
-  color: #374151;
+  font-size: 13px;
+  color: #cbd5e1;
 }
 
 /* Footer */
 .filter-panel-footer {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   padding: 12px 16px;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .filter-btn-primary,
 .filter-btn-secondary {
   flex: 1;
-  padding: 10px 16px;
+  padding: 9px 14px;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .filter-btn-primary {
-  background: #3b82f6;
+  background: #8b5cf6;
   color: white;
 }
 
 .filter-btn-primary:hover {
-  background: #2563eb;
+  background: #7c3aed;
 }
 
 .filter-btn-secondary {
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
 }
 
 .filter-btn-secondary:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 480px) {
+/* Mobile/Tablet: slide panel takes ~80% width, keep 2-column grids */
+@media (max-width: 600px) {
+  .filter-panel-overlay {
+    padding-top: 56px;
+  }
+
   .filter-panel-container {
-    max-width: 100%;
-  }
-
-  .genre-grid,
-  .language-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .filter-panel-close {
-    padding: 8px;
+    max-width: 82vw;
+    height: calc(100vh - 56px);
   }
 }
+
+/* Very small screens: still 2-column but tighter spacing */
+@media (max-width: 360px) {
+  .filter-panel-container {
+    max-width: 90vw;
+  }
+
+  .genre-checkbox span,
+  .language-checkbox span {
+    font-size: 11.5px;
+  }
+}
+

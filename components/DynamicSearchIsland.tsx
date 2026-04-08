@@ -243,6 +243,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   const latestQueryRef = useRef('');
   const trendingLoadedRef = useRef(false);
   const genresLoadedRef = useRef(false);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
 
   // Load persisted preferences on mount
   useEffect(() => {
@@ -333,14 +334,16 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isExpanded, handleCollapse]);
 
-  // Click outside to collapse
+  // Click outside to collapse (but not if clicking inside filter panel)
   useEffect(() => {
     if (!isExpanded) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (islandRef.current && !islandRef.current.contains(e.target as Node)) {
-        handleCollapse();
-      }
+      const target = e.target as Node;
+      // Don't collapse if clicking inside the search island or filter panel
+      if (islandRef.current && islandRef.current.contains(target)) return;
+      if (filterPanelRef.current && filterPanelRef.current.contains(target)) return;
+      handleCollapse();
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -937,13 +940,15 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
         </form>
         </div>
       </div>
-      <FilterPanel
-        filters={filters}
-        onFiltersChange={setFilters}
-        onClose={() => setShowFilters(false)}
-        genres={genres}
-        isOpen={showFilters}
-      />
+      <div ref={filterPanelRef}>
+        <FilterPanel
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClose={() => setShowFilters(false)}
+          genres={genres}
+          isOpen={showFilters}
+        />
+      </div>
     </>
   );
 };
