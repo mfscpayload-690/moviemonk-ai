@@ -425,10 +425,10 @@ const App: React.FC = () => {
     }
   }, [navigate, scrollMainContentToTop, selectedProvider]);
 
-  const handleSendMessage = useCallback(async (
+  const handleSendMessage = useCallback((
     message: string,
-    complexity: QueryComplexity,
-    provider: AIProvider = 'groq',
+    _complexity: QueryComplexity,
+    _provider: AIProvider = 'groq',
     options: { skipNavigate?: boolean } = {}
   ) => {
     const normalizedMessage = message.trim();
@@ -447,95 +447,6 @@ const App: React.FC = () => {
       navigate(`/search?q=${encodeURIComponent(normalizedMessage)}`);
     }
     scrollMainContentToTop('auto');
-    return;
-
-    /*
-    Legacy auto-resolve search flow kept for reference during transition.
-    try {
-      debugLog('[search] fetching search results');
-      const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(message)}`);
-      const searchData = await searchRes.json();
-
-      if (!searchData.ok || searchData.total === 0) {
-        throw new Error('No search results found');
-      }
-
-      const selectedResult = searchData.results[0];
-      debugLog('[search] using top ranked match', selectedResult.title);
-
-      const modelRes = await fetch(
-        `/api/ai?action=selectModel&type=${selectedResult.type}&title=${encodeURIComponent(selectedResult.title)}`
-      );
-      const modelData = await modelRes.json();
-      const selectedModel: AIProvider = (modelData.selectedModel as AIProvider) || provider;
-      setSelectedProvider(selectedModel);
-
-      debugLog('[search] selected model', selectedModel);
-
-      const resolveRes = await fetch(`/api/resolveEntity?q=${encodeURIComponent(message)}`);
-      if (resolveRes.ok) {
-        const resolved = await resolveRes.json();
-        if (resolved?.confidence_band === 'shortlist' && Array.isArray(resolved?.shortlisted) && resolved.shortlisted.length > 0) {
-          setShortlistCandidates(
-            resolved.shortlisted.map((item: any) => ({
-              id: item.id,
-              title: item.name,
-              type: 'person',
-              score: item.score || item.confidence || 0,
-              confidence: item.confidence,
-              popularity: item.popularity,
-              image: item.profile_url,
-              snippet: item.known_for_titles?.slice?.(0, 3)?.join(' • ') || item.known_for_department || '',
-              media_type: 'person',
-              role_match: item.role_match,
-              known_for_department: item.known_for_department,
-              known_for_titles: item.known_for_titles
-            }))
-          );
-          return;
-        }
-
-        if (resolved?.confidence_band === 'confident' && resolved?.chosen?.type === 'person' && resolved?.chosen?.id) {
-          await openPersonById(Number(resolved.chosen.id), resolved.chosen.name, { manageLoading: false });
-          return;
-        }
-      }
-
-      if (selectedResult.type === 'person') {
-        await openPersonById(Number(selectedResult.id), selectedResult.title, { manageLoading: false });
-      } else {
-        const result = await fetchMovieData(
-          message,
-          complexity,
-          selectedModel
-        );
-
-        if (result.movieData) {
-          startTransition(() => {
-            setMovieData(result.movieData);
-            setPersonData(null);
-            setSources(result.sources || []);
-            setCurrentView('movie');
-          });
-          if (!options.skipNavigate && result.movieData.tmdb_id) {
-            const mediaType = result.movieData.tvShow ? 'tv' : 'movie';
-            navigate(`/${mediaType}/${result.movieData.tmdb_id}`);
-          }
-          scrollMainContentToTop();
-        } else {
-          throw new Error(result.error || 'Failed to load data');
-        }
-      }
-    } catch (err: any) {
-      const errorMsg = err.message || 'Search and parse failed';
-      setError(errorMsg);
-      startTransition(() => {
-        setSources(null);
-      });
-    } finally {
-      setIsLoading(false);
-    }
-    */
   }, [navigate, scrollMainContentToTop]);
 
   const handleQuickSearch = useCallback((title: string) => {

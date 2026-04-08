@@ -6,4 +6,3 @@ dist
 .github
 *.log
 api/omdb.ts
-api/search/filter.ts

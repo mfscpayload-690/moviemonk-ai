@@ -356,7 +356,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           {!isLoading && !hasResults && (
             <div className="search-page-empty-state">
               <h3>No exact matches found</h3>
-              <p>Try a broader query, remove filters, or use one of these suggestions.</p>
+              <p>Try a broader query, check spelling, or use one of these suggestions.</p>
               {emptySuggestions.length > 0 && (
                 <div className="search-empty-suggestions">
                   {emptySuggestions.map((suggestion) => (
