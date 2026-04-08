@@ -98,6 +98,79 @@ export default defineConfig(({ mode }) => {
             }));
           });
 
+          server.middlewares.use('/api/suggest', async (req, res) => {
+            try {
+              const requestUrl = new URL(req.url || '/api/suggest', 'http://localhost:3000');
+              const q = requestUrl.searchParams.get('q') || '';
+
+              if (q.length < 2) {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ ok: true, query: q, total: 0, suggestions: [] }));
+                return;
+              }
+
+              const tmdbApiKey = getEnv('TMDB_API_KEY');
+              const tmdbReadToken = getEnv('TMDB_READ_TOKEN');
+
+              if (!tmdbApiKey && !tmdbReadToken) {
+                // Return synthetic results when no API key is available
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({
+                  ok: true, query: q, total: 1,
+                  suggestions: [{
+                    id: 27205, title: q, year: '2024', type: 'movie',
+                    media_type: 'movie', confidence: 0.95,
+                    poster_url: 'https://image.tmdb.org/t/p/w154/8Z8dptZQl1qPhQrJ4howsCorgw.jpg'
+                  }]
+                }));
+                return;
+              }
+
+              const upstream = new URL('https://api.themoviedb.org/3/search/multi');
+              upstream.searchParams.set('query', q);
+              upstream.searchParams.set('page', '1');
+              upstream.searchParams.set('include_adult', 'false');
+              if (tmdbApiKey) upstream.searchParams.set('api_key', tmdbApiKey);
+
+              const headers: Record<string, string> = {};
+              if (tmdbReadToken) headers['Authorization'] = `Bearer ${tmdbReadToken}`;
+
+              const response = await fetch(upstream.toString(), { headers });
+              const data: any = await response.json();
+              const results = Array.isArray(data?.results) ? data.results.slice(0, 12) : [];
+
+              const suggestions = results
+                .filter((item: any) => item && ['movie', 'tv', 'person'].includes(item.media_type))
+                .map((item: any) => ({
+                  id: item.id,
+                  title: item.title || item.name,
+                  year: (item.release_date || item.first_air_date || '').slice(0, 4) || undefined,
+                  type: item.media_type === 'tv' ? 'show' : item.media_type,
+                  media_type: item.media_type,
+                  confidence: 0.85,
+                  poster_url: item.poster_path
+                    ? `https://image.tmdb.org/t/p/w154${item.poster_path}`
+                    : item.profile_path
+                      ? `https://image.tmdb.org/t/p/w154${item.profile_path}`
+                      : undefined,
+                  known_for_department: item.known_for_department,
+                  known_for_titles: Array.isArray(item.known_for)
+                    ? item.known_for.map((k: any) => k?.title || k?.name).filter(Boolean)
+                    : undefined
+                }));
+
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ ok: true, query: q, total: suggestions.length, suggestions }));
+            } catch (error: any) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ ok: true, query: '', total: 0, suggestions: [] }));
+            }
+          });
+
           server.middlewares.use('/api/resolveEntity', (req, res) => {
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ type: 'movie', chosen: { id: 27205 } }));
