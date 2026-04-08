@@ -1,0 +1,435 @@
+.search-page-shell {
+  padding: 0.75rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.search-page-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+}
+
+.search-page-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.search-page-title {
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.search-page-subtitle {
+  margin-top: 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+.search-page-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+}
+
+.search-page-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.search-page-control span {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.search-page-control select,
+.search-page-control input {
+  border: 1px solid var(--border-color);
+  border-radius: 0.65rem;
+  background: rgba(8, 8, 14, 0.82);
+  color: var(--color-text-main);
+  padding: 0.55rem 0.65rem;
+  font-size: 0.86rem;
+}
+
+.search-page-error {
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(127, 29, 29, 0.3);
+  color: #fecaca;
+  border-radius: 0.9rem;
+  padding: 0.75rem 1rem;
+}
+
+.search-page-empty-state {
+  border: 1px dashed var(--border-color);
+  border-radius: 1rem;
+  padding: 1.1rem;
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.search-page-empty-state h3 {
+  color: var(--color-text-main);
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.search-hero-card {
+  position: relative;
+  border-radius: 1rem;
+  min-height: 320px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.search-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: #11131f;
+  transform: scale(1.02);
+}
+
+.search-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(102deg, rgba(5, 5, 8, 0.9), rgba(5, 5, 8, 0.52) 58%, rgba(5, 5, 8, 0.75)),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.35), transparent 52%);
+}
+
+.search-hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 1.1rem;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.search-hero-label {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: rgba(124, 58, 237, 0.25);
+  color: #e9d5ff;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.65rem;
+}
+
+.search-hero-title {
+  font-size: clamp(1.45rem, 3vw, 2.3rem);
+  font-weight: 800;
+}
+
+.search-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  color: #e2e8f0;
+  font-size: 0.86rem;
+}
+
+.search-hero-meta span::after {
+  content: '|';
+  margin-left: 0.45rem;
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.search-hero-meta span:last-child::after {
+  content: '';
+  margin: 0;
+}
+
+.search-hero-genres {
+  color: #e9d5ff;
+  font-size: 0.86rem;
+}
+
+.search-hero-summary {
+  color: #e2e8f0;
+  line-height: 1.45;
+  max-width: 60ch;
+}
+
+.search-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.search-btn-primary,
+.search-btn-secondary,
+.search-card-chip {
+  border: 1px solid var(--border-color);
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.84rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-text-main);
+  background: rgba(15, 15, 22, 0.75);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.search-btn-primary {
+  border-color: rgba(129, 140, 248, 0.42);
+  background: rgba(99, 102, 241, 0.3);
+}
+
+.search-btn-primary:hover,
+.search-btn-secondary:hover,
+.search-card-chip:hover {
+  transform: translateY(-1px);
+  background: rgba(124, 58, 237, 0.32);
+}
+
+.search-results-section,
+.search-people-section {
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.search-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.search-results-header h3,
+.search-people-section h3 {
+  font-size: 1rem;
+}
+
+.search-results-header span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.search-did-you-mean {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.search-did-you-mean-chip {
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 999px;
+  color: #e9d5ff;
+  background: rgba(124, 58, 237, 0.18);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.search-did-you-mean-chip:hover {
+  background: rgba(124, 58, 237, 0.28);
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.75rem;
+}
+
+.search-result-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: rgba(9, 10, 16, 0.9);
+}
+
+.search-result-main {
+  border: 0;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.search-result-poster-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #11131f;
+}
+
+.search-result-poster-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search-result-poster-empty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.search-result-body {
+  padding: 0.7rem;
+}
+
+.search-result-body h4 {
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.search-result-meta {
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.search-result-meta > span:first-child::after,
+.search-result-meta > span:nth-child(2)::after {
+  content: '|';
+  margin-left: 0.45rem;
+}
+
+.search-result-body p {
+  margin-top: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.search-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0 0.7rem 0.7rem;
+}
+
+.search-card-chip {
+  padding: 0.36rem 0.56rem;
+  font-size: 0.74rem;
+}
+
+.search-empty-suggestions {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.search-people-strip {
+  margin-top: 0.7rem;
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.search-person-card {
+  min-width: 185px;
+  border-radius: 0.8rem;
+  border: 1px solid var(--border-color);
+  background: rgba(9, 10, 16, 0.9);
+  color: var(--color-text-main);
+  padding: 0.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: left;
+}
+
+.search-person-card:hover {
+  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(124, 58, 237, 0.16);
+}
+
+.search-person-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.2);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-main);
+  font-weight: 700;
+}
+
+.search-person-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search-person-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.search-person-body strong {
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-person-body span {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 767px) {
+  .search-page-shell {
+    padding: 0.65rem 0.75rem 0.95rem;
+  }
+
+  .search-hero-card {
+    min-height: 350px;
+  }
+}

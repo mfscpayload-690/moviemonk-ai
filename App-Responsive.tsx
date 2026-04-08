@@ -7,10 +7,11 @@ import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/Am
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import HeaderUtilityMenu from './components/HeaderUtilityMenu';
 import LoadingScreen from './components/LoadingScreen';
+import SearchResultsPage from './components/SearchResultsPage';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
-import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
+import { fetchFullPlotDetails } from './services/aiService';
 import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
@@ -37,7 +38,7 @@ const debugLog = (...args: any[]) => {
   }
 };
 
-type AppView = 'discovery' | 'movie' | 'person';
+type AppView = 'discovery' | 'search' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 
 const App: React.FC = () => {
@@ -424,41 +425,32 @@ const App: React.FC = () => {
     }
   }, [navigate, scrollMainContentToTop, selectedProvider]);
 
-  const classifyError = (raw: string | undefined, provider: 'groq' | 'mistral'): string => {
-    if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
-    const lower = raw.toLowerCase();
-    if (lower.includes('timeout') || lower.includes('timed out')) {
-      return `Request to ${provider} timed out. Network was slow or provider overloaded. Retry or switch provider.`;
-    }
-    if (lower.includes('unauthorized') || lower.includes('auth') || lower.includes('api key')) {
-      return `Authorization failed for ${provider}. Check API key configuration in environment settings.`;
-    }
-    if (lower.includes('safety') || lower.includes('blocked')) {
-      return `Query blocked by safety filters (${provider}). Try rephrasing without explicit or sensitive content.`;
-    }
-    if (lower.includes('limit') || lower.includes('quota')) {
-      return `${provider} usage limit reached. Wait a moment or change provider.`;
-    }
-    if (lower.includes('json') || lower.includes('parse')) {
-      return `Response formatting issue from ${provider}. Model returned unexpected structure. Try a simpler phrasing.`;
-    }
-    return raw;
-  };
-
   const handleSendMessage = useCallback(async (
     message: string,
     complexity: QueryComplexity,
     provider: AIProvider = 'groq',
     options: { skipNavigate?: boolean } = {}
   ) => {
-    if (!options.skipNavigate) {
-      navigate(`/search?q=${encodeURIComponent(message)}`);
-    }
+    const normalizedMessage = message.trim();
+    if (!normalizedMessage) return;
 
-    setIsLoading(true);
     setError(null);
-    setCurrentQuery(message);
+    setCurrentQuery(normalizedMessage);
+    startTransition(() => {
+      setCurrentView('search');
+      setMovieData(null);
+      setPersonData(null);
+      setSources(null);
+      setShortlistCandidates(null);
+    });
+    if (!options.skipNavigate) {
+      navigate(`/search?q=${encodeURIComponent(normalizedMessage)}`);
+    }
+    scrollMainContentToTop('auto');
+    return;
 
+    /*
+    Legacy auto-resolve search flow kept for reference during transition.
     try {
       debugLog('[search] fetching search results');
       const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(message)}`);
@@ -543,7 +535,8 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [navigate, openPersonById, scrollMainContentToTop]);
+    */
+  }, [navigate, scrollMainContentToTop]);
 
   const handleQuickSearch = useCallback((title: string) => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
@@ -619,9 +612,15 @@ const App: React.FC = () => {
       return;
     }
 
-    if (route.kind === 'search' && route.query) {
-      track('shared_link_opened', { query: route.query, type: 'search-route' });
-      void handleSendMessage(route.query, QueryComplexity.SIMPLE, 'groq', { skipNavigate: true });
+    if (route.kind === 'search') {
+      setCurrentQuery(route.query || '');
+      setCurrentView('search');
+      setMovieData(null);
+      setPersonData(null);
+      setSources(null);
+      if (route.query) {
+        track('shared_link_opened', { query: route.query, type: 'search-route' });
+      }
       return;
     }
 
@@ -645,7 +644,6 @@ const App: React.FC = () => {
     navigate,
     openPersonById,
     handleOpenTitle,
-    handleSendMessage,
     selectedProvider
   ]);
 
@@ -828,6 +826,24 @@ const App: React.FC = () => {
                 watchlists={watchlists}
               />
             </>
+          ) : currentView === 'search' ? (
+            <SearchResultsPage
+              query={new URLSearchParams(location.search).get('q') || currentQuery}
+              onSearchQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE)}
+              onOpenTitle={(item) => handleOpenTitle(item)}
+              onOpenPerson={(personId, name) => {
+                void openPersonById(personId, name, { manageLoading: true });
+              }}
+              isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+              onToggleWatched={(item) => toggleWatched({
+                tmdb_id: String(item.id),
+                media_type: item.media_type,
+                title: item.title,
+                poster_url: item.poster_url ?? null,
+                year: item.year ?? null,
+              })}
+              onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+            />
           ) : currentView === 'person' && personData ? (
             <PersonDisplay
               key={personData?.person?.id}
