@@ -15,7 +15,7 @@ import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb, Settings } from
 import { QueryComplexity, SuggestionItem, SearchFilters, DiscoveryGenre } from '../types';
 import { SearchIcon, SendIcon } from './icons';
 import { FilterPanel } from './FilterPanel';
-import { getNextHighlightIndex, inferInteractionIntent, resolveEnterAction } from '../services/suggestInteraction';
+import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import '../styles/dynamic-search-island.css';
@@ -39,7 +39,6 @@ const STORAGE_KEY_DAILY_TRENDING = 'moviemonk_daily_trending_searches_v1';
 const SUGGEST_DEBOUNCE_MS = 150;
 const SUGGEST_CACHE_TTL_MS = 45 * 1000;
 const SUGGEST_CACHE_MAX_SIZE = 50;
-const AUTO_SELECT_CONFIDENCE = 0.82;
 const DAILY_TRENDING_LIMIT = 6;
 const DAILY_TRENDING_ENGLISH_COUNT = 4;
 
@@ -579,7 +578,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
       setSuggestions(next);
       setShowSuggestions(next.length > 0);
-      setHighlightedIndex(next.length > 0 ? 0 : -1);
+      setHighlightedIndex(-1);
       setIsSuggesting(false);
     };
 
@@ -626,31 +625,13 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     if (e.key === 'Enter') {
       e.preventDefault();
 
-      const interactionIntent = inferInteractionIntent(query);
-
-      const action = resolveEnterAction({
-        highlightedIndex,
-        suggestionsCount: showSuggestions ? suggestions.length : 0,
-        topConfidence: suggestions[0]?.confidence,
-        confidenceThreshold: Math.max(AUTO_SELECT_CONFIDENCE, interactionIntent.confidenceThreshold)
-      });
-
-      if (action === 'select_highlighted') {
+      // Only open a suggestion when the user explicitly highlighted one.
+      if (showSuggestions && highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
         handleSuggestionSelect(suggestions[highlightedIndex]);
         return;
       }
 
-      if (action === 'select_top') {
-        handleSuggestionSelect(suggestions[0]);
-        return;
-      }
-
-      if (action === 'prompt_inline_selection') {
-        setInlinePrompt('Multiple close matches found. Pick one from the list.');
-        setShowSuggestions(true);
-        return;
-      }
-
+      // Plain Enter without selecting a suggestion should open the search results page.
       handleSubmit();
     }
   };
