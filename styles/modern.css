@@ -2747,6 +2747,129 @@ a:focus-visible {
     overflow: visible;
 }
 
+/* Discovery density modes */
+.discovery-page.is-compact {
+    padding: 0.7rem 0 4rem;
+}
+
+.discovery-page.is-compact .discovery-hero-wrapper {
+    margin: 0 0.8rem;
+    border-radius: 14px;
+}
+
+.discovery-page.is-compact .discovery-hero-slide {
+    min-height: clamp(18rem, 52vw, 25rem);
+}
+
+.discovery-page.is-compact .discovery-hero-copy {
+    width: min(100%, 44rem);
+    padding: 1rem 1rem 2.2rem;
+}
+
+.discovery-page.is-compact .discovery-hero-kicker {
+    margin-bottom: 0.3rem;
+}
+
+.discovery-page.is-compact .discovery-hero-title {
+    font-size: clamp(1.35rem, 4.5vw, 2.5rem);
+    margin-bottom: 0.55rem;
+}
+
+.discovery-page.is-compact .discovery-hero-meta {
+    gap: 0.55rem;
+    margin-bottom: 0.55rem;
+    font-size: 0.8rem;
+}
+
+.discovery-page.is-compact .discovery-hero-overview {
+    margin-bottom: 0.7rem;
+    line-height: 1.45;
+    font-size: 0.9rem;
+    -webkit-line-clamp: 2;
+}
+
+.discovery-page.is-compact .discovery-hero-actions {
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
+}
+
+.discovery-page.is-compact .discovery-cta {
+    font-size: 0.76rem;
+    padding: 0.42rem 0.8rem;
+}
+
+.discovery-page.is-compact .discovery-hero-dots-global {
+    bottom: 0.75rem;
+    right: 1rem;
+}
+
+.discovery-page.is-compact .discovery-section {
+    margin-top: 1.2rem;
+    padding: 0 0.8rem;
+}
+
+.discovery-page.is-compact .discovery-section-heading {
+    margin-bottom: 0.55rem;
+}
+
+.discovery-page.is-compact .discovery-section-title {
+    font-size: clamp(0.98rem, 2vw, 1.2rem);
+}
+
+.discovery-page.is-compact .discovery-genre-pills {
+    gap: 0.35rem;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.22rem;
+}
+
+.discovery-page.is-compact .discovery-genre-pill {
+    padding: 0.3rem 0.68rem;
+    font-size: 0.7rem;
+}
+
+.discovery-page.is-compact .discovery-carousel {
+    grid-auto-columns: clamp(118px, 34vw, 168px);
+    gap: 0.6rem;
+    padding: 0.05rem 0.05rem 0.35rem;
+}
+
+.discovery-page.is-compact .discovery-carousel-arrow {
+    width: 1.8rem;
+    height: 1.8rem;
+}
+
+.discovery-page.is-compact .discovery-poster-card {
+    gap: 0.32rem;
+}
+
+.discovery-page.is-compact .discovery-poster-frame {
+    border-radius: 9px;
+}
+
+.discovery-page.is-compact .discovery-poster-title {
+    font-size: 0.76rem;
+    -webkit-line-clamp: 1;
+}
+
+.discovery-page.is-compact .discovery-poster-meta {
+    font-size: 0.67rem;
+}
+
+.discovery-page.is-compact .discovery-hero-skeleton {
+    min-height: clamp(18rem, 52vw, 25rem);
+    border-radius: 14px;
+    margin: 0 0.8rem;
+}
+
+.discovery-page.is-compact .discovery-skeleton-poster {
+    width: clamp(118px, 34vw, 168px);
+}
+
+.discovery-page.is-compact .discovery-skeleton-caption {
+    width: clamp(78px, 12vw, 130px);
+    height: 0.7rem;
+}
+
 @keyframes discoveryPulse {
     0% {
         background-position: 100% 50%;
@@ -2771,6 +2894,32 @@ a:focus-visible {
     .discovery-section {
         margin-top: 1.5rem;
         padding: 0 0.85rem;
+    }
+
+    .discovery-page.is-compact .discovery-section {
+        margin-top: 1rem;
+        padding: 0 0.7rem;
+    }
+
+    .discovery-page.is-compact .discovery-hero-wrapper {
+        margin: 0 0.7rem;
+    }
+
+    .discovery-page.is-compact .discovery-hero-copy {
+        padding: 0.9rem 0.9rem 2.35rem;
+    }
+
+    .discovery-page.is-compact .discovery-hero-overview {
+        max-width: 44ch;
+    }
+
+    .discovery-page.is-compact .discovery-carousel {
+        grid-auto-columns: clamp(114px, 40vw, 150px);
+        gap: 0.55rem;
+    }
+
+    .discovery-page.is-compact .discovery-hero-dots-global {
+        bottom: 0.55rem;
     }
 
     .discovery-hero {

@@ -28,6 +28,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    cardDensity,
     isStrictPersonalized,
     isLoading,
     isGenreLoading,
@@ -94,7 +95,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   }, [radarCheckedAt]);
 
   return (
-    <div className="discovery-page animate-fade-in">
+    <div className={`discovery-page animate-fade-in ${cardDensity === 'compact' ? 'is-compact' : 'is-rich'}`}>
       <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} isWatched={isWatched} onToggleWatched={onToggleWatched} onQuickSaveToWatchlist={onQuickSaveToWatchlist} />
 
       {error && (

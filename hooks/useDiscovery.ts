@@ -643,6 +643,7 @@ export function useDiscovery() {
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    cardDensity: preferences.cardDensity,
     isStrictPersonalized: hasStrictPreferenceFilters(preferences),
     isLoading,
     isGenreLoading,
