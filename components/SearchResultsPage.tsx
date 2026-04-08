@@ -309,7 +309,19 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       )}
 
       {query.trim() && payload?.hero && (
-        <section className="search-hero-card">
+        <section
+          className="search-hero-card"
+          role="button"
+          tabIndex={0}
+          aria-label={`Open ${payload.hero.title}${payload.hero.year ? ` (${payload.hero.year})` : ''}`}
+          onClick={() => onOpenTitle({ id: payload.hero!.id, mediaType: payload.hero!.media_type })}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onOpenTitle({ id: payload.hero!.id, mediaType: payload.hero!.media_type });
+            }
+          }}
+        >
           <div
             className="search-hero-backdrop"
             style={payload.hero.backdrop_url ? { backgroundImage: `url(${payload.hero.backdrop_url})` } : undefined}
@@ -330,18 +342,14 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               {heroAiSnippet || payload.hero.summary_snippet || payload.hero.overview || 'No synopsis available yet.'}
             </p>
             <div className="search-hero-actions">
-              <button
-                type="button"
-                className="search-btn-primary"
-                onClick={() => onOpenTitle({ id: payload.hero!.id, mediaType: payload.hero!.media_type })}
-              >
-                Analyze
-              </button>
               {onQuickSaveToWatchlist && (
                 <button
                   type="button"
                   className="search-btn-secondary"
-                  onClick={() => onQuickSaveToWatchlist(mapToQuickSave(payload.hero!))}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onQuickSaveToWatchlist(mapToQuickSave(payload.hero!));
+                  }}
                 >
                   <TagIcon className="w-4 h-4" />
                   Add to Watchlist
@@ -351,13 +359,16 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                 <button
                   type="button"
                   className="search-btn-secondary"
-                  onClick={() => onToggleWatched({
-                    id: payload.hero!.id,
-                    media_type: payload.hero!.media_type,
-                    title: payload.hero!.title,
-                    poster_url: payload.hero!.poster_url ?? null,
-                    year: payload.hero!.year ?? null
-                  })}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleWatched({
+                      id: payload.hero!.id,
+                      media_type: payload.hero!.media_type,
+                      title: payload.hero!.title,
+                      poster_url: payload.hero!.poster_url ?? null,
+                      year: payload.hero!.year ?? null
+                    });
+                  }}
                 >
                   <WatchedIcon
                     className="w-4 h-4"

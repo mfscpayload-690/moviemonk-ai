@@ -90,6 +90,12 @@
   min-height: 320px;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.search-hero-card:focus-visible {
+  outline: 2px solid rgba(167, 139, 250, 0.9);
+  outline-offset: 2px;
 }
 
 .search-hero-backdrop {
