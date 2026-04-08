@@ -17,9 +17,46 @@ const formatRating = (rating: number | null) => (
   typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : 'N/A'
 );
 
+const HERO_PREVIEW_DELAY_MS = 2000;
+
+function toHeroItemKey(item: DiscoveryItem): string {
+  return `${item.media_type}:${item.id}`;
+}
+
+function scoreTrailerCandidate(video: any): number {
+  let score = 0;
+  const type = String(video?.type || '').toLowerCase();
+  if (type === 'trailer') score += 6;
+  if (type === 'teaser') score += 3;
+  if (video?.official) score += 2;
+  if (typeof video?.size === 'number') {
+    score += Math.min(2, video.size / 360);
+  }
+  return score;
+}
+
+function buildYoutubeEmbedPreview(videos: any[]): string | null {
+  if (!Array.isArray(videos) || videos.length === 0) return null;
+
+  const best = [...videos]
+    .filter((video) => (
+      typeof video?.key === 'string'
+      && String(video?.site || '').toLowerCase() === 'youtube'
+    ))
+    .sort((a, b) => scoreTrailerCandidate(b) - scoreTrailerCandidate(a))[0];
+
+  if (!best?.key) return null;
+
+  const key = encodeURIComponent(best.key);
+  return `https://www.youtube.com/embed/${key}?autoplay=1&mute=1&controls=0&playsinline=1&loop=1&playlist=${key}&modestbranding=1&rel=0&iv_load_policy=3`;
+}
+
 const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAutoPaused, setIsAutoPaused] = useState(false);
+  const [isTrailerPreviewEnabled, setIsTrailerPreviewEnabled] = useState(true);
+  const [isPreviewReady, setIsPreviewReady] = useState(false);
+  const [previewUrlByItem, setPreviewUrlByItem] = useState<Record<string, string | null>>({});
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const autoplayMs = 7000;
   const goPrev = () => setActiveIndex((current) => (current - 1 + items.length) % items.length);
@@ -82,6 +119,80 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
     return () => window.clearInterval(timer);
   }, [isAutoPaused, items]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+
+    const updatePreviewEligibility = () => {
+      const prefersReducedMotion = reducedMotionQuery.matches;
+      const saveDataEnabled = Boolean(connection?.saveData);
+      setIsTrailerPreviewEnabled(!prefersReducedMotion && !saveDataEnabled);
+    };
+
+    updatePreviewEligibility();
+
+    const handleChange = () => updatePreviewEligibility();
+    if (typeof reducedMotionQuery.addEventListener === 'function') {
+      reducedMotionQuery.addEventListener('change', handleChange);
+      return () => reducedMotionQuery.removeEventListener('change', handleChange);
+    }
+
+    reducedMotionQuery.addListener(handleChange);
+    return () => reducedMotionQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isTrailerPreviewEnabled || items.length === 0) {
+      setIsPreviewReady(false);
+      return;
+    }
+
+    setIsPreviewReady(false);
+    const timer = window.setTimeout(() => {
+      setIsPreviewReady(true);
+    }, HERO_PREVIEW_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, items, isTrailerPreviewEnabled]);
+
+  useEffect(() => {
+    if (!isTrailerPreviewEnabled || !isPreviewReady) return;
+
+    const activeItem = items[activeIndex];
+    if (!activeItem) return;
+
+    const itemKey = toHeroItemKey(activeItem);
+    if (Object.prototype.hasOwnProperty.call(previewUrlByItem, itemKey)) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      endpoint: `${activeItem.media_type}/${activeItem.id}/videos`,
+      language: 'en-US'
+    });
+
+    const loadPreview = async () => {
+      try {
+        const response = await fetch(`/api/tmdb?${params.toString()}`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Trailer lookup failed (${response.status})`);
+        }
+        const payload = await response.json();
+        const nextUrl = buildYoutubeEmbedPreview(payload?.results || []);
+        setPreviewUrlByItem((previous) => ({ ...previous, [itemKey]: nextUrl }));
+      } catch (error: any) {
+        if (error?.name === 'AbortError') return;
+        setPreviewUrlByItem((previous) => ({ ...previous, [itemKey]: null }));
+      }
+    };
+
+    void loadPreview();
+    return () => controller.abort();
+  }, [activeIndex, isPreviewReady, isTrailerPreviewEnabled, items, previewUrlByItem]);
+
   if (isLoading) {
     return <SkeletonCard variant="hero" />;
   }
@@ -122,6 +233,13 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
           const isActive = index === activeIndex;
           // Render backgrounds for adjacent slides for smooth transition
           const isAdjacent = Math.abs(index - activeIndex) <= 1;
+          const previewUrl = previewUrlByItem[toHeroItemKey(item)];
+          const shouldShowPreview = Boolean(
+            isActive
+            && isTrailerPreviewEnabled
+            && isPreviewReady
+            && previewUrl
+          );
 
           return (
             <div
@@ -146,6 +264,20 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                   className="discovery-hero-backdrop"
                   loading={index === 0 ? "eager" : "lazy"}
                 />
+              )}
+              {shouldShowPreview && (
+                <div className="discovery-hero-preview-layer" aria-hidden="true">
+                  <iframe
+                    key={`preview-${item.media_type}-${item.id}`}
+                    src={previewUrl || undefined}
+                    title={`${item.title} trailer preview`}
+                    className="discovery-hero-preview-frame"
+                    loading="eager"
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    tabIndex={-1}
+                  />
+                </div>
               )}
               <div className="discovery-hero-overlay" />
               <div className="discovery-hero-copy">
