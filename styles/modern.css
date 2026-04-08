@@ -2170,6 +2170,13 @@ a:focus-visible {
     height: 100%;
     object-fit: cover;
     animation: fadeIn 450ms ease;
+    transition: opacity 560ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 560ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: opacity, transform;
+}
+
+.discovery-hero-backdrop.is-preview-playing {
+    opacity: 0;
+    transform: scale(1.015);
 }
 
 .discovery-hero-preview-layer {
@@ -2178,6 +2185,13 @@ a:focus-visible {
     z-index: 1;
     pointer-events: none;
     background: #050505;
+    opacity: 0;
+    transition: opacity 560ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: opacity;
+}
+
+.discovery-hero-preview-layer.is-playing {
+    opacity: 1;
 }
 
 .discovery-hero-preview-frame {
@@ -2186,6 +2200,11 @@ a:focus-visible {
     border: 0;
     pointer-events: none;
     transform: scale(1.02);
+    filter: saturate(1.05) contrast(1.05);
+}
+
+.discovery-hero-wrapper.is-preview-active {
+    animation: heroAmbientPulse 3.4s ease-in-out infinite;
 }
 
 .discovery-hero-overlay {
@@ -2761,10 +2780,6 @@ a:focus-visible {
 
     .discovery-hero-copy {
         padding: 1rem 1rem 3rem;
-    }
-
-    .discovery-hero-wrapper.is-preview-active {
-        animation: heroAmbientPulse 3.2s ease-in-out infinite;
     }
 
     .discovery-hero-overlay.is-preview-playing {

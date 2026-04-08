@@ -26,6 +26,7 @@ declare global {
         }
       ) => { destroy?: () => void };
       PlayerState?: {
+        PLAYING: number;
         ENDED: number;
       };
     };
@@ -78,6 +79,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   const [isTrailerPreviewEnabled, setIsTrailerPreviewEnabled] = useState(true);
   const [isPreviewReady, setIsPreviewReady] = useState(false);
   const [previewUrlByItem, setPreviewUrlByItem] = useState<Record<string, string | null>>({});
+  const [previewPlayingByItem, setPreviewPlayingByItem] = useState<Record<string, boolean>>({});
   const [previewEndedByItem, setPreviewEndedByItem] = useState<Record<string, boolean>>({});
   const [isYoutubeApiReady, setIsYoutubeApiReady] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -143,13 +145,18 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   const activeItemKey = activeItem ? toHeroItemKey(activeItem) : null;
   const activePreviewUrl = activeItemKey ? previewUrlByItem[activeItemKey] : null;
   const hasActivePreviewEnded = activeItemKey ? Boolean(previewEndedByItem[activeItemKey]) : false;
-  const isActivePreviewPlaying = Boolean(
+  const shouldAttemptActivePreview = Boolean(
     isTrailerPreviewEnabled
     && isPreviewReady
     && activePreviewUrl
     && !hasActivePreviewEnded
   );
-  const shouldHoldAutoplayForPreview = isActivePreviewPlaying;
+  const isActivePreviewPlaying = Boolean(
+    activeItemKey
+    && shouldAttemptActivePreview
+    && previewPlayingByItem[activeItemKey]
+  );
+  const shouldHoldAutoplayForPreview = shouldAttemptActivePreview;
   const activePreviewIframeId = activeItem ? `hero-preview-${activeItem.media_type}-${activeItem.id}` : null;
 
   useEffect(() => {
@@ -227,6 +234,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
 
     if (activeItemKey) {
       setPreviewEndedByItem((previous) => ({ ...previous, [activeItemKey]: false }));
+      setPreviewPlayingByItem((previous) => ({ ...previous, [activeItemKey]: false }));
     }
 
     setIsPreviewReady(false);
@@ -271,7 +279,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   }, [activeIndex, isPreviewReady, isTrailerPreviewEnabled, items, previewUrlByItem, activeItem, activeItemKey]);
 
   useEffect(() => {
-    if (!isYoutubeApiReady || !isActivePreviewPlaying || !activePreviewIframeId || !activeItemKey || typeof window === 'undefined') {
+    if (!isYoutubeApiReady || !shouldAttemptActivePreview || !activePreviewIframeId || !activeItemKey || typeof window === 'undefined') {
       return;
     }
 
@@ -286,10 +294,16 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
             event?.target?.playVideo?.();
           },
           onStateChange: (event) => {
+            const playingState = window.YT?.PlayerState?.PLAYING ?? 1;
             const endedState = window.YT?.PlayerState?.ENDED ?? 0;
+            if (event.data === playingState) {
+              setPreviewPlayingByItem((previous) => ({ ...previous, [activeItemKey]: true }));
+              return;
+            }
             if (event.data !== endedState) return;
 
             setPreviewEndedByItem((previous) => ({ ...previous, [activeItemKey]: true }));
+            setPreviewPlayingByItem((previous) => ({ ...previous, [activeItemKey]: false }));
             if (!isAutoPausedRef.current && items.length > 1) {
               setActiveIndex((current) => (current + 1) % items.length);
             }
@@ -303,7 +317,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
       previewPlayerRef.current?.destroy?.();
       previewPlayerRef.current = null;
     };
-  }, [isYoutubeApiReady, isActivePreviewPlaying, activePreviewIframeId, activeItemKey, items.length]);
+  }, [isYoutubeApiReady, shouldAttemptActivePreview, activePreviewIframeId, activeItemKey, items.length]);
 
   if (isLoading) {
     return <SkeletonCard variant="hero" />;
@@ -345,13 +359,17 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
           const isActive = index === activeIndex;
           // Render backgrounds for adjacent slides for smooth transition
           const isAdjacent = Math.abs(index - activeIndex) <= 1;
-          const previewUrl = previewUrlByItem[toHeroItemKey(item)];
+          const itemKey = toHeroItemKey(item);
+          const previewUrl = previewUrlByItem[itemKey];
+          const hasPreviewEnded = Boolean(previewEndedByItem[itemKey]);
           const shouldShowPreview = Boolean(
             isActive
             && isTrailerPreviewEnabled
             && isPreviewReady
             && previewUrl
+            && !hasPreviewEnded
           );
+          const isSlidePreviewPlaying = Boolean(shouldShowPreview && previewPlayingByItem[itemKey]);
 
           return (
             <div
@@ -373,12 +391,12 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                 <img
                   src={item.backdrop_url}
                   alt={`${item.title} backdrop`}
-                  className="discovery-hero-backdrop"
+                  className={`discovery-hero-backdrop ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`}
                   loading={index === 0 ? "eager" : "lazy"}
                 />
               )}
               {shouldShowPreview && (
-                <div className="discovery-hero-preview-layer" aria-hidden="true">
+                <div className={`discovery-hero-preview-layer ${isSlidePreviewPlaying ? 'is-playing' : ''}`} aria-hidden="true">
                   <iframe
                     id={`hero-preview-${item.media_type}-${item.id}`}
                     key={`preview-${item.media_type}-${item.id}`}
@@ -392,8 +410,8 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                   />
                 </div>
               )}
-              <div className={`discovery-hero-overlay ${shouldShowPreview ? 'is-preview-playing' : ''}`} />
-              <div className={`discovery-hero-copy ${shouldShowPreview ? 'is-preview-playing' : ''}`}>
+              <div className={`discovery-hero-overlay ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`} />
+              <div className={`discovery-hero-copy ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`}>
                 <p className="discovery-hero-kicker">Featured This Week</p>
                 <h2 className="discovery-hero-title">{item.title}</h2>
                 <div className="discovery-hero-meta">
