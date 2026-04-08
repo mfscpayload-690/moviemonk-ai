@@ -124,7 +124,21 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
           const isAdjacent = Math.abs(index - activeIndex) <= 1;
 
           return (
-            <div key={`${item.id}-${index}`} className="discovery-hero-slide" aria-hidden={!isActive}>
+            <div
+              key={`${item.id}-${index}`}
+              className="discovery-hero-slide"
+              aria-hidden={!isActive}
+              role="button"
+              tabIndex={isActive ? 0 : -1}
+              aria-label={`Open ${item.title}${item.year ? ` (${item.year})` : ''}`}
+              onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onOpenTitle({ id: item.id, mediaType: item.media_type });
+                }
+              }}
+            >
               {(isActive || isAdjacent) && item.backdrop_url && (
                 <img
                   src={item.backdrop_url}
@@ -144,21 +158,16 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                 </div>
                 <p className="discovery-hero-overview">{item.overview || 'No synopsis available yet.'}</p>
                 <div className="discovery-hero-actions">
-                  <button
-                    type="button"
-                    className="discovery-cta discovery-cta-primary"
-                    tabIndex={isActive ? 0 : -1}
-                    onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
-                  >
-                    Learn More
-                  </button>
                   {onToggleWatched && (() => {
                     const watched = isWatched?.(item.id, item.media_type) ?? false;
                     return (
                       <button
                         type="button"
                         tabIndex={isActive ? 0 : -1}
-                        onClick={() => onToggleWatched(item)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onToggleWatched(item);
+                        }}
                         className={`discovery-cta flex items-center gap-2 transition-all duration-200 ${
                           watched
                             ? 'bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30'
@@ -178,7 +187,10 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                         <button
                           type="button"
                           tabIndex={isActive ? 0 : -1}
-                          onClick={() => onQuickSaveToWatchlist(item)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onQuickSaveToWatchlist(item);
+                          }}
                           className="discovery-cta discovery-cta-secondary flex items-center gap-2"
                           aria-label={`Save ${item.title} to watchlist`}
                           title="Save to watchlist"
