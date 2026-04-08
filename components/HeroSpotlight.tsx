@@ -13,6 +13,26 @@ interface HeroSpotlightProps {
   onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
 }
 
+declare global {
+  interface Window {
+    YT?: {
+      Player?: new (
+        elementId: string,
+        config: {
+          events?: {
+            onReady?: (event: { target: { mute?: () => void; playVideo?: () => void } }) => void;
+            onStateChange?: (event: { data: number }) => void;
+          };
+        }
+      ) => { destroy?: () => void };
+      PlayerState?: {
+        ENDED: number;
+      };
+    };
+    onYouTubeIframeAPIReady?: (() => void) | undefined;
+  }
+}
+
 const formatRating = (rating: number | null) => (
   typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : 'N/A'
 );
@@ -48,7 +68,8 @@ function buildYoutubeEmbedPreview(videos: any[]): string | null {
   if (!best?.key) return null;
 
   const key = encodeURIComponent(best.key);
-  return `https://www.youtube.com/embed/${key}?autoplay=1&mute=1&controls=0&playsinline=1&loop=1&playlist=${key}&modestbranding=1&rel=0&iv_load_policy=3`;
+  const origin = typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : '';
+  return `https://www.youtube.com/embed/${key}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1${origin ? `&origin=${origin}` : ''}`;
 }
 
 const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist }) => {
@@ -57,7 +78,11 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   const [isTrailerPreviewEnabled, setIsTrailerPreviewEnabled] = useState(true);
   const [isPreviewReady, setIsPreviewReady] = useState(false);
   const [previewUrlByItem, setPreviewUrlByItem] = useState<Record<string, string | null>>({});
+  const [previewEndedByItem, setPreviewEndedByItem] = useState<Record<string, boolean>>({});
+  const [isYoutubeApiReady, setIsYoutubeApiReady] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const isAutoPausedRef = useRef(isAutoPaused);
+  const previewPlayerRef = useRef<{ destroy?: () => void } | null>(null);
   const autoplayMs = 7000;
   const goPrev = () => setActiveIndex((current) => (current - 1 + items.length) % items.length);
   const goNext = () => setActiveIndex((current) => (current + 1) % items.length);
@@ -111,13 +136,30 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   }, [items]);
 
   useEffect(() => {
-    if (items.length <= 1 || isAutoPaused) return;
+    isAutoPausedRef.current = isAutoPaused;
+  }, [isAutoPaused]);
+
+  const activeItem = items[activeIndex];
+  const activeItemKey = activeItem ? toHeroItemKey(activeItem) : null;
+  const activePreviewUrl = activeItemKey ? previewUrlByItem[activeItemKey] : null;
+  const hasActivePreviewEnded = activeItemKey ? Boolean(previewEndedByItem[activeItemKey]) : false;
+  const isActivePreviewPlaying = Boolean(
+    isTrailerPreviewEnabled
+    && isPreviewReady
+    && activePreviewUrl
+    && !hasActivePreviewEnded
+  );
+  const shouldHoldAutoplayForPreview = isActivePreviewPlaying;
+  const activePreviewIframeId = activeItem ? `hero-preview-${activeItem.media_type}-${activeItem.id}` : null;
+
+  useEffect(() => {
+    if (items.length <= 1 || isAutoPaused || shouldHoldAutoplayForPreview) return;
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % items.length);
     }, autoplayMs);
 
     return () => window.clearInterval(timer);
-  }, [isAutoPaused, items]);
+  }, [isAutoPaused, items, shouldHoldAutoplayForPreview]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -144,9 +186,47 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   }, []);
 
   useEffect(() => {
+    if (!isTrailerPreviewEnabled || typeof window === 'undefined') {
+      setIsYoutubeApiReady(false);
+      return;
+    }
+
+    if (window.YT?.Player) {
+      setIsYoutubeApiReady(true);
+      return;
+    }
+
+    const previousReadyCallback = window.onYouTubeIframeAPIReady;
+    const handleReady = () => {
+      previousReadyCallback?.();
+      setIsYoutubeApiReady(true);
+    };
+    window.onYouTubeIframeAPIReady = handleReady;
+
+    const existingScript = document.querySelector<HTMLScriptElement>('script[data-youtube-iframe-api="true"]');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.async = true;
+      script.dataset.youtubeIframeApi = 'true';
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      if (window.onYouTubeIframeAPIReady === handleReady) {
+        window.onYouTubeIframeAPIReady = previousReadyCallback;
+      }
+    };
+  }, [isTrailerPreviewEnabled]);
+
+  useEffect(() => {
     if (!isTrailerPreviewEnabled || items.length === 0) {
       setIsPreviewReady(false);
       return;
+    }
+
+    if (activeItemKey) {
+      setPreviewEndedByItem((previous) => ({ ...previous, [activeItemKey]: false }));
     }
 
     setIsPreviewReady(false);
@@ -155,16 +235,13 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
     }, HERO_PREVIEW_DELAY_MS);
 
     return () => window.clearTimeout(timer);
-  }, [activeIndex, items, isTrailerPreviewEnabled]);
+  }, [activeIndex, items, isTrailerPreviewEnabled, activeItemKey]);
 
   useEffect(() => {
     if (!isTrailerPreviewEnabled || !isPreviewReady) return;
 
-    const activeItem = items[activeIndex];
-    if (!activeItem) return;
-
-    const itemKey = toHeroItemKey(activeItem);
-    if (Object.prototype.hasOwnProperty.call(previewUrlByItem, itemKey)) {
+    if (!activeItem || !activeItemKey) return;
+    if (Object.prototype.hasOwnProperty.call(previewUrlByItem, activeItemKey)) {
       return;
     }
 
@@ -182,16 +259,51 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
         }
         const payload = await response.json();
         const nextUrl = buildYoutubeEmbedPreview(payload?.results || []);
-        setPreviewUrlByItem((previous) => ({ ...previous, [itemKey]: nextUrl }));
+        setPreviewUrlByItem((previous) => ({ ...previous, [activeItemKey]: nextUrl }));
       } catch (error: any) {
         if (error?.name === 'AbortError') return;
-        setPreviewUrlByItem((previous) => ({ ...previous, [itemKey]: null }));
+        setPreviewUrlByItem((previous) => ({ ...previous, [activeItemKey]: null }));
       }
     };
 
     void loadPreview();
     return () => controller.abort();
-  }, [activeIndex, isPreviewReady, isTrailerPreviewEnabled, items, previewUrlByItem]);
+  }, [activeIndex, isPreviewReady, isTrailerPreviewEnabled, items, previewUrlByItem, activeItem, activeItemKey]);
+
+  useEffect(() => {
+    if (!isYoutubeApiReady || !isActivePreviewPlaying || !activePreviewIframeId || !activeItemKey || typeof window === 'undefined') {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (!window.YT?.Player) return;
+
+      previewPlayerRef.current?.destroy?.();
+      previewPlayerRef.current = new window.YT.Player(activePreviewIframeId, {
+        events: {
+          onReady: (event) => {
+            event?.target?.mute?.();
+            event?.target?.playVideo?.();
+          },
+          onStateChange: (event) => {
+            const endedState = window.YT?.PlayerState?.ENDED ?? 0;
+            if (event.data !== endedState) return;
+
+            setPreviewEndedByItem((previous) => ({ ...previous, [activeItemKey]: true }));
+            if (!isAutoPausedRef.current && items.length > 1) {
+              setActiveIndex((current) => (current + 1) % items.length);
+            }
+          }
+        }
+      });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      previewPlayerRef.current?.destroy?.();
+      previewPlayerRef.current = null;
+    };
+  }, [isYoutubeApiReady, isActivePreviewPlaying, activePreviewIframeId, activeItemKey, items.length]);
 
   if (isLoading) {
     return <SkeletonCard variant="hero" />;
@@ -210,14 +322,6 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
       </section>
     );
   }
-
-  const activeItem = items[activeIndex];
-  const activePreviewUrl = activeItem ? previewUrlByItem[toHeroItemKey(activeItem)] : null;
-  const isActivePreviewPlaying = Boolean(
-    isTrailerPreviewEnabled
-    && isPreviewReady
-    && activePreviewUrl
-  );
 
   return (
     <section
@@ -276,6 +380,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
               {shouldShowPreview && (
                 <div className="discovery-hero-preview-layer" aria-hidden="true">
                   <iframe
+                    id={`hero-preview-${item.media_type}-${item.id}`}
                     key={`preview-${item.media_type}-${item.id}`}
                     src={previewUrl || undefined}
                     title={`${item.title} trailer preview`}
