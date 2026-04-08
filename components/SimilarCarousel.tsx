@@ -56,7 +56,7 @@ const SimilarCarousel: React.FC<SimilarCarouselProps> = ({ label, items, onOpenA
             <p className="mt-2 text-xs font-semibold text-white line-clamp-2">{it.title}</p>
             {it.year && <p className="text-[11px] text-brand-text-dark">{it.year}</p>}
             {(onQuickSaveToWatchlist || onToggleWatched) && (
-              <div className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150">
+              <div className="mt-2 flex items-center gap-2 opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                 {onQuickSaveToWatchlist ? (
                   <button
                     type="button"

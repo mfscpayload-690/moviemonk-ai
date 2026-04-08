@@ -18,6 +18,7 @@ interface MovieDisplayProps {
     selectedProvider: AIProvider;
     onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
     onQuickSearch: (title: string) => void;
+    onOpenTitle?: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
     watchlists: WatchlistFolder[];
     onCreateWatchlist: (name: string, color: string, icon?: string) => string | null;
     onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
@@ -185,7 +186,7 @@ const DISCOVER_TITLES = [
 
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched, onToggleRelatedWatched, isRelatedWatched, onQuickSaveToWatchlist }) => {
+const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, onOpenTitle, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched, onToggleRelatedWatched, isRelatedWatched, onQuickSaveToWatchlist }) => {
     useRenderCounter('MovieDisplay');
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
@@ -312,6 +313,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         });
     };
 
+    const openRelatedTitle = (item: any, context: 'inline' | 'modal') => {
+        const canOpenDirectly = typeof item?.id === 'number' && (item?.media_type === 'movie' || item?.media_type === 'tv');
+        if (canOpenDirectly && onOpenTitle) {
+            onOpenTitle({
+                id: item.id,
+                mediaType: item.media_type === 'tv' ? 'tv' : 'movie'
+            });
+        } else {
+            onQuickSearch(item.title);
+        }
+        if (context === 'modal') setShowRelatedModal(false);
+    };
+
     const renderRelatedTile = (item: any, idx: number, context: 'inline' | 'modal') => {
         const watched = Boolean(onToggleRelatedWatched && isRelatedWatched?.(String(item.id), item.media_type));
         return (
@@ -322,15 +336,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 className={`${context === 'inline' ? 'flex-shrink-0 w-24' : ''} text-left group touch-target outline-none`}
                 onClick={() => {
                     (window as any)?.track && (window as any).track('related_tile_click', { type: item.media_type, id: item.id, title: item.title, context });
-                    onQuickSearch(item.title);
-                    if (context === 'modal') setShowRelatedModal(false);
+                    openRelatedTitle(item, context);
                 }}
                 onKeyDown={(event) => {
                     if (event.key !== 'Enter' && event.key !== ' ') return;
                     event.preventDefault();
                     (window as any)?.track && (window as any).track('related_tile_click', { type: item.media_type, id: item.id, title: item.title, context });
-                    onQuickSearch(item.title);
-                    if (context === 'modal') setShowRelatedModal(false);
+                    openRelatedTitle(item, context);
                 }}
                 aria-label={`Open ${item.title}${item.year ? ` (${item.year})` : ''}`}
             >
@@ -341,7 +353,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         <div className={`w-full h-full bg-white/10 ${context === 'modal' ? 'flex items-center justify-center p-2 text-center text-brand-text-dark text-[10px]' : ''}`}>{context === 'modal' ? item.title : null}</div>
                     )}
                     {(onToggleRelatedWatched || onQuickSaveToWatchlist) && (
-                        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                             {onQuickSaveToWatchlist ? (
                                 <button
                                     type="button"

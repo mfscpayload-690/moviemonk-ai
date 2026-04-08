@@ -773,6 +773,7 @@ const App: React.FC = () => {
               selectedProvider={selectedProvider}
               onFetchFullPlot={fetchFullPlotDetails}
               onQuickSearch={handleQuickSearch}
+              onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
               watchlists={watchlists}
               onCreateWatchlist={addFolder}
               onSaveToWatchlist={saveToFolder}
