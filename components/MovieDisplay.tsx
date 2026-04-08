@@ -353,7 +353,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         <div className={`w-full h-full bg-white/10 ${context === 'modal' ? 'flex items-center justify-center p-2 text-center text-brand-text-dark text-[10px]' : ''}`}>{context === 'modal' ? item.title : null}</div>
                     )}
                     {(onToggleRelatedWatched || onQuickSaveToWatchlist) && (
-                        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                             {onQuickSaveToWatchlist ? (
                                 <button
                                     type="button"
