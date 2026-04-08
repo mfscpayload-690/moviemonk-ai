@@ -7,10 +7,11 @@ import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/Am
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import HeaderUtilityMenu from './components/HeaderUtilityMenu';
 import LoadingScreen from './components/LoadingScreen';
+import SearchResultsPage from './components/SearchResultsPage';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
-import { fetchMovieData, fetchFullPlotDetails } from './services/aiService';
+import { fetchFullPlotDetails } from './services/aiService';
 import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
@@ -37,7 +38,7 @@ const debugLog = (...args: any[]) => {
   }
 };
 
-type AppView = 'discovery' | 'movie' | 'person';
+type AppView = 'discovery' | 'search' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 
 const App: React.FC = () => {
@@ -424,126 +425,29 @@ const App: React.FC = () => {
     }
   }, [navigate, scrollMainContentToTop, selectedProvider]);
 
-  const classifyError = (raw: string | undefined, provider: 'groq' | 'mistral'): string => {
-    if (!raw) return `Unknown error from ${provider}. Try again or switch provider.`;
-    const lower = raw.toLowerCase();
-    if (lower.includes('timeout') || lower.includes('timed out')) {
-      return `Request to ${provider} timed out. Network was slow or provider overloaded. Retry or switch provider.`;
-    }
-    if (lower.includes('unauthorized') || lower.includes('auth') || lower.includes('api key')) {
-      return `Authorization failed for ${provider}. Check API key configuration in environment settings.`;
-    }
-    if (lower.includes('safety') || lower.includes('blocked')) {
-      return `Query blocked by safety filters (${provider}). Try rephrasing without explicit or sensitive content.`;
-    }
-    if (lower.includes('limit') || lower.includes('quota')) {
-      return `${provider} usage limit reached. Wait a moment or change provider.`;
-    }
-    if (lower.includes('json') || lower.includes('parse')) {
-      return `Response formatting issue from ${provider}. Model returned unexpected structure. Try a simpler phrasing.`;
-    }
-    return raw;
-  };
-
-  const handleSendMessage = useCallback(async (
+  const handleSendMessage = useCallback((
     message: string,
-    complexity: QueryComplexity,
-    provider: AIProvider = 'groq',
+    _complexity: QueryComplexity,
+    _provider: AIProvider = 'groq',
     options: { skipNavigate?: boolean } = {}
   ) => {
-    if (!options.skipNavigate) {
-      navigate(`/search?q=${encodeURIComponent(message)}`);
-    }
+    const normalizedMessage = message.trim();
+    if (!normalizedMessage) return;
 
-    setIsLoading(true);
     setError(null);
-    setCurrentQuery(message);
-
-    try {
-      debugLog('[search] fetching search results');
-      const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(message)}`);
-      const searchData = await searchRes.json();
-
-      if (!searchData.ok || searchData.total === 0) {
-        throw new Error('No search results found');
-      }
-
-      const selectedResult = searchData.results[0];
-      debugLog('[search] using top ranked match', selectedResult.title);
-
-      const modelRes = await fetch(
-        `/api/ai?action=selectModel&type=${selectedResult.type}&title=${encodeURIComponent(selectedResult.title)}`
-      );
-      const modelData = await modelRes.json();
-      const selectedModel: AIProvider = (modelData.selectedModel as AIProvider) || provider;
-      setSelectedProvider(selectedModel);
-
-      debugLog('[search] selected model', selectedModel);
-
-      const resolveRes = await fetch(`/api/resolveEntity?q=${encodeURIComponent(message)}`);
-      if (resolveRes.ok) {
-        const resolved = await resolveRes.json();
-        if (resolved?.confidence_band === 'shortlist' && Array.isArray(resolved?.shortlisted) && resolved.shortlisted.length > 0) {
-          setShortlistCandidates(
-            resolved.shortlisted.map((item: any) => ({
-              id: item.id,
-              title: item.name,
-              type: 'person',
-              score: item.score || item.confidence || 0,
-              confidence: item.confidence,
-              popularity: item.popularity,
-              image: item.profile_url,
-              snippet: item.known_for_titles?.slice?.(0, 3)?.join(' • ') || item.known_for_department || '',
-              media_type: 'person',
-              role_match: item.role_match,
-              known_for_department: item.known_for_department,
-              known_for_titles: item.known_for_titles
-            }))
-          );
-          return;
-        }
-
-        if (resolved?.confidence_band === 'confident' && resolved?.chosen?.type === 'person' && resolved?.chosen?.id) {
-          await openPersonById(Number(resolved.chosen.id), resolved.chosen.name, { manageLoading: false });
-          return;
-        }
-      }
-
-      if (selectedResult.type === 'person') {
-        await openPersonById(Number(selectedResult.id), selectedResult.title, { manageLoading: false });
-      } else {
-        const result = await fetchMovieData(
-          message,
-          complexity,
-          selectedModel
-        );
-
-        if (result.movieData) {
-          startTransition(() => {
-            setMovieData(result.movieData);
-            setPersonData(null);
-            setSources(result.sources || []);
-            setCurrentView('movie');
-          });
-          if (!options.skipNavigate && result.movieData.tmdb_id) {
-            const mediaType = result.movieData.tvShow ? 'tv' : 'movie';
-            navigate(`/${mediaType}/${result.movieData.tmdb_id}`);
-          }
-          scrollMainContentToTop();
-        } else {
-          throw new Error(result.error || 'Failed to load data');
-        }
-      }
-    } catch (err: any) {
-      const errorMsg = err.message || 'Search and parse failed';
-      setError(errorMsg);
-      startTransition(() => {
-        setSources(null);
-      });
-    } finally {
-      setIsLoading(false);
+    setCurrentQuery(normalizedMessage);
+    startTransition(() => {
+      setCurrentView('search');
+      setMovieData(null);
+      setPersonData(null);
+      setSources(null);
+      setShortlistCandidates(null);
+    });
+    if (!options.skipNavigate) {
+      navigate(`/search?q=${encodeURIComponent(normalizedMessage)}`);
     }
-  }, [navigate, openPersonById, scrollMainContentToTop]);
+    scrollMainContentToTop('auto');
+  }, [navigate, scrollMainContentToTop]);
 
   const handleQuickSearch = useCallback((title: string) => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
@@ -619,9 +523,15 @@ const App: React.FC = () => {
       return;
     }
 
-    if (route.kind === 'search' && route.query) {
-      track('shared_link_opened', { query: route.query, type: 'search-route' });
-      void handleSendMessage(route.query, QueryComplexity.SIMPLE, 'groq', { skipNavigate: true });
+    if (route.kind === 'search') {
+      setCurrentQuery(route.query || '');
+      setCurrentView('search');
+      setMovieData(null);
+      setPersonData(null);
+      setSources(null);
+      if (route.query) {
+        track('shared_link_opened', { query: route.query, type: 'search-route' });
+      }
       return;
     }
 
@@ -645,7 +555,6 @@ const App: React.FC = () => {
     navigate,
     openPersonById,
     handleOpenTitle,
-    handleSendMessage,
     selectedProvider
   ]);
 
@@ -828,6 +737,24 @@ const App: React.FC = () => {
                 watchlists={watchlists}
               />
             </>
+          ) : currentView === 'search' ? (
+            <SearchResultsPage
+              query={new URLSearchParams(location.search).get('q') || currentQuery}
+              onSearchQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE)}
+              onOpenTitle={(item) => handleOpenTitle(item)}
+              onOpenPerson={(personId, name) => {
+                void openPersonById(personId, name, { manageLoading: true });
+              }}
+              isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+              onToggleWatched={(item) => toggleWatched({
+                tmdb_id: String(item.id),
+                media_type: item.media_type,
+                title: item.title,
+                poster_url: item.poster_url ?? null,
+                year: item.year ?? null,
+              })}
+              onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+            />
           ) : currentView === 'person' && personData ? (
             <PersonDisplay
               key={personData?.person?.id}

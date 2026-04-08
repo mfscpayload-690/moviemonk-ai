@@ -315,3 +315,43 @@ export interface SharedWatchlistView {
   created_at: string;
   item_count: number;
 }
+
+// Search Results Page types
+export interface SearchResult {
+  id: number;
+  title: string;
+  year?: string;
+  type: 'movie' | 'show';
+  media_type: 'movie' | 'tv';
+  poster_url?: string;
+  backdrop_url?: string;
+  overview?: string;
+  summary_snippet?: string;
+  rating?: number;
+  genre_ids?: number[];
+  genres?: string[];
+  confidence: number;
+  popularity?: number;
+  original_language?: string;
+}
+
+export interface SearchPageResponse {
+  ok: boolean;
+  query: string;
+  page: number;
+  total_pages: number;
+  total_results: number;
+  hero: SearchResult | null;
+  results: SearchResult[];
+  people: PersonSearchCandidate[];
+  did_you_mean?: string[];
+  applied_filters?: {
+    type: 'all' | 'movie' | 'tv';
+    sortBy: 'popularity.desc' | 'vote_average.desc' | 'release_date.desc' | 'title.asc' | string;
+    genres: number[];
+    yearMin: number | null;
+    yearMax: number | null;
+    ratingMin: number | null;
+  };
+}
+
