@@ -223,7 +223,7 @@
 /* Input with embedded icons */
 .search-input.has-icons {
   padding-left: 2.75rem;
-  padding-right: 3rem;
+  padding-right: 6.25rem;
 }
 
 .search-input-left-icon {
@@ -302,13 +302,14 @@
 
 .suggest-loading {
   position: absolute;
-  right: 3.25rem;
+  right: 6.5rem;
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.75rem;
   color: #9ca3af;
   animation: mm-soft-pulse 1.5s ease-in-out infinite;
   z-index: 2;
+  pointer-events: none;
 }
 
 /* Suggestions Dropdown */
@@ -318,8 +319,7 @@
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(139, 92, 246, 0.2);
-    padding-right: 3.5rem;
-    flex-shrink: 0;
+  flex-shrink: 0;
   backdrop-filter: blur(8px);
   max-height: min(58vh, 520px);
   overflow-y: auto;

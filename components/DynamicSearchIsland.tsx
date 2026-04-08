@@ -9,7 +9,7 @@
  * - Responsive: Header slot on all breakpoints
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { track } from '@vercel/analytics/react';
 import { Zap, FlaskConical, Film, Tv, User, Sparkles, Lightbulb, Settings } from 'lucide-react';
 import { QueryComplexity, SuggestionItem, SearchFilters, DiscoveryGenre } from '../types';
@@ -38,9 +38,22 @@ const STORAGE_KEY_ANALYSIS = 'moviemonk_analysis_mode';
 const STORAGE_KEY_DAILY_TRENDING = 'moviemonk_daily_trending_searches_v1';
 const SUGGEST_DEBOUNCE_MS = 150;
 const SUGGEST_CACHE_TTL_MS = 45 * 1000;
+const SUGGEST_CACHE_MAX_SIZE = 50;
 const AUTO_SELECT_CONFIDENCE = 0.82;
 const DAILY_TRENDING_LIMIT = 6;
 const DAILY_TRENDING_ENGLISH_COUNT = 4;
+
+/** Count only meaningful filter values (non-empty arrays, defined numbers/strings) */
+const getActiveFilterCount = (filters: SearchFilters): number => {
+  let count = 0;
+  if (Array.isArray(filters.genres) && filters.genres.length > 0) count++;
+  if (filters.yearMin !== undefined) count++;
+  if (filters.yearMax !== undefined) count++;
+  if (filters.ratingMin !== undefined) count++;
+  if (Array.isArray(filters.languages) && filters.languages.length > 0) count++;
+  if (filters.sortBy) count++;
+  return count;
+};
 
 type TrendingSuggestionItem = SuggestionItem & {
   trendLabel: string;
@@ -229,6 +242,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
   const inFlightRef = useRef<Map<string, Promise<SuggestionItem[]>>>(new Map());
   const latestQueryRef = useRef('');
   const trendingLoadedRef = useRef(false);
+  const genresLoadedRef = useRef(false);
 
   // Load persisted preferences on mount
   useEffect(() => {
@@ -237,19 +251,47 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
       setAnalysisMode(savedAnalysis);
     }
 
-    // Fetch genres for filter
-    const fetchGenres = async () => {
-      try {
-        const res = await fetch('/api/tmdb?endpoint=genre/movie/list');
-        const data = await res.json();
-        if (Array.isArray(data?.genres)) {
-          setGenres(data.genres);
+    // Fetch genres for filter (skip if already loaded)
+    if (!genresLoadedRef.current) {
+      const fetchGenres = async () => {
+        try {
+          const res = await fetch('/api/tmdb?endpoint=genre/movie/list');
+          const data = await res.json();
+          if (Array.isArray(data?.genres)) {
+            setGenres(data.genres);
+            genresLoadedRef.current = true;
+          }
+        } catch (err) {
+          console.warn('Failed to fetch genres:', err);
         }
-      } catch (err) {
-        console.warn('Failed to fetch genres:', err);
-      }
-    };
-    fetchGenres();
+      };
+      fetchGenres();
+    }
+  }, []);
+
+  // Handlers declared before effects that use them
+  const handleExpand = useCallback(() => {
+    setIsExpanded(true);
+    track('search_island_opened', { trigger: 'click' });
+  }, []);
+
+  const handleCollapse = useCallback(() => {
+    setIsExpanded(false);
+    setQuery('');
+    setInlinePrompt(null);
+    setShowSuggestions(false);
+    setShowTrending(false);
+    setSuggestions([]);
+    setHighlightedIndex(-1);
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+    // Restore focus to trigger button
+    if (triggerButtonRef.current) {
+      triggerButtonRef.current.focus();
+    }
+    track('search_island_closed', {});
   }, []);
 
   // Focus input when expanded
@@ -289,7 +331,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isExpanded]);
+  }, [isExpanded, handleCollapse]);
 
   // Click outside to collapse
   useEffect(() => {
@@ -303,33 +345,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isExpanded]);
+  }, [isExpanded, handleCollapse]);
 
-  const handleExpand = () => {
-    setIsExpanded(true);
-    track('search_island_opened', { trigger: 'click' });
-  };
-
-  const handleCollapse = () => {
-    setIsExpanded(false);
-    setQuery('');
-    setInlinePrompt(null);
-    setShowSuggestions(false);
-    setShowTrending(false);
-    setSuggestions([]);
-    setHighlightedIndex(-1);
-    if (abortRef.current) {
-      abortRef.current.abort();
-      abortRef.current = null;
-    }
-    // Restore focus to trigger button
-    if (triggerButtonRef.current) {
-      triggerButtonRef.current.focus();
-    }
-    track('search_island_closed', {});
-  };
-
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = useCallback((e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!query.trim() || isLoading) return;
 
@@ -337,14 +355,15 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     
     track('search_submitted_island', {
       query_length: query.trim().length,
-      analysis_mode: analysisMode
+      analysis_mode: analysisMode,
+      active_filters: getActiveFilterCount(filters)
     });
 
     onSearch(query, complexity);
     handleCollapse();
-  };
+  }, [query, isLoading, analysisMode, filters, onSearch, handleCollapse]);
 
-  const handleSuggestionSelect = (suggestion: SuggestionItem) => {
+  const handleSuggestionSelect = useCallback((suggestion: SuggestionItem) => {
     track('search_suggestion_selected', {
       title_length: suggestion.title.length,
       type: suggestion.type,
@@ -364,7 +383,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
     onSearch(suggestion.title, analysisMode === 'complex' ? QueryComplexity.COMPLEX : QueryComplexity.SIMPLE);
     handleCollapse();
-  };
+  }, [analysisMode, handleCollapse, onSearch, onSuggestionSelect]);
 
   const fetchDailyTrending = async (forceRefresh = false): Promise<TrendingSuggestionItem[]> => {
     if (!forceRefresh) {
@@ -443,7 +462,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     }
   };
 
-  const fetchSuggestions = async (rawQuery: string): Promise<SuggestionItem[]> => {
+  const fetchSuggestions = useCallback(async (rawQuery: string): Promise<SuggestionItem[]> => {
     const normalizedQuery = rawQuery.trim().toLowerCase();
     if (normalizedQuery.length < 2) return [];
 
@@ -477,7 +496,18 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
           ? payload.suggestions.filter((candidate: any) => typeof candidate?.title === 'string')
           : [];
 
-        suggestCacheRef.current.set(normalizedQuery, {
+        // LRU eviction: prune oldest entries when cache exceeds max size
+        const cache = suggestCacheRef.current;
+        if (cache.size >= SUGGEST_CACHE_MAX_SIZE) {
+          const entriesToDelete = cache.size - SUGGEST_CACHE_MAX_SIZE + 1;
+          const iterator = cache.keys();
+          for (let i = 0; i < entriesToDelete; i++) {
+            const oldest = iterator.next();
+            if (!oldest.done) cache.delete(oldest.value);
+          }
+        }
+
+        cache.set(normalizedQuery, {
           createdAt: Date.now(),
           data: nextSuggestions
         });
@@ -494,8 +524,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
 
     inFlightRef.current.set(normalizedQuery, request);
     return request;
-  };
+  }, []);
 
+  // Load trending on first expand
   useEffect(() => {
     if (!isExpanded) return;
     if (!trendingLoadedRef.current) {
@@ -503,6 +534,17 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     }
   }, [isExpanded]);
 
+  // Abort in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fetch suggestions when debounced query changes
   useEffect(() => {
     if (!isExpanded) return;
 
@@ -512,6 +554,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     if (trimmed.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
+      // Show trending only when there are items to show, or loading is in progress, or there's an error with retry
       setShowTrending(isTrendingLoading || dailyTrending.length > 0 || Boolean(trendingLoadError));
       setHighlightedIndex(-1);
       setIsSuggesting(false);
@@ -542,7 +585,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
     return () => {
       isCancelled = true;
     };
-  }, [dailyTrending.length, debouncedQuery, isExpanded, isTrendingLoading, trendingLoadError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, isExpanded, fetchSuggestions]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
@@ -696,8 +740,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onS
               title="Advanced Filters"
             >
               <Settings size={18} />
-              {Object.keys(filters).length > 0 && (
-                <span className="filter-badge" title="Filters applied">{Object.keys(filters).length}</span>
+              {getActiveFilterCount(filters) > 0 && (
+                <span className="filter-badge" title="Filters applied">{getActiveFilterCount(filters)}</span>
               )}
             </button>
             {isLoading ? (
