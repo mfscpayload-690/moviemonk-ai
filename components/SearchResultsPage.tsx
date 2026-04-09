@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import type { SearchPageResponse, SearchResult, SuggestionItem } from '../types';
+import type { SearchPageResponse, SearchResult, SuggestionItem, VibeParseResult } from '../types';
 import type { QuickSaveTitle } from '../lib/quickSave';
 import RatingDisplay from './RatingDisplay';
 import { TagIcon, WatchedIcon } from './icons';
@@ -75,14 +75,46 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       setError(null);
 
       try {
+        const searchBody: Record<string, unknown> = {
+          q: query.trim(),
+          page
+        };
+
+        try {
+          const vibeResponse = await fetch('/api/vibe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({ q: query.trim() })
+          });
+
+          if (vibeResponse.ok) {
+            const vibe = (await vibeResponse.json()) as VibeParseResult;
+            const fallback = (vibe.fallback_query_terms || []).join(' ').trim();
+            if (fallback) {
+              searchBody.q = fallback;
+            }
+
+            if (vibe.hard_constraints.media_type === 'movie' || vibe.hard_constraints.media_type === 'tv') {
+              searchBody.type = vibe.hard_constraints.media_type;
+            }
+
+            if (typeof vibe.hard_constraints.release_year_min === 'number') {
+              searchBody.yearMin = vibe.hard_constraints.release_year_min;
+            }
+            if (typeof vibe.hard_constraints.release_year_max === 'number') {
+              searchBody.yearMax = vibe.hard_constraints.release_year_max;
+            }
+          }
+        } catch {
+          // Fall back to raw search query when vibe parsing fails.
+        }
+
         const response = await fetch('/api/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
-          body: JSON.stringify({
-            q: query.trim(),
-            page
-          })
+          body: JSON.stringify(searchBody)
         });
         if (!response.ok) throw new Error(`Search failed (${response.status})`);
         const data = (await response.json()) as SearchPageResponse;
