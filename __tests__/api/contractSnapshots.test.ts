@@ -37,8 +37,6 @@ import websearchHandler from '../../api/websearch';
 import personHandler from '../../api/person/[id]';
 
 const groqHandler = require('../../api/groq');
-const mistralHandler = require('../../api/mistral');
-const openrouterHandler = require('../../api/openrouter');
 const omdbHandler = require('../../api/omdb');
 const tmdbHandler = require('../../api/tmdb');
 
@@ -146,22 +144,6 @@ describe('API contract snapshots', () => {
     const req = createRequest({ method: 'POST', body: { messages: [{ role: 'user', content: 'Hi' }] }, headers: { host: 'localhost:3000' } });
     const res = createResponse();
     await groqHandler(req, res);
-    expect(contract(res)).toMatchSnapshot();
-  });
-
-  it('api/mistral missing key contract', async () => {
-    delete process.env.MISTRAL_API_KEY;
-    const req = createRequest({ method: 'POST', body: { messages: [{ role: 'user', content: 'Hi' }] }, headers: { host: 'localhost:3000' } });
-    const res = createResponse();
-    await mistralHandler(req, res);
-    expect(contract(res)).toMatchSnapshot();
-  });
-
-  it('api/openrouter missing key contract', async () => {
-    delete process.env.OPENROUTER_API_KEY;
-    const req = createRequest({ method: 'POST', body: { messages: [{ role: 'user', content: 'Hi' }] }, headers: { host: 'localhost:3000' } });
-    const res = createResponse();
-    await openrouterHandler(req, res);
     expect(contract(res)).toMatchSnapshot();
   });
 

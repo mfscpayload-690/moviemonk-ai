@@ -253,7 +253,7 @@ export interface GroundingSource {
   web: WebSource;
 }
 
-export type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
+export type AIProvider = 'groq' | 'perplexity';
 
 export interface FetchResult {
   movieData: MovieData | null;

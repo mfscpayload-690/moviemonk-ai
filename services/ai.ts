@@ -1,9 +1,7 @@
 import { ChatMessage, QueryComplexity } from '../types';
 import { fetchMovieData as fetchFromGroq } from './groqService';
-import { fetchMovieData as fetchFromMistral } from './mistralService';
-import { fetchMovieData as fetchFromOpenRouter } from './openrouterService';
 
-export type Provider = 'groq' | 'mistral' | 'openrouter';
+export type Provider = 'groq';
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -54,7 +52,7 @@ ${evidence}
     { role: 'user', content: user }
   ];
 
-  const order: Provider[] = preferred ? [preferred, 'groq', 'mistral', 'openrouter'].filter((v, i, a) => a.indexOf(v) === i) as Provider[] : ['groq', 'mistral', 'openrouter'];
+  const order: Provider[] = preferred ? [preferred, 'groq'].filter((v, i, a) => a.indexOf(v) === i) as Provider[] : ['groq'];
   const start = Date.now();
   for (const prov of order) {
     const elapsed = Date.now() - start;
@@ -62,10 +60,7 @@ ${evidence}
     if (remaining <= 400) return { ok: false, error: 'Timeout: no provider responded' };
 
     try {
-      let call: Promise<any>;
-      if (prov === 'groq') call = fetchFromGroq(JSON.stringify({ schema, messages }), QueryComplexity.SIMPLE, chatHistory);
-      else if (prov === 'mistral') call = fetchFromMistral(JSON.stringify({ schema, messages }), QueryComplexity.SIMPLE, chatHistory);
-      else call = fetchFromOpenRouter(JSON.stringify({ schema, messages }), QueryComplexity.SIMPLE, chatHistory);
+      const call: Promise<any> = fetchFromGroq(JSON.stringify({ schema, messages }), QueryComplexity.SIMPLE, chatHistory);
 
       const result = await withTimeout(call, Math.max(1000, remaining), `${prov} summary`);
       const content = result?.movieData ? JSON.stringify(result.movieData) : result?.error ? '' : '';

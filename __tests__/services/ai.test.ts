@@ -6,14 +6,6 @@ jest.mock('../services/groqService', () => ({
   fetchMovieData: jest.fn().mockResolvedValue({ movieData: { summary_short: 'Short', summary_long: 'Long' }, sources: null, provider: 'groq' })
 }));
 
-jest.mock('../services/mistralService', () => ({
-  fetchMovieData: jest.fn().mockResolvedValue({ movieData: null, sources: null, error: 'Mistral failed' })
-}));
-
-jest.mock('../services/openrouterService', () => ({
-  fetchMovieData: jest.fn().mockResolvedValue({ movieData: null, sources: null, error: 'OpenRouter failed' })
-}));
-
 import { generateSummary, parseJsonResponse } from '../../services/ai';
 
 describe('services/ai', () => {
