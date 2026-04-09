@@ -528,7 +528,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'details' && req.method === 'GET') {
       const id = req.query.id;
       const mediaType = (req.query.media_type as string) || 'movie'; // 'movie' or 'tv'
-      const preferredProvider = ((req.query.provider as string) || 'groq').toLowerCase() as ProviderChoice;
+      const preferredProvider: ProviderChoice = 'groq';
 
       if (!id) {
         obs.finish(400, { action, error_code: 'missing_id' });
