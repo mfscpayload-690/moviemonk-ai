@@ -3,6 +3,7 @@ import { getCache, setCache, withCacheKey } from '../lib/cache';
 import { applyCors } from './_utils/cors';
 import { sendApiError } from './_utils/http';
 import { beginRequestObservation } from './_utils/observability';
+import type { VibeParseResult } from '../types';
 
 const SEARCH_CACHE_TTL_SECONDS = 60;
 const MAX_RESULTS_PER_PAGE = 20;
@@ -17,6 +18,11 @@ const GENRE_MAP: Record<number, string> = {
   10759: 'Action & Adventure', 10762: 'Kids', 10763: 'News', 10764: 'Reality',
   10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics',
 };
+
+const GENRE_ID_BY_NAME: Record<string, number> = Object.entries(GENRE_MAP).reduce((acc, [id, name]) => {
+  acc[name.toLowerCase()] = Number(id);
+  return acc;
+}, {} as Record<string, number>);
 
 type SearchResultRecord = {
   id: number;
@@ -71,6 +77,71 @@ function parseGenreFilters(raw: unknown): number[] {
     .split(',')
     .map((part) => Number(part.trim()))
     .filter((id) => Number.isInteger(id) && id > 0);
+}
+
+function toStringArray(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
+function normalizeVibeInput(raw: unknown): VibeParseResult | null {
+  if (!raw) return null;
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw) as VibeParseResult;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === 'object') {
+    return raw as VibeParseResult;
+  }
+  return null;
+}
+
+function buildEffectiveQuery(rawQuery: string, vibe: VibeParseResult | null): string {
+  if (!vibe) return rawQuery.trim();
+
+  const parts = [
+    ...toStringArray(vibe.fallback_query_terms),
+    ...toStringArray(vibe.hard_constraints.include_people),
+    ...toStringArray(vibe.soft_preferences.reference_titles)
+  ]
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const deduped = Array.from(new Set(parts.map((part) => part.toLowerCase()))).map((lowerPart) => {
+    return parts.find((part) => part.toLowerCase() === lowerPart) || lowerPart;
+  });
+
+  const joined = deduped.join(' ').trim();
+  return joined || rawQuery.trim();
+}
+
+function mapGenreNamesToIds(names: unknown): number[] {
+  return toStringArray(names)
+    .flatMap((name) => {
+      const normalized = name.toLowerCase();
+      const exactId = GENRE_ID_BY_NAME[normalized];
+      if (exactId) return [exactId];
+
+      if (normalized === 'science fiction' || normalized === 'sci fi' || normalized === 'scifi') {
+        return [878];
+      }
+      if (normalized === 'romcom') {
+        return [10749, 35];
+      }
+      if (normalized === 'suspense') {
+        return [53];
+      }
+      if (normalized === 'kids' || normalized === 'family-friendly') {
+        return [10751];
+      }
+      return [];
+    })
+    .filter((id): id is number => Number.isInteger(id) && id > 0);
 }
 
 function mapTmdbToSearchResult(item: any): SearchResultRecord | null {
@@ -337,19 +408,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const page = Math.max(1, parseInt(String(input.page || '1'), 10) || 1);
-  const mediaTypeFilter = normalizeMediaTypeFilter(String(input.type || 'all'));
+  const baseMediaTypeFilter = normalizeMediaTypeFilter(String(input.type || 'all'));
   const sortBy = String(input.sortBy || 'popularity.desc');
-  const genreFilters = parseGenreFilters(input.genres ?? input.genre);
+  const baseGenreFilters = parseGenreFilters(input.genres ?? input.genre);
   const ratingMin = parseNumber(input.ratingMin);
   const yearMinRaw = parseNumber(input.yearMin);
   const yearMaxRaw = parseNumber(input.yearMax);
   const exactYear = parseNumber(input.year);
-  const yearMin = exactYear ?? yearMinRaw;
-  const yearMax = exactYear ?? yearMaxRaw;
+  const vibe = normalizeVibeInput((input as any).vibe);
+  const vibeGenres = mapGenreNamesToIds(vibe?.hard_constraints?.include_genres);
+  const vibeExcludedGenres = new Set(toStringArray(vibe?.hard_constraints?.exclude_genres).map((value) => value.toLowerCase()));
+  const vibeLanguages = new Set(toStringArray(vibe?.hard_constraints?.languages).map((value) => value.toLowerCase()));
+  const vibeYearMin = vibe?.hard_constraints?.release_year_min ?? null;
+  const vibeYearMax = vibe?.hard_constraints?.release_year_max ?? null;
+  const yearMin = exactYear ?? yearMinRaw ?? vibeYearMin;
+  const yearMax = exactYear ?? yearMaxRaw ?? vibeYearMax;
+  const effectiveQuery = buildEffectiveQuery(q, vibe);
+  const genreFilters = Array.from(new Set([...baseGenreFilters, ...vibeGenres]));
+  const mediaTypeFilter = normalizeMediaTypeFilter(String(input.type || vibe?.hard_constraints?.media_type || baseMediaTypeFilter));
 
   try {
     const cacheKey = withCacheKey('search_v2', {
-      q: q.toLowerCase(),
+      q: effectiveQuery.toLowerCase(),
       page,
       type: mediaTypeFilter,
       sortBy,
@@ -357,6 +437,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       yearMin: yearMin ?? '',
       yearMax: yearMax ?? '',
       ratingMin: ratingMin ?? '',
+      languages: Array.from(vibeLanguages).join(','),
+      excludedGenres: Array.from(vibeExcludedGenres).join(','),
     });
 
     const cached = await getCache(cacheKey);
@@ -373,7 +455,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Always fetch page 1 first and relax query if strict phrase returns zero results.
-    const page1Search = await tmdbSearchWithFallback(tmdbKey, tmdbReadToken, q, 1);
+    const page1Search = await tmdbSearchWithFallback(tmdbKey, tmdbReadToken, effectiveQuery, 1);
     const page1Data = page1Search.data;
     const pageNData = page > 1
       ? await tmdbSearchWithFallback(tmdbKey, tmdbReadToken, page1Search.usedQuery, page)
@@ -412,6 +494,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       yearMax
     });
 
+    if (vibeLanguages.size > 0) {
+      results = results.filter((item) => {
+        const lang = String(item.original_language || '').toLowerCase();
+        return vibeLanguages.has(lang);
+      });
+    }
+
+    if (vibeExcludedGenres.size > 0) {
+      results = results.filter((item) => {
+        const itemGenres = (item.genres || []).map((genre) => genre.toLowerCase());
+        return !itemGenres.some((genre) => vibeExcludedGenres.has(genre));
+      });
+    }
+
     // --- Select hero: best filtered title from page 1 with a backdrop ---
     const hero = filteredPage1Titles.find((item) => Boolean(item.backdrop_url))
       || filteredPage1Titles[0]
@@ -440,11 +536,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
       .slice(0, 8);
 
-    const didYouMean = buildDidYouMean(q, page1MappedTitles);
+    const didYouMean = buildDidYouMean(effectiveQuery, page1MappedTitles);
 
     const payload = {
       ok: true,
-      query: q,
+      query: effectiveQuery,
       page,
       total_pages: Math.min(totalPages, 20), // Cap at 20 pages
       total_results: totalResults,

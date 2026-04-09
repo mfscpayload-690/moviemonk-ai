@@ -90,6 +90,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
           if (vibeResponse.ok) {
             const vibe = (await vibeResponse.json()) as VibeParseResult;
+            searchBody.vibe = vibe;
             const fallback = (vibe.fallback_query_terms || []).join(' ').trim();
             if (fallback) {
               searchBody.q = fallback;
