@@ -216,6 +216,82 @@ async function tmdbSearchMulti(
   return response.json();
 }
 
+function buildRelaxedQuery(query: string): string {
+  const trimmed = query.trim();
+  if (!trimmed) return trimmed;
+
+  // Person-role phrasing often hurts TMDB recall (e.g., "chris hemsworth as thor").
+  const roleStripped = trimmed.replace(/\bas\s+[^,.;!?]+$/i, '').trim();
+  if (roleStripped.length >= 2 && roleStripped !== trimmed) {
+    return roleStripped;
+  }
+
+  const tokenStripped = trimmed
+    .replace(/\b(actor|actress|as|character|playing|portraying|director|starring)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (tokenStripped.length >= 2 && tokenStripped !== trimmed) {
+    return tokenStripped;
+  }
+
+  return trimmed;
+}
+
+function normalizeRepeatedLetters(value: string): string {
+  return value.replace(/([a-zA-Z])\1{2,}/g, '$1');
+}
+
+function buildQueryCandidates(query: string): string[] {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const roleStripped = buildRelaxedQuery(trimmed);
+  const tokenStripped = trimmed
+    .replace(/\b(actor|actress|as|character|playing|portraying|director|starring)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const typoNormalized = normalizeRepeatedLetters(roleStripped || trimmed).trim();
+  const tokenTypoNormalized = normalizeRepeatedLetters(tokenStripped || trimmed).trim();
+
+  const surnameCandidate = roleStripped
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(-1)[0];
+
+  return Array.from(new Set([
+    trimmed,
+    roleStripped,
+    tokenStripped,
+    typoNormalized,
+    tokenTypoNormalized,
+    surnameCandidate,
+  ].filter((candidate): candidate is string => Boolean(candidate && candidate.trim()))));
+}
+
+async function tmdbSearchWithFallback(
+  tmdbApiKey: string | undefined,
+  tmdbReadToken: string | undefined,
+  originalQuery: string,
+  page: number
+): Promise<{ data: any; usedQuery: string }> {
+  const primary = originalQuery.trim();
+  const queryCandidates = buildQueryCandidates(primary);
+
+  let firstResponse: any = null;
+  for (const candidate of queryCandidates) {
+    const result = await tmdbSearchMulti(tmdbApiKey, tmdbReadToken, candidate, page);
+    if (!firstResponse) firstResponse = result;
+    const hasResults = Array.isArray(result?.results) && result.results.length > 0;
+    if (hasResults) {
+      return { data: result, usedQuery: candidate };
+    }
+  }
+
+  return { data: firstResponse || { results: [], total_pages: 0, total_results: 0 }, usedQuery: primary };
+}
+
 function buildDidYouMean(query: string, page1MappedTitles: SearchResultRecord[]): string[] {
   const normalizedQuery = query.trim().toLowerCase();
   const seen = new Set<string>();
@@ -272,7 +348,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const yearMax = exactYear ?? yearMaxRaw;
 
   try {
-    const cacheKey = withCacheKey('search_v1', {
+    const cacheKey = withCacheKey('search_v2', {
       q: q.toLowerCase(),
       page,
       type: mediaTypeFilter,
@@ -296,15 +372,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return sendApiError(res, 500, 'missing_api_key', 'TMDB credentials not configured');
     }
 
-    // Always fetch page 1 so we can pick the hero regardless of current page
-    const [page1Data, pageNData] = await Promise.all([
-      tmdbSearchMulti(tmdbKey, tmdbReadToken, q, 1),
-      page > 1 ? tmdbSearchMulti(tmdbKey, tmdbReadToken, q, page) : null,
-    ]);
+    // Always fetch page 1 first and relax query if strict phrase returns zero results.
+    const page1Search = await tmdbSearchWithFallback(tmdbKey, tmdbReadToken, q, 1);
+    const page1Data = page1Search.data;
+    const pageNData = page > 1
+      ? await tmdbSearchWithFallback(tmdbKey, tmdbReadToken, page1Search.usedQuery, page)
+      : null;
 
     const page1Results: any[] = Array.isArray(page1Data?.results) ? page1Data.results : [];
     const pageNResults: any[] = pageNData
-      ? (Array.isArray(pageNData?.results) ? pageNData.results : [])
+      ? (Array.isArray(pageNData?.data?.results) ? pageNData.data.results : [])
       : page1Results;
 
     const totalPages = page1Data?.total_pages ?? 1;
