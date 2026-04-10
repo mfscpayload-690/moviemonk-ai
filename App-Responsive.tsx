@@ -271,11 +271,31 @@ const App: React.FC = () => {
 
     if (!folderId) return;
 
+    // ── Duplicate check: see if the title is already in this folder ──
+    const targetFolder = watchlists.find((f) => f.id === folderId);
+    if (targetFolder) {
+      const movieData = buildQuickMovieData(quickSaveTarget);
+      const targetKey = movieData.tmdb_id ? `tmdb:${movieData.tmdb_id}` : `${movieData.title}-${movieData.year}-${movieData.type}`.toLowerCase();
+      const alreadyExists = targetFolder.items.some((existing) => {
+        const existingKey = existing.movie?.tmdb_id ? `tmdb:${existing.movie.tmdb_id}` : `${existing.movie?.title}-${existing.movie?.year}-${existing.movie?.type}`.toLowerCase();
+        return existingKey === targetKey;
+      });
+      if (alreadyExists) {
+        showActionToast({
+          kind: 'watchlist',
+          message: `Already saved in "${targetFolder.name}"`,
+          onUndo: async () => { /* no-op – nothing to undo */ }
+        });
+        closeQuickSaveModal();
+        return;
+      }
+    }
+
     try {
       const receipt = await saveToFolder(folderId, buildQuickMovieData(quickSaveTarget), quickSaveTarget.title);
       showActionToast({
         kind: 'watchlist',
-        message: receipt.mode === 'insert' ? 'Saved to Watchlist' : 'Watchlist updated',
+        message: 'Saved to Watchlist',
         onUndo: async () => {
           await rollbackSave(receipt);
         }
@@ -294,7 +314,8 @@ const App: React.FC = () => {
     quickSaveTarget,
     rollbackSave,
     saveToFolder,
-    showActionToast
+    showActionToast,
+    watchlists
   ]);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
@@ -559,11 +580,29 @@ const App: React.FC = () => {
     movie: MovieData,
     savedTitle?: string
   ) => {
+    // ── Duplicate check ──
+    const targetFolder = watchlists.find((f) => f.id === folderId);
+    if (targetFolder) {
+      const targetKey = movie.tmdb_id ? `tmdb:${movie.tmdb_id}` : `${movie.title}-${movie.year}-${movie.type}`.toLowerCase();
+      const alreadyExists = targetFolder.items.some((existing) => {
+        const existingKey = existing.movie?.tmdb_id ? `tmdb:${existing.movie.tmdb_id}` : `${existing.movie?.title}-${existing.movie?.year}-${existing.movie?.type}`.toLowerCase();
+        return existingKey === targetKey;
+      });
+      if (alreadyExists) {
+        showActionToast({
+          kind: 'watchlist',
+          message: `Already saved in "${targetFolder.name}"`,
+          onUndo: async () => { /* no-op */ }
+        });
+        return;
+      }
+    }
+
     try {
       const receipt = await saveToFolder(folderId, movie, savedTitle);
       showActionToast({
         kind: 'watchlist',
-        message: receipt.mode === 'insert' ? 'Saved to Watchlist' : 'Watchlist updated',
+        message: 'Saved to Watchlist',
         onUndo: async () => {
           await rollbackSave(receipt);
         }
@@ -572,7 +611,7 @@ const App: React.FC = () => {
       setError('Failed to save title to watchlist');
       throw error;
     }
-  }, [rollbackSave, saveToFolder, showActionToast]);
+  }, [rollbackSave, saveToFolder, showActionToast, watchlists]);
 
   const handleBriefMe = useCallback(async (name: string) => {
     try {

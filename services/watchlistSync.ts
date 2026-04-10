@@ -138,7 +138,7 @@ export async function uploadWatchlistsToCloud(userId: string, folders: Watchlist
           movie_data: item.movie,
           added_at: item.added_at || new Date().toISOString()
         },
-        { onConflict: 'id' }
+        { onConflict: 'folder_id,tmdb_id,media_type' }
       );
       if (itemError) throw itemError;
     }
@@ -186,7 +186,7 @@ export async function saveCloudItem(folderId: string, item: WatchlistItem): Prom
       movie_data: item.movie,
       added_at: item.added_at || new Date().toISOString()
     },
-    { onConflict: 'id' }
+    { onConflict: 'folder_id,tmdb_id,media_type' }
   );
   if (error) throw error;
 }
