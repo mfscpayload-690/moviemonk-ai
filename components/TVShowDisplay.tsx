@@ -321,7 +321,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                                 aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
                             >
                                 <WatchedIcon className="icon-small" filled={isWatched} />
-                                <span>{isWatched ? 'Watched ✓' : 'Mark Watched'}</span>
+                                <span>{isWatched ? 'Watched' : 'Mark Watched'}</span>
                             </button>
                         </div>
                     </div>
@@ -553,101 +553,101 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
             )}
 
             <div className="tv-show-section">
-                    <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-                        <h2>User Reviews</h2>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                Source: {reviewsSourceLabel}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => void loadReviews()}
-                                disabled={reviewsLoading}
-                                className="text-[11px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10 disabled:opacity-60 transition-colors"
-                            >
-                                {reviewsLoading ? 'Refreshing…' : 'Refresh reviews'}
-                            </button>
-                        </div>
+                <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                    <h2>User Reviews</h2>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                            Source: {reviewsSourceLabel}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => void loadReviews()}
+                            disabled={reviewsLoading}
+                            className="text-[11px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10 disabled:opacity-60 transition-colors"
+                        >
+                            {reviewsLoading ? 'Refreshing…' : 'Refresh reviews'}
+                        </button>
                     </div>
+                </div>
 
-                    {reviewsLoading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {[1, 2].map((entry) => (
-                                <div key={entry} className="animate-pulse rounded-2xl p-4 bg-white/[0.03] border border-white/8">
-                                    <div className="h-3 bg-white/10 rounded w-1/3 mb-3" />
-                                    <div className="space-y-2">
-                                        <div className="h-2.5 bg-white/8 rounded w-full" />
-                                        <div className="h-2.5 bg-white/8 rounded w-4/5" />
-                                        <div className="h-2.5 bg-white/8 rounded w-3/5" />
-                                    </div>
+                {reviewsLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[1, 2].map((entry) => (
+                            <div key={entry} className="animate-pulse rounded-2xl p-4 bg-white/[0.03] border border-white/8">
+                                <div className="h-3 bg-white/10 rounded w-1/3 mb-3" />
+                                <div className="space-y-2">
+                                    <div className="h-2.5 bg-white/8 rounded w-full" />
+                                    <div className="h-2.5 bg-white/8 rounded w-4/5" />
+                                    <div className="h-2.5 bg-white/8 rounded w-3/5" />
                                 </div>
-                            ))}
-                        </div>
-                    ) : reviews.length === 0 ? (
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-                            <p className="text-white font-semibold text-sm">No reviews available yet</p>
-                            <p className="text-xs text-brand-text-dark mt-1">This series has limited public reviews right now.</p>
-                            <button
-                                type="button"
-                                onClick={() => void loadReviews()}
-                                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-brand-text-light hover:text-white hover:bg-white/10 transition-colors"
-                            >
-                                Try again
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {reviews.slice(0, 4).map((review) => {
-                                const isExpanded = expandedReview === review.id;
-                                const LIMIT = 220;
-                                const isLong = review.content.length > LIMIT;
-                                const text = isExpanded || !isLong
-                                    ? review.content
-                                    : review.content.slice(0, LIMIT).trimEnd() + '…';
-                                const date = review.created_at
-                                    ? new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                                    : null;
-                                return (
-                                    <div key={review.id} className="rounded-2xl p-4 bg-white/[0.03] border border-white/8 hover:border-brand-primary/30 transition-colors">
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-white truncate">{review.author}</p>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    {review.rating !== null && (
-                                                        <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                                                            ★ {review.rating % 1 === 0 ? review.rating : review.rating.toFixed(1)}<span className="text-amber-400/50">/10</span>
-                                                        </span>
-                                                    )}
-                                                    {date && <span className="text-[10px] text-brand-text-dark">{date}</span>}
-                                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : reviews.length === 0 ? (
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
+                        <p className="text-white font-semibold text-sm">No reviews available yet</p>
+                        <p className="text-xs text-brand-text-dark mt-1">This series has limited public reviews right now.</p>
+                        <button
+                            type="button"
+                            onClick={() => void loadReviews()}
+                            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-brand-text-light hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                            Try again
+                        </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {reviews.slice(0, 4).map((review) => {
+                            const isExpanded = expandedReview === review.id;
+                            const LIMIT = 220;
+                            const isLong = review.content.length > LIMIT;
+                            const text = isExpanded || !isLong
+                                ? review.content
+                                : review.content.slice(0, LIMIT).trimEnd() + '…';
+                            const date = review.created_at
+                                ? new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                : null;
+                            return (
+                                <div key={review.id} className="rounded-2xl p-4 bg-white/[0.03] border border-white/8 hover:border-brand-primary/30 transition-colors">
+                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-white truncate">{review.author}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                {review.rating !== null && (
+                                                    <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                                        ★ {review.rating % 1 === 0 ? review.rating : review.rating.toFixed(1)}<span className="text-amber-400/50">/10</span>
+                                                    </span>
+                                                )}
+                                                {date && <span className="text-[10px] text-brand-text-dark">{date}</span>}
                                             </div>
-                                            {review.url && (
-                                                <a
-                                                    href={review.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs text-brand-primary hover:text-brand-secondary"
-                                                    aria-label="Open full review"
-                                                >
-                                                    Full
-                                                </a>
-                                            )}
                                         </div>
-                                        <p className="text-sm text-brand-text-light leading-relaxed">{text}</p>
-                                        {isLong && (
-                                            <button
-                                                onClick={() => setExpandedReview(isExpanded ? null : review.id)}
-                                                className="mt-2 text-xs text-brand-primary hover:text-brand-secondary font-semibold"
+                                        {review.url && (
+                                            <a
+                                                href={review.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-brand-primary hover:text-brand-secondary"
+                                                aria-label="Open full review"
                                             >
-                                                {isExpanded ? 'Show less' : 'Read more'}
-                                            </button>
+                                                Full
+                                            </a>
                                         )}
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                                    <p className="text-sm text-brand-text-light leading-relaxed">{text}</p>
+                                    {isLong && (
+                                        <button
+                                            onClick={() => setExpandedReview(isExpanded ? null : review.id)}
+                                            className="mt-2 text-xs text-brand-primary hover:text-brand-secondary font-semibold"
+                                        >
+                                            {isExpanded ? 'Show less' : 'Read more'}
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
             {/* Official Site Link */}
             {tvShow.officialSite && (
