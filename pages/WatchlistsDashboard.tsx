@@ -358,33 +358,59 @@ export function WatchlistsDashboard() {
       {/* 2. Metric Cards */}
       {!activeFolderId && (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 animate-fade-in">
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-primary to-transparent opacity-50" />
-            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Total Saved</div>
-            <div className="text-3xl font-bold text-white">{stats.totalSaved}</div>
-          </div>
-          
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-secondary to-transparent opacity-50" />
-            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Folders</div>
-            <div className="text-3xl font-bold text-white">{stats.totalFolders}</div>
+          {/* Total Saved */}
+          <div className="wl-metric-card glass-panel">
+            <div className="wl-metric-stripe" style={{ background: 'var(--brand-primary, #a855f7)' }} />
+            <div>
+              <div className="wl-metric-label">Total Saved</div>
+              <div className="wl-metric-value">{stats.totalSaved}</div>
+            </div>
+            <div className="wl-metric-icon" style={{ background: 'rgba(168,85,247,0.12)' }}>
+              <svg className="w-6 h-6" style={{ color: '#a855f7' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+            </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-white/10 transition-colors">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-transparent opacity-50" />
-            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2">Top Format</div>
-            <div className="text-2xl font-bold text-white">{stats.topFormat}</div>
+          {/* Folders */}
+          <div className="wl-metric-card glass-panel">
+            <div className="wl-metric-stripe" style={{ background: 'var(--brand-secondary, #ec4899)' }} />
+            <div>
+              <div className="wl-metric-label">Folders</div>
+              <div className="wl-metric-value">{stats.totalFolders}</div>
+            </div>
+            <div className="wl-metric-icon" style={{ background: 'rgba(236,72,153,0.12)' }}>
+              <svg className="w-6 h-6" style={{ color: '#ec4899' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
+            </div>
           </div>
+
+          {/* Top Format */}
+          <div className="wl-metric-card glass-panel">
+            <div className="wl-metric-stripe" style={{ background: '#3b82f6' }} />
+            <div>
+              <div className="wl-metric-label">Top Format</div>
+              <div className="wl-metric-value" style={{ fontSize: stats.topFormat.length > 6 ? '1.4rem' : undefined }}>{stats.topFormat}</div>
+            </div>
+            <div className="wl-metric-icon" style={{ background: 'rgba(59,130,246,0.12)' }}>
+              <svg className="w-6 h-6" style={{ color: '#3b82f6' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-2.625 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0118 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 016 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25C6 11.496 5.496 12 4.875 12M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M19.125 12h1.5m0 0c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h1.5m14.25 0h1.5" /></svg>
+            </div>
+          </div>
+
+          {/* Watched */}
           <button
             onClick={() => { setShowWatchedView(true); openFolder(null); }}
-            className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col justify-center relative overflow-hidden group hover:border-emerald-500/30 transition-all cursor-pointer text-left w-full"
+            className="wl-metric-card glass-panel cursor-pointer text-left w-full group"
+            style={{ borderColor: undefined }}
           >
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 to-transparent opacity-50" />
-            <div className="text-sm font-semibold text-brand-text-light uppercase tracking-wider mb-2 flex items-center gap-2">
-              Watched
-              <svg className="w-3.5 h-3.5 text-brand-text-dark group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <div className="wl-metric-stripe" style={{ background: '#34d399' }} />
+            <div>
+              <div className="wl-metric-label flex items-center gap-2">
+                Watched
+                <svg className="w-3.5 h-3.5 text-brand-text-dark group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </div>
+              <div className="wl-metric-value accent">{watchedCount}</div>
             </div>
-            <div className="text-3xl font-bold text-emerald-400">{watchedCount}</div>
+            <div className="wl-metric-icon" style={{ background: 'rgba(52,211,153,0.12)' }}>
+              <svg className="w-6 h-6" style={{ color: '#34d399' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
           </button>
         </div>
       )}
@@ -555,8 +581,11 @@ export function WatchlistsDashboard() {
         </div>
       ) : (
         <div className="animate-fade-in">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white tracking-tight">Your Folders</h2>
+          <div className="wl-section-header flex items-center justify-between">
+            <div>
+              <h2 className="wl-section-title">Watchlist Folders</h2>
+              <p className="wl-section-subtitle">Your curated cinematic archives</p>
+            </div>
             {!isCloud && folders.length > 0 && (
               <span className="text-xs bg-white/10 text-brand-text-light px-3 py-1 rounded-full">Local Storage</span>
             )}
@@ -571,60 +600,62 @@ export function WatchlistsDashboard() {
           <p className="text-brand-text-light max-w-sm mx-auto">Explore movies and series, and click "Save to List" to start building your collection.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {folders.map(folder => (
-            <div
-              key={folder.id}
-              className="group glass-panel rounded-2xl border border-white/5 p-5 transition-all duration-300 hover:scale-[1.01] hover:border-white/15 flex flex-col justify-between min-h-[160px] relative overflow-hidden"
-              style={{
-                background: `linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)`
-              }}
-            >
-              {/* Subtle color splash based on folder color */}
-              <div 
-                className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-[50px] opacity-20 pointer-events-none transition-opacity group-hover:opacity-30" 
-                style={{ backgroundColor: folder.color }}
-              />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {folders.map(folder => {
+            const heroItem = folder.items[0];
+            const heroPoster = heroItem?.movie?.poster_url || null;
+            const folderColor = folder.color || '#7c3aed';
+            return (
+              <div
+                key={folder.id}
+                className="wl-folder-card"
+              >
+                {/* Poster Hero Area */}
+                <div className="wl-folder-poster" onClick={() => openFolder(folder.id)}>
+                  {heroPoster ? (
+                    <img src={heroPoster} alt={folder.name} loading="lazy" />
+                  ) : (
+                    <div className="wl-folder-poster-empty">
+                      <svg fill="none" stroke="currentColor" strokeWidth="1.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-2.625 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125" /></svg>
+                    </div>
+                  )}
+                  <div className="wl-folder-poster-overlay" />
+                  <span
+                    className="wl-folder-tag"
+                    style={{ background: `${folderColor}33`, color: folderColor }}
+                  >
+                    {folder.items.length} {folder.items.length === 1 ? 'title' : 'titles'}
+                  </span>
+                </div>
 
-              <div className="relative z-10 flex justify-between items-start cursor-pointer" onClick={() => openFolder(folder.id)}>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white">
-                    <WatchlistIconBadge iconKey={folder.icon} className="w-4.5 h-4.5" />
+                {/* Card Body */}
+                <div className="wl-folder-body">
+                  <h3 className="wl-folder-name" onClick={() => openFolder(folder.id)}>{folder.name}</h3>
+                  <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
+                  <div className="wl-folder-actions">
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        startEditFolder(folder);
+                      }}
+                      className="wl-folder-action-btn"
+                    >
+                      <EditIcon className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDeleteFolder(folder.id, folder.name, folder.items.length);
+                      }}
+                      className="wl-folder-action-btn danger"
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <h3 className="text-lg font-bold text-white group-hover:text-brand-primary transition-colors pr-2 break-words max-w-[200px]">{folder.name}</h3>
-                </div>
-                <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-white/40">
-                  {folder.items.length}
                 </div>
               </div>
-
-              <div className="relative z-10 mt-6 flex items-center justify-between">
-                <span className="text-sm text-brand-text-dark font-medium">
-                  {folder.items.length === 1 ? '1 item' : `${folder.items.length} items`}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      startEditFolder(folder);
-                    }}
-                    className="text-xs font-medium text-brand-text-light hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-white/10 inline-flex items-center gap-1.5 transition-all"
-                  >
-                    <EditIcon className="w-3.5 h-3.5" /> Edit
-                  </button>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleDeleteFolder(folder.id, folder.name, folder.items.length);
-                    }}
-                    className="text-xs font-medium text-red-400 hover:text-red-300 px-2.5 py-1.5 rounded-lg hover:bg-red-500/10 inline-flex items-center gap-1.5 transition-all"
-                  >
-                    <TrashIcon className="w-3.5 h-3.5" /> Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       </div>
