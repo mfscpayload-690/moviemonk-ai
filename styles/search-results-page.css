@@ -410,7 +410,7 @@
 
 .search-result-floating-rating {
   position: absolute;
-  top: 0.75rem;
+  bottom: 0.75rem;
   right: 0.75rem;
   background: rgba(26, 26, 26, 0.6);
   backdrop-filter: blur(12px);
@@ -450,6 +450,9 @@
 .search-result-meta {
   color: var(--color-text-muted);
   font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* People String */
