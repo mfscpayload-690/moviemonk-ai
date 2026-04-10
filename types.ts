@@ -223,6 +223,14 @@ export interface WatchlistItem {
   added_at: string;
 }
 
+export interface WatchlistSaveReceipt {
+  folderId: string;
+  itemId: string;
+  mode: 'insert' | 'replace';
+  nextItem: WatchlistItem;
+  previousItem?: WatchlistItem;
+}
+
 export interface WatchlistFolder {
   id: string;
   name: string;
@@ -235,6 +243,12 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'model' | 'system';
   content: string;
+}
+
+export interface WatchedToggleResult {
+  action: 'marked' | 'unmarked';
+  entry: WatchedTitle;
+  previousEntry?: WatchedTitle;
 }
 
 export enum QueryComplexity {

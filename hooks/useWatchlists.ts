@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MovieData, WatchlistFolder, WatchlistItem } from '../types';
+import { MovieData, WatchlistFolder, WatchlistItem, WatchlistSaveReceipt } from '../types';
 import {
   addFolderToWatchlists,
   findFolderItem,
   loadWatchlistsFromStorage,
-  saveMovieToFolder,
+  rollbackWatchlistSave,
+  saveMovieToFolderWithReceipt,
   saveWatchlistsToStorage
 } from './watchlistStore';
 
@@ -50,8 +51,17 @@ export function useWatchlists() {
     return folderId;
   };
 
-  const saveToFolder = (folderId: string, movie: MovieData, savedTitle?: string) => {
-    persist(prev => saveMovieToFolder(prev, folderId, movie, savedTitle));
+  const saveToFolder = async (folderId: string, movie: MovieData, savedTitle?: string) => {
+    const result = saveMovieToFolderWithReceipt(folders, folderId, movie, savedTitle);
+    if (!result.receipt) {
+      throw new Error('Failed to save title to watchlist');
+    }
+    setFolders(result.next);
+    return result.receipt;
+  };
+
+  const rollbackSave = async (receipt: WatchlistSaveReceipt) => {
+    persist((prev) => rollbackWatchlistSave(prev, receipt));
   };
 
   const renameFolder = (folderId: string, name: string) => {
@@ -115,6 +125,7 @@ export function useWatchlists() {
     folders,
     addFolder,
     saveToFolder,
+    rollbackSave,
     findItem,
     refresh,
     renameFolder,

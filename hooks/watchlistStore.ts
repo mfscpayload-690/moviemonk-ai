@@ -1,4 +1,4 @@
-import { MovieData, WatchlistFolder, WatchlistItem } from '../types';
+import { MovieData, WatchlistFolder, WatchlistItem, WatchlistSaveReceipt } from '../types';
 
 export const WATCHLIST_STORAGE_KEY = 'moviemonk_watchlists_v1';
 export const WATCHLIST_DEFAULT_ICON = 'folder';
@@ -64,12 +64,22 @@ export function saveMovieToFolder(
   movie: MovieData,
   savedTitle?: string
 ): WatchlistFolder[] {
-  if (!folderId || !movie) return folders;
+  return saveMovieToFolderWithReceipt(folders, folderId, movie, savedTitle).next;
+}
+
+export function saveMovieToFolderWithReceipt(
+  folders: WatchlistFolder[],
+  folderId: string,
+  movie: MovieData,
+  savedTitle?: string
+): { next: WatchlistFolder[]; receipt: WatchlistSaveReceipt | null } {
+  if (!folderId || !movie) return { next: folders, receipt: null };
   const key = getMovieKey(movie);
   const title = (savedTitle && savedTitle.trim()) || movie.title;
   const now = new Date().toISOString();
+  let receipt: WatchlistSaveReceipt | null = null;
 
-  return folders.map(folder => {
+  const next = folders.map(folder => {
     if (folder.id !== folderId) return folder;
     const existingIdx = folder.items.findIndex(i => getMovieKey(i.movie) === key);
     const item: WatchlistItem = {
@@ -80,10 +90,51 @@ export function saveMovieToFolder(
     };
     if (existingIdx >= 0) {
       const items = [...folder.items];
+      const previousItem = items[existingIdx];
       items[existingIdx] = item;
+      receipt = {
+        folderId,
+        itemId: item.id,
+        mode: 'replace',
+        nextItem: item,
+        previousItem
+      };
       return { ...folder, items };
     }
+    receipt = {
+      folderId,
+      itemId: item.id,
+      mode: 'insert',
+      nextItem: item
+    };
     return { ...folder, items: [item, ...folder.items] };
+  });
+
+  return { next, receipt };
+}
+
+export function rollbackWatchlistSave(
+  folders: WatchlistFolder[],
+  receipt: WatchlistSaveReceipt
+): WatchlistFolder[] {
+  return folders.map((folder) => {
+    if (folder.id !== receipt.folderId) return folder;
+
+    if (receipt.mode === 'insert') {
+      return {
+        ...folder,
+        items: folder.items.filter((item) => item.id !== receipt.itemId)
+      };
+    }
+
+    if (!receipt.previousItem) return folder;
+
+    return {
+      ...folder,
+      items: folder.items.map((item) => (
+        item.id === receipt.itemId ? receipt.previousItem! : item
+      ))
+    };
   });
 }
 
