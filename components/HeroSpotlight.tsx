@@ -22,7 +22,7 @@ declare global {
         elementId: string,
         config: {
           events?: {
-            onReady?: (event: { target: { mute?: () => void; playVideo?: () => void } }) => void;
+            onReady?: (event: { target: { mute?: () => void; playVideo?: () => void; unloadModule?: (module: string) => void } }) => void;
             onStateChange?: (event: { data: number }) => void;
           };
         }
@@ -72,7 +72,7 @@ function buildYoutubeEmbedPreview(videos: any[]): string | null {
 
   const key = encodeURIComponent(best.key);
   const origin = typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : '';
-  return `https://www.youtube.com/embed/${key}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1${origin ? `&origin=${origin}` : ''}`;
+  return `https://www.youtube.com/embed/${key}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&cc_load_policy=0&iv_load_policy=3&enablejsapi=1${origin ? `&origin=${origin}` : ''}`;
 }
 
 const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist }) => {
@@ -296,6 +296,12 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
           onReady: (event) => {
             event?.target?.mute?.();
             event?.target?.playVideo?.();
+            try {
+              event?.target?.unloadModule?.('captions');
+              event?.target?.unloadModule?.('cc');
+            } catch (e) {
+              // Ignore if modules are not loaded
+            }
           },
           onStateChange: (event) => {
             const playingState = window.YT?.PlayerState?.PLAYING ?? 1;
