@@ -372,6 +372,10 @@ Rejected premiere wordmark variant:
     will-change: opacity, transform, filter;
 }
 
+.mm-reveal[data-reveal-variant="rise-up"] {
+    transform: translate3d(0, 32px, 0);
+}
+
 .mm-reveal[data-reveal-variant="fade"] {
     transform: none;
     filter: none;
