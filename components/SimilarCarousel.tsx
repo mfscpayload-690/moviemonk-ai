@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { RelatedTitle } from '../types';
 import { TagIcon, WatchedIcon } from './icons';
+import { useActionFeedback } from '../hooks/useActionFeedback';
+import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
 interface SimilarCarouselProps {
   label: string;
@@ -14,6 +16,8 @@ interface SimilarCarouselProps {
 
 const SimilarCarousel: React.FC<SimilarCarouselProps> = ({ label, items, onOpenAll, onSelectTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist }) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const { ref, isRevealed } = useScrollReveal<HTMLDivElement>();
+  const { triggerFeedback, isFeedbackActive } = useActionFeedback();
   if (!items || items.length === 0) return null;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, title: string) => {
@@ -23,7 +27,12 @@ const SimilarCarousel: React.FC<SimilarCarouselProps> = ({ label, items, onOpenA
   };
 
   return (
-    <div className="glass-panel p-4 rounded-2xl">
+    <div
+      ref={ref}
+      className={getRevealClassName(isRevealed, 'fade', 'glass-panel p-4 rounded-2xl')}
+      data-reveal-variant="fade"
+      style={buildRevealStyle(0, 420)}
+    >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-white">{label}</h3>
         <button className="text-sm px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15" onClick={onOpenAll}>
@@ -62,9 +71,10 @@ const SimilarCarousel: React.FC<SimilarCarouselProps> = ({ label, items, onOpenA
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      triggerFeedback(`save-${it.id}`);
                       onQuickSaveToWatchlist(it);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold text-violet-300 hover:bg-violet-500/20 hover:text-white"
+                    className={`inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold text-violet-300 hover:bg-violet-500/20 hover:text-white mm-action-feedback ${isFeedbackActive(`save-${it.id}`) ? 'is-feedback-active' : ''}`}
                     aria-label={`Save ${it.title} to watchlist`}
                     title="Save to watchlist"
                   >
@@ -77,9 +87,10 @@ const SimilarCarousel: React.FC<SimilarCarouselProps> = ({ label, items, onOpenA
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
+                      triggerFeedback(`watch-${it.id}`);
                       onToggleWatched(it);
                     }}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${isWatched?.(it.id, it.media_type) ? 'border-green-500/40 bg-green-500/15 text-green-300 hover:bg-green-500/25' : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors mm-action-feedback ${isFeedbackActive(`watch-${it.id}`) ? 'is-feedback-active' : ''} ${isWatched?.(it.id, it.media_type) ? 'border-green-500/40 bg-green-500/15 text-green-300 hover:bg-green-500/25' : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'}`}
                     aria-label={isWatched?.(it.id, it.media_type) ? 'Mark as unwatched' : 'Mark as watched'}
                     title={isWatched?.(it.id, it.media_type) ? 'Watched ✓' : 'Mark as watched'}
                   >
