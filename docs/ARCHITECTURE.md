@@ -1,61 +1,42 @@
 # How MovieMonk Works
 
-Simple overview of the app structure.
+Short map of the current structure.
 
 ---
 
 ## Main Parts
 
 ### 1. User Interface
-- `ChatInterface.tsx` - Where you type your search
-- `MovieDisplay.tsx` - Shows the movie/show info
-- `App.tsx` - Connects everything together
+- `App-Responsive.tsx` — main shell that renders layout and header.
+- `AppRoutes.tsx` — route wiring for discovery, detail, and person pages.
+- `components/` — search island, carousels, displays, and shared UI.
 
-### 2. Data Services
-- `aiService.ts` - Manages AI provider fallback chain (Groq → Mistral → OpenRouter)
-- `groqService.ts` - Primary AI provider (fast and free)
-- `mistralService.ts` - Backup AI provider
-- `openrouterService.ts` - Fallback AI provider
-- `tmdbService.ts` - Gets movie data from TMDB
-- `cacheService.ts` - Stores results to speed things up
-- `perplexityService.ts` - Web search for recent releases (optional)
+### 2. Data & Services
+- `services/aiService.ts` — orchestrates AI summarization (Groq) plus web-search enrichment.
+- `services/groqService.ts` — primary AI provider adapter.
+- `services/tmdbService.ts` — TMDB data fetcher for movies/TV/people.
+- `services/perplexityService.ts` and `services/serpApiService.ts` — optional web search enrichers.
+- `services/cacheService.ts`, `services/indexedDBService.ts`, `services/searchHistoryService.ts` — caching and history.
+- `services/watchlistSync.ts`, `services/watchedService.ts`, `services/userSettingsService.ts` — persistence for user lists and preferences.
+- `services/observability.ts` — lightweight logging utilities shared by serverless routes.
 
 ### 3. Data Flow
 
 ```
-You search "Inception"
-         ↓
-App checks cache
-         ↓
-If not cached:
-    → Call TMDB for movie data
-    → Call AI (Groq → Mistral → OpenRouter fallback)
-    → Merge the data
-    → Save to cache
-         ↓
-Show results on screen
+User searches → cached result? → if not:
+  • TMDB fetch (tmdbService)
+  • AI enrichment (aiService fallback chain)
+  • Optional web search (Perplexity/SerpAPI) for recency
+  • Merge + cache
+Render UI with normalized movie/person payloads
 ```
-
----
-
-## How AI Works
-
-1. You ask about a movie
-2. We find it in TMDB database
-3. AI (Groq/Mistral/OpenRouter) writes summaries and trivia
-4. We combine TMDB facts + AI creativity
-5. You see the complete result
 
 ---
 
 ## Why This Design?
 
-- **TMDB First**: Always accurate cast, crew, ratings
-- **AI Enhancement**: Creative summaries and trivia from multiple providers
-- **Caching**: Makes repeat searches instant
-- **Multiple AI Providers**: Automatic fallback if one fails (Groq → Mistral → OpenRouter)
-- **Perplexity Integration**: Web search for recent or obscure titles
-
----
-
-That's it! Simple and straightforward.
+- **TMDB-first**: factual cast/crew/ratings as the source of truth.
+- **AI enrichment**: summaries and explanations layered on top.
+- **Fallback providers**: automatic switch if one AI vendor fails.
+- **Caching**: local and server-side paths keep repeat queries fast.
+- **Optional web search**: fills gaps for very recent or obscure titles.

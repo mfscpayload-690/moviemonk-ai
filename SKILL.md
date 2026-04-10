@@ -30,7 +30,7 @@ Activate this skill when you want to:
 ## Prerequisites
 
 - All target component files edited and saved
-- `.env.local` configured with valid `GEMINI_API_KEY` (for local testing)
+- `.env.local` configured with the usual API keys from README when running locally
 - No uncommitted changes in unrelated files (clean git state recommended)
 - Node modules installed (`npm install` completed)
 
@@ -92,39 +92,16 @@ npm run lint
 
 **Command by component type:**
 ```bash
-# Movie/Show display changes
-npm test -- __tests__/components/movieDisplay.test.ts
-npm test -- __tests__/components/tvShowDisplay.test.ts
-
-# Person display / shortlist changes  
-npm test -- __tests__/components/personDisplay.test.ts
-npm test -- __tests__/components/ambiguousModal.test.ts
-
-# All component tests (comprehensive)
+# Component coverage (fast pass)
 npm test -- __tests__/components/
+
+# Focused examples
+npm test -- __tests__/components/ambiguousModal.test.ts
+npm test -- __tests__/components/discoveryPage.test.ts
+npm test -- __tests__/components/personDisplay.test.ts
 ```
 
-**Expected Output for each test file:**
-```
-PASS  __tests__/components/ambiguousModal.test.ts
-  AmbiguousModal
-    ✓ renders default mode with generic search title (41 ms)
-    ✓ renders person-shortlist mode with role cues (4 ms)
-
-Test Suites: 1 passed, 1 total
-Tests: 2 passed, 2 total
-```
-
-**Common Failures & Fixes:**
-
-| Test | Failure | Root Cause | Fix |
-|------|---------|-----------|-----|
-| `renders with language field` | Field undefined in output | Language not extracted from TMDB service | Update tmdbService.ts fetchDetails() to extract from `spoken_languages[0].english_name` |
-| `metadata uses bullet format` | Expects ` • ` separator, got other text | Component not using `join(' \u2022 ')` | Update component to apply required format: `metadataParts.join(' \u2022 ')` |
-| `desktop spacing applied on sm:` | Tailwind class not rendering | Breakpoint not included in template | Verify `sm:px-7 sm:py-5` is in className string, not in conditional |
-| `scroll affordance visible on overflow` | Gradient not rendering | Scroll height not constrained or gradient condition wrong | Verify modal has fixed height (h-[92vh]), check canScrollDown state logic |
-
-**Stage 2 Complete When:** All affected component tests pass at 100%
+**Stage 2 Complete When:** All targeted component suites pass.
 
 ---
 
@@ -475,4 +452,3 @@ Before opening a PR or merging to main, verify:
 - [ ] Latest changes from main branch are pulled (no conflicts)
 
 **Ready to merge when:** All checkboxes checked and no remediations pending.
-
