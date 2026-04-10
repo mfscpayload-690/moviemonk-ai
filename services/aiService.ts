@@ -1,7 +1,5 @@
 import { ChatMessage, MovieData, QueryComplexity, FetchResult, AIProvider } from '../types';
 import { fetchMovieData as fetchFromGroq } from './groqService';
-import { fetchMovieData as fetchFromMistral } from './mistralService';
-import { fetchMovieData as fetchFromOpenRouter } from './openrouterService';
 import { fetchMovieData as fetchFromPerplexity } from './perplexityService';
 import { getCachedResponse, cacheResponse, clearOldCacheEntries } from './cacheService';
 import { getFromIndexedDB, saveToIndexedDB, clearOldIndexedDBEntries } from './indexedDBService';
@@ -40,9 +38,7 @@ const scheduleIdle = (fn: () => void) => {
 // Track last error times for availability checking
 const lastErrors: Record<AIProvider, number | null> = {
   groq: null,
-  mistral: null,
-  perplexity: null,
-  openrouter: null
+  perplexity: null
 };
 
 const ERROR_COOLDOWN = 30000; // 30 seconds
@@ -62,7 +58,7 @@ async function tryProvidersInOrder(
   prompt: string,
   complexity: QueryComplexity,
   chatHistory: ChatMessage[] | undefined,
-  order: AIProvider[] = ['groq', 'mistral', 'openrouter'],
+  order: AIProvider[] = ['groq'],
   totalBudgetMs = 10000,
   requestId = 'unknown'
 ): Promise<FetchResult> {
@@ -76,11 +72,7 @@ async function tryProvidersInOrder(
 
     const timer = startProviderTimer();
     try {
-      let call: Promise<FetchResult>;
-      if (prov === 'groq') call = fetchFromGroq(prompt, complexity, chatHistory);
-      else if (prov === 'mistral') call = fetchFromMistral(prompt, complexity, chatHistory);
-      else if (prov === 'openrouter') call = fetchFromOpenRouter(prompt, complexity, chatHistory);
-      else call = Promise.resolve({ movieData: null, sources: null, error: `Unsupported provider ${prov}` });
+      const call: Promise<FetchResult> = fetchFromGroq(prompt, complexity, chatHistory);
 
       const result = await withTimeout(call, Math.max(1000, remaining), `${prov} summarization`);
       if (result.movieData) {
@@ -310,9 +302,9 @@ Type: ${factualData.type}
 Genres: ${factualData.genres.join(', ')}
 
 Provide engaging creative content (summaries, spoilers, trivia) for this title.`;
-    // Try preferred provider first; if it fails or returns empty, fall back Groq → Mistral → OpenRouter within 10s total
+    // Try Groq provider for creative text enrichment.
     let aiResult: FetchResult | null = null;
-    const preferredOrder: AIProvider[] = ['groq', 'mistral', 'openrouter'];
+    const preferredOrder: AIProvider[] = ['groq'];
 
     // If user selected a specific provider, try it first inside the same 10s budget
     const order = preferredOrder.includes(provider)
@@ -371,37 +363,10 @@ async function fallbackToAI(
 
   if (provider === 'groq') {
     result = await fetchFromGroq(query, complexity, chatHistory);
-  } else if (provider === 'mistral') {
-    result = await fetchFromMistral(query, complexity, chatHistory);
   } else if (provider === 'perplexity') {
     result = await fetchFromPerplexity(query, complexity, chatHistory);
   } else {
-    result = await fetchFromOpenRouter(query, complexity, chatHistory);
-
-    // OpenRouter fallback chain
-    if (!result.movieData) {
-      lastErrors[provider] = Date.now();
-      recordFallback('openrouter', 'mistral', requestId, result.error || 'openrouter_failed');
-
-      const mistral = await fetchFromMistral(query, complexity, chatHistory);
-      if (mistral.movieData) {
-        recordFinalProvider('mistral', requestId);
-        return {
-          ...mistral,
-          error: `OpenRouter failed, used Mistral: ${result.error || 'unknown'}`
-        };
-      }
-
-      recordFallback('mistral', 'groq', requestId, mistral.error || 'mistral_failed');
-      const groq = await fetchFromGroq(query, complexity, chatHistory);
-      if (groq.movieData) {
-        recordFinalProvider('groq', requestId);
-        return {
-          ...groq,
-          error: `OpenRouter & Mistral failed, used Groq: ${result.error || 'unknown'}`
-        };
-      }
-    }
+    result = await fetchFromGroq(query, complexity, chatHistory);
   }
 
   if (result.movieData && result.provider) {
@@ -434,13 +399,7 @@ Format: Start with "SPOILER WARNING — Full plot explained below." then provide
 
     let result: FetchResult;
 
-    if (provider === 'groq') {
-      result = await fetchFromGroq(prompt, QueryComplexity.COMPLEX);
-    } else if (provider === 'mistral') {
-      result = await fetchFromMistral(prompt, QueryComplexity.COMPLEX);
-    } else {
-      result = await fetchFromOpenRouter(prompt, QueryComplexity.COMPLEX);
-    }
+    result = await fetchFromGroq(prompt, QueryComplexity.COMPLEX);
 
     if (result.movieData && result.movieData.summary_long_spoilers) {
       return result.movieData.summary_long_spoilers;

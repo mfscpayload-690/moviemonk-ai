@@ -253,7 +253,7 @@ export interface GroundingSource {
   web: WebSource;
 }
 
-export type AIProvider = 'groq' | 'mistral' | 'perplexity' | 'openrouter';
+export type AIProvider = 'groq' | 'perplexity';
 
 export interface FetchResult {
   movieData: MovieData | null;
@@ -314,6 +314,40 @@ export interface SharedWatchlistView {
   shared_by: string;
   created_at: string;
   item_count: number;
+}
+
+export type VibeIntentType = 'title_lookup' | 'vibe_discovery' | 'mixed';
+
+export interface VibeParseResult {
+  query_raw: string;
+  intent_type: VibeIntentType;
+  hard_constraints: {
+    include_genres: string[];
+    exclude_genres: string[];
+    languages: string[];
+    release_year_min: number | null;
+    release_year_max: number | null;
+    max_runtime_minutes: number | null;
+    min_runtime_minutes: number | null;
+    media_type: 'movie' | 'tv' | 'any';
+    include_people: string[];
+    exclude_people: string[];
+  };
+  soft_preferences: {
+    tone_tags: string[];
+    story_cues: string[];
+    pace: 'slow' | 'medium' | 'fast' | 'any';
+    intensity: 'low' | 'medium' | 'high' | 'any';
+    reference_titles: string[];
+  };
+  ranking_hints: {
+    boost_overview_terms: string[];
+    boost_keyword_terms: string[];
+    penalize_terms: string[];
+  };
+  fallback_query_terms: string[];
+  confidence: number;
+  notes_for_retrieval: string[];
 }
 
 // Search Results Page types

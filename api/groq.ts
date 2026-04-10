@@ -4,6 +4,24 @@
 export {};
 const { applyCors } = require('./_utils/cors');
 
+let groqKeyIndex = 0;
+
+function getGroqKeys(): string[] {
+  const keys = [process.env.GROQ_API_KEY, process.env.VIBE_SEARCH_API_KEY]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .map((value) => value.trim());
+
+  return Array.from(new Set(keys));
+}
+
+function pickGroqKey(): string | null {
+  const keys = getGroqKeys();
+  if (keys.length === 0) return null;
+  const selected = keys[groqKeyIndex % keys.length];
+  groqKeyIndex = (groqKeyIndex + 1) % keys.length;
+  return selected;
+}
+
 module.exports = async function handler(req: any, res: any) {
   const provider = 'groq';
   const sendError = (status: number, code: string, message: string, details?: any) => {
@@ -29,7 +47,7 @@ module.exports = async function handler(req: any, res: any) {
     return sendError(400, 'invalid_body', 'messages array required');
   }
 
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  const GROQ_API_KEY = pickGroqKey();
 
   if (!GROQ_API_KEY) {
     return sendError(400, 'missing_api_key', 'Groq API key not configured');

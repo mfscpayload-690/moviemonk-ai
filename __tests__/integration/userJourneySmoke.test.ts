@@ -34,14 +34,6 @@ jest.mock('../../services/groqService', () => ({
   fetchMovieData: jest.fn()
 }));
 
-jest.mock('../../services/mistralService', () => ({
-  fetchMovieData: jest.fn()
-}));
-
-jest.mock('../../services/openrouterService', () => ({
-  fetchMovieData: jest.fn().mockResolvedValue({ movieData: null, sources: null, error: 'openrouter unavailable' })
-}));
-
 jest.mock('../../lib/cache', () => ({
   getCache: jest.fn().mockResolvedValue(null),
   setCache: jest.fn().mockResolvedValue(undefined),
@@ -59,7 +51,6 @@ jest.mock('../../services/tmdbService', () => ({
 import aiHandler from '../../api/ai';
 import { fetchMovieData } from '../../services/aiService';
 import { fetchMovieData as fetchFromGroq } from '../../services/groqService';
-import { fetchMovieData as fetchFromMistral } from '../../services/mistralService';
 import { fetchFromBestSource } from '../../services/hybridDataService';
 import { buildBalancedMixRow, dedupeSectionsByTitle } from '../../hooks/useDiscovery';
 import {
@@ -191,7 +182,7 @@ describe('integration smoke: user journey and provider fallback', () => {
     expect(found?.item.movie.title).toBe('Inception');
   });
 
-  it('falls back from Groq to Mistral when Groq fails', async () => {
+  it('returns factual data when Groq enrichment fails', async () => {
     (fetchFromBestSource as jest.Mock).mockResolvedValueOnce({
       data: makeMovie('Interstellar'),
       source: 'tmdb',
@@ -204,24 +195,12 @@ describe('integration smoke: user journey and provider fallback', () => {
       error: 'Groq unavailable'
     });
 
-    (fetchFromMistral as jest.Mock).mockResolvedValueOnce({
-      movieData: {
-        summary_short: 'A team travels through a wormhole to save humanity.',
-        summary_medium: 'Earth is dying, and astronauts seek a new home.',
-        summary_long_spoilers: '',
-        suspense_breaker: '',
-        ai_notes: 'Mistral fallback used.'
-      },
-      sources: null
-    });
-
     const result = await fetchMovieData('Interstellar', QueryComplexity.SIMPLE, 'groq');
 
     expect(fetchFromGroq).toHaveBeenCalled();
-    expect(fetchFromMistral).toHaveBeenCalled();
-    expect(result.provider).toBe('mistral');
+    expect(result.provider).toBe('groq');
     expect(result.movieData?.title).toBe('Interstellar');
-    expect(result.movieData?.summary_short).toContain('wormhole');
+    expect(result.movieData?.summary_short).toBe('A thief enters dreams.');
   });
 
   it('keeps dashboard mixes deterministic and globally de-duplicated', () => {

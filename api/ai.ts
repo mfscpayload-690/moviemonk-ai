@@ -248,7 +248,24 @@ function detectQueryType(
   return 'movie';
 }
 
-type ProviderChoice = 'groq' | 'mistral' | 'openrouter';
+type ProviderChoice = 'groq';
+
+let groqKeyIndex = 0;
+
+function getGroqKeys(): string[] {
+  const keys = [process.env.GROQ_API_KEY, process.env.VIBE_SEARCH_API_KEY]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .map((value) => value.trim());
+  return Array.from(new Set(keys));
+}
+
+function pickGroqKey(): string | null {
+  const keys = getGroqKeys();
+  if (keys.length === 0) return null;
+  const selected = keys[groqKeyIndex % keys.length];
+  groqKeyIndex = (groqKeyIndex + 1) % keys.length;
+  return selected;
+}
 
 function buildGalleryImages(images: any, posterPath?: string, backdropPath?: string): string[] {
   if (!images) return [];
@@ -335,7 +352,7 @@ async function callCreativeProvider(provider: ProviderChoice, prompt: string): P
 
   try {
     if (provider === 'groq') {
-      const key = process.env.GROQ_API_KEY;
+      const key = pickGroqKey();
       if (!key) return null;
       const res = await withAbort((signal) => fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -357,56 +374,6 @@ async function callCreativeProvider(provider: ProviderChoice, prompt: string): P
       const text: string = json?.choices?.[0]?.message?.content || '';
       return parseCreativeFields(text);
     }
-
-    if (provider === 'mistral') {
-      const key = process.env.MISTRAL_API_KEY;
-      if (!key) return null;
-      const res = await withAbort((signal) => fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'mistral-large-latest',
-          messages,
-          temperature: 0.2,
-          max_tokens: 3000,
-          response_format: { type: 'json_object' }
-        }),
-        signal
-      }));
-      if (!res.ok) return null;
-      const json: any = await res.json();
-      const text: string = json?.choices?.[0]?.message?.content || '';
-      return parseCreativeFields(text);
-    }
-
-    if (provider === 'openrouter') {
-      const key = process.env.OPENROUTER_API_KEY;
-      if (!key) return null;
-      const res = await withAbort((signal) => fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': process.env.VERCEL_URL || 'https://moviemonk-ai.vercel.app',
-          'X-Title': 'MovieMonk'
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-3.1-8b-instruct',
-          messages,
-          temperature: 0.2,
-          max_tokens: 3000,
-          response_format: { type: 'json_object' }
-        }),
-        signal
-      }));
-      if (!res.ok) return null;
-      const json: any = await res.json();
-      const text: string = json?.choices?.[0]?.message?.content || '';
-      return parseCreativeFields(text);
-    }
   } catch (error) {
     console.warn(`Creative provider ${provider} failed:`, (error as any)?.message || error);
     return null;
@@ -416,7 +383,7 @@ async function callCreativeProvider(provider: ProviderChoice, prompt: string): P
 }
 
 async function enrichCreativeFields(movie: MovieData, preferred: ProviderChoice): Promise<Partial<MovieData>> {
-  const order: ProviderChoice[] = ([preferred, 'groq', 'mistral', 'openrouter'] as ProviderChoice[])
+  const order: ProviderChoice[] = ([preferred, 'groq'] as ProviderChoice[])
     .filter((p, idx, arr) => arr.indexOf(p) === idx);
   const prompt = buildCreativePrompt(movie);
 
@@ -436,10 +403,10 @@ function checkProviderAvailability(provider: string): boolean {
 }
 
 const modelMatrix: Record<string, string[]> = {
-  movie: ['groq', 'mistral', 'openrouter', 'perplexity'],
-  person: ['mistral', 'groq', 'openrouter', 'perplexity'],
-  review: ['perplexity', 'openrouter', 'mistral', 'groq'],
-  complex: ['openrouter', 'perplexity', 'mistral', 'groq']
+  movie: ['groq', 'perplexity'],
+  person: ['groq', 'perplexity'],
+  review: ['perplexity', 'groq'],
+  complex: ['groq', 'perplexity']
 };
 
 // ============================================================================
@@ -561,7 +528,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'details' && req.method === 'GET') {
       const id = req.query.id;
       const mediaType = (req.query.media_type as string) || 'movie'; // 'movie' or 'tv'
-      const preferredProvider = ((req.query.provider as string) || 'groq').toLowerCase() as ProviderChoice;
+      const preferredProvider: ProviderChoice = 'groq';
 
       if (!id) {
         obs.finish(400, { action, error_code: 'missing_id' });
@@ -756,9 +723,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const reasons: Record<string, string> = {
         movie: 'Movie query - using Groq for fast, accurate summaries',
-        person: 'Person query - using Mistral for detailed biographical information',
+        person: 'Person query - using Groq with factual TMDB grounding',
         review: 'Review query - using Perplexity for web-aware opinions and analysis',
-        complex: 'Complex query - using OpenRouter for comprehensive analysis'
+        complex: 'Complex query - using Groq for comprehensive analysis'
       };
 
       obs.finish(200, { action, selected_model: selectedModel, query_type: queryType });

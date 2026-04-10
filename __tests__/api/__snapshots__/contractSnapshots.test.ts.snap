@@ -40,19 +40,6 @@ exports[`API contract snapshots api/groq missing key contract 1`] = `
 }
 `;
 
-exports[`API contract snapshots api/mistral missing key contract 1`] = `
-{
-  "body": {
-    "error": {
-      "code": "missing_api_key",
-      "message": "Mistral API key not configured",
-      "provider": "mistral",
-    },
-  },
-  "status": 400,
-}
-`;
-
 exports[`API contract snapshots api/omdb missing id contract 1`] = `
 {
   "body": {
@@ -60,19 +47,6 @@ exports[`API contract snapshots api/omdb missing id contract 1`] = `
       "code": "missing_imdb_id",
       "message": "Missing IMDB ID parameter (i)",
       "provider": "omdb",
-    },
-  },
-  "status": 400,
-}
-`;
-
-exports[`API contract snapshots api/openrouter missing key contract 1`] = `
-{
-  "body": {
-    "error": {
-      "code": "missing_api_key",
-      "message": "OpenRouter API key not configured",
-      "provider": "openrouter",
     },
   },
   "status": 400,

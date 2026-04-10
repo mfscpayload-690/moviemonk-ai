@@ -11,9 +11,7 @@ type ProviderStats = {
 
 const metrics: Record<AIProvider, ProviderStats> = {
   groq: { calls: 0, errors: 0, totalLatencyMs: 0, fallbackCount: 0 },
-  mistral: { calls: 0, errors: 0, totalLatencyMs: 0, fallbackCount: 0 },
-  perplexity: { calls: 0, errors: 0, totalLatencyMs: 0, fallbackCount: 0 },
-  openrouter: { calls: 0, errors: 0, totalLatencyMs: 0, fallbackCount: 0 }
+  perplexity: { calls: 0, errors: 0, totalLatencyMs: 0, fallbackCount: 0 }
 };
 
 const shouldLogInfo = (): boolean => {
@@ -88,9 +86,7 @@ export function recordFinalProvider(provider: AIProvider, requestId: string): vo
 export function getProviderMetricsSnapshot(): Record<AIProvider, ProviderStats> {
   return {
     groq: { ...metrics.groq },
-    mistral: { ...metrics.mistral },
-    perplexity: { ...metrics.perplexity },
-    openrouter: { ...metrics.openrouter }
+    perplexity: { ...metrics.perplexity }
   };
 }
 
