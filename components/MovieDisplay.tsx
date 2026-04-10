@@ -381,7 +381,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     }}
                                     className={`h-7 w-7 rounded-full border flex items-center justify-center shadow-lg transition-colors mm-action-feedback ${isFeedbackActive(`related-watch-${item.id}`) ? 'is-feedback-active' : ''} ${watched ? 'bg-green-500 border-green-400 text-white' : 'bg-black/60 border-white/15 text-white/80 hover:bg-green-500/90 hover:text-white'}`}
                                     aria-label={watched ? 'Mark as unwatched' : 'Mark as watched'}
-                                    title={watched ? 'Watched ✓' : 'Mark as watched'}
+                                    title={watched ? 'Watched' : 'Mark as watched'}
                                 >
                                     <WatchedIcon className="h-3.5 w-3.5" filled={watched} />
                                 </button>
@@ -402,13 +402,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const castListHeight = Math.min(520, Math.max(260, safeCast.length * 120));
 
     // ── Reviews state & fetch ────────────────────────────────────────────
-    const [reviews, setReviews]               = useState<TmdbReview[]>([]);
-    const [reviewsVisible, setReviewsVisible]  = useState(2);
-    const [reviewsLoading, setRevLoading]      = useState(false);
+    const [reviews, setReviews] = useState<TmdbReview[]>([]);
+    const [reviewsVisible, setReviewsVisible] = useState(2);
+    const [reviewsLoading, setRevLoading] = useState(false);
     const [reviewsLoadingMore, setRevLoadMore] = useState(false);
-    const [reviewsPage, setReviewsPage]        = useState(1);
-    const [reviewsTotalPages, setRevTotal]     = useState(1);
-    const [expandedReview, setExpandedRev]     = useState<string | null>(null);
+    const [reviewsPage, setReviewsPage] = useState(1);
+    const [reviewsTotalPages, setRevTotal] = useState(1);
+    const [expandedReview, setExpandedRev] = useState<string | null>(null);
     const [reviewsSourceLabel, setReviewsSourceLabel] = useState<string>('TMDB');
 
     const normalizeTmdbReviews = useCallback((data: any): TmdbReview[] => {
@@ -689,31 +689,29 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             triggerFeedback('hero-watch');
                                             onToggleWatched?.();
                                         }}
-                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-300 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-watch') ? 'is-feedback-active' : ''} ${
-                                            isWatched
-                                                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
-                                                : 'bg-white/10 border-white/15 text-white hover:bg-white/20 hover:border-white/30'
-                                        }`}
+                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-300 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-watch') ? 'is-feedback-active' : ''} ${isWatched
+                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
+                                            : 'bg-white/10 border-white/15 text-white hover:bg-white/20 hover:border-white/30'
+                                            }`}
                                         aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
                                         title={isWatched ? 'Click to unmark as watched' : 'Mark as watched'}
                                     >
                                         <WatchedIcon className="w-5 h-5" filled={isWatched} />
-                                        <span>{isWatched ? 'Watched ✓' : 'Mark Watched'}</span>
+                                        <span>{isWatched ? 'Watched' : 'Mark Watched'}</span>
                                     </button>
                                     <button
                                         onClick={() => {
                                             triggerFeedback('hero-save');
                                             setShowWatchlistModal(true);
                                         }}
-                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-200 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''} ${
-                                            isSaved
-                                                ? 'bg-violet-500/20 border-violet-500/50 text-violet-400 hover:bg-violet-500/30'
-                                                : 'bg-white/15 text-white border-white/15 hover:border-brand-primary/50 hover:bg-white/20'
-                                        }`}
+                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-200 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''} ${isSaved
+                                            ? 'bg-violet-500/20 border-violet-500/50 text-violet-400 hover:bg-violet-500/30'
+                                            : 'bg-white/15 text-white border-white/15 hover:border-brand-primary/50 hover:bg-white/20'
+                                            }`}
                                         aria-label={isSaved ? 'Manage Watchlist' : 'Save to Watchlist'}
                                     >
                                         <TagIcon className="w-5 h-5" />
-                                        <span>{isSaved ? 'Saved to List ✓' : 'Save to List'}</span>
+                                        <span>{isSaved ? 'Saved to List' : 'Save to List'}</span>
                                     </button>
                                     {embedUrl && (
                                         <button
@@ -950,184 +948,184 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             {/* ── User Reviews — full-width below the grid ────────────────── */}
             <div className="mt-8 pb-8 px-4 md:px-8">
 
-                    {/* Section header */}
-                    <div className="flex items-center justify-between mb-6 border-b border-white/6 pb-3">
-                        <div className="flex items-center gap-3 flex-wrap">
-                            <svg className="w-5 h-5 text-brand-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z"/>
-                            </svg>
-                            <h2 className="text-lg font-bold text-white">User Reviews</h2>
-                            {!reviewsLoading && reviews.length > 0 && (
-                                <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                    {reviews.length}{reviewsTotalPages > 1 ? '+' : ''} review{reviews.length !== 1 ? 's' : ''}
-                                </span>
-                            )}
+                {/* Section header */}
+                <div className="flex items-center justify-between mb-6 border-b border-white/6 pb-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <svg className="w-5 h-5 text-brand-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
+                        </svg>
+                        <h2 className="text-lg font-bold text-white">User Reviews</h2>
+                        {!reviewsLoading && reviews.length > 0 && (
                             <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                Source: {reviewsSourceLabel}
+                                {reviews.length}{reviewsTotalPages > 1 ? '+' : ''} review{reviews.length !== 1 ? 's' : ''}
                             </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => void loadReviews()}
-                                disabled={reviewsLoading}
-                                className="text-[11px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10 disabled:opacity-60 transition-colors"
-                            >
-                                {reviewsLoading ? 'Refreshing…' : 'Refresh reviews'}
-                            </button>
-                            <p className="text-[11px] text-brand-text-dark hidden sm:block">Real user sentiment</p>
-                        </div>
+                        )}
+                        <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                            Source: {reviewsSourceLabel}
+                        </span>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => void loadReviews()}
+                            disabled={reviewsLoading}
+                            className="text-[11px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10 disabled:opacity-60 transition-colors"
+                        >
+                            {reviewsLoading ? 'Refreshing…' : 'Refresh reviews'}
+                        </button>
+                        <p className="text-[11px] text-brand-text-dark hidden sm:block">Real user sentiment</p>
+                    </div>
+                </div>
 
-                    {/* Skeleton */}
-                    {reviewsLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {[1, 2].map(i => (
-                                <div key={i} className="animate-pulse rounded-2xl p-5 bg-white/[0.03] border border-white/6">
-                                    <div className="flex gap-3 mb-4">
-                                        <div className="w-10 h-10 rounded-full bg-white/10 flex-shrink-0" />
-                                        <div className="flex-1 space-y-2 pt-1">
-                                            <div className="h-3 bg-white/10 rounded w-1/3" />
-                                            <div className="h-2.5 bg-white/8 rounded w-1/4" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="h-2.5 bg-white/8 rounded w-full" />
-                                        <div className="h-2.5 bg-white/8 rounded w-5/6" />
-                                        <div className="h-2.5 bg-white/8 rounded w-4/6" />
+                {/* Skeleton */}
+                {reviewsLoading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {[1, 2].map(i => (
+                            <div key={i} className="animate-pulse rounded-2xl p-5 bg-white/[0.03] border border-white/6">
+                                <div className="flex gap-3 mb-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex-shrink-0" />
+                                    <div className="flex-1 space-y-2 pt-1">
+                                        <div className="h-3 bg-white/10 rounded w-1/3" />
+                                        <div className="h-2.5 bg-white/8 rounded w-1/4" />
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <>
-                            {reviews.length === 0 ? (
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-                                    <p className="text-white font-semibold text-sm">No reviews available yet</p>
-                                    <p className="text-xs text-brand-text-dark mt-1">This title has limited public reviews right now.</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => void loadReviews()}
-                                        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-brand-text-light hover:text-white hover:bg-white/10 transition-colors"
-                                    >
-                                        Try again
-                                    </button>
+                                <div className="space-y-2">
+                                    <div className="h-2.5 bg-white/8 rounded w-full" />
+                                    <div className="h-2.5 bg-white/8 rounded w-5/6" />
+                                    <div className="h-2.5 bg-white/8 rounded w-4/6" />
                                 </div>
-                            ) : (
-                                <>
-                            {/* Review cards grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {reviews.slice(0, reviewsVisible).map(rev => {
-                                    const isExp = expandedReview === rev.id;
-                                    const LIMIT = 220;
-                                    const isLong = rev.content.length > LIMIT;
-                                    const text = isExp || !isLong
-                                        ? rev.content
-                                        : rev.content.slice(0, LIMIT).trimEnd() + '…';
-                                    const date = rev.created_at
-                                        ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                                        : null;
-                                    return (
-                                        <div key={rev.id} className="flex flex-col rounded-2xl p-5 bg-white/[0.03] border border-white/6 hover:border-white/10 hover:bg-white/[0.05] transition-all duration-200">
-                                            {/* Author row */}
-                                            <div className="flex items-start gap-3 mb-3">
-                                                {/* Avatar */}
-                                                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-violet-600/60 to-pink-600/60 flex items-center justify-center border border-white/10 mt-0.5">
-                                                    {rev.avatar_url ? (
-                                                        <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
-                                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                        />
-                                                    ) : (
-                                                        <span className="text-sm font-bold text-white/80">{rev.author[0]?.toUpperCase() || '?'}</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <>
+                        {reviews.length === 0 ? (
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
+                                <p className="text-white font-semibold text-sm">No reviews available yet</p>
+                                <p className="text-xs text-brand-text-dark mt-1">This title has limited public reviews right now.</p>
+                                <button
+                                    type="button"
+                                    onClick={() => void loadReviews()}
+                                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-brand-text-light hover:text-white hover:bg-white/10 transition-colors"
+                                >
+                                    Try again
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Review cards grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {reviews.slice(0, reviewsVisible).map(rev => {
+                                        const isExp = expandedReview === rev.id;
+                                        const LIMIT = 220;
+                                        const isLong = rev.content.length > LIMIT;
+                                        const text = isExp || !isLong
+                                            ? rev.content
+                                            : rev.content.slice(0, LIMIT).trimEnd() + '…';
+                                        const date = rev.created_at
+                                            ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                            : null;
+                                        return (
+                                            <div key={rev.id} className="flex flex-col rounded-2xl p-5 bg-white/[0.03] border border-white/6 hover:border-white/10 hover:bg-white/[0.05] transition-all duration-200">
+                                                {/* Author row */}
+                                                <div className="flex items-start gap-3 mb-3">
+                                                    {/* Avatar */}
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-violet-600/60 to-pink-600/60 flex items-center justify-center border border-white/10 mt-0.5">
+                                                        {rev.avatar_url ? (
+                                                            <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
+                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-sm font-bold text-white/80">{rev.author[0]?.toUpperCase() || '?'}</span>
+                                                        )}
+                                                    </div>
+                                                    {/* Name + meta */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-semibold text-sm text-white leading-tight truncate">{rev.author}</p>
+                                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                            {rev.rating !== null && (
+                                                                <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                                                    ★ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}<span className="text-amber-400/50">/10</span>
+                                                                </span>
+                                                            )}
+                                                            {date && <span className="text-[10px] text-brand-text-dark">{date}</span>}
+                                                        </div>
+                                                    </div>
+                                                    {/* TMDB link */}
+                                                    {rev.url && (
+                                                        <a href={rev.url} target="_blank" rel="noopener noreferrer"
+                                                            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg text-brand-text-dark hover:text-brand-primary hover:bg-white/10 transition-all"
+                                                            title="Full review on TMDB" aria-label="Read full review on TMDB"
+                                                        >
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                            </svg>
+                                                        </a>
                                                     )}
                                                 </div>
-                                                {/* Name + meta */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-sm text-white leading-tight truncate">{rev.author}</p>
-                                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                                        {rev.rating !== null && (
-                                                            <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                                                                ★ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}<span className="text-amber-400/50">/10</span>
-                                                            </span>
-                                                        )}
-                                                        {date && <span className="text-[10px] text-brand-text-dark">{date}</span>}
-                                                    </div>
-                                                </div>
-                                                {/* TMDB link */}
-                                                {rev.url && (
-                                                    <a href={rev.url} target="_blank" rel="noopener noreferrer"
-                                                        className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg text-brand-text-dark hover:text-brand-primary hover:bg-white/10 transition-all"
-                                                        title="Full review on TMDB" aria-label="Read full review on TMDB"
+                                                {/* Divider */}
+                                                <div className="border-t border-white/5 mb-3" />
+                                                {/* Review text */}
+                                                <p className="text-[13px] text-brand-text-light leading-relaxed flex-1">{text}</p>
+                                                {isLong && (
+                                                    <button
+                                                        onClick={() => setExpandedRev(isExp ? null : rev.id)}
+                                                        className="mt-3 text-[11px] text-brand-primary hover:text-brand-secondary font-semibold transition-colors self-start flex items-center gap-1"
                                                     >
-                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                        </svg>
-                                                    </a>
+                                                        {isExp ? (
+                                                            <><span>Show less</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg></>
+                                                        ) : (
+                                                            <><span>Read more</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></>
+                                                        )}
+                                                    </button>
                                                 )}
                                             </div>
-                                            {/* Divider */}
-                                            <div className="border-t border-white/5 mb-3" />
-                                            {/* Review text */}
-                                            <p className="text-[13px] text-brand-text-light leading-relaxed flex-1">{text}</p>
-                                            {isLong && (
-                                                <button
-                                                    onClick={() => setExpandedRev(isExp ? null : rev.id)}
-                                                    className="mt-3 text-[11px] text-brand-primary hover:text-brand-secondary font-semibold transition-colors self-start flex items-center gap-1"
-                                                >
-                                                    {isExp ? (
-                                                        <><span>Show less</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"/></svg></>
-                                                    ) : (
-                                                        <><span>Read more</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg></>
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Load more */}
-                            {(reviewsVisible < reviews.length || reviewsPage < reviewsTotalPages) && (
-                                <div className="flex justify-center mt-6">
-                                    <button
-                                        onClick={async () => {
-                                            if (reviewsVisible < reviews.length) {
-                                                setReviewsVisible(v => Math.min(v + 2, reviews.length));
-                                                return;
-                                            }
-                                            if (reviewsPage >= reviewsTotalPages || !movie?.tmdb_id) return;
-
-                                            const nextPage = reviewsPage + 1;
-                                            const mediaType = movie?.tvShow ? 'tv' : 'movie';
-                                            setRevLoadMore(true);
-                                            try {
-                                                const next = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, nextPage, 'en-US');
-                                                setReviews(prev => dedupeReviews([...prev, ...next.reviews]));
-                                                setReviewsVisible(prev => prev + 2);
-                                                setReviewsPage(nextPage);
-                                            } catch {
-                                                // Keep existing reviews on transient errors.
-                                            } finally {
-                                                setRevLoadMore(false);
-                                            }
-                                        }}
-                                        disabled={reviewsLoadingMore}
-                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-sm text-white font-medium transition-all duration-200 disabled:opacity-50"
-                                    >
-                                        {reviewsLoadingMore ? (
-                                            <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg> Loading…</>
-                                        ) : (
-                                            <><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg> Load more reviews</>
-                                        )}
-                                    </button>
+                                        );
+                                    })}
                                 </div>
-                            )}
-                                </>
-                            )}
-                            <p className="text-[11px] text-brand-text-dark text-center mt-4">Reviews sourced from The Movie Database (TMDB)</p>
-                        </>
-                    )}
-                </div>
+
+                                {/* Load more */}
+                                {(reviewsVisible < reviews.length || reviewsPage < reviewsTotalPages) && (
+                                    <div className="flex justify-center mt-6">
+                                        <button
+                                            onClick={async () => {
+                                                if (reviewsVisible < reviews.length) {
+                                                    setReviewsVisible(v => Math.min(v + 2, reviews.length));
+                                                    return;
+                                                }
+                                                if (reviewsPage >= reviewsTotalPages || !movie?.tmdb_id) return;
+
+                                                const nextPage = reviewsPage + 1;
+                                                const mediaType = movie?.tvShow ? 'tv' : 'movie';
+                                                setRevLoadMore(true);
+                                                try {
+                                                    const next = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, nextPage, 'en-US');
+                                                    setReviews(prev => dedupeReviews([...prev, ...next.reviews]));
+                                                    setReviewsVisible(prev => prev + 2);
+                                                    setReviewsPage(nextPage);
+                                                } catch {
+                                                    // Keep existing reviews on transient errors.
+                                                } finally {
+                                                    setRevLoadMore(false);
+                                                }
+                                            }}
+                                            disabled={reviewsLoadingMore}
+                                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-sm text-white font-medium transition-all duration-200 disabled:opacity-50"
+                                        >
+                                            {reviewsLoadingMore ? (
+                                                <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg> Loading…</>
+                                            ) : (
+                                                <><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg> Load more reviews</>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        <p className="text-[11px] text-brand-text-dark text-center mt-4">Reviews sourced from The Movie Database (TMDB)</p>
+                    </>
+                )}
+            </div>
 
             {showWatchlistModal && modalRoot && ReactDOM.createPortal(
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -1363,11 +1361,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         </div>
                         <div className="overflow-y-auto overscroll-contain flex-1 p-4 sm:p-6">
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
-                            {Array.isArray((movie as any).related) && (movie as any).related.length > 0 ? (
-                                (movie as any).related.map((it: any, idx: number) => renderRelatedTile(it, idx, 'modal'))
-                            ) : (
-                                <p className="text-brand-text-dark col-span-full">No similar titles found.</p>
-                            )}
+                                {Array.isArray((movie as any).related) && (movie as any).related.length > 0 ? (
+                                    (movie as any).related.map((it: any, idx: number) => renderRelatedTile(it, idx, 'modal'))
+                                ) : (
+                                    <p className="text-brand-text-dark col-span-full">No similar titles found.</p>
+                                )}
                             </div>
                         </div>
                     </div>

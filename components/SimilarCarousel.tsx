@@ -92,7 +92,7 @@ const SimilarCarousel: React.FC<SimilarCarouselProps> = ({ label, items, onOpenA
                     }}
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors mm-action-feedback ${isFeedbackActive(`watch-${it.id}`) ? 'is-feedback-active' : ''} ${isWatched?.(it.id, it.media_type) ? 'border-green-500/40 bg-green-500/15 text-green-300 hover:bg-green-500/25' : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'}`}
                     aria-label={isWatched?.(it.id, it.media_type) ? 'Mark as unwatched' : 'Mark as watched'}
-                    title={isWatched?.(it.id, it.media_type) ? 'Watched ✓' : 'Mark as watched'}
+                    title={isWatched?.(it.id, it.media_type) ? '' : 'Mark as watched'}
                   >
                     <WatchedIcon className="h-3 w-3" filled={Boolean(isWatched?.(it.id, it.media_type))} />
                     {isWatched?.(it.id, it.media_type) ? 'Watched' : 'Watched'}
