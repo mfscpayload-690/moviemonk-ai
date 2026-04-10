@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { SearchPageResponse, SearchResult, SuggestionItem, VibeParseResult } from '../types';
 import type { QuickSaveTitle } from '../lib/quickSave';
 import RatingDisplay from './RatingDisplay';
+import LoadingScreen from './LoadingScreen';
 import { TagIcon, WatchedIcon } from './icons';
 import { useActionFeedback } from '../hooks/useActionFeedback';
 import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
@@ -71,7 +72,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
   return (
     <article
       ref={ref}
-      className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card')}
+      className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card group')}
       data-reveal-variant="rise-up"
       style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
       onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
@@ -90,42 +91,46 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
         ) : (
           <div className="search-result-poster-empty">No poster</div>
         )}
-        <div className="search-result-poster-overlay">
-          {onToggleWatched && (
-            <button
-              type="button"
-              className={`search-result-hover-btn mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''}`}
-              title={watched ? "Watched" : "Mark watched"}
-              onClick={(e) => {
-                e.stopPropagation();
-                triggerFeedback('watch');
-                onToggleWatched({
-                  id: item.id,
-                  media_type: item.media_type,
-                  title: item.title,
-                  poster_url: item.poster_url ?? null,
-                  year: item.year ?? null
-                });
-              }}
-            >
-              <WatchedIcon className="w-[1.25rem] h-[1.25rem]" filled={watched} />
-            </button>
-          )}
-          {onQuickSaveToWatchlist && (
-            <button
-              type="button"
-              className={`search-result-hover-btn mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
-              title="Add to Watchlist"
-              onClick={(e) => {
-                e.stopPropagation();
-                triggerFeedback('save');
-                onQuickSaveToWatchlist(mapToQuickSave(item));
-              }}
-            >
-              <TagIcon className="w-[1.25rem] h-[1.25rem]" />
-            </button>
-          )}
-        </div>
+        {!(onQuickSaveToWatchlist || onToggleWatched) && (
+          <span className="discovery-poster-plus" aria-hidden="true">+</span>
+        )}
+        {onQuickSaveToWatchlist && (
+          <button
+            type="button"
+            className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
+            title="Add to Watchlist"
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerFeedback('save');
+              onQuickSaveToWatchlist(mapToQuickSave(item));
+            }}
+          >
+            <TagIcon className="w-3.5 h-3.5" />
+          </button>
+        )}
+        {onToggleWatched && (
+          <button
+            type="button"
+            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''} ${watched
+                ? 'bg-green-500 text-white scale-100'
+                : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
+              }`}
+            title={watched ? "Watched" : "Mark watched"}
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerFeedback('watch');
+              onToggleWatched({
+                id: item.id,
+                media_type: item.media_type,
+                title: item.title,
+                poster_url: item.poster_url ?? null,
+                year: item.year ?? null
+              });
+            }}
+          >
+            <WatchedIcon className="w-3.5 h-3.5" filled={watched} />
+          </button>
+        )}
         {typeof item.rating === 'number' && item.rating > 0 && (
           <div className="search-result-floating-rating">
             <svg viewBox="0 0 24 24" fill="currentColor">
@@ -348,6 +353,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   return (
     <div className="search-page-shell">
+      <LoadingScreen type="movie" visible={isLoading} />
       <section
         ref={toolbarRevealRef}
         className={getRevealClassName(isToolbarRevealed, 'fade', 'search-page-toolbar')}
