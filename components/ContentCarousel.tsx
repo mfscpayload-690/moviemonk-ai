@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import type { FC, KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import PosterCard from './PosterCard';
 import SkeletonCard from './SkeletonCard';
@@ -20,7 +21,7 @@ interface ContentCarouselProps {
   onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
 }
 
-const ContentCarousel: React.FC<ContentCarouselProps> = ({
+const ContentCarousel: FC<ContentCarouselProps> = ({
   sectionKey,
   title,
   items,
@@ -38,7 +39,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const { ref: revealRef, isRevealed } = useScrollReveal<HTMLElement>();
 
-  const setSectionRefs = React.useCallback((node: HTMLElement | null) => {
+  const setSectionRefs = useCallback((node: HTMLElement | null) => {
     sectionRef.current = node;
     revealRef(node);
   }, [revealRef]);
@@ -96,7 +97,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
     });
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'ArrowLeft') {
       event.preventDefault();
       scrollByAmount('left');

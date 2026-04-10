@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import type { FC, KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import RatingDisplay from './RatingDisplay';
 import { TagIcon, WatchedIcon } from './icons';
@@ -21,7 +22,7 @@ const formatRating = (rating: number | null) => (
   typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : 'N/A'
 );
 
-const PosterCard: React.FC<PosterCardProps> = ({
+const PosterCard: FC<PosterCardProps> = ({
   item,
   sectionKey = 'unknown',
   position = -1,
@@ -36,7 +37,7 @@ const PosterCard: React.FC<PosterCardProps> = ({
   const { ref: revealRef, isRevealed } = useScrollReveal<HTMLDivElement>();
   const { triggerFeedback, isFeedbackActive } = useActionFeedback();
 
-  const setCardRefs = React.useCallback((node: HTMLDivElement | null) => {
+  const setCardRefs = useCallback((node: HTMLDivElement | null) => {
     cardRef.current = node;
     revealRef(node);
   }, [revealRef]);
@@ -46,7 +47,7 @@ const PosterCard: React.FC<PosterCardProps> = ({
     onOpenTitle({ id: item.id, mediaType: item.media_type });
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     handleOpen();
