@@ -115,6 +115,24 @@
     radial-gradient(circle at top right, rgba(124, 58, 237, 0.35), transparent 52%);
 }
 
+.search-hero-overlay.tone-soft {
+  background:
+    linear-gradient(102deg, rgba(5, 5, 8, 0.82), rgba(5, 5, 8, 0.44) 58%, rgba(5, 5, 8, 0.68)),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.28), transparent 52%);
+}
+
+.search-hero-overlay.tone-balanced {
+  background:
+    linear-gradient(102deg, rgba(5, 5, 8, 0.9), rgba(5, 5, 8, 0.52) 58%, rgba(5, 5, 8, 0.75)),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.35), transparent 52%);
+}
+
+.search-hero-overlay.tone-strong {
+  background:
+    linear-gradient(102deg, rgba(5, 5, 8, 0.95), rgba(5, 5, 8, 0.7) 58%, rgba(5, 5, 8, 0.88)),
+    radial-gradient(circle at top right, rgba(124, 58, 237, 0.42), transparent 55%);
+}
+
 .search-hero-content {
   position: relative;
   z-index: 1;

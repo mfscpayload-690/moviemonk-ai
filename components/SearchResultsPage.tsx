@@ -3,6 +3,9 @@ import type { SearchPageResponse, SearchResult, SuggestionItem, VibeParseResult 
 import type { QuickSaveTitle } from '../lib/quickSave';
 import RatingDisplay from './RatingDisplay';
 import { TagIcon, WatchedIcon } from './icons';
+import { useActionFeedback } from '../hooks/useActionFeedback';
+import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
+import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 import '../styles/search-results-page.css';
 
 interface SearchResultsPageProps {
@@ -39,6 +42,133 @@ function mapToQuickSave(item: SearchResult): QuickSaveTitle {
   };
 }
 
+interface SearchResultCardProps {
+  item: SearchResult;
+  index: number;
+  watched: boolean;
+  onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
+  onToggleWatched?: (item: {
+    id: number;
+    media_type: 'movie' | 'tv';
+    title: string;
+    poster_url?: string | null;
+    year?: string | null;
+  }) => void;
+  onQuickSaveToWatchlist?: (item: QuickSaveTitle) => void;
+}
+
+const SearchResultCard: React.FC<SearchResultCardProps> = ({
+  item,
+  index,
+  watched,
+  onOpenTitle,
+  onToggleWatched,
+  onQuickSaveToWatchlist
+}) => {
+  const { ref, isRevealed } = useScrollReveal<HTMLElement>();
+  const { triggerFeedback, isFeedbackActive } = useActionFeedback();
+
+  return (
+    <article
+      ref={ref}
+      className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card')}
+      data-reveal-variant="rise-up"
+      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+    >
+      <button
+        type="button"
+        className="search-result-main"
+        onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
+      >
+        <div className="search-result-poster-frame">
+          {item.poster_url ? (
+            <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
+          ) : (
+            <div className="search-result-poster-empty">No poster</div>
+          )}
+        </div>
+        <div className="search-result-body">
+          <h4>{item.title}</h4>
+          <div className="search-result-meta">
+            <span>{item.year || 'TBA'}</span>
+            <span>{item.type === 'show' ? 'TV' : 'Movie'}</span>
+            <RatingDisplay score={item.rating ?? null} size="sm" compact />
+          </div>
+          <p>{item.summary_snippet || item.overview || 'No synopsis available yet.'}</p>
+        </div>
+      </button>
+      <div className="search-result-actions">
+        {onQuickSaveToWatchlist && (
+          <button
+            type="button"
+            onClick={() => {
+              triggerFeedback('save');
+              onQuickSaveToWatchlist(mapToQuickSave(item));
+            }}
+            className={`search-card-chip mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
+          >
+            <TagIcon className="w-3.5 h-3.5" />
+            Watchlist
+          </button>
+        )}
+        {onToggleWatched && (
+          <button
+            type="button"
+            onClick={() => {
+              triggerFeedback('watch');
+              onToggleWatched({
+                id: item.id,
+                media_type: item.media_type,
+                title: item.title,
+                poster_url: item.poster_url ?? null,
+                year: item.year ?? null
+              });
+            }}
+            className={`search-card-chip mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''}`}
+          >
+            <WatchedIcon className="w-3.5 h-3.5" filled={watched} />
+            {watched ? 'Watched' : 'Mark watched'}
+          </button>
+        )}
+      </div>
+    </article>
+  );
+};
+
+interface SearchPersonCardProps {
+  person: SearchPageResponse['people'][number];
+  index: number;
+  query: string;
+  onOpenPerson: (personId: number, name?: string) => void;
+}
+
+const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, query, onOpenPerson }) => {
+  const { ref, isRevealed } = useScrollReveal<HTMLButtonElement>();
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={getRevealClassName(isRevealed, 'rise-up', 'search-person-card')}
+      data-reveal-variant="rise-up"
+      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+      onClick={() => onOpenPerson(person.id, person.name)}
+    >
+      <div className="search-person-avatar">
+        {person.profile_url ? (
+          <img src={person.profile_url} alt={person.name} loading="lazy" />
+        ) : (
+          <span>{person.name.slice(0, 1)}</span>
+        )}
+      </div>
+      <div className="search-person-body">
+        <strong>{person.name}</strong>
+        <span>{person.known_for_department || `People matching "${query.trim()}"`}</span>
+      </div>
+    </button>
+  );
+};
+
 const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   query,
   onSearchQuery,
@@ -54,8 +184,15 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [emptySuggestions, setEmptySuggestions] = useState<SuggestionItem[]>([]);
   const [heroAiSnippet, setHeroAiSnippet] = useState<string>('');
+  const { ref: toolbarRevealRef, isRevealed: isToolbarRevealed } = useScrollReveal<HTMLElement>();
+  const { ref: heroRevealRef, isRevealed: isHeroRevealed } = useScrollReveal<HTMLElement>();
+  const { ref: resultsRevealRef, isRevealed: isResultsRevealed } = useScrollReveal<HTMLElement>();
+  const { ref: peopleRevealRef, isRevealed: isPeopleRevealed } = useScrollReveal<HTMLElement>();
+  const { ref: paginationRevealRef, isRevealed: isPaginationRevealed } = useScrollReveal<HTMLElement>();
+  const { triggerFeedback, isFeedbackActive } = useActionFeedback();
 
   const normalizedQuery = normalizeText(query);
+  const heroTone = useAdaptiveImageTone(payload?.hero?.backdrop_url);
 
   useEffect(() => {
     setPage(1);
@@ -200,7 +337,12 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   return (
     <div className="search-page-shell">
-      <section className="search-page-toolbar">
+      <section
+        ref={toolbarRevealRef}
+        className={getRevealClassName(isToolbarRevealed, 'fade', 'search-page-toolbar')}
+        data-reveal-variant="fade"
+        style={buildRevealStyle(0, 420)}
+      >
         <div>
           <p className="search-page-kicker">Search Results</p>
           <h2 className="search-page-title">
@@ -229,7 +371,10 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
       {query.trim() && payload?.hero && (
         <section
-          className="search-hero-card"
+          ref={heroRevealRef}
+          className={getRevealClassName(isHeroRevealed, 'rise-up', 'search-hero-card')}
+          data-reveal-variant="rise-up"
+          style={buildRevealStyle(60, 420)}
           role="button"
           tabIndex={0}
           aria-label={`Open ${payload.hero.title}${payload.hero.year ? ` (${payload.hero.year})` : ''}`}
@@ -245,7 +390,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             className="search-hero-backdrop"
             style={payload.hero.backdrop_url ? { backgroundImage: `url(${payload.hero.backdrop_url})` } : undefined}
           />
-          <div className="search-hero-overlay" />
+          <div className={`search-hero-overlay tone-${heroTone}`} />
           <div className="search-hero-content">
             <p className="search-hero-label">Best Match</p>
             <h3 className="search-hero-title">{payload.hero.title}</h3>
@@ -264,9 +409,10 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               {onQuickSaveToWatchlist && (
                 <button
                   type="button"
-                  className="search-btn-secondary"
+                  className={`search-btn-secondary mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''}`}
                   onClick={(event) => {
                     event.stopPropagation();
+                    triggerFeedback('hero-save');
                     onQuickSaveToWatchlist(mapToQuickSave(payload.hero!));
                   }}
                 >
@@ -277,9 +423,10 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               {onToggleWatched && (
                 <button
                   type="button"
-                  className="search-btn-secondary"
+                  className={`search-btn-secondary mm-action-feedback ${isFeedbackActive('hero-watch') ? 'is-feedback-active' : ''}`}
                   onClick={(event) => {
                     event.stopPropagation();
+                    triggerFeedback('hero-watch');
                     onToggleWatched({
                       id: payload.hero!.id,
                       media_type: payload.hero!.media_type,
@@ -302,7 +449,12 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       )}
 
       {query.trim() && (
-        <section className="search-results-section">
+        <section
+          ref={resultsRevealRef}
+          className={getRevealClassName(isResultsRevealed, 'fade', 'search-results-section')}
+          data-reveal-variant="fade"
+          style={buildRevealStyle(0, 420)}
+        >
           <div className="search-results-header">
             <h3>Also matching "{query.trim()}"</h3>
             {isLoading && <span>Refreshing...</span>}
@@ -326,61 +478,18 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
           {alsoMatching.length > 0 && (
             <div className="search-results-grid">
-              {alsoMatching.map((item) => {
+              {alsoMatching.map((item, index) => {
                 const watched = Boolean(isWatched?.(item.id, item.media_type));
                 return (
-                  <article className="search-result-card" key={resultKey(item)}>
-                    <button
-                      type="button"
-                      className="search-result-main"
-                      onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
-                    >
-                      <div className="search-result-poster-frame">
-                        {item.poster_url ? (
-                          <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
-                        ) : (
-                          <div className="search-result-poster-empty">No poster</div>
-                        )}
-                      </div>
-                      <div className="search-result-body">
-                        <h4>{item.title}</h4>
-                        <div className="search-result-meta">
-                          <span>{item.year || 'TBA'}</span>
-                          <span>{item.type === 'show' ? 'TV' : 'Movie'}</span>
-                          <RatingDisplay score={item.rating ?? null} size="sm" compact />
-                        </div>
-                        <p>{item.summary_snippet || item.overview || 'No synopsis available yet.'}</p>
-                      </div>
-                    </button>
-                    <div className="search-result-actions">
-                      {onQuickSaveToWatchlist && (
-                        <button
-                          type="button"
-                          onClick={() => onQuickSaveToWatchlist(mapToQuickSave(item))}
-                          className="search-card-chip"
-                        >
-                          <TagIcon className="w-3.5 h-3.5" />
-                          Watchlist
-                        </button>
-                      )}
-                      {onToggleWatched && (
-                        <button
-                          type="button"
-                          onClick={() => onToggleWatched({
-                            id: item.id,
-                            media_type: item.media_type,
-                            title: item.title,
-                            poster_url: item.poster_url ?? null,
-                            year: item.year ?? null
-                          })}
-                          className="search-card-chip"
-                        >
-                          <WatchedIcon className="w-3.5 h-3.5" filled={watched} />
-                          {watched ? 'Watched' : 'Mark watched'}
-                        </button>
-                      )}
-                    </div>
-                  </article>
+                  <SearchResultCard
+                    key={resultKey(item)}
+                    item={item}
+                    index={index}
+                    watched={watched}
+                    onOpenTitle={onOpenTitle}
+                    onToggleWatched={onToggleWatched}
+                    onQuickSaveToWatchlist={onQuickSaveToWatchlist}
+                  />
                 );
               })}
             </div>
@@ -410,35 +519,34 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       )}
 
       {payload?.people && payload.people.length > 0 && (
-        <section className="search-people-section">
+        <section
+          ref={peopleRevealRef}
+          className={getRevealClassName(isPeopleRevealed, 'fade', 'search-people-section')}
+          data-reveal-variant="fade"
+          style={buildRevealStyle(0, 420)}
+        >
           <h3>People matching "{query.trim()}"</h3>
           <div className="search-people-strip">
-            {payload.people.map((person) => (
-              <button
+            {payload.people.map((person, index) => (
+              <SearchPersonCard
                 key={person.id}
-                type="button"
-                className="search-person-card"
-                onClick={() => onOpenPerson(person.id, person.name)}
-              >
-                <div className="search-person-avatar">
-                  {person.profile_url ? (
-                    <img src={person.profile_url} alt={person.name} loading="lazy" />
-                  ) : (
-                    <span>{person.name.slice(0, 1)}</span>
-                  )}
-                </div>
-                <div className="search-person-body">
-                  <strong>{person.name}</strong>
-                  <span>{person.known_for_department || 'Film & TV'}</span>
-                </div>
-              </button>
+                person={person}
+                index={index}
+                query={query}
+                onOpenPerson={onOpenPerson}
+              />
             ))}
           </div>
         </section>
       )}
 
       {query.trim() && payload && payload.total_pages > 1 && (
-        <section className="search-pagination">
+        <section
+          ref={paginationRevealRef}
+          className={getRevealClassName(isPaginationRevealed, 'fade', 'search-pagination')}
+          data-reveal-variant="fade"
+          style={buildRevealStyle(0, 420)}
+        >
           <button
             type="button"
             className="search-btn-secondary"

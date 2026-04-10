@@ -102,10 +102,10 @@ const PosterCard: React.FC<PosterCardProps> = ({
         {onQuickSaveToWatchlist && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onQuickSaveToWatchlist(item); }}
+            onClick={(e) => { e.stopPropagation(); triggerFeedback('save'); onQuickSaveToWatchlist(item); }}
             aria-label={`Save ${item.title} to watchlist`}
             title="Save to watchlist"
-            className="absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100"
+            className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
           >
             <TagIcon className="w-3.5 h-3.5" />
           </button>
@@ -113,10 +113,10 @@ const PosterCard: React.FC<PosterCardProps> = ({
         {onToggleWatched && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onToggleWatched(item); }}
+            onClick={(e) => { e.stopPropagation(); triggerFeedback('watch'); onToggleWatched(item); }}
             aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
             title={isWatched ? 'Watched ✓' : 'Mark as watched'}
-            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 ${
+            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''} ${
               isWatched
                 ? 'bg-green-500 text-white scale-100'
                 : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'

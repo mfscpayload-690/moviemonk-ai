@@ -12,6 +12,7 @@ import {
   recordDiscoverySectionSkipped
 } from '../services/observability';
 import { DiscoveryItem, WatchlistFolder } from '../types';
+import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
 interface DiscoveryPageProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
@@ -42,6 +43,8 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   const [radarLoading, setRadarLoading] = useState(false);
   const [radarError, setRadarError] = useState<string | null>(null);
   const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
+  const { ref: radarRevealRef, isRevealed: isRadarRevealed } = useScrollReveal<HTMLElement>();
+  const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
 
   const handleSectionVisible = useCallback((sectionKey: string, title: string, itemCount: number) => {
     recordDiscoverySectionRendered(sectionKey, title, itemCount);
@@ -111,7 +114,12 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
         </section>
       )}
 
-      <section className="discovery-section">
+      <section
+        ref={radarRevealRef}
+        className={getRevealClassName(isRadarRevealed, 'fade', 'discovery-section')}
+        data-reveal-variant="fade"
+        style={buildRevealStyle(0, 420)}
+      >
         {radarCheckedLabel && <p className="discovery-genre-caption mb-2">{radarCheckedLabel}</p>}
 
         {radarError && !radarLoading && (
@@ -173,8 +181,17 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
         </section>
       )}
 
-      <section className="discovery-section">
-        <div className="discovery-section-heading genre-heading">
+      <section
+        ref={moodRevealRef}
+        className={getRevealClassName(isMoodRevealed, 'fade', 'discovery-section')}
+        data-reveal-variant="fade"
+        style={buildRevealStyle(0, 420)}
+      >
+        <div
+          className={getRevealClassName(isMoodRevealed, 'rise-up', 'discovery-section-heading genre-heading')}
+          data-reveal-variant="rise-up"
+          style={buildRevealStyle(60, 420)}
+        >
           <div>
             <h2 className="discovery-section-title">Browse by mood</h2>
           </div>
