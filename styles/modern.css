@@ -2451,6 +2451,7 @@ a:focus-visible {
     margin-bottom: 1rem;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -2722,6 +2723,7 @@ a:focus-visible {
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -2936,6 +2938,7 @@ a:focus-visible {
 
 .discovery-hero-empty .discovery-hero-overview {
     -webkit-line-clamp: unset;
+    line-clamp: unset;
     overflow: visible;
 }
 
@@ -2978,6 +2981,7 @@ a:focus-visible {
     line-height: 1.45;
     font-size: 0.9rem;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
 }
 
 .discovery-page.is-compact .discovery-hero-actions {
@@ -3041,6 +3045,7 @@ a:focus-visible {
 .discovery-page.is-compact .discovery-poster-title {
     font-size: 0.76rem;
     -webkit-line-clamp: 1;
+    line-clamp: 1;
 }
 
 .discovery-page.is-compact .discovery-poster-meta {
@@ -3458,6 +3463,7 @@ a:focus-visible {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--person-mobile-lines, 6);
+    line-clamp: var(--person-mobile-lines, 6);
 }
 
 .person-biography-text.is-expanded {
@@ -3533,6 +3539,7 @@ a:focus-visible {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
 }
 
@@ -3619,6 +3626,7 @@ a:focus-visible {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
 }
 
@@ -3680,6 +3688,7 @@ a:focus-visible {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
 }
 
@@ -3778,6 +3787,7 @@ a:focus-visible {
 
     .person-biography-text {
         -webkit-line-clamp: var(--person-desktop-lines, 5);
+    line-clamp: var(--person-desktop-lines, 5);
     }
 
     .person-filmography-grid {
