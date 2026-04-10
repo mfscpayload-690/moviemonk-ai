@@ -22,7 +22,7 @@ declare global {
         elementId: string,
         config: {
           events?: {
-            onReady?: (event: { target: { mute?: () => void; playVideo?: () => void; unloadModule?: (module: string) => void } }) => void;
+            onReady?: (event: { target: { mute?: () => void; playVideo?: () => void; unloadModule?: (module: string) => void; setOption?: (m: string, o: string, v: any) => void; } }) => void;
             onStateChange?: (event: { data: number }) => void;
           };
         }
@@ -72,7 +72,7 @@ function buildYoutubeEmbedPreview(videos: any[]): string | null {
 
   const key = encodeURIComponent(best.key);
   const origin = typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : '';
-  return `https://www.youtube.com/embed/${key}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&cc_load_policy=0&iv_load_policy=3&enablejsapi=1${origin ? `&origin=${origin}` : ''}`;
+  return `https://www.youtube.com/embed/${key}?autoplay=1&mute=1&controls=0&playsinline=1&modestbranding=1&rel=0&cc_load_policy=0&hl=en&cc_lang_pref=xx&iv_load_policy=3&enablejsapi=1${origin ? `&origin=${origin}` : ''}`;
 }
 
 const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false, onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist }) => {
@@ -303,11 +303,19 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
               // Ignore if modules are not loaded
             }
           },
-          onStateChange: (event) => {
+          onStateChange: (event: any) => {
             const playingState = window.YT?.PlayerState?.PLAYING ?? 1;
             const endedState = window.YT?.PlayerState?.ENDED ?? 0;
             if (event.data === playingState) {
               setPreviewPlayingByItem((previous) => ({ ...previous, [activeItemKey]: true }));
+              try {
+                event?.target?.unloadModule?.('captions');
+                event?.target?.unloadModule?.('cc');
+                event?.target?.setOption?.('captions', 'track', { languageCode: 'xx' });
+                event?.target?.setOption?.('cc', 'track', { languageCode: 'xx' });
+              } catch (e) {
+                // Ignore failure
+              }
               return;
             }
             if (event.data !== endedState) return;
