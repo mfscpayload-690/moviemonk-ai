@@ -29,6 +29,7 @@ const getSuggestionIconComponent = (type: string, media_type?: string) => {
 };
 
 interface DynamicSearchIslandProps {
+  initialQuery?: string;
   onSearch: (query: string, complexity: QueryComplexity) => void;
   onSuggestionSelect?: (suggestion: SuggestionItem) => void;
   isLoading?: boolean;
@@ -214,9 +215,15 @@ const writeDailyTrendingCache = (items: TrendingSuggestionItem[]) => {
   }
 };
 
-const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ onSearch, onSuggestionSelect, isLoading }) => {
+const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery, onSearch, onSuggestionSelect, isLoading }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery || '');
+
+  useEffect(() => {
+    if (initialQuery !== undefined) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
   const [analysisMode, setAnalysisMode] = useState<'quick' | 'complex'>('quick');
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);

@@ -753,6 +753,7 @@ const App: React.FC = () => {
           </button>
           <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-2">
             <DynamicSearchIsland
+              initialQuery={currentQuery || new URLSearchParams(location.search).get('q') || ''}
               onSearch={handleSendMessage}
               onSuggestionSelect={handleSuggestionSelect}
               isLoading={isLoading}

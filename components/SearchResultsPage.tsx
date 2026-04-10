@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { SearchPageResponse, SearchResult, SuggestionItem, VibeParseResult } from '../types';
 import type { QuickSaveTitle } from '../lib/quickSave';
 import RatingDisplay from './RatingDisplay';
+import LoadingScreen from './LoadingScreen';
 import { TagIcon, WatchedIcon } from './icons';
 import { useActionFeedback } from '../hooks/useActionFeedback';
 import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
@@ -71,50 +72,52 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
   return (
     <article
       ref={ref}
-      className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card')}
+      className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card group')}
       data-reveal-variant="rise-up"
       style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+      onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenTitle({ id: item.id, mediaType: item.media_type });
+        }
+      }}
     >
-      <button
-        type="button"
-        className="search-result-main"
-        onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
-      >
-        <div className="search-result-poster-frame">
-          {item.poster_url ? (
-            <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
-          ) : (
-            <div className="search-result-poster-empty">No poster</div>
-          )}
-        </div>
-        <div className="search-result-body">
-          <h4>{item.title}</h4>
-          <div className="search-result-meta">
-            <span>{item.year || 'TBA'}</span>
-            <span>{item.type === 'show' ? 'TV' : 'Movie'}</span>
-            <RatingDisplay score={item.rating ?? null} size="sm" compact />
-          </div>
-          <p>{item.summary_snippet || item.overview || 'No synopsis available yet.'}</p>
-        </div>
-      </button>
-      <div className="search-result-actions">
+      <div className="search-result-poster-frame">
+        {item.poster_url ? (
+          <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
+        ) : (
+          <div className="search-result-poster-empty">No poster</div>
+        )}
+        {!(onQuickSaveToWatchlist || onToggleWatched) && (
+          <span className="discovery-poster-plus" aria-hidden="true">+</span>
+        )}
         {onQuickSaveToWatchlist && (
           <button
             type="button"
-            onClick={() => {
+            className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
+            title="Add to Watchlist"
+            onClick={(e) => {
+              e.stopPropagation();
               triggerFeedback('save');
               onQuickSaveToWatchlist(mapToQuickSave(item));
             }}
-            className={`search-card-chip mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
           >
             <TagIcon className="w-3.5 h-3.5" />
-            Watchlist
           </button>
         )}
         {onToggleWatched && (
           <button
             type="button"
-            onClick={() => {
+            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''} ${watched
+                ? 'bg-green-500 text-white scale-100'
+                : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
+              }`}
+            title={watched ? "Watched" : "Mark watched"}
+            onClick={(e) => {
+              e.stopPropagation();
               triggerFeedback('watch');
               onToggleWatched({
                 id: item.id,
@@ -124,12 +127,25 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
                 year: item.year ?? null
               });
             }}
-            className={`search-card-chip mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''}`}
           >
             <WatchedIcon className="w-3.5 h-3.5" filled={watched} />
-            {watched ? 'Watched' : 'Mark watched'}
           </button>
         )}
+        {typeof item.rating === 'number' && item.rating > 0 && (
+          <div className="search-result-floating-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08l4.15-2.5z" />
+            </svg>
+            <span>{item.rating.toFixed(1)}</span>
+          </div>
+        )}
+      </div>
+      <div className="search-result-body">
+        <h4>{item.title}</h4>
+        <div className="search-result-meta">
+          <span>{item.year || 'TBA'}</span>
+          <span>{item.type === 'show' ? 'TV Show' : 'Movie'}</span>
+        </div>
       </div>
     </article>
   );
@@ -163,7 +179,7 @@ const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, quer
       </div>
       <div className="search-person-body">
         <strong>{person.name}</strong>
-        <span>{person.known_for_department || `People matching "${query.trim()}"`}</span>
+        <span>{person.known_for_department || `Matching "${query.trim()}"`}</span>
       </div>
     </button>
   );
@@ -337,6 +353,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   return (
     <div className="search-page-shell">
+      <LoadingScreen type="movie" visible={isLoading} />
       <section
         ref={toolbarRevealRef}
         className={getRevealClassName(isToolbarRevealed, 'fade', 'search-page-toolbar')}
@@ -390,26 +407,43 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             className="search-hero-backdrop"
             style={payload.hero.backdrop_url ? { backgroundImage: `url(${payload.hero.backdrop_url})` } : undefined}
           />
-          <div className={`search-hero-overlay tone-${heroTone}`} />
+          <div className="search-hero-overlay" />
           <div className="search-hero-content">
-            <p className="search-hero-label">Best Match</p>
+            <div className="search-hero-top-row">
+              <span className="search-hero-label">Best Match</span>
+              {typeof payload.hero.rating === 'number' && (
+                <div className="search-hero-rating">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08l4.15-2.5z" />
+                  </svg>
+                  <span>{payload.hero.rating.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+            
             <h3 className="search-hero-title">{payload.hero.title}</h3>
+            
             <div className="search-hero-meta">
               <span>{payload.hero.year || 'TBA'}</span>
+              {(payload.hero.genres && payload.hero.genres.length > 0) && (
+                <>
+                  <span className="search-hero-meta-dot" />
+                  <span className="search-hero-genres">{payload.hero.genres.join(', ')}</span>
+                </>
+              )}
+              <span className="search-hero-meta-dot" />
               <span>{payload.hero.type === 'show' ? 'TV Show' : 'Movie'}</span>
-              {typeof payload.hero.rating === 'number' && <span>{payload.hero.rating.toFixed(1)} / 10</span>}
             </div>
-            {payload.hero.genres && payload.hero.genres.length > 0 && (
-              <p className="search-hero-genres">{payload.hero.genres.join(' | ')}</p>
-            )}
+            
             <p className="search-hero-summary">
-              {heroAiSnippet || payload.hero.summary_snippet || payload.hero.overview || 'No synopsis available yet.'}
+              {heroAiSnippet || payload.hero.summary_snippet || payload.hero.overview || 'The story is kept under wraps.'}
             </p>
+            
             <div className="search-hero-actions">
               {onQuickSaveToWatchlist && (
                 <button
                   type="button"
-                  className={`search-btn-secondary mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''}`}
+                  className={`search-btn-primary mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     triggerFeedback('hero-save');
@@ -440,11 +474,13 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                     className="w-4 h-4"
                     filled={Boolean(isWatched?.(payload.hero.id, payload.hero.media_type))}
                   />
-                  {isWatched?.(payload.hero.id, payload.hero.media_type) ? 'Watched' : 'Mark Watched'}
+                  {isWatched?.(payload.hero.id, payload.hero.media_type) ? 'Watched' : 'Mark As Watched'}
                 </button>
               )}
             </div>
           </div>
+          
+          <div className="search-hero-glow-edge" />
         </section>
       )}
 
@@ -456,23 +492,25 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           style={buildRevealStyle(0, 420)}
         >
           <div className="search-results-header">
-            <h3>Also matching "{query.trim()}"</h3>
-            {isLoading && <span>Refreshing...</span>}
+            <h3>Also matching</h3>
+            <div className="search-results-divider" />
           </div>
 
           {renderDidYouMean.length > 0 && (
             <div className="search-did-you-mean">
-              <span>Did you mean:</span>
-              {renderDidYouMean.map((term) => (
-                <button
-                  key={term}
-                  type="button"
-                  onClick={() => onSearchQuery(term)}
-                  className="search-did-you-mean-chip"
-                >
-                  {term}
-                </button>
-              ))}
+              <span>Did you mean?</span>
+              <div className="search-did-you-mean-chips">
+                {renderDidYouMean.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => onSearchQuery(term)}
+                    className="search-did-you-mean-chip"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
