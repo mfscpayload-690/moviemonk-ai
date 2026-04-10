@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import RatingDisplay from './RatingDisplay';
 import { TagIcon, WatchedIcon } from './icons';
+import { useActionFeedback } from '../hooks/useActionFeedback';
+import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
 interface PosterCardProps {
   item: DiscoveryItem;
@@ -31,6 +33,13 @@ const PosterCard: React.FC<PosterCardProps> = ({
   onQuickSaveToWatchlist
 }) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const { ref: revealRef, isRevealed } = useScrollReveal<HTMLDivElement>();
+  const { triggerFeedback, isFeedbackActive } = useActionFeedback();
+
+  const setCardRefs = React.useCallback((node: HTMLDivElement | null) => {
+    cardRef.current = node;
+    revealRef(node);
+  }, [revealRef]);
 
   const handleOpen = () => {
     onOpen?.(item, sectionKey, position);
@@ -64,10 +73,12 @@ const PosterCard: React.FC<PosterCardProps> = ({
 
   return (
     <div
-      ref={cardRef}
+      ref={setCardRefs}
       role="button"
       tabIndex={0}
-      className="discovery-poster-card group"
+      className={getRevealClassName(isRevealed, 'rise-up', 'discovery-poster-card group')}
+      data-reveal-variant="rise-up"
+      style={buildRevealStyle(Math.max(0, Math.min(position, 8)) * 60, 420)}
       onClick={handleOpen}
       onKeyDown={handleKeyDown}
       aria-label={`Open ${item.title}${item.year ? ` (${item.year})` : ''}`}

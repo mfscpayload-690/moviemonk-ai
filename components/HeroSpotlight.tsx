@@ -3,6 +3,8 @@ import { DiscoveryItem } from '../types';
 import SkeletonCard from './SkeletonCard';
 import { ArrowLeftIcon, ArrowRightIcon } from './icons';
 import { TagIcon } from './icons';
+import { useActionFeedback } from '../hooks/useActionFeedback';
+import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
 
 interface HeroSpotlightProps {
   items: DiscoveryItem[];
@@ -142,7 +144,9 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   }, [isAutoPaused]);
 
   const activeItem = items[activeIndex];
+  const heroTone = useAdaptiveImageTone(activeItem?.backdrop_url);
   const activeItemKey = activeItem ? toHeroItemKey(activeItem) : null;
+  const { triggerFeedback, isFeedbackActive } = useActionFeedback();
   const activePreviewUrl = activeItemKey ? previewUrlByItem[activeItemKey] : null;
   const hasActivePreviewEnded = activeItemKey ? Boolean(previewEndedByItem[activeItemKey]) : false;
   const shouldAttemptActivePreview = Boolean(
@@ -410,7 +414,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                   />
                 </div>
               )}
-              <div className={`discovery-hero-overlay ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`} />
+              <div className={`discovery-hero-overlay tone-${heroTone} ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`} />
               <div className={`discovery-hero-copy ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`}>
                 <p className="discovery-hero-kicker">Featured This Week</p>
                 <h2 className="discovery-hero-title">{item.title}</h2>
@@ -429,9 +433,10 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                         tabIndex={isActive ? 0 : -1}
                         onClick={(event) => {
                           event.stopPropagation();
+                          triggerFeedback(`watch-${itemKey}`);
                           onToggleWatched(item);
                         }}
-                        className={`discovery-cta flex items-center gap-2 transition-all duration-200 ${
+                        className={`discovery-cta mm-action-feedback ${isFeedbackActive(`watch-${itemKey}`) ? 'is-feedback-active' : ''} flex items-center gap-2 transition-all duration-200 ${
                           watched
                             ? 'bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30'
                             : 'discovery-cta-secondary'
@@ -452,9 +457,10 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                           tabIndex={isActive ? 0 : -1}
                           onClick={(event) => {
                             event.stopPropagation();
+                            triggerFeedback(`save-${itemKey}`);
                             onQuickSaveToWatchlist(item);
                           }}
-                          className="discovery-cta discovery-cta-secondary flex items-center gap-2"
+                          className={`discovery-cta discovery-cta-secondary mm-action-feedback ${isFeedbackActive(`save-${itemKey}`) ? 'is-feedback-active' : ''} flex items-center gap-2`}
                           aria-label={`Save ${item.title} to watchlist`}
                           title="Save to watchlist"
                         >

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 type RevealVariant = 'rise-up' | 'fade' | 'slide-in' | 'scale-up' | 'tilt-in';
@@ -9,7 +10,7 @@ interface UseScrollRevealOptions {
   initialVisible?: boolean;
 }
 
-export type RevealStyle = React.CSSProperties & {
+export type RevealStyle = CSSProperties & {
   '--mm-reveal-delay'?: string;
   '--mm-reveal-duration'?: string;
 };
@@ -95,4 +96,3 @@ export function useScrollReveal<T extends Element>({
 
   return { ref, isRevealed };
 }
-

@@ -1083,6 +1083,17 @@ Rejected premiere wordmark variant:
 
 @media (prefers-reduced-motion: reduce) {
 
+    .mm-reveal {
+        opacity: 1;
+        filter: none;
+        transform: none;
+        transition: none;
+    }
+
+    .mm-action-feedback.is-feedback-active {
+        animation: none;
+    }
+
     .gallery-thumb,
     .gallery-lightbox,
     .gallery-lightbox-content,
