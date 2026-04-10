@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { WatchedTitle } from '../types';
+import { WatchedTitle, WatchedToggleResult } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -88,9 +88,10 @@ export function useWatched() {
   // ── toggle ─────────────────────────────────────────────────────────────────
   const toggle = useCallback(
     async (entry: Omit<WatchedTitle, 'id' | 'user_id' | 'watched_at'>) => {
-      const already = watched.some(
+      const previousEntry = watched.find(
         (w) => w.tmdb_id === entry.tmdb_id && w.media_type === entry.media_type
       );
+      const already = Boolean(previousEntry);
 
       if (already) {
         // Optimistic remove
@@ -102,15 +103,15 @@ export function useWatched() {
         );
 
         if (isCloud && user?.id) {
-          unmarkWatchedCloud(user.id, entry.tmdb_id, entry.media_type).catch(
-            () => {
-              // revert on error
-              setWatched((prev) => [
-                { ...entry, watched_at: new Date().toISOString() },
-                ...prev,
-              ]);
-            }
-          );
+          try {
+            await unmarkWatchedCloud(user.id, entry.tmdb_id, entry.media_type);
+          } catch (error) {
+            setWatched((prev) => [
+              { ...(previousEntry || entry), watched_at: previousEntry?.watched_at || new Date().toISOString() },
+              ...prev,
+            ]);
+            throw error;
+          }
         } else {
           const next = loadLocalWatched().filter(
             (w) =>
@@ -118,6 +119,16 @@ export function useWatched() {
           );
           saveLocalWatched(next);
         }
+
+        const result: WatchedToggleResult = {
+          action: 'unmarked',
+          entry: {
+            ...(previousEntry || entry),
+            watched_at: previousEntry?.watched_at || new Date().toISOString()
+          },
+          previousEntry
+        };
+        return result;
       } else {
         // Optimistic add
         const newEntry: WatchedTitle = {
@@ -127,8 +138,9 @@ export function useWatched() {
         setWatched((prev) => [newEntry, ...prev]);
 
         if (isCloud && user?.id) {
-          markWatchedCloud(user.id, entry).catch(() => {
-            // revert on error
+          try {
+            await markWatchedCloud(user.id, entry);
+          } catch (error) {
             setWatched((prev) =>
               prev.filter(
                 (w) =>
@@ -138,11 +150,18 @@ export function useWatched() {
                   )
               )
             );
-          });
+            throw error;
+          }
         } else {
           const next = [newEntry, ...loadLocalWatched()];
           saveLocalWatched(next);
         }
+
+        const result: WatchedToggleResult = {
+          action: 'marked',
+          entry: newEntry
+        };
+        return result;
       }
     },
     [isCloud, user?.id, watched]

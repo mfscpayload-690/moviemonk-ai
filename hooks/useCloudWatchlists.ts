@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MovieData, WatchlistFolder, WatchlistItem } from '../types';
+import { MovieData, WatchlistFolder, WatchlistItem, WatchlistSaveReceipt } from '../types';
 import { useWatchlists } from './useWatchlists';
-import { WATCHLIST_DEFAULT_ICON, WATCHLIST_STORAGE_KEY, loadWatchlistsFromStorage, saveWatchlistsToStorage } from './watchlistStore';
+import {
+  WATCHLIST_DEFAULT_ICON,
+  WATCHLIST_STORAGE_KEY,
+  loadWatchlistsFromStorage,
+  rollbackWatchlistSave,
+  saveMovieToFolderWithReceipt,
+  saveWatchlistsToStorage
+} from './watchlistStore';
 import { useAuth } from '../contexts/AuthContext';
 import {
   addCloudFolder,
@@ -101,36 +108,39 @@ export function useCloudWatchlists() {
         });
         return folderId;
       },
-      saveToFolder: (folderId: string, movie: MovieData, savedTitle?: string) => {
-        if (!folderId || !movie) return;
-        const now = new Date().toISOString();
-        const itemId = crypto.randomUUID();
-        const key = getMovieKey(movie);
-        const item: WatchlistItem = {
-          id: itemId,
-          saved_title: (savedTitle && savedTitle.trim()) || movie.title,
-          movie: { ...movie },
-          added_at: now
-        };
+      saveToFolder: async (folderId: string, movie: MovieData, savedTitle?: string) => {
+        const result = saveMovieToFolderWithReceipt(cloudFolders, folderId, movie, savedTitle);
+        if (!result.receipt) {
+          throw new Error('Failed to save title to watchlist');
+        }
 
-        updateCloudState((prev) =>
-          prev.map((folder) => {
-            if (folder.id !== folderId) return folder;
-            const existingIdx = folder.items.findIndex((entry) => getMovieKey(entry.movie) === key);
-            if (existingIdx >= 0) {
-              const existingId = folder.items[existingIdx].id;
-              const items = [...folder.items];
-              items[existingIdx] = { ...item, id: existingId };
-              return { ...folder, items };
-            }
-            return { ...folder, items: [item, ...folder.items] };
-          })
-        );
+        setCloudFolders(result.next);
 
-        void saveCloudItem(folderId, item).catch((error) => {
+        try {
+          await saveCloudItem(folderId, result.receipt.nextItem);
+          return result.receipt;
+        } catch (error) {
           console.warn('Failed to save cloud item', error);
           refreshCloud();
-        });
+          throw error;
+        }
+      },
+      rollbackSave: async (receipt: WatchlistSaveReceipt) => {
+        setCloudFolders((prev) => rollbackWatchlistSave(prev, receipt));
+
+        try {
+          if (receipt.mode === 'insert') {
+            await deleteCloudItem(receipt.itemId);
+            return;
+          }
+
+          if (!receipt.previousItem) return;
+          await saveCloudItem(receipt.folderId, receipt.previousItem);
+        } catch (error) {
+          console.warn('Failed to roll back cloud save', error);
+          refreshCloud();
+          throw error;
+        }
       },
       findItem: (folderId: string, itemId: string) => findItemInFolders(cloudFolders, folderId, itemId),
       refresh: () => {
@@ -223,6 +233,7 @@ export function useCloudWatchlists() {
       folders: local.folders,
       addFolder: local.addFolder,
       saveToFolder: local.saveToFolder,
+      rollbackSave: local.rollbackSave,
       findItem: local.findItem,
       refresh: local.refresh,
       renameFolder: local.renameFolder,

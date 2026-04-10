@@ -8,9 +8,10 @@ import DynamicSearchIsland from './components/DynamicSearchIsland';
 import HeaderUtilityMenu from './components/HeaderUtilityMenu';
 import LoadingScreen from './components/LoadingScreen';
 import SearchResultsPage from './components/SearchResultsPage';
+import ActionToast from './components/ActionToast';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
-import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem } from './types';
+import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt } from './types';
 import { fetchFullPlotDetails } from './services/aiService';
 import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -40,6 +41,14 @@ const debugLog = (...args: any[]) => {
 
 type AppView = 'discovery' | 'search' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
+const ACTION_TOAST_MS = 4000;
+
+type UndoToastState = {
+  id: number;
+  kind: 'watchlist' | 'watched';
+  message: string;
+  onUndo: () => Promise<void>;
+};
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -58,6 +67,8 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [summaryModal, setSummaryModal] = useState<{ title: string; short?: string; long?: string } | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
+  const [actionToast, setActionToast] = useState<UndoToastState | null>(null);
+  const [undoingToastId, setUndoingToastId] = useState<number | null>(null);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<AppView>('discovery');
   const [globalLoadingVisible, setGlobalLoadingVisible] = useState(false);
@@ -72,10 +83,12 @@ const App: React.FC = () => {
   const loadingStartedAtRef = useRef<number | null>(null);
   const loadingHideTimeoutRef = useRef<number | null>(null);
   const lastHandledRouteRef = useRef<string>('');
+  const actionToastTimeoutRef = useRef<number | null>(null);
   const {
     folders: watchlists,
     addFolder,
     saveToFolder,
+    rollbackSave,
     isCloud,
     isSyncing
   } = useCloudWatchlists();
@@ -173,6 +186,72 @@ const App: React.FC = () => {
   }, [closeQuickSaveModal, quickSaveTarget]);
   const { isWatched, toggle: toggleWatched, watchedCount } = useWatched();
 
+  const dismissActionToast = useCallback(() => {
+    if (actionToastTimeoutRef.current !== null) {
+      window.clearTimeout(actionToastTimeoutRef.current);
+      actionToastTimeoutRef.current = null;
+    }
+    setActionToast(null);
+    setUndoingToastId(null);
+  }, []);
+
+  const showActionToast = useCallback((nextToast: Omit<UndoToastState, 'id'>) => {
+    if (actionToastTimeoutRef.current !== null) {
+      window.clearTimeout(actionToastTimeoutRef.current);
+    }
+
+    const toastWithId: UndoToastState = {
+      ...nextToast,
+      id: Date.now() + Math.floor(Math.random() * 1000)
+    };
+
+    setUndoingToastId(null);
+    setActionToast(toastWithId);
+    actionToastTimeoutRef.current = window.setTimeout(() => {
+      setActionToast((current) => current?.id === toastWithId.id ? null : current);
+      setUndoingToastId((current) => current === toastWithId.id ? null : current);
+      actionToastTimeoutRef.current = null;
+    }, ACTION_TOAST_MS);
+  }, []);
+
+  useEffect(() => () => {
+    if (actionToastTimeoutRef.current !== null) {
+      window.clearTimeout(actionToastTimeoutRef.current);
+    }
+  }, []);
+
+  const buildWatchedEntry = useCallback((entry: Omit<WatchedTitle, 'id' | 'user_id' | 'watched_at'>) => ({
+    tmdb_id: entry.tmdb_id,
+    media_type: entry.media_type,
+    title: entry.title,
+    poster_url: entry.poster_url,
+    year: entry.year,
+  }), []);
+
+  const runWatchedToggle = useCallback(async (
+    entry: Omit<WatchedTitle, 'id' | 'user_id' | 'watched_at'>,
+    options: { showUndo?: boolean } = {}
+  ) => {
+    const { showUndo = true } = options;
+
+    try {
+      const result = await toggleWatched(entry);
+      if (!showUndo) return result;
+
+      showActionToast({
+        kind: 'watched',
+        message: result.action === 'marked' ? 'Marked as watched' : 'Removed from watched',
+        onUndo: async () => {
+          await runWatchedToggle(buildWatchedEntry(result.entry), { showUndo: false });
+        }
+      });
+      return result;
+    } catch (error) {
+      setError('Failed to update watched titles');
+      throw error;
+    }
+  }, [buildWatchedEntry, showActionToast, toggleWatched]);
+
   const handleQuickSaveToWatchlist = useCallback((item: QuickSaveTitle) => {
     const next = getOpenedQuickSaveState(item, watchlists, WATCHLIST_ICON_DEFAULT);
     setQuickSaveTarget(next.target);
@@ -182,7 +261,7 @@ const App: React.FC = () => {
     setQuickSaveNewFolderIcon(next.newFolderIcon);
   }, [watchlists]);
 
-  const handleConfirmQuickSave = useCallback(() => {
+  const handleConfirmQuickSave = useCallback(async () => {
     if (!quickSaveTarget) return;
 
     let folderId = quickSaveFolderId;
@@ -192,9 +271,31 @@ const App: React.FC = () => {
 
     if (!folderId) return;
 
-    saveToFolder(folderId, buildQuickMovieData(quickSaveTarget), quickSaveTarget.title);
-    closeQuickSaveModal();
-  }, [addFolder, closeQuickSaveModal, quickSaveFolderId, quickSaveNewFolderColor, quickSaveNewFolderIcon, quickSaveNewFolderName, quickSaveTarget, saveToFolder]);
+    try {
+      const receipt = await saveToFolder(folderId, buildQuickMovieData(quickSaveTarget), quickSaveTarget.title);
+      showActionToast({
+        kind: 'watchlist',
+        message: receipt.mode === 'insert' ? 'Saved to Watchlist' : 'Watchlist updated',
+        onUndo: async () => {
+          await rollbackSave(receipt);
+        }
+      });
+      closeQuickSaveModal();
+    } catch (error) {
+      setError('Failed to save title to watchlist');
+    }
+  }, [
+    addFolder,
+    closeQuickSaveModal,
+    quickSaveFolderId,
+    quickSaveNewFolderColor,
+    quickSaveNewFolderIcon,
+    quickSaveNewFolderName,
+    quickSaveTarget,
+    rollbackSave,
+    saveToFolder,
+    showActionToast
+  ]);
 
   const scrollMainContentToTop = useCallback((behavior: ScrollBehavior | 'contextual' = 'contextual') => {
     const main = document.querySelector('.main-content');
@@ -453,6 +554,26 @@ const App: React.FC = () => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
   }, [handleSendMessage]);
 
+  const handleSaveMovieToWatchlist = useCallback(async (
+    folderId: string,
+    movie: MovieData,
+    savedTitle?: string
+  ) => {
+    try {
+      const receipt = await saveToFolder(folderId, movie, savedTitle);
+      showActionToast({
+        kind: 'watchlist',
+        message: receipt.mode === 'insert' ? 'Saved to Watchlist' : 'Watchlist updated',
+        onUndo: async () => {
+          await rollbackSave(receipt);
+        }
+      });
+    } catch (error) {
+      setError('Failed to save title to watchlist');
+      throw error;
+    }
+  }, [rollbackSave, saveToFolder, showActionToast]);
+
   const handleBriefMe = useCallback(async (name: string) => {
     try {
       setIsLoading(true);
@@ -710,6 +831,27 @@ const App: React.FC = () => {
           )
         }
 
+        {actionToast && (
+          <div className="mm-action-toast-shell z-[10000]">
+            <ActionToast
+              kind={actionToast.kind}
+              message={actionToast.message}
+              isUndoing={undoingToastId === actionToast.id}
+              onDismiss={dismissActionToast}
+              onUndo={() => {
+                if (undoingToastId === actionToast.id) return;
+                setUndoingToastId(actionToast.id);
+                void actionToast.onUndo()
+                  .then(() => dismissActionToast())
+                  .catch(() => {
+                    setError('Failed to undo that action');
+                    dismissActionToast();
+                  });
+              }}
+            />
+          </div>
+        )}
+
         {/* Error Banner */}
         {
           error && (
@@ -726,13 +868,13 @@ const App: React.FC = () => {
               <DiscoveryPage
                 onOpenTitle={(item) => handleOpenTitle(item)}
                 isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
-                onToggleWatched={(item) => toggleWatched({
+                onToggleWatched={(item) => { void runWatchedToggle({
                   tmdb_id: String(item.id),
                   media_type: item.media_type,
                   title: item.title,
-                  poster_url: item.poster_url ?? null,
-                  year: item.year ?? null,
-                })}
+                  poster_url: item.poster_url ?? undefined,
+                  year: item.year ?? undefined,
+                }); }}
                 onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
                 watchlists={watchlists}
               />
@@ -746,13 +888,13 @@ const App: React.FC = () => {
                 void openPersonById(personId, name, { manageLoading: true });
               }}
               isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
-              onToggleWatched={(item) => toggleWatched({
+              onToggleWatched={(item) => { void runWatchedToggle({
                 tmdb_id: String(item.id),
                 media_type: item.media_type,
                 title: item.title,
-                poster_url: item.poster_url ?? null,
-                year: item.year ?? null,
-              })}
+                poster_url: item.poster_url ?? undefined,
+                year: item.year ?? undefined,
+              }); }}
               onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
             />
           ) : currentView === 'person' && personData ? (
@@ -776,14 +918,14 @@ const App: React.FC = () => {
               onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
               watchlists={watchlists}
               onCreateWatchlist={addFolder}
-              onSaveToWatchlist={saveToFolder}
+              onSaveToWatchlist={handleSaveMovieToWatchlist}
               isWatched={movieData ? isWatched(
                 String(movieData.tmdb_id || ''),
                 movieData.tvShow ? 'tv' : 'movie'
               ) : false}
               onToggleWatched={() => {
                 if (!movieData) return;
-                toggleWatched({
+                void runWatchedToggle({
                   tmdb_id: String(movieData.tmdb_id || ''),
                   media_type: movieData.tvShow ? 'tv' : 'movie',
                   title: movieData.title,
@@ -792,7 +934,7 @@ const App: React.FC = () => {
                 });
               }}
               onToggleRelatedWatched={(entry) => {
-                toggleWatched({
+                void runWatchedToggle({
                   tmdb_id: entry.tmdb_id,
                   media_type: entry.media_type,
                   title: entry.title,

@@ -10,6 +10,7 @@ import { useRenderCounter } from '../lib/perfDebug';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './WatchlistIconPicker';
+import { useActionFeedback } from '../hooks/useActionFeedback';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -188,6 +189,7 @@ const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#
 
 const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, onOpenTitle, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched, onToggleRelatedWatched, isRelatedWatched, onQuickSaveToWatchlist }) => {
     useRenderCounter('MovieDisplay');
+    const { triggerFeedback, isFeedbackActive } = useActionFeedback();
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
@@ -359,9 +361,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     type="button"
                                     onClick={(event) => {
                                         event.stopPropagation();
+                                        triggerFeedback(`related-save-${item.id}`);
                                         onQuickSaveToWatchlist(item);
                                     }}
-                                    className="h-7 w-7 rounded-full bg-black/60 border border-white/15 text-white/80 hover:bg-violet-500/90 hover:text-white flex items-center justify-center shadow-lg"
+                                    className={`h-7 w-7 rounded-full bg-black/60 border border-white/15 text-white/80 hover:bg-violet-500/90 hover:text-white flex items-center justify-center shadow-lg mm-action-feedback ${isFeedbackActive(`related-save-${item.id}`) ? 'is-feedback-active' : ''}`}
                                     aria-label={`Save ${item.title} to watchlist`}
                                     title="Save to watchlist"
                                 >
@@ -373,9 +376,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     type="button"
                                     onClick={(event) => {
                                         event.stopPropagation();
+                                        triggerFeedback(`related-watch-${item.id}`);
                                         handleToggleRelatedWatched(item);
                                     }}
-                                    className={`h-7 w-7 rounded-full border flex items-center justify-center shadow-lg transition-colors ${watched ? 'bg-green-500 border-green-400 text-white' : 'bg-black/60 border-white/15 text-white/80 hover:bg-green-500/90 hover:text-white'}`}
+                                    className={`h-7 w-7 rounded-full border flex items-center justify-center shadow-lg transition-colors mm-action-feedback ${isFeedbackActive(`related-watch-${item.id}`) ? 'is-feedback-active' : ''} ${watched ? 'bg-green-500 border-green-400 text-white' : 'bg-black/60 border-white/15 text-white/80 hover:bg-green-500/90 hover:text-white'}`}
                                     aria-label={watched ? 'Mark as unwatched' : 'Mark as watched'}
                                     title={watched ? 'Watched ✓' : 'Mark as watched'}
                                 >
@@ -681,8 +685,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 <div className="mt-4 md:mt-8 animate-slide-up flex flex-wrap justify-center sm:justify-start gap-3" style={{ animationDelay: '0.55s', animationFillMode: 'forwards' }}>
                                     {/* Watched button */}
                                     <button
-                                        onClick={onToggleWatched}
-                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-300 touch-target btn-mobile-friendly ${
+                                        onClick={() => {
+                                            triggerFeedback('hero-watch');
+                                            onToggleWatched?.();
+                                        }}
+                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-300 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-watch') ? 'is-feedback-active' : ''} ${
                                             isWatched
                                                 ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
                                                 : 'bg-white/10 border-white/15 text-white hover:bg-white/20 hover:border-white/30'
@@ -694,8 +701,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                         <span>{isWatched ? 'Watched ✓' : 'Mark Watched'}</span>
                                     </button>
                                     <button
-                                        onClick={() => setShowWatchlistModal(true)}
-                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-200 touch-target btn-mobile-friendly ${
+                                        onClick={() => {
+                                            triggerFeedback('hero-save');
+                                            setShowWatchlistModal(true);
+                                        }}
+                                        className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-200 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''} ${
                                             isSaved
                                                 ? 'bg-violet-500/20 border-violet-500/50 text-violet-400 hover:bg-violet-500/30'
                                                 : 'bg-white/15 text-white border-white/15 hover:border-brand-primary/50 hover:bg-white/20'

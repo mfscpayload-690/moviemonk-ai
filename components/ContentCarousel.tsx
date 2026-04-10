@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import type { FC, KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import PosterCard from './PosterCard';
 import SkeletonCard from './SkeletonCard';
 import { ArrowLeftIcon, ArrowRightIcon } from './icons';
+import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
 interface ContentCarouselProps {
   sectionKey: string;
@@ -19,7 +21,7 @@ interface ContentCarouselProps {
   onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
 }
 
-const ContentCarousel: React.FC<ContentCarouselProps> = ({
+const ContentCarousel: FC<ContentCarouselProps> = ({
   sectionKey,
   title,
   items,
@@ -35,6 +37,12 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
 }) => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const { ref: revealRef, isRevealed } = useScrollReveal<HTMLElement>();
+
+  const setSectionRefs = useCallback((node: HTMLElement | null) => {
+    sectionRef.current = node;
+    revealRef(node);
+  }, [revealRef]);
 
   useEffect(() => {
     if (!sectionRef.current || typeof IntersectionObserver === 'undefined') return;
@@ -89,7 +97,7 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
     });
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'ArrowLeft') {
       event.preventDefault();
       scrollByAmount('left');
@@ -101,8 +109,18 @@ const ContentCarousel: React.FC<ContentCarouselProps> = ({
   };
 
   return (
-    <section ref={sectionRef} className="discovery-section" aria-label={title}>
-      <div className="discovery-section-heading">
+    <section
+      ref={setSectionRefs}
+      className={getRevealClassName(isRevealed, 'fade', 'discovery-section')}
+      data-reveal-variant="fade"
+      style={buildRevealStyle(0, 420)}
+      aria-label={title}
+    >
+      <div
+        className={getRevealClassName(isRevealed, 'rise-up', 'discovery-section-heading')}
+        data-reveal-variant="rise-up"
+        style={buildRevealStyle(60, 420)}
+      >
         <div>
           <h2 className="discovery-section-title">{title}</h2>
         </div>

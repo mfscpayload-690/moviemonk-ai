@@ -1,7 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import type { FC, KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import RatingDisplay from './RatingDisplay';
 import { TagIcon, WatchedIcon } from './icons';
+import { useActionFeedback } from '../hooks/useActionFeedback';
+import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
 interface PosterCardProps {
   item: DiscoveryItem;
@@ -19,7 +22,7 @@ const formatRating = (rating: number | null) => (
   typeof rating === 'number' && Number.isFinite(rating) ? rating.toFixed(1) : 'N/A'
 );
 
-const PosterCard: React.FC<PosterCardProps> = ({
+const PosterCard: FC<PosterCardProps> = ({
   item,
   sectionKey = 'unknown',
   position = -1,
@@ -31,13 +34,20 @@ const PosterCard: React.FC<PosterCardProps> = ({
   onQuickSaveToWatchlist
 }) => {
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const { ref: revealRef, isRevealed } = useScrollReveal<HTMLDivElement>();
+  const { triggerFeedback, isFeedbackActive } = useActionFeedback();
+
+  const setCardRefs = useCallback((node: HTMLDivElement | null) => {
+    cardRef.current = node;
+    revealRef(node);
+  }, [revealRef]);
 
   const handleOpen = () => {
     onOpen?.(item, sectionKey, position);
     onOpenTitle({ id: item.id, mediaType: item.media_type });
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     handleOpen();
@@ -64,10 +74,12 @@ const PosterCard: React.FC<PosterCardProps> = ({
 
   return (
     <div
-      ref={cardRef}
+      ref={setCardRefs}
       role="button"
       tabIndex={0}
-      className="discovery-poster-card group"
+      className={getRevealClassName(isRevealed, 'rise-up', 'discovery-poster-card group')}
+      data-reveal-variant="rise-up"
+      style={buildRevealStyle(Math.max(0, Math.min(position, 8)) * 60, 420)}
       onClick={handleOpen}
       onKeyDown={handleKeyDown}
       aria-label={`Open ${item.title}${item.year ? ` (${item.year})` : ''}`}
@@ -91,10 +103,10 @@ const PosterCard: React.FC<PosterCardProps> = ({
         {onQuickSaveToWatchlist && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onQuickSaveToWatchlist(item); }}
+            onClick={(e) => { e.stopPropagation(); triggerFeedback('save'); onQuickSaveToWatchlist(item); }}
             aria-label={`Save ${item.title} to watchlist`}
             title="Save to watchlist"
-            className="absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100"
+            className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
           >
             <TagIcon className="w-3.5 h-3.5" />
           </button>
@@ -102,10 +114,10 @@ const PosterCard: React.FC<PosterCardProps> = ({
         {onToggleWatched && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onToggleWatched(item); }}
+            onClick={(e) => { e.stopPropagation(); triggerFeedback('watch'); onToggleWatched(item); }}
             aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
             title={isWatched ? 'Watched ✓' : 'Mark as watched'}
-            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 ${
+            className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''} ${
               isWatched
                 ? 'bg-green-500 text-white scale-100'
                 : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
