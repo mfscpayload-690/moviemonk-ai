@@ -690,8 +690,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             onToggleWatched?.();
                                         }}
                                         className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-300 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-watch') ? 'is-feedback-active' : ''} ${isWatched
-                                                ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
-                                                : 'bg-white/10 border-white/15 text-white hover:bg-white/20 hover:border-white/30'
+                                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
+                                            : 'bg-white/10 border-white/15 text-white hover:bg-white/20 hover:border-white/30'
                                             }`}
                                         aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
                                         title={isWatched ? 'Click to unmark as watched' : 'Mark as watched'}
@@ -705,13 +705,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             setShowWatchlistModal(true);
                                         }}
                                         className={`inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm md:text-base rounded-xl border transition-all duration-200 touch-target btn-mobile-friendly mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''} ${isSaved
-                                                ? 'bg-violet-500/20 border-violet-500/50 text-violet-400 hover:bg-violet-500/30'
-                                                : 'bg-white/15 text-white border-white/15 hover:border-brand-primary/50 hover:bg-white/20'
+                                            ? 'bg-violet-500/20 border-violet-500/50 text-violet-400 hover:bg-violet-500/30'
+                                            : 'bg-white/15 text-white border-white/15 hover:border-brand-primary/50 hover:bg-white/20'
                                             }`}
                                         aria-label={isSaved ? 'Manage Watchlist' : 'Save to Watchlist'}
                                     >
                                         <TagIcon className="w-5 h-5" />
-                                        <span>{isSaved ? 'Saved to List ✓' : 'Save to List'}</span>
+                                        <span>{isSaved ? 'Saved to List' : 'Save to List'}</span>
                                     </button>
                                     {embedUrl && (
                                         <button
