@@ -74,62 +74,73 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
       className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card')}
       data-reveal-variant="rise-up"
       style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+      onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenTitle({ id: item.id, mediaType: item.media_type });
+        }
+      }}
     >
-      <button
-        type="button"
-        className="search-result-main"
-        onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
-      >
-        <div className="search-result-poster-frame">
-          {item.poster_url ? (
-            <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
-          ) : (
-            <div className="search-result-poster-empty">No poster</div>
+      <div className="search-result-poster-frame">
+        {item.poster_url ? (
+          <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
+        ) : (
+          <div className="search-result-poster-empty">No poster</div>
+        )}
+        <div className="search-result-poster-overlay">
+          {onToggleWatched && (
+            <button
+              type="button"
+              className={`search-result-hover-btn mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''}`}
+              title={watched ? "Watched" : "Mark watched"}
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerFeedback('watch');
+                onToggleWatched({
+                  id: item.id,
+                  media_type: item.media_type,
+                  title: item.title,
+                  poster_url: item.poster_url ?? null,
+                  year: item.year ?? null
+                });
+              }}
+            >
+              <WatchedIcon className="w-[1.25rem] h-[1.25rem]" filled={watched} />
+            </button>
+          )}
+          {onQuickSaveToWatchlist && (
+            <button
+              type="button"
+              className={`search-result-hover-btn mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
+              title="Add to Watchlist"
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerFeedback('save');
+                onQuickSaveToWatchlist(mapToQuickSave(item));
+              }}
+            >
+              <TagIcon className="w-[1.25rem] h-[1.25rem]" />
+            </button>
           )}
         </div>
-        <div className="search-result-body">
-          <h4>{item.title}</h4>
-          <div className="search-result-meta">
-            <span>{item.year || 'TBA'}</span>
-            <span>{item.type === 'show' ? 'TV' : 'Movie'}</span>
-            <RatingDisplay score={item.rating ?? null} size="sm" compact />
+        {typeof item.rating === 'number' && item.rating > 0 && (
+          <div className="search-result-floating-rating">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08l4.15-2.5z" />
+            </svg>
+            <span>{item.rating.toFixed(1)}</span>
           </div>
-          <p>{item.summary_snippet || item.overview || 'No synopsis available yet.'}</p>
+        )}
+      </div>
+      <div className="search-result-body">
+        <h4>{item.title}</h4>
+        <div className="search-result-meta">
+          <span>{item.year || 'TBA'}</span>
+          <span>{item.type === 'show' ? 'TV Show' : 'Movie'}</span>
         </div>
-      </button>
-      <div className="search-result-actions">
-        {onQuickSaveToWatchlist && (
-          <button
-            type="button"
-            onClick={() => {
-              triggerFeedback('save');
-              onQuickSaveToWatchlist(mapToQuickSave(item));
-            }}
-            className={`search-card-chip mm-action-feedback ${isFeedbackActive('save') ? 'is-feedback-active' : ''}`}
-          >
-            <TagIcon className="w-3.5 h-3.5" />
-            Watchlist
-          </button>
-        )}
-        {onToggleWatched && (
-          <button
-            type="button"
-            onClick={() => {
-              triggerFeedback('watch');
-              onToggleWatched({
-                id: item.id,
-                media_type: item.media_type,
-                title: item.title,
-                poster_url: item.poster_url ?? null,
-                year: item.year ?? null
-              });
-            }}
-            className={`search-card-chip mm-action-feedback ${isFeedbackActive('watch') ? 'is-feedback-active' : ''}`}
-          >
-            <WatchedIcon className="w-3.5 h-3.5" filled={watched} />
-            {watched ? 'Watched' : 'Mark watched'}
-          </button>
-        )}
       </div>
     </article>
   );
@@ -163,7 +174,7 @@ const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, quer
       </div>
       <div className="search-person-body">
         <strong>{person.name}</strong>
-        <span>{person.known_for_department || `People matching "${query.trim()}"`}</span>
+        <span>{person.known_for_department || `Matching "${query.trim()}"`}</span>
       </div>
     </button>
   );
@@ -390,26 +401,43 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             className="search-hero-backdrop"
             style={payload.hero.backdrop_url ? { backgroundImage: `url(${payload.hero.backdrop_url})` } : undefined}
           />
-          <div className={`search-hero-overlay tone-${heroTone}`} />
+          <div className="search-hero-overlay" />
           <div className="search-hero-content">
-            <p className="search-hero-label">Best Match</p>
+            <div className="search-hero-top-row">
+              <span className="search-hero-label">Best Match</span>
+              {typeof payload.hero.rating === 'number' && (
+                <div className="search-hero-rating">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08l4.15-2.5z" />
+                  </svg>
+                  <span>{payload.hero.rating.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+            
             <h3 className="search-hero-title">{payload.hero.title}</h3>
+            
             <div className="search-hero-meta">
               <span>{payload.hero.year || 'TBA'}</span>
+              {(payload.hero.genres && payload.hero.genres.length > 0) && (
+                <>
+                  <span className="search-hero-meta-dot" />
+                  <span className="search-hero-genres">{payload.hero.genres.join(', ')}</span>
+                </>
+              )}
+              <span className="search-hero-meta-dot" />
               <span>{payload.hero.type === 'show' ? 'TV Show' : 'Movie'}</span>
-              {typeof payload.hero.rating === 'number' && <span>{payload.hero.rating.toFixed(1)} / 10</span>}
             </div>
-            {payload.hero.genres && payload.hero.genres.length > 0 && (
-              <p className="search-hero-genres">{payload.hero.genres.join(' | ')}</p>
-            )}
+            
             <p className="search-hero-summary">
-              {heroAiSnippet || payload.hero.summary_snippet || payload.hero.overview || 'No synopsis available yet.'}
+              {heroAiSnippet || payload.hero.summary_snippet || payload.hero.overview || 'The story is kept under wraps.'}
             </p>
+            
             <div className="search-hero-actions">
               {onQuickSaveToWatchlist && (
                 <button
                   type="button"
-                  className={`search-btn-secondary mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''}`}
+                  className={`search-btn-primary mm-action-feedback ${isFeedbackActive('hero-save') ? 'is-feedback-active' : ''}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     triggerFeedback('hero-save');
@@ -440,11 +468,13 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                     className="w-4 h-4"
                     filled={Boolean(isWatched?.(payload.hero.id, payload.hero.media_type))}
                   />
-                  {isWatched?.(payload.hero.id, payload.hero.media_type) ? 'Watched' : 'Mark Watched'}
+                  {isWatched?.(payload.hero.id, payload.hero.media_type) ? 'Watched' : 'Mark As Watched'}
                 </button>
               )}
             </div>
           </div>
+          
+          <div className="search-hero-glow-edge" />
         </section>
       )}
 
@@ -456,23 +486,25 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           style={buildRevealStyle(0, 420)}
         >
           <div className="search-results-header">
-            <h3>Also matching "{query.trim()}"</h3>
-            {isLoading && <span>Refreshing...</span>}
+            <h3>Also matching</h3>
+            <div className="search-results-divider" />
           </div>
 
           {renderDidYouMean.length > 0 && (
             <div className="search-did-you-mean">
-              <span>Did you mean:</span>
-              {renderDidYouMean.map((term) => (
-                <button
-                  key={term}
-                  type="button"
-                  onClick={() => onSearchQuery(term)}
-                  className="search-did-you-mean-chip"
-                >
-                  {term}
-                </button>
-              ))}
+              <span>Did you mean?</span>
+              <div className="search-did-you-mean-chips">
+                {renderDidYouMean.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => onSearchQuery(term)}
+                    className="search-did-you-mean-chip"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
