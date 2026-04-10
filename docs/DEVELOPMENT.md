@@ -5,7 +5,7 @@ How to work on MovieMonk locally with the current toolchain.
 ---
 
 ## Prerequisites
-- Node.js 20+
+- Node.js 22.x (matches `package.json` engines)
 - npm (installed with Node)
 - Access to required API keys (see environment list below)
 
@@ -382,8 +382,8 @@ npx tsc --noEmit
 
 **Node version issues:**
 ```bash
-node -v  # Should be 18+
-nvm use 20  # If using nvm
+node -v  # Should be 22.x
+nvm use 22  # If using nvm
 ```
 
 **Dependency issues:**
