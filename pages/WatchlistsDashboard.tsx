@@ -103,6 +103,17 @@ export function WatchlistsDashboard() {
     }
   }, [user?.id]);
 
+  const handleClearHistory = async () => {
+    if (!user?.id) return;
+    try {
+      const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
+      if (error) throw error;
+      setSearchHistory([]);
+    } catch (err) {
+      console.error('Failed to clear history from dashboard:', err);
+    }
+  };
+
   // Deep-link: resolve :folderName param → activeFolderId once folders are loaded
   const [deepLinkResolved, setDeepLinkResolved] = useState(false);
   useEffect(() => {
@@ -685,9 +696,9 @@ export function WatchlistsDashboard() {
             <div>
               <h2 className="wl-section-title text-2xl font-bold">Recent Searches</h2>
             </div>
-            <Link to="/settings" className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors">
+            <button type="button" onClick={handleClearHistory} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50">
               <TrashIcon className="w-3.5 h-3.5" /> Clear History
-            </Link>
+            </button>
           </div>
           <div className="flex flex-wrap gap-3">
             {searchHistory.map((sh, idx) => (
