@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { CheckIcon, InfoIcon, StarIcon, BellIcon, ChevronRightIcon, ShieldIcon, TrashIcon, ClockIcon, GlobeIcon } from '../components/icons';
 import logoUrl from '../asset/android-chrome-192x192.png';
 
@@ -245,16 +246,32 @@ export function SettingsHubPage() {
     void syncSettingsFromCloud(user.id, setProfile, setPreferences);
   }, [user?.id]);
 
-  const handleClearHistory = useCallback(() => {
-    if (window.confirm('Clear all local search history? This cannot be undone.')) {
-      localStorage.removeItem('moviemonk_search_history');
-      window.alert('Search history cleared.');
+  const handleClearHistory = useCallback(async () => {
+    if (window.confirm('Clear all search history? This cannot be undone.')) {
+      if (!user?.id) return;
+      try {
+        await supabase.from('search_history').delete().eq('user_id', user.id);
+        window.alert('Search history cleared.');
+      } catch (e) {
+        window.alert('Error clearing search history.');
+      }
     }
-  }, []);
+  }, [user?.id]);
 
-  const handleDeleteAccount = useCallback(() => {
-    window.alert('To delete your account, please contact us via GitHub issues or email. We will process your request and remove all associated data.');
-  }, []);
+  const handleDeleteAccount = useCallback(async () => {
+    const confirmName = window.prompt('Type DELETE to permanently delete your account and all data.');
+    if (confirmName === 'DELETE') {
+      try {
+        const { error } = await supabase.rpc('delete_user_account');
+        if (error) throw error;
+        await signOut();
+        navigate('/', { replace: true });
+        window.alert('Account successfully deleted.');
+      } catch (err: any) {
+        window.alert(err?.message || 'Failed to delete account.');
+      }
+    }
+  }, [signOut, navigate]);
 
   const handleSignOut = useCallback(async () => {
     if (window.confirm('Sign out of MovieMonk?')) {
