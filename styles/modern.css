@@ -337,11 +337,11 @@ Rejected premiere wordmark variant:
 }
 
 .animate-fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-up {
-    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes scaleUp {
@@ -363,17 +363,17 @@ Rejected premiere wordmark variant:
 .mm-reveal {
     opacity: 0;
     filter: blur(0.5px);
-    transform: translate3d(0, 32px, 0);
+    transform: translate3d(0, 20px, 0);
     transition:
-        opacity var(--mm-reveal-duration, 420ms) cubic-bezier(0.22, 1, 0.36, 1),
-        transform var(--mm-reveal-duration, 420ms) cubic-bezier(0.22, 1, 0.36, 1),
-        filter var(--mm-reveal-duration, 420ms) cubic-bezier(0.22, 1, 0.36, 1);
+        opacity var(--mm-reveal-duration, 300ms) cubic-bezier(0.22, 1, 0.36, 1),
+        transform var(--mm-reveal-duration, 300ms) cubic-bezier(0.22, 1, 0.36, 1),
+        filter var(--mm-reveal-duration, 300ms) cubic-bezier(0.22, 1, 0.36, 1);
     transition-delay: var(--mm-reveal-delay, 0ms);
     will-change: opacity, transform, filter;
 }
 
 .mm-reveal[data-reveal-variant="rise-up"] {
-    transform: translate3d(0, 32px, 0);
+    transform: translate3d(0, 20px, 0);
 }
 
 .mm-reveal[data-reveal-variant="fade"] {
