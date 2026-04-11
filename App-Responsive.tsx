@@ -13,6 +13,7 @@ import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt } from './types';
 import { fetchFullPlotDetails } from './services/aiService';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
@@ -84,6 +85,7 @@ const App: React.FC = () => {
   const loadingHideTimeoutRef = useRef<number | null>(null);
   const lastHandledRouteRef = useRef<string>('');
   const actionToastTimeoutRef = useRef<number | null>(null);
+  const lastSearchQueryRef = useRef<string | null>(null);
   const {
     folders: watchlists,
     addFolder,
@@ -547,7 +549,7 @@ const App: React.FC = () => {
     }
   }, [navigate, scrollMainContentToTop, selectedProvider]);
 
-  const handleSendMessage = useCallback((
+  const handleSendMessage = useCallback(async (
     message: string,
     _complexity: QueryComplexity,
     _provider: AIProvider = 'groq',
@@ -569,7 +571,19 @@ const App: React.FC = () => {
       navigate(`/search?q=${encodeURIComponent(normalizedMessage)}`);
     }
     scrollMainContentToTop('auto');
-  }, [navigate, scrollMainContentToTop]);
+
+    if (user?.id && isSupabaseConfigured && supabase && lastSearchQueryRef.current !== normalizedMessage) {
+      lastSearchQueryRef.current = normalizedMessage;
+      try {
+        await supabase.from('search_history').insert({
+          user_id: user.id,
+          query: normalizedMessage
+        });
+      } catch (err) {
+        // Silent catch
+      }
+    }
+  }, [navigate, scrollMainContentToTop, user?.id]);
 
   const handleQuickSearch = useCallback((title: string) => {
     handleSendMessage(title, QueryComplexity.SIMPLE, 'groq');
