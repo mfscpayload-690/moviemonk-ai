@@ -62,11 +62,12 @@
   font-weight: 700;
 }
 
-/* Best Match Spotlight */
 .search-hero-card {
   position: relative;
   border-radius: 1.5rem;
-  min-height: 450px;
+  /* Restrict overall height on widescreen desktops while keeping mobile perfect */
+  min-height: 380px;
+  max-height: 520px;
   overflow: hidden;
   cursor: pointer;
   box-shadow: 0 20px 60px -20px rgba(224, 142, 254, 0.1);
