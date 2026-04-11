@@ -14,6 +14,7 @@ import {
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
 import { Share2, Copy, Check } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -83,6 +84,24 @@ export function WatchlistsDashboard() {
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+
+  const [searchHistory, setSearchHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      supabase
+        .from('search_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(8)
+        .then(({ data }) => {
+          if (data) setSearchHistory(data);
+        });
+    } else {
+      setSearchHistory([]);
+    }
+  }, [user?.id]);
 
   // Deep-link: resolve :folderName param → activeFolderId once folders are loaded
   const [deepLinkResolved, setDeepLinkResolved] = useState(false);
@@ -658,6 +677,33 @@ export function WatchlistsDashboard() {
           })}
         </div>
       )}
+
+      {/* SEARCH HISTORY SECTION */}
+      {user && searchHistory.length > 0 && !activeFolder && (
+        <div className="mt-12 animate-fade-in pb-12">
+          <div className="wl-section-header mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="wl-section-title text-2xl font-bold">Recent Searches</h2>
+            </div>
+            <Link to="/settings" className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors">
+              <TrashIcon className="w-3.5 h-3.5" /> Clear History
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {searchHistory.map((sh, idx) => (
+              <Link 
+                key={sh.id || idx}
+                to={`/search?q=${encodeURIComponent(sh.query)}`}
+                className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2.5 text-sm font-medium shadow-sm"
+              >
+                <svg className="w-4 h-4 text-brand-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                {sh.query}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       </div>
       )}
 
