@@ -575,12 +575,16 @@ const App: React.FC = () => {
     if (user?.id && isSupabaseConfigured && supabase && lastSearchQueryRef.current !== normalizedMessage) {
       lastSearchQueryRef.current = normalizedMessage;
       try {
-        await supabase.from('search_history').insert({
+        console.log('Inserting search history entry into Supabase:', normalizedMessage);
+        const { error } = await supabase.from('search_history').insert({
           user_id: user.id,
           query: normalizedMessage
         });
+        if (error) {
+           console.error('Supabase search_history insert error:', error);
+        }
       } catch (err) {
-        // Silent catch
+        console.error('Exception during search history insert:', err);
       }
     }
   }, [navigate, scrollMainContentToTop, user?.id]);
