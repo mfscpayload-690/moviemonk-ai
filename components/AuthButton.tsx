@@ -20,10 +20,7 @@ export const AuthButton: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [menuOpen]);
 
-  if (!isEnabled) {
-    return null;
-  }
-
+  // The `isEnabled` check is removed so the "Sign in" button always shows, allowing users to reach the /login page even if they don't have local env setup.
   if (loading) {
     return <button className="auth-btn auth-btn-loading" disabled>Loading...</button>;
   }
