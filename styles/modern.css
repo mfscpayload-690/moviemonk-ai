@@ -401,6 +401,21 @@ Rejected premiere wordmark variant:
     transform: none;
 }
 
+@media (max-width: 768px) {
+    .mm-reveal {
+        --mm-reveal-delay: 0ms !important;
+        --mm-reveal-duration: 250ms !important;
+    }
+    
+    .animate-fade-in, .animate-slide-up {
+        animation-duration: 0.25s !important;
+    }
+    
+    .animate-scale-up {
+        animation-duration: 0.2s !important;
+    }
+}
+
 .mm-action-feedback {
     will-change: transform, box-shadow, filter;
 }
