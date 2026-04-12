@@ -406,6 +406,14 @@ Rejected premiere wordmark variant:
         --mm-reveal-delay: 0ms !important;
         --mm-reveal-duration: 250ms !important;
     }
+    
+    .animate-fade-in, .animate-slide-up {
+        animation-duration: 0.25s !important;
+    }
+    
+    .animate-scale-up {
+        animation-duration: 0.2s !important;
+    }
 }
 
 .mm-action-feedback {
