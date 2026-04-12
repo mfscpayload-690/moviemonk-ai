@@ -10,6 +10,7 @@ import {
 } from './pages/SettingsPages';
 import { WatchlistsDashboard } from './pages/WatchlistsDashboard';
 import { SharedWatchlistView } from './components/SharedWatchlistView';
+import LoginPage from './pages/LoginPage';
 
 export default function AppRoutes() {
   return (
@@ -19,6 +20,7 @@ export default function AppRoutes() {
       <Route path="/movie/:id" element={<App />} />
       <Route path="/tv/:id" element={<App />} />
       <Route path="/person/:id" element={<App />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/watchlists" element={<WatchlistsDashboard />} />
       <Route path="/watchlists/:folderName" element={<WatchlistsDashboard />} />
       <Route path="/watchlists/share" element={<SharedWatchlistView />} />
@@ -32,3 +34,4 @@ export default function AppRoutes() {
     </Routes>
   );
 }
+

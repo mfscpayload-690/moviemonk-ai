@@ -1,0 +1,306 @@
+/* ===========================
+   LoginPage — Cinematic Auth Screen
+   Follows MovieMonk design system:
+   --color-bg: #050508  |  --color-surface: #0f0f16
+   --color-primary: #7c3aed  |  --color-accent: #db2777
+   =========================== */
+
+/* ── Full-bleed shell ── */
+.login-page-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg, #050508);
+  overflow: hidden;
+  z-index: 9999;
+  padding: 1.5rem;
+}
+
+/* ── Ambient background glows ── */
+.login-bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.login-bg-glow--violet {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.55) 0%, transparent 70%);
+  top: -10%;
+  left: -8%;
+  animation: login-glow-drift 12s ease-in-out infinite alternate;
+}
+
+.login-bg-glow--pink {
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle, rgba(219, 39, 119, 0.4) 0%, transparent 70%);
+  bottom: -12%;
+  right: -6%;
+  animation: login-glow-drift 14s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes login-glow-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, -20px) scale(1.15); }
+}
+
+/* ── Glass card ── */
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-lg, 24px);
+  background: rgba(15, 15, 22, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.45),
+    0 0 80px rgba(124, 58, 237, 0.06);
+  animation: login-card-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes login-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Branding cluster ── */
+.login-branding {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.login-logo {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.4));
+}
+
+.login-title {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.login-title-movie {
+  color: rgba(244, 240, 232, 0.96);
+}
+
+.login-title-monk {
+  background: linear-gradient(135deg, var(--color-primary, #7c3aed), var(--color-accent, #db2777));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Hero text ── */
+.login-hero-text {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.login-headline {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.login-subtext {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-text-muted, #94a3b8);
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+/* ── OAuth buttons ── */
+.login-auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.login-oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 1.25rem;
+  border-radius: var(--radius-sm, 8px);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-oauth-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* Google button — clean white surface */
+.login-oauth-btn--google {
+  background: #ffffff;
+  color: #1f1f1f;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.login-oauth-btn--google:hover:not(:disabled) {
+  background: #f8f8f8;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* GitHub button — dark surface with violet glow */
+.login-oauth-btn--github {
+  background: var(--color-surface, #0f0f16);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.login-oauth-btn--github:hover:not(:disabled) {
+  background: var(--color-surface-hover, #161621);
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.3),
+    0 4px 16px rgba(124, 58, 237, 0.15);
+  transform: translateY(-1px);
+}
+
+/* ── Divider ── */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.login-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.login-divider-text {
+  font-size: 0.78rem;
+  color: var(--color-text-dim, #475569);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+/* ── Guest button ── */
+.login-guest-btn {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm, 8px);
+  background: transparent;
+  color: var(--color-text-muted, #94a3b8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.login-guest-btn:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Error text ── */
+.login-error-text {
+  font-size: 0.8rem;
+  color: #f87171;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(248, 113, 113, 0.08);
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  width: 100%;
+}
+
+/* ── Footer note ── */
+.login-footer-note {
+  font-size: 0.72rem;
+  color: var(--color-text-dim, #475569);
+  text-align: center;
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 2rem 1.5rem;
+    gap: 1.5rem;
+    border-radius: var(--radius-md, 16px);
+  }
+
+  .login-title {
+    font-size: 1.5rem;
+  }
+
+  .login-headline {
+    font-size: 1.2rem;
+  }
+
+  .login-bg-glow--violet {
+    width: 280px;
+    height: 280px;
+  }
+
+  .login-bg-glow--pink {
+    width: 240px;
+    height: 240px;
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .login-card {
+    animation: none;
+  }
+
+  .login-bg-glow {
+    animation: none;
+  }
+
+  .login-oauth-btn:hover:not(:disabled),
+  .login-guest-btn:hover {
+    transform: none;
+  }
+}
