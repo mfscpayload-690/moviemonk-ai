@@ -10,6 +10,7 @@ type AuthContextValue = {
   loading: boolean;
   error: string | null;
   signInWithGitHub: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -85,6 +86,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithGoogle = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      const configError = new Error('Supabase auth is not configured');
+      setError(configError.message);
+      throw configError;
+    }
+
+    setError(null);
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: 'google'
+    });
+    if (authError) {
+      setError(authError.message || 'Google sign-in failed');
+      throw authError;
+    }
+  };
+
   const signOut = async () => {
     if (!isSupabaseConfigured || !supabase) {
       const configError = new Error('Supabase auth is not configured');
@@ -112,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       error,
       signInWithGitHub,
+      signInWithGoogle,
       signOut
     }),
     [user, session, loading, error]

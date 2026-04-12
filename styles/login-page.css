@@ -1,0 +1,335 @@
+/* ===========================
+   LoginPage — Premium Cinematic UI
+   =========================== */
+
+/* ── Full-bleed shell with Deep Mesh Background ── */
+.login-page-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Dark rich cinematic mesh gradient */
+  background: 
+    radial-gradient(ellipse at 10% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 40%),
+    radial-gradient(ellipse at 90% 80%, rgba(219, 39, 119, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at center, #0a0a0f 0%, #050508 100%);
+  background-size: cover;
+  overflow: hidden;
+  z-index: 9999;
+  padding: 1.5rem;
+}
+
+/* ── Canvas Background & Spotlight ── */
+.particle-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none; /* Let pointer events fall through if needed, though shell captures them */
+  animation: canvas-defocus-enter 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes canvas-defocus-enter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Dynamic Spotlight overlay driven by Framer Motion */
+.login-spotlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200vw;
+  height: 200vw;
+  border-radius: 50%;
+  /* Cinematic projector lamp */
+  background: radial-gradient(circle closest-side, rgba(139, 92, 246, 0.12) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 1;
+  /* x,y controlled natively by framer-motion in the component */
+}
+
+/* ── Premium Glass Card ── */
+.login-card {
+  position: relative;
+  z-index: 2; /* Sit above the canvas and spotlight */
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.85rem;
+  padding: 3rem 2.5rem;
+  border-radius: 28px;
+  
+  /* Ultra-premium glass styling */
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(20, 20, 28, 0.7) 100%);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 30px 80px -10px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.5) inset,
+    0 0 120px rgba(124, 58, 237, 0.1);
+}
+
+@keyframes login-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* ── Branding ── */
+.login-branding {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.login-logo {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 4px 12px rgba(124, 58, 237, 0.5));
+}
+
+.login-title {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.login-title-movie {
+  color: #ffffff;
+}
+
+.login-title-monk {
+  background: linear-gradient(135deg, #a78bfa 0%, #db2777 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Hero text ── */
+.login-hero-text {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.login-headline {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+
+.login-subtext {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #94a3b8;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+/* ── OAuth buttons ── */
+.login-auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.login-oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  width: 100%;
+  height: 52px;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-oauth-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none !important;
+}
+
+/* Google button — Premium White Glass */
+.login-oauth-btn--google {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.login-oauth-btn--google:hover:not(:disabled) {
+  background: #ffffff;
+  transform: translateY(-2px);
+  /* The Glow-up: multi-colored energetic ring simulating Google's identity */
+  box-shadow: 
+    0 6px 20px rgba(255, 255, 255, 0.25),
+    -10px 0 25px -10px rgba(66, 133, 244, 0.4),
+    10px 0 25px -10px rgba(234, 67, 53, 0.4),
+    0 10px 25px -10px rgba(52, 168, 83, 0.4);
+}
+
+/* GitHub button — Cinematic Dark Glass */
+.login-oauth-btn--github {
+  background: linear-gradient(180deg, rgba(30, 30, 40, 0.8) 0%, rgba(20, 20, 30, 0.9) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.login-oauth-btn--github::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.login-oauth-btn--github:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(40, 40, 52, 0.8) 0%, rgba(25, 25, 38, 0.9) 100%);
+  border-color: rgba(124, 58, 237, 0.6);
+  transform: translateY(-2px);
+  /* The Glow-up: Premium silver cinematic aura */
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(255, 255, 255, 0.15),
+    0 0 50px rgba(124, 58, 237, 0.15);
+}
+
+.login-oauth-btn--github:hover::before {
+  transform: translateX(100%);
+}
+
+/* ── Divider ── */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.login-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+}
+
+.login-divider-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+/* ── Guest button ── */
+.login-guest-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.login-guest-btn:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Error text ── */
+.login-error-text {
+  font-size: 0.85rem;
+  color: #fca5a5;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  width: 100%;
+  animation: login-error-shake 0.4s ease;
+}
+
+@keyframes login-error-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* ── Footer note ── */
+.login-footer-note {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .login-page-shell {
+    padding: 1rem;
+  }
+  
+  .login-card {
+    padding: 2.5rem 1.75rem;
+    gap: 1.5rem;
+    border-radius: 24px;
+  }
+
+  .login-title {
+    font-size: 1.75rem;
+  }
+
+  .login-headline {
+    font-size: 1.25rem;
+  }
+
+  .login-bg-glow--violet {
+    width: 300px;
+    height: 300px;
+  }
+
+  .login-bg-glow--pink {
+    width: 250px;
+    height: 250px;
+  }
+}
