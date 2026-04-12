@@ -54,14 +54,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (isMounted) {
         setSession(nextSession ?? null);
         setUser(nextSession?.user ?? null);
         setLoading(false);
         setError(null);
+
+        // Trigger Lifecycle Marketing Emails on active login
+        if (event === 'SIGNED_IN' && nextSession?.user) {
+          triggerLifecycleEmails(nextSession.user);
+        }
       }
     });
+
+    // Marketing Function securely pings the Edge Function
+    const triggerLifecycleEmails = async (currentUser: User) => {
+      try {
+        const welcomeKey = `moviemonk_has_welcomed_${currentUser.id}`;
+        const lastReloginKey = `moviemonk_last_relogin_${currentUser.id}`;
+        const now = Date.now();
+
+        let emailType: 'welcome' | 'relogin' | null = null;
+
+        if (!localStorage.getItem(welcomeKey)) {
+          // Send Welcome Email
+          emailType = 'welcome';
+          localStorage.setItem(welcomeKey, 'true');
+          localStorage.setItem(lastReloginKey, now.toString()); // Set baseline
+        } else {
+          // Check if it's been > 7 days since last relogin
+          const lastReloginTime = parseInt(localStorage.getItem(lastReloginKey) || '0', 10);
+          const daysSinceLastLogin = (now - lastReloginTime) / (1000 * 60 * 60 * 24);
+          
+          if (daysSinceLastLogin > 7) {
+             emailType = 'relogin';
+             localStorage.setItem(lastReloginKey, now.toString());
+          }
+        }
+
+        if (emailType) {
+           await supabase.functions.invoke('send-email', {
+              body: {
+                 email: currentUser.email,
+                 name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || 'Movie Fan',
+                 type: emailType
+              }
+           });
+        }
+      } catch (err) {
+         console.warn("Silent marketing email failure:", err);
+      }
+    };
 
     return () => {
       isMounted = false;
