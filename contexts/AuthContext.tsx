@@ -62,8 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setError(null);
 
         // Trigger Lifecycle Marketing Emails on active login
-        if (event === 'SIGNED_IN' && nextSession?.user) {
-          triggerLifecycleEmails(nextSession.user);
+        if (event === 'SIGNED_IN' && nextSession) {
+          // Delay by 1.5 seconds to let Supabase's local auth manager sync the JWT 
+          // globally before pinging the Edge Function. This prevents 401 race conditions!
+          setTimeout(() => {
+            triggerLifecycleEmails(nextSession.user);
+          }, 1500);
         }
       }
     });
