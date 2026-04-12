@@ -29,6 +29,16 @@
   height: 100%;
   z-index: 0;
   pointer-events: none; /* Let pointer events fall through if needed, though shell captures them */
+  animation: canvas-defocus-enter 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes canvas-defocus-enter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 /* Dynamic Spotlight overlay driven by Framer Motion */
@@ -39,7 +49,8 @@
   width: 200vw;
   height: 200vw;
   border-radius: 50%;
-  background: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.05), transparent);
+  /* Cinematic projector lamp */
+  background: radial-gradient(circle closest-side, rgba(139, 92, 246, 0.12) 0%, transparent 45%);
   pointer-events: none;
   z-index: 1;
   /* x,y controlled natively by framer-motion in the component */
@@ -182,7 +193,12 @@
 .login-oauth-btn--google:hover:not(:disabled) {
   background: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+  /* The Glow-up: multi-colored energetic ring simulating Google's identity */
+  box-shadow: 
+    0 6px 20px rgba(255, 255, 255, 0.25),
+    -10px 0 25px -10px rgba(66, 133, 244, 0.4),
+    10px 0 25px -10px rgba(234, 67, 53, 0.4),
+    0 10px 25px -10px rgba(52, 168, 83, 0.4);
 }
 
 /* GitHub button — Cinematic Dark Glass */
@@ -206,9 +222,11 @@
   background: linear-gradient(180deg, rgba(40, 40, 52, 0.8) 0%, rgba(25, 25, 38, 0.9) 100%);
   border-color: rgba(124, 58, 237, 0.6);
   transform: translateY(-2px);
+  /* The Glow-up: Premium silver cinematic aura */
   box-shadow: 
     0 8px 25px rgba(0, 0, 0, 0.4),
-    0 0 15px rgba(124, 58, 237, 0.35);
+    0 0 25px rgba(255, 255, 255, 0.15),
+    0 0 50px rgba(124, 58, 237, 0.15);
 }
 
 .login-oauth-btn--github:hover::before {
