@@ -20,46 +20,35 @@
   padding: 1.5rem;
 }
 
-/* ── Ambient background glows (Animated Orbs) ── */
-.login-bg-glow {
+/* ── Canvas Background & Spotlight ── */
+.particle-canvas {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none; /* Let pointer events fall through if needed, though shell captures them */
+}
+
+/* Dynamic Spotlight overlay driven by Framer Motion */
+.login-spotlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200vw;
+  height: 200vw;
   border-radius: 50%;
-  filter: blur(80px);
+  background: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.05), transparent);
   pointer-events: none;
-  opacity: 0.45;
-  mix-blend-mode: screen;
-}
-
-.login-bg-glow--violet {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.7) 0%, rgba(67, 24, 153, 0) 70%);
-  top: -15%;
-  left: -10%;
-  animation: login-glow-drift-1 12s ease-in-out infinite alternate;
-}
-
-.login-bg-glow--pink {
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, rgba(219, 39, 119, 0.6) 0%, rgba(133, 16, 67, 0) 70%);
-  bottom: -15%;
-  right: -10%;
-  animation: login-glow-drift-2 15s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes login-glow-drift-1 {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(50px, 30px) scale(1.1); }
-}
-@keyframes login-glow-drift-2 {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-40px, -40px) scale(1.15); }
+  z-index: 1;
+  /* x,y controlled natively by framer-motion in the component */
 }
 
 /* ── Premium Glass Card ── */
 .login-card {
   position: relative;
+  z-index: 2; /* Sit above the canvas and spotlight */
   width: 100%;
   max-width: 440px;
   display: flex;
@@ -79,8 +68,6 @@
     0 30px 80px -10px rgba(0, 0, 0, 0.6),
     0 0 0 1px rgba(0, 0, 0, 0.5) inset,
     0 0 120px rgba(124, 58, 237, 0.1);
-    
-  animation: login-card-enter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 @keyframes login-card-enter {
