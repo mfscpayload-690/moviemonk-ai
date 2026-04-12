@@ -434,16 +434,20 @@ const App: React.FC = () => {
     let shareUrl = window.location.origin;
 
     if (movieData) {
-      const contentType = movieData.tvShow ? 'show' : 'movie';
-      shareUrl += `?q=${encodeURIComponent(movieData.title)}&type=${contentType}&year=${movieData.year}`;
+      // Determine if this is a TV show using all available signals
+      const isTvShow = Boolean(movieData.tvShow) || movieData.type === 'show' || movieData.media_type === 'tv';
+      const routePrefix = isTvShow ? 'tv' : 'movie';
+
+      // Build a proper deep link to this specific movie/show
+      shareUrl = movieData.tmdb_id
+        ? `${window.location.origin}/${routePrefix}/${movieData.tmdb_id}`
+        : `${window.location.origin}?q=${encodeURIComponent(movieData.title)}&type=${isTvShow ? 'show' : 'movie'}&year=${movieData.year}`;
     } else if (personData) {
       const personName = personData?.person?.name || personData?.name || '';
       const personId = personData?.person?.id || personData?.id;
       shareUrl += `?q=${encodeURIComponent(personName)}&type=person&id=${personId}`;
-    } else if (currentQuery) {
-      shareUrl += `?q=${encodeURIComponent(currentQuery)}`;
     } else {
-      return; // Nothing to share
+      return; // Only share when a specific title or person is open
     }
 
     try {
@@ -452,8 +456,8 @@ const App: React.FC = () => {
       setTimeout(() => setShowCopyToast(false), 3000);
 
       track('share_link_copied', {
-        type: movieData ? 'movie' : personData ? 'person' : 'query',
-        title: movieData?.title || personData?.person?.name || personData?.name || currentQuery
+        type: movieData ? 'movie' : 'person',
+        title: movieData?.title || personData?.person?.name || personData?.name || ''
       });
     } catch (err) {
       console.error('Failed to copy:', err);
@@ -473,7 +477,7 @@ const App: React.FC = () => {
       }
       document.body.removeChild(textarea);
     }
-  }, [currentQuery, movieData, personData]);
+  }, [movieData, personData]);
 
   const handleGoHome = useCallback(() => {
     navigate('/');
@@ -783,7 +787,7 @@ const App: React.FC = () => {
               user={user}
               isCloud={isCloud}
               isSyncing={isSyncing}
-              canShare={Boolean(movieData || personData || currentQuery)}
+              canShare={Boolean(movieData || personData)}
               onOpenWatchlists={handleOpenWatchlists}
               onOpenSettings={handleOpenSettings}
               onShare={handleShare}

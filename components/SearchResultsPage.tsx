@@ -74,7 +74,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
       ref={ref}
       className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card group')}
       data-reveal-variant="rise-up"
-      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 35, 260)}
       onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
       role="button"
       tabIndex={0}
@@ -167,7 +167,7 @@ const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, quer
       type="button"
       className={getRevealClassName(isRevealed, 'rise-up', 'search-person-card')}
       data-reveal-variant="rise-up"
-      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 35, 260)}
       onClick={() => onOpenPerson(person.id, person.name)}
     >
       <div className="search-person-avatar">
@@ -200,7 +200,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [emptySuggestions, setEmptySuggestions] = useState<SuggestionItem[]>([]);
   const [heroAiSnippet, setHeroAiSnippet] = useState<string>('');
-  const { ref: toolbarRevealRef, isRevealed: isToolbarRevealed } = useScrollReveal<HTMLElement>();
+
   const { ref: heroRevealRef, isRevealed: isHeroRevealed } = useScrollReveal<HTMLElement>();
   const { ref: resultsRevealRef, isRevealed: isResultsRevealed } = useScrollReveal<HTMLElement>();
   const { ref: peopleRevealRef, isRevealed: isPeopleRevealed } = useScrollReveal<HTMLElement>();
@@ -354,24 +354,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   return (
     <div className="search-page-shell">
       <LoadingScreen type="movie" visible={isLoading} />
-      <section
-        ref={toolbarRevealRef}
-        className={getRevealClassName(isToolbarRevealed, 'fade', 'search-page-toolbar')}
-        data-reveal-variant="fade"
-        style={buildRevealStyle(0, 420)}
-      >
-        <div>
-          <p className="search-page-kicker">Search Results</p>
-          <h2 className="search-page-title">
-            {query.trim() ? `Results for "${query.trim()}"` : 'Search titles and people'}
-          </h2>
-          {payload && (
-            <p className="search-page-subtitle">
-              {payload.total_results.toLocaleString()} total matches on TMDB
-            </p>
-          )}
-        </div>
-      </section>
+
 
       {error && (
         <section className="search-page-error" role="alert">
