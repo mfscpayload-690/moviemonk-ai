@@ -648,7 +648,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
   };
 
   if (!isExpanded) {
-    const displayText = initialQuery?.trim() || 'Find a movie...';
+    const displayText = initialQuery?.trim() || 'Search movies, actors, or directors...';
     const hasQuery = Boolean(initialQuery?.trim());
     // Collapsed state: minimal search pill with hint or current query
     return (

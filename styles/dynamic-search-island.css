@@ -28,30 +28,61 @@
   z-index: 65;
 }
 
-/* ===== Collapsed State: Minimal Pill ===== */
+/* ===== Collapsed State: Premium Neon-Glow Pill ===== */
 .search-island.collapsed {
-  width: min(400px, 100%);
-  height: 36px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(20, 20, 28, 0.85) 0%, rgba(30, 30, 40, 0.85) 100%);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(124, 58, 237, 0.2);
+  position: relative;
+  width: min(440px, 100%);
+  height: 44px;
+  border-radius: 22px;
+  background: rgba(26, 26, 26, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 0 0.9rem;
-  gap: 0.625rem;
-  border: 1px solid rgba(124, 58, 237, 0.1);
-  transition: all 0.3s ease;
+  padding: 0 1.1rem;
+  gap: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible;
+}
+
+/* Neon gradient glow — pseudo-element behind the bar */
+.search-island.collapsed::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.35), rgba(6, 182, 212, 0.25));
+  filter: blur(8px);
+  opacity: 0.3;
+  z-index: -1;
+  transition: opacity 0.5s ease, filter 0.5s ease;
+  pointer-events: none;
+}
+
+.search-island.collapsed:hover::before,
+.search-island.collapsed:focus-visible::before {
+  opacity: 0.6;
+  filter: blur(12px);
 }
 
 .search-island.collapsed:hover {
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95) 0%, rgba(40, 40, 55, 0.95) 100%);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(124, 58, 237, 0.4),
+  background: rgba(30, 30, 38, 0.96);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.25),
+    0 0 28px rgba(124, 58, 237, 0.12);
+  transform: translateY(-1px);
+}
+
+.search-island.collapsed:focus-visible {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow:
+    0 0 0 2px rgba(139, 92, 246, 0.25),
     0 0 20px rgba(124, 58, 237, 0.15);
-  border-color: rgba(124, 58, 237, 0.3);
 }
 
 .search-island.collapsed .search-icon {
@@ -59,22 +90,24 @@
   height: 18px;
   color: #a78bfa;
   flex-shrink: 0;
-  opacity: 0.9;
-  transition: transform 0.3s ease;
+  opacity: 0.85;
+  transition: transform 0.3s ease, color 0.3s ease;
 }
 
 .search-island.collapsed:hover .search-icon {
-  transform: scale(1.1);
+  transform: scale(1.12);
+  color: #c4b5fd;
 }
 
 .collapsed-text {
   flex: 1;
-  color: #9ca3af;
-  font-size: 0.9rem;
+  color: #6b7280;
+  font-size: 0.925rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: none;
+  letter-spacing: 0.01em;
 }
 
 .collapsed-text.has-query {
@@ -95,15 +128,21 @@
   }
 
   .collapsed-kbd .kbd-tag {
-    padding: 0.25rem 0.5rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0.375rem;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
-    font-size: 0.7rem;
-    color: #9ca3af;
+    font-size: 0.68rem;
+    color: #6b7280;
     font-weight: 500;
     letter-spacing: 0.5px;
+    transition: color 0.3s ease, border-color 0.3s ease;
+  }
+
+  .search-island.collapsed:hover .kbd-tag {
+    color: #9ca3af;
+    border-color: rgba(255, 255, 255, 0.12);
   }
 }
 
@@ -111,9 +150,9 @@
 @media (max-width: 639px) {
   .search-island.collapsed {
     width: 100%;
-    height: 38px;
-    border-radius: 19px;
-    padding: 0 0.875rem;
+    height: 42px;
+    border-radius: 21px;
+    padding: 0 1rem;
   }
 
   .collapsed-text {
@@ -660,6 +699,7 @@
 @media (prefers-reduced-motion: reduce) {
   .search-island,
   .search-island.collapsed,
+  .search-island.collapsed::before,
   .search-island.expanded,
   .search-island-backdrop {
     animation: none !important;
