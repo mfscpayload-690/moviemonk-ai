@@ -74,7 +74,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
       ref={ref}
       className={getRevealClassName(isRevealed, 'rise-up', 'search-result-card group')}
       data-reveal-variant="rise-up"
-      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 35, 260)}
       onClick={() => onOpenTitle({ id: item.id, mediaType: item.media_type })}
       role="button"
       tabIndex={0}
@@ -167,7 +167,7 @@ const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, quer
       type="button"
       className={getRevealClassName(isRevealed, 'rise-up', 'search-person-card')}
       data-reveal-variant="rise-up"
-      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 60, 420)}
+      style={buildRevealStyle(Math.max(0, Math.min(index, 8)) * 35, 260)}
       onClick={() => onOpenPerson(person.id, person.name)}
     >
       <div className="search-person-avatar">
