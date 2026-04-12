@@ -434,16 +434,14 @@ const App: React.FC = () => {
     let shareUrl = window.location.origin;
 
     if (movieData) {
+      // Determine if this is a TV show using all available signals
+      const isTvShow = Boolean(movieData.tvShow) || movieData.type === 'show' || movieData.media_type === 'tv';
+      const routePrefix = isTvShow ? 'tv' : 'movie';
+
       // Build a proper deep link to this specific movie/show
-      if (movieData.tvShow) {
-        shareUrl = movieData.tmdb_id
-          ? `${window.location.origin}/tv/${movieData.tmdb_id}`
-          : `${window.location.origin}?q=${encodeURIComponent(movieData.title)}&type=show&year=${movieData.year}`;
-      } else {
-        shareUrl = movieData.tmdb_id
-          ? `${window.location.origin}/movie/${movieData.tmdb_id}`
-          : `${window.location.origin}?q=${encodeURIComponent(movieData.title)}&type=movie&year=${movieData.year}`;
-      }
+      shareUrl = movieData.tmdb_id
+        ? `${window.location.origin}/${routePrefix}/${movieData.tmdb_id}`
+        : `${window.location.origin}?q=${encodeURIComponent(movieData.title)}&type=${isTvShow ? 'show' : 'movie'}&year=${movieData.year}`;
     } else if (personData) {
       const personName = personData?.person?.name || personData?.name || '';
       const personId = personData?.person?.id || personData?.id;

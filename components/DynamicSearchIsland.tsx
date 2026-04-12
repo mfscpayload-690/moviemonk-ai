@@ -279,8 +279,12 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
   // Handlers declared before effects that use them
   const handleExpand = useCallback(() => {
     setIsExpanded(true);
+    // Restore the current search query into the input when re-opening
+    if (initialQuery?.trim()) {
+      setQuery(initialQuery);
+    }
     track('search_island_opened', { trigger: 'click' });
-  }, []);
+  }, [initialQuery]);
 
   const handleCollapse = useCallback(() => {
     setIsExpanded(false);
@@ -644,7 +648,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
   };
 
   if (!isExpanded) {
-    // Collapsed state: minimal search pill with hint
+    const displayText = initialQuery?.trim() || 'Find a movie...';
+    const hasQuery = Boolean(initialQuery?.trim());
+    // Collapsed state: minimal search pill with hint or current query
     return (
       <div
         ref={islandRef}
@@ -663,7 +669,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
         }}
       >
         <SearchIcon className="search-icon" />
-        <span className="collapsed-text">Find a movie...</span>
+        <span className={`collapsed-text${hasQuery ? ' has-query' : ''}`}>{displayText}</span>
         <div className="collapsed-kbd">
           <span className="kbd-tag">⌘K</span>
         </div>
