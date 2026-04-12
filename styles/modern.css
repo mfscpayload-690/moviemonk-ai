@@ -401,6 +401,13 @@ Rejected premiere wordmark variant:
     transform: none;
 }
 
+@media (max-width: 768px) {
+    .mm-reveal {
+        --mm-reveal-delay: 0ms !important;
+        --mm-reveal-duration: 250ms !important;
+    }
+}
+
 .mm-action-feedback {
     will-change: transform, box-shadow, filter;
 }
