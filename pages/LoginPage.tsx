@@ -71,29 +71,27 @@ export default function LoginPage() {
         </div>
 
         {/* Auth buttons */}
-        {isEnabled && (
-          <div className="login-auth-buttons">
-            <button
-              type="button"
-              className="login-oauth-btn login-oauth-btn--google"
-              onClick={handleGoogle}
-              disabled={loading}
-            >
-              <GoogleIcon />
-              <span>Continue with Google</span>
-            </button>
+        <div className="login-auth-buttons">
+          <button
+            type="button"
+            className="login-oauth-btn login-oauth-btn--google"
+            onClick={handleGoogle}
+            disabled={loading}
+          >
+            <GoogleIcon />
+            <span>Continue with Google</span>
+          </button>
 
-            <button
-              type="button"
-              className="login-oauth-btn login-oauth-btn--github"
-              onClick={handleGitHub}
-              disabled={loading}
-            >
-              <GitHubIcon />
-              <span>Continue with GitHub</span>
-            </button>
-          </div>
-        )}
+          <button
+            type="button"
+            className="login-oauth-btn login-oauth-btn--github"
+            onClick={handleGitHub}
+            disabled={loading}
+          >
+            <GitHubIcon />
+            <span>Continue with GitHub</span>
+          </button>
+        </div>
 
         {/* Divider */}
         <div className="login-divider">
