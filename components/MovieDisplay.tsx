@@ -11,6 +11,8 @@ import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './WatchlistIconPicker';
 import { useActionFeedback } from '../hooks/useActionFeedback';
+import SeoHead from './SeoHead';
+import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -612,9 +614,18 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : '',
         formatDisplayLanguage(movie.language)
     ].filter((part) => typeof part === 'string' && part.trim().length > 0);
+    const movieDescription = toMetaDescription(movie.summary_short || stripHtmlTags(movie.summary_medium));
 
     return (
         <div className="relative min-h-full">
+            <SeoHead
+                title={`${movie.title}${movie.year ? ` (${movie.year})` : ''}`}
+                description={movieDescription}
+                path={`/movie/${movie.tmdb_id || ''}`}
+                image={movie.poster_url || movie.backdrop_url || undefined}
+                type="video.movie"
+                structuredData={[buildMovieJsonLd(movie)]}
+            />
             {/* Hero Section with Poster Card */}
             <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">
                 {/* Backdrop Image Layer */}

@@ -3,6 +3,8 @@ import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview, WatchOption } from 
 import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon } from './icons';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
+import SeoHead from './SeoHead';
+import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
 import '../styles/tv-show.css';
 
 interface TVShowDisplayProps {
@@ -103,6 +105,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
         'TV Series',
         languageLabel
     ].filter((part) => typeof part === 'string' && part.trim().length > 0);
+    const seriesDescription = toMetaDescription(movie.summary_short || stripHtmlTags(movie.summary_medium));
 
     const normalizeTmdbReviews = useCallback((data: any): TmdbReview[] => {
         const TMDB_IMG = 'https://image.tmdb.org/t/p/w92';
@@ -224,6 +227,14 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
 
     return (
         <div className="tv-show-display">
+            <SeoHead
+                title={`${movie.title}${premieredYear ? ` (${premieredYear})` : ''}`}
+                description={seriesDescription}
+                path={`/tv/${movie.tmdb_id || ''}`}
+                image={movie.poster_url || movie.backdrop_url || undefined}
+                type="video.tv_show"
+                structuredData={[buildMovieJsonLd(movie)]}
+            />
             {/* TV Show Header */}
             <div className="tv-show-header">
                 <div className="backdrop-container" style={{
