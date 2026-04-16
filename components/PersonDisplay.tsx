@@ -3,6 +3,8 @@ import { track } from '@vercel/analytics/react';
 import { useRenderCounter } from '../lib/perfDebug';
 import { PersonCredit, PersonRoleBucket } from '../types';
 import { buildPersonCardPresentation } from '../services/personPresentation';
+import SeoHead from './SeoHead';
+import { buildPersonJsonLd, toMetaDescription } from '../lib/seo';
 
 interface FilmItem {
   id: number;
@@ -171,6 +173,14 @@ const PersonDisplay: React.FC<{
 
   return (
     <div className="person-editorial-page">
+      <SeoHead
+        title={person.name}
+        description={toMetaDescription(person.biography, `${person.name} biography, credits, and top works on MovieMonk.`)}
+        path={`/person/${person.id}`}
+        image={person.profile_url || undefined}
+        type="profile"
+        structuredData={[buildPersonJsonLd(data)]}
+      />
       <section className="person-editorial-hero">
         <div className="person-editorial-identity">
           {person.profile_url ? (
