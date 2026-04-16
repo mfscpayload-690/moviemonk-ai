@@ -1,5 +1,23 @@
 import type { MovieData } from '../types';
-import type { PersonPayload } from '../components/PersonDisplay';
+
+type SeoPersonPayload = {
+  person: {
+    id: number;
+    name: string;
+    biography?: string;
+    birthday?: string;
+    place_of_birth?: string;
+    profile_url?: string;
+    known_for_department?: string;
+  };
+  top_work?: Array<{
+    id: number;
+    title: string;
+    media_type?: 'movie' | 'tv';
+  }>;
+  known_for_tags?: string[];
+  sources?: Array<{ url: string }>;
+};
 
 export const SITE_NAME = 'MovieMonk';
 export const SITE_URL = 'https://moviemonk-ai.vercel.app';
@@ -121,7 +139,7 @@ export function buildMovieJsonLd(movie: MovieData): Record<string, unknown> {
   return baseData;
 }
 
-export function buildPersonJsonLd(data: PersonPayload): Record<string, unknown> {
+export function buildPersonJsonLd(data: SeoPersonPayload): Record<string, unknown> {
   const notableWork = (data.top_work || []).slice(0, 6).map((credit) => ({
     '@type': credit.media_type === 'tv' ? 'TVSeries' : 'Movie',
     name: credit.title,

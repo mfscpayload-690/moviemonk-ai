@@ -19,6 +19,11 @@ type SitemapUrl = {
 async function tmdb(path: string): Promise<any> {
   const apiKey = process.env.TMDB_API_KEY;
   const readToken = process.env.TMDB_READ_TOKEN;
+
+  if (!apiKey && !readToken) {
+    return { results: [] };
+  }
+
   const url = new URL(`${TMDB_BASE}/${path}`);
 
   if (apiKey) {
