@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { HelmetProvider } from 'react-helmet-async';
 import './styles/modern.css';
 import './styles/dynamic-search-island.css';
 import './styles/filter-panel.css';
@@ -20,11 +21,13 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </HelmetProvider>
     {/* Only track in production to keep dev data clean */}
     {import.meta.env.PROD && <Analytics />}
     {import.meta.env.PROD && <SpeedInsights />}

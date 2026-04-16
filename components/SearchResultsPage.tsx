@@ -7,6 +7,8 @@ import { TagIcon, WatchedIcon } from './icons';
 import { useActionFeedback } from '../hooks/useActionFeedback';
 import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
 import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
+import SeoHead from './SeoHead';
+import { toMetaDescription } from '../lib/seo';
 import '../styles/search-results-page.css';
 
 interface SearchResultsPageProps {
@@ -350,9 +352,26 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   const renderDidYouMean = payload?.did_you_mean && payload.did_you_mean.length > 0
     ? payload.did_you_mean
     : [];
+  const searchDescription = payload?.hero
+    ? toMetaDescription(
+        heroAiSnippet ||
+        payload.hero.summary_snippet ||
+        payload.hero.overview ||
+        `Search results for ${query.trim()} on MovieMonk.`
+      )
+    : `Search MovieMonk for "${query.trim()}" across movies, TV shows, actors, and directors.`;
 
   return (
     <div className="search-page-shell">
+      {query.trim() && (
+        <SeoHead
+          title={`Search results for "${query.trim()}"`}
+          description={searchDescription}
+          path={`/search?q=${encodeURIComponent(query.trim())}`}
+          image={payload?.hero?.poster_url || payload?.hero?.backdrop_url || undefined}
+          robots="noindex,follow"
+        />
+      )}
       <LoadingScreen type="movie" visible={isLoading} />
 
 

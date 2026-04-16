@@ -25,6 +25,8 @@ import { parseAppRoute } from './lib/routeState';
 import { useWatched } from './hooks/useWatched';
 import { cacheGet, cacheSet, movieCacheKey, personCacheKey } from './lib/sessionCache';
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './components/WatchlistIconPicker';
+import SeoHead from './components/SeoHead';
+import { SITE_NAME } from './lib/seo';
 import {
   QuickSaveTitle,
   QUICK_SAVE_DEFAULT_COLOR,
@@ -740,8 +742,24 @@ const App: React.FC = () => {
     selectedProvider
   ]);
 
+  const homeStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: 'https://moviemonk-ai.vercel.app/',
+    description: 'Discover trending movies and TV shows, then dive deeper with MovieMonk\'s AI-assisted details.'
+  };
+
   return (
     <>
+      {currentView === 'discovery' && (
+        <SeoHead
+          title="Discover Movies & TV"
+          description="Browse trending movies and TV shows, then open detailed AI-assisted summaries, cast, ratings, and watch options."
+          path="/"
+          structuredData={[homeStructuredData]}
+        />
+      )}
       <div className="app-container">
         {/* Header */}
         <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2.5 sm:py-2.5 glass-panel border-b-0 z-50">
