@@ -519,6 +519,363 @@ Rejected premiere wordmark variant:
     cursor: wait;
 }
 
+:root {
+    --mm-motion-multiplier: 1;
+    --mm-duration-fast: calc(120ms * var(--mm-motion-multiplier));
+    --mm-duration-base: calc(180ms * var(--mm-motion-multiplier));
+    --mm-duration-slow: calc(240ms * var(--mm-motion-multiplier));
+    --mm-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --mm-ease-press: cubic-bezier(0.2, 0.9, 0.25, 1);
+    --mm-focus-ring: 0 0 0 2px rgba(5, 5, 8, 0.95), 0 0 0 4px rgba(168, 85, 247, 0.55);
+}
+
+html[data-motion="reduced"] {
+    scroll-behavior: auto;
+}
+
+html[data-card-density="compact"] .discovery-page,
+html[data-card-density="compact"] .search-page-shell,
+html[data-card-density="compact"] .watchlists-dashboard {
+    --mm-card-density: compact;
+}
+
+a,
+button,
+[role="button"],
+input,
+textarea,
+select {
+    transition:
+        transform var(--mm-duration-fast) var(--mm-ease-standard),
+        box-shadow var(--mm-duration-base) var(--mm-ease-standard),
+        border-color var(--mm-duration-base) var(--mm-ease-standard),
+        background-color var(--mm-duration-base) var(--mm-ease-standard),
+        color var(--mm-duration-base) var(--mm-ease-standard),
+        opacity var(--mm-duration-base) var(--mm-ease-standard);
+}
+
+button:active,
+[role="button"]:active {
+    transform: scale(0.985);
+}
+
+:focus-visible {
+    outline: none;
+    box-shadow: var(--mm-focus-ring);
+}
+
+.image-skeleton,
+.person-credit-skeleton-poster,
+.person-credit-skeleton-lines div,
+.search-result-poster-empty,
+.wl-skeleton,
+.discovery-empty-illustration,
+.search-empty-illustration {
+    background-size: 200% 100%;
+    animation: mmSkeletonShimmer 1.4s linear infinite;
+}
+
+@keyframes mmSkeletonShimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.mm-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 12050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.76);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.mm-dialog-panel {
+    width: min(100%, 34rem);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+        radial-gradient(circle at top, rgba(168, 85, 247, 0.15), transparent 42%),
+        linear-gradient(180deg, rgba(18, 18, 24, 0.98), rgba(10, 10, 16, 0.98));
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+}
+
+.mm-dialog-tone {
+    width: 3rem;
+    height: 3rem;
+    margin: 1.2rem 1.2rem 0;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mm-dialog-tone-default {
+    color: #ddd6fe;
+    background: rgba(124, 58, 237, 0.18);
+}
+
+.mm-dialog-tone-destructive {
+    color: #fecaca;
+    background: rgba(239, 68, 68, 0.18);
+}
+
+.mm-dialog-tone-success {
+    color: #bbf7d0;
+    background: rgba(34, 197, 94, 0.18);
+}
+
+.mm-dialog-header,
+.mm-dialog-footer {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 1.2rem;
+}
+
+.mm-dialog-header {
+    justify-content: space-between;
+    padding-top: 0.9rem;
+}
+
+.mm-dialog-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.mm-dialog-description {
+    margin-top: 0.45rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.mm-dialog-close {
+    width: 2.4rem;
+    height: 2.4rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.04);
+    color: #f8fafc;
+}
+
+.mm-dialog-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mm-dialog-body {
+    padding: 0 1.2rem 1rem;
+}
+
+.mm-dialog-footer {
+    justify-content: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.mm-dialog-button {
+    min-height: 2.85rem;
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 700;
+}
+
+.mm-dialog-button-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+}
+
+.mm-dialog-button-primary {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(219, 39, 119, 0.88));
+    color: #fff;
+}
+
+.mm-dialog-button-danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(190, 24, 93, 0.88));
+    color: #fff;
+}
+
+.mm-dialog-input {
+    width: 100%;
+    min-height: 3rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.22);
+    color: #fff;
+    padding: 0.9rem 1rem;
+}
+
+.mm-dialog-input.is-invalid {
+    border-color: rgba(248, 113, 113, 0.8);
+}
+
+.mm-dialog-error {
+    color: #fca5a5;
+    font-size: 0.88rem;
+}
+
+.mm-empty-state {
+    position: relative;
+    overflow: hidden;
+    padding: 2rem;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 30%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+
+.mm-empty-state h3 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.mm-empty-state p {
+    margin-top: 0.6rem;
+    color: #cbd5e1;
+    max-width: 36rem;
+    line-height: 1.6;
+}
+
+.mm-empty-state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: 1.4rem;
+}
+
+.mm-empty-state-cta,
+.mm-empty-state-cta-secondary {
+    min-height: 2.8rem;
+    border-radius: 999px;
+    padding: 0.75rem 1.05rem;
+    font-weight: 700;
+}
+
+.mm-empty-state-cta {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.98), rgba(219, 39, 119, 0.9));
+    color: #fff;
+}
+
+.mm-empty-state-cta-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mm-mobile-action-bar {
+    position: fixed;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    z-index: 1100;
+    display: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0.8rem;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(10, 10, 16, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.44);
+}
+
+.mm-mobile-action {
+    min-height: 3rem;
+    border-radius: 16px;
+    padding: 0.8rem 0.75rem;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.mm-mobile-action.is-primary {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(219, 39, 119, 0.88));
+}
+
+.mm-section-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.mm-icon-button {
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+}
+
+.mm-chip-button {
+    min-height: 2.2rem;
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.mm-drag-active {
+    opacity: 0.7;
+}
+
+.mm-drop-target {
+    border-color: rgba(168, 85, 247, 0.6) !important;
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.24);
+}
+
+@media (max-width: 768px) {
+    .mm-dialog-backdrop {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .mm-dialog-panel-sheet {
+        width: 100%;
+        max-height: 90dvh;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        animation: fadeIn var(--mm-duration-slow) var(--mm-ease-standard) forwards;
+    }
+
+    .mm-mobile-action-bar {
+        display: grid;
+    }
+}
+
 .mm-action-toast-close {
     width: 2.25rem;
     height: 2.25rem;
