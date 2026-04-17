@@ -15,6 +15,7 @@ import {
 } from '../components/WatchlistIconPicker';
 import { Share2, Copy, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -38,10 +39,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
       </main>
     </div>
   );
-}
-
-function getAvatarUrl(user: any, profile: any): string | null {
-  return profile?.avatarUrl || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 }
 
 export function WatchlistsDashboard() {
@@ -84,6 +81,7 @@ export function WatchlistsDashboard() {
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
 
@@ -314,8 +312,12 @@ export function WatchlistsDashboard() {
     }
   };
 
-  const displayName = profile?.fullName || user?.user_metadata?.full_name || user?.user_metadata?.name || 'User';
-  const avatarUrl = getAvatarUrl(user, profile);
+  const displayName = getAuthDisplayName(user, profile?.fullName);
+  const avatarUrl = getAuthAvatarUrl(user, profile?.avatarUrl);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [avatarUrl]);
 
   if (loading) {
     return <DashboardLayout><p className="text-center text-brand-text-light mt-10">Loading Dashboard...</p></DashboardLayout>;
@@ -330,8 +332,8 @@ export function WatchlistsDashboard() {
         
         <div className="flex items-center gap-5 relative z-10">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-2xl">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            {avatarUrl && !avatarFailed ? (
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
                 {displayName[0]?.toUpperCase() || '?'}
