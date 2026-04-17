@@ -68,9 +68,14 @@ export const AuthButton: React.FC = () => {
           <button
             type="button"
             className="auth-dropdown-item"
-            onClick={() => {
+            onClick={async () => {
               setMenuOpen(false);
-              void signOut().catch(() => undefined);
+              try {
+                await signOut();
+                window.location.replace('/');
+              } catch {
+                // handled by auth context
+              }
             }}
           >
             <LogOut className="w-4 h-4" />
