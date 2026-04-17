@@ -1,13 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState, startTransition } from 'react';
-import MovieDisplay from './components/MovieDisplay';
-import PersonDisplay from './components/PersonDisplay';
-import DiscoveryPage from './components/DiscoveryPage';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState, startTransition } from 'react';
 import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import HeaderUtilityMenu from './components/HeaderUtilityMenu';
 import LoadingScreen from './components/LoadingScreen';
-import SearchResultsPage from './components/SearchResultsPage';
 import ActionToast from './components/ActionToast';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
@@ -45,6 +41,10 @@ const debugLog = (...args: any[]) => {
 type AppView = 'discovery' | 'search' | 'movie' | 'person';
 const GLOBAL_LOADING_MIN_VISIBLE_MS = 300;
 const ACTION_TOAST_MS = 4000;
+const DiscoveryPage = lazy(() => import('./components/DiscoveryPage'));
+const SearchResultsPage = lazy(() => import('./components/SearchResultsPage'));
+const PersonDisplay = lazy(() => import('./components/PersonDisplay'));
+const MovieDisplay = lazy(() => import('./components/MovieDisplay'));
 
 type UndoToastState = {
   id: number;
@@ -943,8 +943,14 @@ const App: React.FC = () => {
 
         {/* Main Content Area - Full width Featured UI */}
         <div className="main-content pb-4 sm:pb-6">
-          {currentView === 'discovery' ? (
-            <>
+          <Suspense
+            fallback={
+              <div className="w-full flex items-center justify-center py-10 text-sm text-brand-text-light/80">
+                Loading content…
+              </div>
+            }
+          >
+            {currentView === 'discovery' ? (
               <DiscoveryPage
                 onOpenTitle={(item) => handleOpenTitle(item)}
                 isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
@@ -958,74 +964,74 @@ const App: React.FC = () => {
                 onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
                 watchlists={watchlists}
               />
-            </>
-          ) : currentView === 'search' ? (
-            <SearchResultsPage
-              query={new URLSearchParams(location.search).get('q') || currentQuery}
-              onSearchQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE)}
-              onOpenTitle={(item) => handleOpenTitle(item)}
-              onOpenPerson={(personId, name) => {
-                void openPersonById(personId, name, { manageLoading: true });
-              }}
-              isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
-              onToggleWatched={(item) => { void runWatchedToggle({
-                tmdb_id: String(item.id),
-                media_type: item.media_type,
-                title: item.title,
-                poster_url: item.poster_url ?? undefined,
-                year: item.year ?? undefined,
-              }); }}
-              onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
-            />
-          ) : currentView === 'person' && personData ? (
-            <PersonDisplay
-              key={personData?.person?.id}
-              data={personData}
-              isLoading={isLoading}
-              onQuickSearch={handleQuickSearch}
-              onBriefMe={handleBriefMe}
-              onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
-            />
-          ) : (
-            <MovieDisplay
-              key={movieData?.tmdb_id ?? 'movie-display'}
-              movie={movieData}
-              isLoading={isLoading}
-              sources={sources}
-              selectedProvider={selectedProvider}
-              onFetchFullPlot={fetchFullPlotDetails}
-              onQuickSearch={handleQuickSearch}
-              onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
-              watchlists={watchlists}
-              onCreateWatchlist={addFolder}
-              onSaveToWatchlist={handleSaveMovieToWatchlist}
-              isWatched={movieData ? isWatched(
-                String(movieData.tmdb_id || ''),
-                movieData.tvShow ? 'tv' : 'movie'
-              ) : false}
-              onToggleWatched={() => {
-                if (!movieData) return;
-                void runWatchedToggle({
-                  tmdb_id: String(movieData.tmdb_id || ''),
-                  media_type: movieData.tvShow ? 'tv' : 'movie',
-                  title: movieData.title,
-                  poster_url: movieData.poster_url,
-                  year: movieData.year,
-                });
-              }}
-              onToggleRelatedWatched={(entry) => {
-                void runWatchedToggle({
-                  tmdb_id: entry.tmdb_id,
-                  media_type: entry.media_type,
-                  title: entry.title,
-                  poster_url: entry.poster_url ?? undefined,
-                  year: entry.year ?? undefined,
-                });
-              }}
-              isRelatedWatched={(tmdbId, mediaType) => isWatched(tmdbId, mediaType)}
-              onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
-            />
-          )}
+            ) : currentView === 'search' ? (
+              <SearchResultsPage
+                query={new URLSearchParams(location.search).get('q') || currentQuery}
+                onSearchQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE)}
+                onOpenTitle={(item) => handleOpenTitle(item)}
+                onOpenPerson={(personId, name) => {
+                  void openPersonById(personId, name, { manageLoading: true });
+                }}
+                isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+                onToggleWatched={(item) => { void runWatchedToggle({
+                  tmdb_id: String(item.id),
+                  media_type: item.media_type,
+                  title: item.title,
+                  poster_url: item.poster_url ?? undefined,
+                  year: item.year ?? undefined,
+                }); }}
+                onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+              />
+            ) : currentView === 'person' && personData ? (
+              <PersonDisplay
+                key={personData?.person?.id}
+                data={personData}
+                isLoading={isLoading}
+                onQuickSearch={handleQuickSearch}
+                onBriefMe={handleBriefMe}
+                onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
+              />
+            ) : (
+              <MovieDisplay
+                key={movieData?.tmdb_id ?? 'movie-display'}
+                movie={movieData}
+                isLoading={isLoading}
+                sources={sources}
+                selectedProvider={selectedProvider}
+                onFetchFullPlot={fetchFullPlotDetails}
+                onQuickSearch={handleQuickSearch}
+                onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
+                watchlists={watchlists}
+                onCreateWatchlist={addFolder}
+                onSaveToWatchlist={handleSaveMovieToWatchlist}
+                isWatched={movieData ? isWatched(
+                  String(movieData.tmdb_id || ''),
+                  movieData.tvShow ? 'tv' : 'movie'
+                ) : false}
+                onToggleWatched={() => {
+                  if (!movieData) return;
+                  void runWatchedToggle({
+                    tmdb_id: String(movieData.tmdb_id || ''),
+                    media_type: movieData.tvShow ? 'tv' : 'movie',
+                    title: movieData.title,
+                    poster_url: movieData.poster_url,
+                    year: movieData.year,
+                  });
+                }}
+                onToggleRelatedWatched={(entry) => {
+                  void runWatchedToggle({
+                    tmdb_id: entry.tmdb_id,
+                    media_type: entry.media_type,
+                    title: entry.title,
+                    poster_url: entry.poster_url ?? undefined,
+                    year: entry.year ?? undefined,
+                  });
+                }}
+                isRelatedWatched={(tmdbId, mediaType) => isWatched(tmdbId, mediaType)}
+                onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+              />
+            )}
+          </Suspense>
 
           {/* Global Footer */}
           <footer className="w-full py-2.5 mt-6 text-center border-t border-white/10 text-brand-text-light/50 text-xs px-4">

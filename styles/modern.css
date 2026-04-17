@@ -5113,3 +5113,31 @@ a:focus-visible {
         font-size: 1.2rem;
     }
 }
+
+/* Performance-friendly mobile animation tuning */
+@media (max-width: 768px) {
+    .glass-panel {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    }
+
+    .app-header {
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+    }
+
+    .discovery-hero-wrapper.is-preview-active {
+        animation: none;
+    }
+
+    .discovery-hero-preview-frame {
+        transform: scale(1.01);
+        filter: none;
+    }
+
+    .discovery-poster-frame {
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    }
+}
