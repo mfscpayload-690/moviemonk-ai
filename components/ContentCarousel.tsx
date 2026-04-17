@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { FC, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
@@ -173,4 +174,4 @@ const ContentCarousel: FC<ContentCarouselProps> = ({
   );
 };
 
-export default ContentCarousel;
+export default memo(ContentCarousel);

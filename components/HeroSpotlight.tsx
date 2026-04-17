@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import { DiscoveryItem } from '../types';
 import SkeletonCard from './SkeletonCard';
 import { ArrowLeftIcon, ArrowRightIcon } from './icons';
@@ -411,6 +411,9 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                   alt={`${item.title} backdrop`}
                   className={`discovery-hero-backdrop ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`}
                   loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={isActive ? 'high' : 'low'}
+                  sizes="100vw"
                 />
               )}
               {shouldShowPreview && (
@@ -547,4 +550,4 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
   );
 };
 
-export default HeroSpotlight;
+export default memo(HeroSpotlight);
