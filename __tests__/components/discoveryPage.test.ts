@@ -35,6 +35,8 @@ describe('DiscoveryPage', () => {
       movieGenres: [],
       selectedGenre: null,
       selectedGenreItems: [],
+      cardDensity: 'rich',
+      isStrictPersonalized: false,
       isLoading: false,
       isGenreLoading: false,
       error: null,
@@ -53,6 +55,8 @@ describe('DiscoveryPage', () => {
       movieGenres: [],
       selectedGenre: null,
       selectedGenreItems: [],
+      cardDensity: 'rich',
+      isStrictPersonalized: false,
       isLoading: false,
       isGenreLoading: false,
       error: 'Network failed',
@@ -73,6 +77,8 @@ describe('DiscoveryPage', () => {
       movieGenres: [],
       selectedGenre: null,
       selectedGenreItems: [],
+      cardDensity: 'rich',
+      isStrictPersonalized: false,
       isLoading: true,
       isGenreLoading: false,
       error: null,
@@ -98,6 +104,8 @@ describe('DiscoveryPage', () => {
       movieGenres: [],
       selectedGenre: null,
       selectedGenreItems: [],
+      cardDensity: 'rich',
+      isStrictPersonalized: false,
       isLoading: false,
       isGenreLoading: false,
       error: null,
@@ -111,5 +119,27 @@ describe('DiscoveryPage', () => {
     expect(html.indexOf('Now Playing')).toBeLessThan(html.indexOf('Top Rated Movies &amp; Series'));
     expect(html.indexOf('Top Rated Movies &amp; Series')).toBeLessThan(html.indexOf('Global Web Series and TV Shows'));
     expect(html.indexOf('Global Web Series and TV Shows')).toBeLessThan(html.indexOf('K-Drama and Asian Series'));
+  });
+
+  it('renders the personalized empty state with recovery actions', () => {
+    mockUseDiscovery.mockReturnValue({
+      heroItems: [],
+      sections: [],
+      movieGenres: [],
+      selectedGenre: null,
+      selectedGenreItems: [],
+      cardDensity: 'rich',
+      isStrictPersonalized: true,
+      isLoading: false,
+      isGenreLoading: false,
+      error: null,
+      retry: jest.fn(),
+      selectGenre: jest.fn()
+    });
+
+    const html = renderPage();
+    expect(html).toContain('No personalized matches yet');
+    expect(html).toContain('Reset strict filters');
+    expect(html).toContain('Tune preferences');
   });
 });

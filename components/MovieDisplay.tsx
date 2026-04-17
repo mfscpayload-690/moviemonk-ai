@@ -13,6 +13,7 @@ import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from 
 import { useActionFeedback } from '../hooks/useActionFeedback';
 import SeoHead from './SeoHead';
 import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
+import { loadPreferenceSettings } from '../lib/userSettings';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -76,6 +77,10 @@ const formatDisplayLanguage = (value?: string): string => {
 };
 
 const getYouTubeEmbedUrl = (url: string): string | null => {
+    return getYouTubeEmbedUrlWithOptions(url, false);
+};
+
+const getYouTubeEmbedUrlWithOptions = (url: string, autoplay: boolean): string | null => {
     if (!url) return null;
     let videoId: string | null = null;
 
@@ -88,7 +93,7 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
     }
 
     if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${autoplay ? '1' : '0'}&rel=0&modestbranding=1`;
     }
 
     return null;
@@ -228,6 +233,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [newFolderIcon, setNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
     const [customSavedTitle, setCustomSavedTitle] = useState('');
     const [showRelatedModal, setShowRelatedModal] = useState(false);
+    const [autoplayTrailers, setAutoplayTrailers] = useState(loadPreferenceSettings().autoplayTrailers);
     const heroPosterSrc = movie?.poster_url || movie?.backdrop_url || movie?.extra_images?.[0] || '';
     const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
     const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
@@ -272,6 +278,16 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         setNewFolderIcon(WATCHLIST_ICON_DEFAULT);
     }, [movie, watchlists]);
 
+    useEffect(() => {
+        const syncPrefs = () => setAutoplayTrailers(loadPreferenceSettings().autoplayTrailers);
+        window.addEventListener('storage', syncPrefs);
+        window.addEventListener('moviemonk:preferences-updated', syncPrefs as EventListener);
+        return () => {
+            window.removeEventListener('storage', syncPrefs);
+            window.removeEventListener('moviemonk:preferences-updated', syncPrefs as EventListener);
+        };
+    }, []);
+
     // When opening the modal, clear selection to force explicit choice
     useEffect(() => {
         if (showWatchlistModal) {
@@ -279,7 +295,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         }
     }, [showWatchlistModal]);
 
-    const embedUrl = movie ? getYouTubeEmbedUrl(movie.trailer_url) : null;
+    const embedUrl = movie ? getYouTubeEmbedUrlWithOptions(movie.trailer_url, autoplayTrailers) : null;
 
     // Ensure ratings is always an array (handle legacy cached data)
     const safeRatings = movie && Array.isArray(movie.ratings) ? movie.ratings : [];
@@ -336,6 +352,35 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             year: item.year ?? null,
         });
     };
+
+    const handleShareMovie = useCallback(async () => {
+        if (!movie) return;
+        const routePrefix = movie.tvShow ? 'tv' : 'movie';
+        const shareUrl = movie.tmdb_id
+            ? `${window.location.origin}/${routePrefix}/${movie.tmdb_id}`
+            : `${window.location.origin}?q=${encodeURIComponent(movie.title)}`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: `${movie.title} on MovieMonk`, url: shareUrl });
+                return;
+            } catch {
+                // fall back to clipboard
+            }
+        }
+
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+        } catch {
+            // best effort only
+        }
+    }, [movie]);
+
+    useEffect(() => {
+        const closeOnExternalPlayback = () => setIsTrailerOpen(false);
+        window.addEventListener('moviemonk:trailer-opened', closeOnExternalPlayback);
+        return () => window.removeEventListener('moviemonk:trailer-opened', closeOnExternalPlayback);
+    }, []);
 
     const openRelatedTitle = (item: any, context: 'inline' | 'modal') => {
         const canOpenDirectly = typeof item?.id === 'number' && (item?.media_type === 'movie' || item?.media_type === 'tv');
@@ -753,6 +798,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     {embedUrl && (
                                         <button
                                             onClick={() => {
+                                                window.dispatchEvent(new Event('moviemonk:trailer-opened'));
                                                 track('trailer_opened', {
                                                     title: movie.title,
                                                     year: movie.year,
@@ -763,7 +809,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             className="inline-flex items-center gap-2 md:gap-3 px-6 py-3 md:px-8 md:py-4 bg-brand-primary text-white font-bold text-base md:text-lg rounded-xl shadow-2xl hover:bg-brand-secondary transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-primary/50 play-trailer-pulse touch-target"
                                         >
                                             <PlayIcon className="w-5 h-5 md:w-6 md:h-6" />
-                                            <span>Play Trailer</span>
+                                            <span>Watch Trailer</span>
                                         </button>
                                     )}
                                 </div>
@@ -1302,6 +1348,41 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     </div>
                 </div>,
                 modalRoot
+            )}
+
+            {movie && (
+                <div className="mm-mobile-action-bar" aria-label="Movie quick actions">
+                    <button
+                        type="button"
+                        className={`mm-mobile-action is-primary mm-action-feedback ${isFeedbackActive('hero-save-mobile') ? 'is-feedback-active' : ''}`}
+                        onClick={() => {
+                            triggerFeedback('hero-save-mobile');
+                            setShowWatchlistModal(true);
+                        }}
+                    >
+                        <TagIcon className="w-4 h-4" />
+                        <span>{isSaved ? 'Saved' : 'Save'}</span>
+                    </button>
+                    <button
+                        type="button"
+                        className={`mm-mobile-action mm-action-feedback ${isFeedbackActive('hero-watch-mobile') ? 'is-feedback-active' : ''}`}
+                        onClick={() => {
+                            triggerFeedback('hero-watch-mobile');
+                            onToggleWatched?.();
+                        }}
+                    >
+                        <WatchedIcon className="w-4 h-4" filled={isWatched} />
+                        <span>{isWatched ? 'Watched' : 'Watched?'}</span>
+                    </button>
+                    <button
+                        type="button"
+                        className="mm-mobile-action"
+                        onClick={() => void handleShareMovie()}
+                    >
+                        <LinkIcon className="w-4 h-4" />
+                        <span>Share</span>
+                    </button>
+                </div>
             )}
 
             {selectedImage && modalRoot && ReactDOM.createPortal(

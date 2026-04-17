@@ -12,6 +12,13 @@ interface ContentCarouselProps {
   title: string;
   items: DiscoveryItem[];
   isLoading?: boolean;
+  draggable?: boolean;
+  dragHandleLabel?: string;
+  isDropTarget?: boolean;
+  headerActions?: React.ReactNode;
+  onDragStart?: (sectionKey: string) => void;
+  onDragOver?: (sectionKey: string) => void;
+  onDrop?: (sectionKey: string) => void;
   onSectionVisible?: (sectionKey: string, title: string, itemCount: number) => void;
   onSectionSkipped?: (sectionKey: string, title: string, itemCount: number) => void;
   onCardView?: (item: DiscoveryItem, sectionKey: string, position: number) => void;
@@ -27,6 +34,13 @@ const ContentCarousel: FC<ContentCarouselProps> = ({
   title,
   items,
   isLoading = false,
+  draggable = false,
+  dragHandleLabel = 'Reorder section',
+  isDropTarget = false,
+  headerActions,
+  onDragStart,
+  onDragOver,
+  onDrop,
   onSectionVisible,
   onSectionSkipped,
   onCardView,
@@ -112,10 +126,22 @@ const ContentCarousel: FC<ContentCarouselProps> = ({
   return (
     <section
       ref={setSectionRefs}
-      className={getRevealClassName(isRevealed, 'fade', 'discovery-section')}
+      className={getRevealClassName(isRevealed, 'fade', `discovery-section ${isDropTarget ? 'mm-drop-target' : ''}`)}
       data-reveal-variant="fade"
       style={buildRevealStyle(0, 420)}
       aria-label={title}
+      draggable={draggable}
+      onDragStart={() => onDragStart?.(sectionKey)}
+      onDragOver={(event) => {
+        if (!draggable) return;
+        event.preventDefault();
+        onDragOver?.(sectionKey);
+      }}
+      onDrop={(event) => {
+        if (!draggable) return;
+        event.preventDefault();
+        onDrop?.(sectionKey);
+      }}
     >
       <div
         className={getRevealClassName(isRevealed, 'rise-up', 'discovery-section-heading')}
@@ -125,25 +151,33 @@ const ContentCarousel: FC<ContentCarouselProps> = ({
         <div>
           <h2 className="discovery-section-title">{title}</h2>
         </div>
-        <div className="discovery-carousel-controls" aria-hidden={isLoading}>
-          <button
-            type="button"
-            className="discovery-carousel-arrow"
-            onClick={() => scrollByAmount('left')}
-            aria-label={`Scroll ${title} left`}
-            disabled={isLoading}
-          >
-            <ArrowLeftIcon className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            className="discovery-carousel-arrow"
-            onClick={() => scrollByAmount('right')}
-            aria-label={`Scroll ${title} right`}
-            disabled={isLoading}
-          >
-            <ArrowRightIcon className="w-4 h-4" />
-          </button>
+        <div className="mm-section-toolbar">
+          {draggable && (
+            <span className="mm-chip-button cursor-grab" aria-label={dragHandleLabel} title={dragHandleLabel}>
+              Drag
+            </span>
+          )}
+          {headerActions}
+          <div className="discovery-carousel-controls" aria-hidden={isLoading}>
+            <button
+              type="button"
+              className="discovery-carousel-arrow"
+              onClick={() => scrollByAmount('left')}
+              aria-label={`Scroll ${title} left`}
+              disabled={isLoading}
+            >
+              <ArrowLeftIcon className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              className="discovery-carousel-arrow"
+              onClick={() => scrollByAmount('right')}
+              aria-label={`Scroll ${title} right`}
+              disabled={isLoading}
+            >
+              <ArrowRightIcon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 

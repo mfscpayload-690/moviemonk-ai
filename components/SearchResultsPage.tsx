@@ -31,6 +31,14 @@ function normalizeText(input: string): string {
   return input.trim().toLowerCase();
 }
 
+function broadenSearchQuery(input: string): string {
+  return input
+    .replace(/\b(202\d|201\d|19\d{2})\b/g, '')
+    .replace(/\b(movie|movies|show|series|tv|actor|director)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function resultKey(item: SearchResult): string {
   return `${item.media_type}:${item.id}`;
 }
@@ -542,9 +550,21 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           )}
 
           {!isLoading && !hasResults && (
-            <div className="search-page-empty-state">
+            <div className="search-page-empty-state mm-empty-state">
               <h3>No exact matches found</h3>
-              <p>Try a broader query, check spelling, or use one of these suggestions.</p>
+              <p>Try a broader query, check the spelling, or jump back into discovery while MovieMonk suggests a few nearby matches.</p>
+              <div className="mm-empty-state-actions">
+                <button
+                  type="button"
+                  className="mm-empty-state-cta"
+                  onClick={() => onSearchQuery(broadenSearchQuery(query) || query.trim())}
+                >
+                  Try broader search
+                </button>
+                <a href="/" className="mm-empty-state-cta-secondary">
+                  Go to discovery
+                </a>
+              </div>
               {emptySuggestions.length > 0 && (
                 <div className="search-empty-suggestions">
                   {emptySuggestions.map((suggestion) => (

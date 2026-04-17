@@ -62,6 +62,18 @@
   font-weight: 700;
 }
 
+html[data-card-density="compact"] .search-page-shell {
+  gap: 1.5rem;
+}
+
+html[data-card-density="compact"] .search-result-card {
+  border-radius: 1.1rem;
+}
+
+html[data-card-density="compact"] .search-result-body {
+  padding: 0.85rem;
+}
+
 .search-hero-card {
   position: relative;
   border-radius: 1.5rem;

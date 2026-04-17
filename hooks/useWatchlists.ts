@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MovieData, WatchlistFolder, WatchlistItem, WatchlistSaveReceipt } from '../types';
+import { MovieData, WatchlistFolder, WatchlistSaveReceipt } from '../types';
 import {
   addFolderToWatchlists,
+  applyWatchlistOrder,
+  buildWatchlistOrderState,
   findFolderItem,
+  loadWatchlistOrderState,
   loadWatchlistsFromStorage,
+  reorderByIds,
   rollbackWatchlistSave,
   saveMovieToFolderWithReceipt,
+  saveWatchlistOrderState,
   saveWatchlistsToStorage
 } from './watchlistStore';
 
@@ -15,7 +20,8 @@ export function useWatchlists() {
 
   const loadFromStorage = useCallback((): WatchlistFolder[] => {
     try {
-      return loadWatchlistsFromStorage(localStorage);
+      const folders = loadWatchlistsFromStorage(localStorage);
+      return applyWatchlistOrder(folders, loadWatchlistOrderState(localStorage));
     } catch (e) {
       console.warn('Failed to load watchlists', e);
       return [];
@@ -34,6 +40,7 @@ export function useWatchlists() {
     if (!hydratedRef.current) return;
     try {
       saveWatchlistsToStorage(localStorage, folders);
+      saveWatchlistOrderState(localStorage, buildWatchlistOrderState(folders));
     } catch (e) {
       console.warn('Failed to save watchlists', e);
     }
@@ -112,6 +119,20 @@ export function useWatchlists() {
     ));
   };
 
+  const reorderFolders = (activeId: string, overId: string) => {
+    if (!activeId || !overId) return;
+    persist((prev) => reorderByIds(prev, activeId, overId));
+  };
+
+  const reorderItems = (folderId: string, activeId: string, overId: string) => {
+    if (!folderId || !activeId || !overId) return;
+    persist((prev) => prev.map((folder) => (
+      folder.id === folderId
+        ? { ...folder, items: reorderByIds(folder.items, activeId, overId) }
+        : folder
+    )));
+  };
+
   const refresh = useCallback(() => {
     const fromStorage = loadFromStorage();
     setFolders(fromStorage);
@@ -132,6 +153,8 @@ export function useWatchlists() {
     setFolderColor,
     setFolderIcon,
     moveItem,
-    deleteItem
+    deleteItem,
+    reorderFolders,
+    reorderItems
   };
 }

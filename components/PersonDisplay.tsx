@@ -158,6 +158,26 @@ const PersonDisplay: React.FC<{
     }
   };
 
+  const handleSharePerson = async () => {
+    const shareUrl = `${window.location.origin}/person/${person.id}`;
+    const shareTitle = `${person.name} on MovieMonk`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, url: shareUrl });
+        return;
+      } catch {
+        // fall back to clipboard copy below
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // best-effort share affordance
+    }
+  };
+
 
   const metadataParts = [
     person.birthday ? person.birthday : null,
@@ -207,6 +227,21 @@ const PersonDisplay: React.FC<{
                 ))}
               </div>
             )}
+            <div className="person-editorial-actions">
+              {onQuickSearch && (
+                <button type="button" className="person-editorial-primary-btn" onClick={() => onQuickSearch(person.name)}>
+                  Search Credits
+                </button>
+              )}
+              {onBriefMe && (
+                <button type="button" className="person-editorial-secondary-btn" onClick={() => onBriefMe(person.name)}>
+                  Brief Me
+                </button>
+              )}
+              <button type="button" className="person-editorial-more-btn" onClick={() => void handleSharePerson()}>
+                Share
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -416,6 +451,30 @@ const PersonDisplay: React.FC<{
           Updating data...
         </div>
       )}
+
+      <div className="mm-mobile-action-bar" aria-label="Person quick actions">
+        <button
+          type="button"
+          className="mm-mobile-action is-primary"
+          onClick={() => onQuickSearch?.(person.name)}
+        >
+          <span>Search</span>
+        </button>
+        <button
+          type="button"
+          className="mm-mobile-action"
+          onClick={() => onBriefMe?.(person.name)}
+        >
+          <span>Brief</span>
+        </button>
+        <button
+          type="button"
+          className="mm-mobile-action"
+          onClick={() => void handleSharePerson()}
+        >
+          <span>Share</span>
+        </button>
+      </div>
     </div>
   );
 };

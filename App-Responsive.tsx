@@ -7,6 +7,7 @@ import LoadingScreen from './components/LoadingScreen';
 import ActionToast from './components/ActionToast';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
+import { NoticeDialog } from './components/BrandedDialogs';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt } from './types';
 import { fetchFullPlotDetails } from './services/aiService';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
@@ -82,6 +83,7 @@ const App: React.FC = () => {
   const [quickSaveNewFolderName, setQuickSaveNewFolderName] = useState('');
   const [quickSaveNewFolderColor, setQuickSaveNewFolderColor] = useState(QUICK_SAVE_DEFAULT_COLOR);
   const [quickSaveNewFolderIcon, setQuickSaveNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+  const [shareFallbackLink, setShareFallbackLink] = useState<string | null>(null);
   const quickSaveDialogRef = useRef<HTMLDivElement | null>(null);
   const quickSavePreviousFocusRef = useRef<HTMLElement | null>(null);
   const loadingStartedAtRef = useRef<number | null>(null);
@@ -476,7 +478,7 @@ const App: React.FC = () => {
         setShowCopyToast(true);
         setTimeout(() => setShowCopyToast(false), 3000);
       } catch (e) {
-        alert(`Share this link: ${shareUrl}`);
+        setShareFallbackLink(shareUrl);
       }
       document.body.removeChild(textarea);
     }
@@ -1098,6 +1100,13 @@ const App: React.FC = () => {
           onClose={() => setShortlistCandidates(null)}
         />
       )}
+
+      <NoticeDialog
+        open={Boolean(shareFallbackLink)}
+        title="Copy this link to share"
+        description={shareFallbackLink || undefined}
+        onClose={() => setShareFallbackLink(null)}
+      />
 
       <MigrationModal />
 

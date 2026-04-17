@@ -1,6 +1,8 @@
 import {
+  applyWatchlistOrder,
   WATCHLIST_DEFAULT_ICON,
   addFolderToWatchlists,
+  buildWatchlistOrderState,
   loadWatchlistsFromStorage,
   rollbackWatchlistSave,
   saveMovieToFolderWithReceipt
@@ -127,5 +129,36 @@ describe('hooks/watchlistStore icon behavior', () => {
 
     const rolledBack = rollbackWatchlistSave(next, receipt!);
     expect(rolledBack[0].items[0].movie.poster_url).toBe('/old.jpg');
+  });
+
+  it('applies persisted folder and item ordering', () => {
+    const folders = [
+      {
+        id: 'folder-a',
+        name: 'A',
+        color: '#111',
+        icon: 'film',
+        items: [
+          { id: 'a-1', saved_title: 'One', movie: { tmdb_id: '1', title: 'One', year: '2020', type: 'movie', media_type: 'movie', genres: [], poster_url: '', backdrop_url: '', trailer_url: '', ratings: [], cast: [], crew: { director: '', writer: '', music: '' }, summary_short: '', summary_medium: '', summary_long_spoilers: '', suspense_breaker: '', where_to_watch: [], extra_images: [], ai_notes: '' }, added_at: '' },
+          { id: 'a-2', saved_title: 'Two', movie: { tmdb_id: '2', title: 'Two', year: '2021', type: 'movie', media_type: 'movie', genres: [], poster_url: '', backdrop_url: '', trailer_url: '', ratings: [], cast: [], crew: { director: '', writer: '', music: '' }, summary_short: '', summary_medium: '', summary_long_spoilers: '', suspense_breaker: '', where_to_watch: [], extra_images: [], ai_notes: '' }, added_at: '' }
+        ]
+      },
+      {
+        id: 'folder-b',
+        name: 'B',
+        color: '#222',
+        icon: 'film',
+        items: []
+      }
+    ];
+
+    const next = applyWatchlistOrder(folders as any, {
+      folderIds: ['folder-b', 'folder-a'],
+      itemIdsByFolder: { 'folder-a': ['a-2', 'a-1'] }
+    });
+
+    expect(next[0].id).toBe('folder-b');
+    expect(next[1].items.map((item) => item.id)).toEqual(['a-2', 'a-1']);
+    expect(buildWatchlistOrderState(next).folderIds).toEqual(['folder-b', 'folder-a']);
   });
 });

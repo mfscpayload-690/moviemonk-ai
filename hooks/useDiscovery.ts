@@ -293,6 +293,7 @@ function preferencesEqual(a: UserPreferenceSettings, b: UserPreferenceSettings):
     arraysEqual(a.favoriteRegions, b.favoriteRegions) &&
     a.contentMix === b.contentMix &&
     a.familySafe === b.familySafe &&
+    a.reducedMotion === b.reducedMotion &&
     a.autoplayTrailers === b.autoplayTrailers &&
     a.cardDensity === b.cardDensity
   );
