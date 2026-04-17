@@ -1,5 +1,5 @@
 import type { FC, KeyboardEvent } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import RatingDisplay from './RatingDisplay';
 import { TagIcon, WatchedIcon } from './icons';
@@ -91,6 +91,8 @@ const PosterCard: FC<PosterCardProps> = ({
             alt={`${item.title} poster`}
             className="discovery-poster-image"
             loading="lazy"
+            decoding="async"
+            sizes="(max-width: 640px) 42vw, (max-width: 1024px) 28vw, 190px"
           />
         ) : (
           <div className="discovery-poster-empty">
@@ -135,4 +137,4 @@ const PosterCard: FC<PosterCardProps> = ({
   );
 };
 
-export default PosterCard;
+export default memo(PosterCard);

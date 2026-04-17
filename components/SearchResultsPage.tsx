@@ -60,7 +60,7 @@ interface SearchResultCardProps {
   onQuickSaveToWatchlist?: (item: QuickSaveTitle) => void;
 }
 
-const SearchResultCard: React.FC<SearchResultCardProps> = ({
+const SearchResultCard: React.FC<SearchResultCardProps> = React.memo(({
   item,
   index,
   watched,
@@ -89,7 +89,13 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
     >
       <div className="search-result-poster-frame">
         {item.poster_url ? (
-          <img src={item.poster_url} alt={`${item.title} poster`} loading="lazy" />
+          <img
+            src={item.poster_url}
+            alt={`${item.title} poster`}
+            loading="lazy"
+            decoding="async"
+            sizes="(max-width: 640px) 40vw, (max-width: 1024px) 30vw, 220px"
+          />
         ) : (
           <div className="search-result-poster-empty">No poster</div>
         )}
@@ -151,7 +157,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({
       </div>
     </article>
   );
-};
+});
 
 interface SearchPersonCardProps {
   person: SearchPageResponse['people'][number];
@@ -160,7 +166,7 @@ interface SearchPersonCardProps {
   onOpenPerson: (personId: number, name?: string) => void;
 }
 
-const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, query, onOpenPerson }) => {
+const SearchPersonCard: React.FC<SearchPersonCardProps> = React.memo(({ person, index, query, onOpenPerson }) => {
   const { ref, isRevealed } = useScrollReveal<HTMLButtonElement>();
 
   return (
@@ -174,7 +180,7 @@ const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, quer
     >
       <div className="search-person-avatar">
         {person.profile_url ? (
-          <img src={person.profile_url} alt={person.name} loading="lazy" />
+          <img src={person.profile_url} alt={person.name} loading="lazy" decoding="async" sizes="64px" />
         ) : (
           <span>{person.name.slice(0, 1)}</span>
         )}
@@ -185,7 +191,7 @@ const SearchPersonCard: React.FC<SearchPersonCardProps> = ({ person, index, quer
       </div>
     </button>
   );
-};
+});
 
 const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   query,
