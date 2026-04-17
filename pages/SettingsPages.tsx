@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { CheckIcon, InfoIcon, StarIcon, BellIcon, ChevronRightIcon, ShieldIcon, TrashIcon, ClockIcon, GlobeIcon } from '../components/icons';
 import logoUrl from '../asset/android-chrome-192x192.png';
 
@@ -21,6 +21,7 @@ import {
   upsertPreferenceSettings,
   upsertProfileSettings
 } from '../services/userSettingsService';
+import { getAuthAvatarUrl, getAuthDisplayName, getAuthProviderLabel } from '../lib/authIdentity';
 
 /* ────────────────────────────────────────────
    Constants
@@ -193,20 +194,26 @@ function getInitial(name?: string, email?: string): string {
   return '?';
 }
 
-function getAvatarUrl(user: any, profile?: UserProfileSettings): string | null {
-  return profile?.avatarUrl || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
-}
-
 function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSettings; size?: 'lg' }) {
-  const url = getAvatarUrl(user, profile);
-  const name = profile?.fullName || user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+  const url = getAuthAvatarUrl(user, profile?.avatarUrl);
+  const name = getAuthDisplayName(user, profile?.fullName);
   const email = user?.email || '';
   const cls = `mm-settings-avatar${size === 'lg' ? ' lg' : ''}`;
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (url) {
+  useEffect(() => {
+    setImageFailed(false);
+  }, [url]);
+
+  if (url && !imageFailed) {
     return (
       <div className={cls} style={{ padding: 0, overflow: 'hidden' }}>
-        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+        <img
+          src={url}
+          alt=""
+          onError={() => setImageFailed(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+        />
       </div>
     );
   }
@@ -214,10 +221,7 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
 }
 
 function getProviderLabel(user: any): string {
-  const provider = user?.app_metadata?.provider || user?.app_metadata?.providers?.[0] || '';
-  if (provider === 'github') return 'GitHub account';
-  if (provider === 'google') return 'Google account';
-  return 'Email account';
+  return getAuthProviderLabel(user);
 }
 
 /* ────────────────────────────────────────────
@@ -248,7 +252,10 @@ export function SettingsHubPage() {
 
   const handleClearHistory = useCallback(async () => {
     if (window.confirm('Clear all search history? This cannot be undone.')) {
-      if (!user?.id) return;
+      if (!user?.id || !isSupabaseConfigured || !supabase) {
+        window.alert('Cloud sync is not configured.');
+        return;
+      }
       try {
         await supabase.from('search_history').delete().eq('user_id', user.id);
         window.alert('Search history cleared.');
@@ -261,6 +268,10 @@ export function SettingsHubPage() {
   const handleDeleteAccount = useCallback(async () => {
     const confirmName = window.prompt('Type DELETE to permanently delete your account and all data.');
     if (confirmName === 'DELETE') {
+      if (!isSupabaseConfigured || !supabase) {
+        window.alert('Cloud sync is not configured.');
+        return;
+      }
       try {
         const { error } = await supabase.rpc('delete_user_account');
         if (error) throw error;
@@ -277,12 +288,12 @@ export function SettingsHubPage() {
     if (window.confirm('Sign out of MovieMonk?')) {
       try {
         await signOut();
-        navigate('/', { replace: true });
+        window.location.replace('/');
       } catch {
         // handled by auth context
       }
     }
-  }, [signOut, navigate]);
+  }, [signOut]);
 
   if (loading) {
     return <SettingsLayout><div className="mm-settings-body"><p className="text-sm text-brand-text-light text-center">Loading...</p></div></SettingsLayout>;
@@ -290,7 +301,7 @@ export function SettingsHubPage() {
 
   if (!user) return null;
 
-  const displayName = profile.fullName || user.user_metadata?.full_name || user.user_metadata?.name || '';
+  const displayName = getAuthDisplayName(user, profile.fullName);
   const email = user.email || '';
   const genreCount = preferences.genres.length;
   const isCloudSync = Boolean(user.id);
@@ -463,7 +474,7 @@ export function ProfileSettingsPage() {
 
   if (!user) return null;
 
-  const displayName = profile.fullName || user.user_metadata?.full_name || '';
+  const displayName = getAuthDisplayName(user, profile.fullName);
   const email = user.email || '';
 
   return (

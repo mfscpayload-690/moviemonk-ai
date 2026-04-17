@@ -307,6 +307,9 @@ async function settleOrDefault<T>(promise: Promise<T>, fallback: T, label: strin
   try {
     return await promise;
   } catch (error) {
+    if ((error as { name?: string } | null)?.name === 'AbortError') {
+      return fallback;
+    }
     console.warn(`[discovery] ${label} failed`, error);
     return fallback;
   }

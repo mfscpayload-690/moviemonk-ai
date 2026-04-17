@@ -2,12 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 
 export const AuthButton: React.FC = () => {
-  const { isEnabled, user, loading, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const avatar = getAuthAvatarUrl(user);
+  const displayName = getAuthDisplayName(user);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -19,6 +23,10 @@ export const AuthButton: React.FC = () => {
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [menuOpen]);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [avatar]);
 
   // The `isEnabled` check is removed so the "Sign in" button always shows, allowing users to reach the /login page even if they don't have local env setup.
   if (loading) {
@@ -39,9 +47,6 @@ export const AuthButton: React.FC = () => {
     );
   }
 
-  const avatar = user.user_metadata?.avatar_url as string | undefined;
-  const displayName = (user.user_metadata?.preferred_username || user.user_metadata?.name || user.email || 'User') as string;
-
   return (
     <div className="auth-user-menu" ref={containerRef}>
       <button
@@ -51,8 +56,8 @@ export const AuthButton: React.FC = () => {
         aria-expanded={menuOpen}
         aria-label="Open account menu"
       >
-        {avatar ? (
-          <img src={avatar} alt={displayName} className="auth-avatar" />
+        {avatar && !avatarFailed ? (
+          <img src={avatar} alt={displayName} className="auth-avatar" onError={() => setAvatarFailed(true)} />
         ) : (
           <span className="auth-avatar-fallback">{displayName.slice(0, 1).toUpperCase()}</span>
         )}
@@ -63,9 +68,14 @@ export const AuthButton: React.FC = () => {
           <button
             type="button"
             className="auth-dropdown-item"
-            onClick={() => {
+            onClick={async () => {
               setMenuOpen(false);
-              void signOut().catch(() => undefined);
+              try {
+                await signOut();
+                window.location.replace('/');
+              } catch {
+                // handled by auth context
+              }
             }}
           >
             <LogOut className="w-4 h-4" />
