@@ -103,28 +103,13 @@
 }
 
 .login-logo {
-  width: 52px;
-  height: 52px;
-  filter: drop-shadow(0 4px 12px rgba(124, 58, 237, 0.5));
+  width: 2.75rem;
+  height: 2.75rem;
 }
 
-.login-title {
-  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+.login-brand-title {
   font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.05em;
   line-height: 1;
-}
-
-.login-title-movie {
-  color: #ffffff;
-}
-
-.login-title-monk {
-  background: linear-gradient(135deg, #a78bfa 0%, #db2777 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 /* ── Hero text ── */
@@ -158,6 +143,13 @@
   gap: 1rem;
   width: 100%;
   margin-top: 0.5rem;
+}
+
+.login-auth-helper {
+  margin-top: -0.35rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  text-align: center;
 }
 
 .login-oauth-btn {
@@ -315,7 +307,7 @@
     border-radius: 24px;
   }
 
-  .login-title {
+  .login-brand-title {
     font-size: 1.75rem;
   }
 

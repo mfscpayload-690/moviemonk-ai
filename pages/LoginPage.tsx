@@ -96,10 +96,10 @@ export default function LoginPage() {
       >
         {/* Branding */}
         <div className="login-branding">
-          <Logo className="login-logo" />
-          <h1 className="login-title">
-            <span className="login-title-movie">Movie</span>
-            <span className="login-title-monk">Monk</span>
+          <Logo className="login-logo drop-shadow-glow" />
+          <h1 className="brand-signature title-font login-brand-title" aria-label="MovieMonk">
+            <span className="brand-signature-movie">Movie</span>
+            <span className="brand-signature-monk">Monk</span>
           </h1>
         </div>
 
@@ -125,7 +125,7 @@ export default function LoginPage() {
             disabled={loading}
           >
             <GoogleIcon />
-            <span>Continue with Google</span>
+            <span>{loading ? 'Connecting...' : 'Continue with Google'}</span>
           </motion.button>
 
           <motion.button
@@ -139,9 +139,11 @@ export default function LoginPage() {
             disabled={loading}
           >
             <GitHubIcon />
-            <span>Continue with GitHub</span>
+            <span>{loading ? 'Connecting...' : 'Continue with GitHub'}</span>
           </motion.button>
         </div>
+
+        <p className="login-auth-helper">Secure OAuth sign-in. No password required.</p>
 
         {/* Error display */}
         {error && (
@@ -149,6 +151,8 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="login-error-text"
+            role="alert"
+            aria-live="polite"
           >
             {error}
           </motion.p>
