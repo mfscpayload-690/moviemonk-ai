@@ -184,11 +184,14 @@ const PersonDisplay: React.FC<{
       <section className="person-editorial-hero">
         <div className="person-editorial-identity">
           {person.profile_url ? (
-            <img
-              src={person.profile_url}
-              alt={person.name}
-              className="person-editorial-avatar"
-            />
+              <img
+                src={person.profile_url}
+                alt={person.name}
+                className="person-editorial-avatar"
+                loading="eager"
+                decoding="async"
+                sizes="160px"
+              />
           ) : (
             <div className="person-editorial-avatar person-editorial-avatar-fallback">No Photo</div>
           )}
