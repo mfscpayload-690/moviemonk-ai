@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { CheckIcon, InfoIcon, StarIcon, BellIcon, ChevronRightIcon, ShieldIcon, TrashIcon, ClockIcon, GlobeIcon } from '../components/icons';
-import logoUrl from '../asset/android-chrome-192x192.png';
+import { CheckIcon, InfoIcon, StarIcon, BellIcon, ChevronRightIcon, ShieldIcon, TrashIcon, ClockIcon, GlobeIcon, Logo } from '../components/icons';
+import { APP_VERSION } from '../lib/appMeta';
 
 import {
   DEFAULT_PREFERENCE_SETTINGS,
@@ -54,8 +54,6 @@ const LANGUAGE_OPTIONS = [
 
 const DECADE_OPTIONS = ['1960s', '1970s', '1980s', '1990s', '2000s', '2010s', '2020s'];
 const REGION_OPTIONS = ['Hollywood', 'Bollywood', 'K-drama', 'Anime', 'European', 'Latin American', 'Mollywood', 'South Indian'];
-
-const APP_VERSION = '2.8.0';
 
 /* ────────────────────────────────────────────
    Shared hooks & helpers
@@ -130,9 +128,12 @@ function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-container" style={{ background: '#121212' }}>
       <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logoUrl} alt="MovieMonk" className="w-8 h-8" />
-          <span className="text-white font-bold text-[15px] tracking-tight">MovieMonk</span>
+        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
+          <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
+          <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+            <span className="brand-signature-movie">Movie</span>
+            <span className="brand-signature-monk">Monk</span>
+          </h1>
         </Link>
         <button type="button" className="mm-settings-nav-back" onClick={() => navigate('/')}>
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
@@ -151,9 +152,12 @@ function SubPageLayout({ title, children }: { title: string; children: React.Rea
   return (
     <div className="app-container" style={{ background: '#121212' }}>
       <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logoUrl} alt="MovieMonk" className="w-8 h-8" />
-          <span className="text-white font-bold text-[15px] tracking-tight">MovieMonk</span>
+        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
+          <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
+          <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+            <span className="brand-signature-movie">Movie</span>
+            <span className="brand-signature-monk">Monk</span>
+          </h1>
         </Link>
       </header>
       <div className="mm-settings-panel-header">

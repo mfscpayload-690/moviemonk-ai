@@ -4,8 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
 import { useWatched } from '../hooks/useWatched';
 import { loadProfileSettings } from '../lib/userSettings';
-import logoUrl from '../asset/android-chrome-192x192.png';
-import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon } from '../components/icons';
+import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon, Logo } from '../components/icons';
 import { WatchlistFolder } from '../types';
 import {
   getWatchlistIconOption,
@@ -22,9 +21,12 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-container" style={{ background: '#121212', height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50 sticky top-0">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logoUrl} alt="MovieMonk" className="w-8 h-8" />
-          <span className="text-white font-bold text-[15px] tracking-tight">MovieMonk</span>
+        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
+          <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
+          <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
+            <span className="brand-signature-movie">Movie</span>
+            <span className="brand-signature-monk">Monk</span>
+          </h1>
         </Link>
         <button type="button" className="mm-settings-nav-back" onClick={() => navigate('/')}>
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>

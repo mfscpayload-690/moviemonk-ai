@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/icons';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import ParticleBackground from '../components/ParticleBackground';
+import { APP_VERSION } from '../lib/appMeta';
 
 /* ── Inline SVG icons for OAuth providers ── */
 const GoogleIcon: React.FC = () => (
@@ -144,6 +145,7 @@ export default function LoginPage() {
         </div>
 
         <p className="login-auth-helper">Secure OAuth sign-in. No password required.</p>
+        <p className="login-version-label">MovieMonk v{APP_VERSION} · MIT License</p>
 
         {/* Error display */}
         {error && (

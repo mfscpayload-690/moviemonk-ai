@@ -152,6 +152,13 @@
   text-align: center;
 }
 
+.login-version-label {
+  margin-top: -0.6rem;
+  font-size: 0.72rem;
+  color: rgba(148, 163, 184, 0.8);
+  text-align: center;
+}
+
 .login-oauth-btn {
   display: flex;
   align-items: center;

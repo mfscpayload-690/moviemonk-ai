@@ -23,6 +23,7 @@ import { cacheGet, cacheSet, movieCacheKey, personCacheKey } from './lib/session
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './components/WatchlistIconPicker';
 import SeoHead from './components/SeoHead';
 import { SITE_NAME } from './lib/seo';
+import { APP_VERSION } from './lib/appMeta';
 import {
   QuickSaveTitle,
   QUICK_SAVE_DEFAULT_COLOR,
@@ -1036,7 +1037,7 @@ const App: React.FC = () => {
           {/* Global Footer */}
           <footer className="w-full py-2.5 mt-6 text-center border-t border-white/10 text-brand-text-light/50 text-xs px-4">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3">
-              <span className="whitespace-nowrap">MovieMonk v2.8.0 · MIT License</span>
+              <span className="whitespace-nowrap">MovieMonk v{APP_VERSION} · MIT License</span>
               <span className="hidden sm:inline-block w-0.5 h-0.5 rounded-full bg-white/20"></span>
               <a 
                 href="https://github.com/mfscpayload-690/moviemonk-ai" 
