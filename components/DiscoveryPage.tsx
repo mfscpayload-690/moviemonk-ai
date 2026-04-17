@@ -22,6 +22,10 @@ interface DiscoveryPageProps {
   watchlists: WatchlistFolder[];
 }
 
+const PRIORITY_SECTION_COUNT = 2;
+const HAS_IDLE_CALLBACK_SUPPORT =
+  typeof window !== 'undefined' && 'requestIdleCallback' in window;
+
 const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist, watchlists }) => {
   const {
     heroItems,
@@ -43,8 +47,11 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   const [radarLoading, setRadarLoading] = useState(false);
   const [radarError, setRadarError] = useState<string | null>(null);
   const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
+  const [showDeferredSections, setShowDeferredSections] = useState(!HAS_IDLE_CALLBACK_SUPPORT);
   const { ref: radarRevealRef, isRevealed: isRadarRevealed } = useScrollReveal<HTMLElement>();
   const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
+  const prioritySections = useMemo(() => sections.slice(0, PRIORITY_SECTION_COUNT), [sections]);
+  const deferredSections = useMemo(() => sections.slice(PRIORITY_SECTION_COUNT), [sections]);
 
   const handleSectionVisible = useCallback((sectionKey: string, title: string, itemCount: number) => {
     recordDiscoverySectionRendered(sectionKey, title, itemCount);
@@ -89,6 +96,37 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   useEffect(() => {
     void loadRadar();
   }, [loadRadar]);
+
+  useEffect(() => {
+    if (!HAS_IDLE_CALLBACK_SUPPORT) {
+      setShowDeferredSections(true);
+      return;
+    }
+
+    if (isLoading || deferredSections.length === 0) {
+      setShowDeferredSections(deferredSections.length === 0);
+      return;
+    }
+
+    let idleCallbackId: number | undefined;
+    const revealDeferred = () => setShowDeferredSections(true);
+
+    idleCallbackId = (window as Window & {
+      requestIdleCallback: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+    }).requestIdleCallback(() => revealDeferred(), { timeout: 450 });
+
+    return () => {
+      if (
+        typeof idleCallbackId === 'number'
+        && typeof window !== 'undefined'
+        && 'cancelIdleCallback' in window
+      ) {
+        (window as Window & {
+          cancelIdleCallback: (handle: number) => void;
+        }).cancelIdleCallback(idleCallbackId);
+      }
+    };
+  }, [deferredSections.length, isLoading]);
 
   const radarCheckedLabel = useMemo(() => {
     if (!radarCheckedAt) return '';
@@ -151,7 +189,25 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
         )}
       </section>
 
-      {sections.map((section) => (
+      {prioritySections.map((section) => (
+        <ContentCarousel
+          key={section.key}
+          sectionKey={section.key}
+          title={section.title}
+          items={section.items}
+          isLoading={isLoading}
+          onSectionVisible={handleSectionVisible}
+          onSectionSkipped={handleSectionSkipped}
+          onCardView={handleCardView}
+          onCardOpen={handleCardOpen}
+          onOpenTitle={onOpenTitle}
+          isWatched={isWatched}
+          onToggleWatched={onToggleWatched}
+          onQuickSaveToWatchlist={onQuickSaveToWatchlist}
+        />
+      ))}
+
+      {showDeferredSections && deferredSections.map((section) => (
         <ContentCarousel
           key={section.key}
           sectionKey={section.key}

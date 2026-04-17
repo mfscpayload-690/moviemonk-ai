@@ -95,7 +95,23 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
 };
 
 
-const ImageWithFallback: React.FC<{ src: string, alt: string, className: string }> = ({ src, alt, className }) => {
+interface ImageWithFallbackProps {
+    src: string;
+    alt: string;
+    className: string;
+    loading?: 'lazy' | 'eager';
+    fetchPriority?: 'high' | 'low' | 'auto';
+    sizes?: string;
+}
+
+const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
+    src,
+    alt,
+    className,
+    loading = 'lazy',
+    fetchPriority = 'auto',
+    sizes
+}) => {
     const [error, setError] = useState(false);
     const [loaded, setLoaded] = useState(false);
 
@@ -140,6 +156,10 @@ const ImageWithFallback: React.FC<{ src: string, alt: string, className: string 
                 className={`w-full h-full object-cover transition-opacity duration-400 ${loaded ? 'opacity-100' : 'opacity-0'}`}
                 onError={handleError}
                 onLoad={handleLoad}
+                loading={loading}
+                decoding="async"
+                fetchPriority={fetchPriority}
+                sizes={sizes}
             />
         </div>
     );
@@ -635,6 +655,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         alt={`${movie.title} backdrop`}
                         className="absolute inset-0 w-full h-full object-cover z-0"
                         loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                        sizes="100vw"
                     />
                 )}
                 {/* Gradient Overlays - Cinematic */}
@@ -651,6 +674,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 src={heroPosterSrc}
                                 alt={`${movie.title} poster`}
                                 className="w-40 sm:w-40 md:w-56 lg:w-64 rounded-lg md:rounded-xl shadow-2xl border-2 md:border-4 border-white/20 aspect-[2/3] poster-hover-effect"
+                                loading="eager"
+                                fetchPriority="high"
+                                sizes="(max-width: 640px) 160px, (max-width: 1024px) 224px, 256px"
                             />
                         </div>
 
@@ -828,6 +854,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                                 src={img}
                                                 alt={`Gallery image ${i + 1}`}
                                                 className="gallery-thumb-img"
+                                                loading="lazy"
+                                                sizes="(max-width: 640px) 44vw, 280px"
                                             />
                                             <div className="gallery-thumb-overlay">
                                                 <span className="gallery-thumb-number">{i + 1}</span>
