@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { CheckIcon, InfoIcon, StarIcon, BellIcon, ChevronRightIcon, ShieldIcon, TrashIcon, ClockIcon, GlobeIcon, Logo } from '../components/icons';
+import { ConfirmDialog, NoticeDialog, PromptDialog } from '../components/BrandedDialogs';
 import { APP_VERSION } from '../lib/appMeta';
 
 import {
@@ -237,6 +238,13 @@ export function SettingsHubPage() {
   const navigate = useNavigate();
   const [preferences, setPreferences] = useState<UserPreferenceSettings>(DEFAULT_PREFERENCE_SETTINGS);
   const [profile, setProfile] = useState<UserProfileSettings>(DEFAULT_PROFILE_SETTINGS);
+  const [clearHistoryOpen, setClearHistoryOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deleteConfirmValue, setDeleteConfirmValue] = useState('');
+  const [deleteConfirmError, setDeleteConfirmError] = useState<string | null>(null);
+  const [workingState, setWorkingState] = useState<'history' | 'signout' | 'delete' | null>(null);
+  const [notice, setNotice] = useState<{ title: string; description: string; tone?: 'default' | 'destructive' | 'success' } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -255,47 +263,82 @@ export function SettingsHubPage() {
   }, [user?.id]);
 
   const handleClearHistory = useCallback(async () => {
-    if (window.confirm('Clear all search history? This cannot be undone.')) {
-      if (!user?.id || !isSupabaseConfigured || !supabase) {
-        window.alert('Cloud sync is not configured.');
-        return;
-      }
-      try {
-        await supabase.from('search_history').delete().eq('user_id', user.id);
-        window.alert('Search history cleared.');
-      } catch (e) {
-        window.alert('Error clearing search history.');
-      }
+    setClearHistoryOpen(false);
+    if (!user?.id || !isSupabaseConfigured || !supabase) {
+      setNotice({
+        title: 'Cloud sync unavailable',
+        description: 'Search history is currently tied to your synced account, and cloud sync is not configured on this device.'
+      });
+      return;
+    }
+
+    setWorkingState('history');
+    try {
+      await supabase.from('search_history').delete().eq('user_id', user.id);
+      setNotice({
+        title: 'Search history cleared',
+        description: 'Your recent searches were removed from your account history.',
+        tone: 'success'
+      });
+    } catch {
+      setNotice({
+        title: 'Could not clear history',
+        description: 'MovieMonk could not clear your synced search history right now. Please try again in a moment.',
+        tone: 'destructive'
+      });
+    } finally {
+      setWorkingState(null);
     }
   }, [user?.id]);
 
   const handleDeleteAccount = useCallback(async () => {
-    const confirmName = window.prompt('Type DELETE to permanently delete your account and all data.');
-    if (confirmName === 'DELETE') {
-      if (!isSupabaseConfigured || !supabase) {
-        window.alert('Cloud sync is not configured.');
-        return;
-      }
-      try {
-        const { error } = await supabase.rpc('delete_user_account');
-        if (error) throw error;
-        await signOut();
-        navigate('/', { replace: true });
-        window.alert('Account successfully deleted.');
-      } catch (err: any) {
-        window.alert(err?.message || 'Failed to delete account.');
-      }
+    if (deleteConfirmValue.trim() !== 'DELETE') {
+      setDeleteConfirmError('Please type DELETE to confirm this permanent action.');
+      return;
     }
-  }, [signOut, navigate]);
+
+    setDeleteConfirmError(null);
+    setWorkingState('delete');
+
+    if (!isSupabaseConfigured || !supabase) {
+      setNotice({
+        title: 'Cloud sync unavailable',
+        description: 'Account deletion is only available when MovieMonk cloud sync is configured.',
+        tone: 'destructive'
+      });
+      setWorkingState(null);
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('delete_user_account');
+      if (error) throw error;
+      setDeleteAccountOpen(false);
+      await signOut();
+      navigate('/', { replace: true });
+      setNotice({
+        title: 'Account deleted',
+        description: 'Your MovieMonk account and synced data were permanently removed.',
+        tone: 'success'
+      });
+    } catch (err: any) {
+      setNotice({
+        title: 'Delete failed',
+        description: err?.message || 'MovieMonk could not delete your account right now.',
+        tone: 'destructive'
+      });
+    } finally {
+      setWorkingState(null);
+    }
+  }, [deleteConfirmValue, navigate, signOut]);
 
   const handleSignOut = useCallback(async () => {
-    if (window.confirm('Sign out of MovieMonk?')) {
-      try {
-        await signOut();
-        window.location.replace('/');
-      } catch {
-        // handled by auth context
-      }
+    setSignOutOpen(false);
+    setWorkingState('signout');
+    try {
+      await signOut();
+      window.location.replace('/');
+    } finally {
+      setWorkingState(null);
     }
   }, [signOut]);
 
@@ -411,7 +454,7 @@ export function SettingsHubPage() {
                   <button type="button" className={`mm-settings-toggle ${isCloudSync ? 'on' : ''}`} aria-label="Watchlist sync status" style={{ pointerEvents: 'none' }} />
                 </div>
               </div>
-              <button type="button" className="mm-settings-row" onClick={handleClearHistory}>
+              <button type="button" className="mm-settings-row" onClick={() => setClearHistoryOpen(true)}>
                 <div className="mm-settings-row-icon mm-icon-amber" style={{ color: '#EF9F27' }}>
                   <ClockIcon className="w-4 h-4" />
                 </div>
@@ -423,7 +466,7 @@ export function SettingsHubPage() {
                   <span style={{ fontSize: 12, color: '#EF9F27' }}>Clear</span>
                 </div>
               </button>
-              <button type="button" className="mm-settings-row" onClick={handleSignOut}>
+              <button type="button" className="mm-settings-row" onClick={() => setSignOutOpen(true)}>
                 <div className="mm-settings-row-icon mm-icon-purple">
                   <svg fill="none" stroke="#AFA9EC" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
                 </div>
@@ -438,7 +481,15 @@ export function SettingsHubPage() {
             {/* Danger zone */}
             <div className="mm-settings-section-label">Danger zone</div>
             <div style={{ marginBottom: 20 }}>
-              <button type="button" className="mm-settings-danger-row" onClick={handleDeleteAccount}>
+              <button
+                type="button"
+                className="mm-settings-danger-row"
+                onClick={() => {
+                  setDeleteConfirmValue('');
+                  setDeleteConfirmError(null);
+                  setDeleteAccountOpen(true);
+                }}
+              >
                 <div className="mm-settings-row-icon mm-icon-red" style={{ color: '#E24B4A' }}>
                   <TrashIcon className="w-4 h-4" />
                 </div>
@@ -453,6 +504,53 @@ export function SettingsHubPage() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={clearHistoryOpen}
+        title="Clear search history?"
+        description="This removes your synced MovieMonk search history and cannot be undone."
+        confirmLabel="Clear history"
+        tone="destructive"
+        busy={workingState === 'history'}
+        onConfirm={() => void handleClearHistory()}
+        onClose={() => setClearHistoryOpen(false)}
+      />
+      <ConfirmDialog
+        open={signOutOpen}
+        title="Sign out of MovieMonk?"
+        description="You can sign back in anytime to restore your synced settings, watchlists, and watched titles."
+        confirmLabel="Sign out"
+        busy={workingState === 'signout'}
+        onConfirm={() => void handleSignOut()}
+        onClose={() => setSignOutOpen(false)}
+      />
+      <PromptDialog
+        open={deleteAccountOpen}
+        title="Delete account permanently?"
+        description="Type DELETE to confirm. This removes your profile, synced watchlists, watched history, and saved preferences."
+        placeholder="Type DELETE"
+        confirmLabel="Delete account"
+        tone="destructive"
+        busy={workingState === 'delete'}
+        value={deleteConfirmValue}
+        error={deleteConfirmError}
+        onChange={(nextValue) => {
+          setDeleteConfirmValue(nextValue);
+          if (deleteConfirmError) setDeleteConfirmError(null);
+        }}
+        onConfirm={() => void handleDeleteAccount()}
+        onClose={() => {
+          setDeleteAccountOpen(false);
+          setDeleteConfirmValue('');
+          setDeleteConfirmError(null);
+        }}
+      />
+      <NoticeDialog
+        open={Boolean(notice)}
+        title={notice?.title || ''}
+        description={notice?.description}
+        tone={notice?.tone}
+        onClose={() => setNotice(null)}
+      />
     </SettingsLayout>
   );
 }
@@ -713,7 +811,7 @@ export function PreferenceSettingsPage() {
 
         {/* Toggles */}
         <div className="mm-settings-field">
-          <label>Behavior</label>
+          <label>Experience</label>
           <div className="mm-settings-group">
             <div className="mm-settings-row" style={{ cursor: 'default' }}>
               <div className="mm-settings-row-text">
@@ -729,14 +827,38 @@ export function PreferenceSettingsPage() {
             </div>
             <div className="mm-settings-row" style={{ cursor: 'default' }}>
               <div className="mm-settings-row-text">
+                <div className="mm-settings-row-title">Reduced motion</div>
+                <div className="mm-settings-row-sub">Soften reveals, pulses, and heavy movement across the app</div>
+              </div>
+              <button
+                type="button"
+                className={`mm-settings-toggle ${preferences.reducedMotion ? 'on' : ''}`}
+                onClick={() => setPreferences({ ...preferences, reducedMotion: !preferences.reducedMotion })}
+                aria-label="Toggle reduced motion"
+              />
+            </div>
+            <div className="mm-settings-row" style={{ cursor: 'default' }}>
+              <div className="mm-settings-row-text">
                 <div className="mm-settings-row-title">Autoplay trailers</div>
-                <div className="mm-settings-row-sub">Auto-start video previews</div>
+                <div className="mm-settings-row-sub">Allow trailers to start playing immediately after you press play</div>
               </div>
               <button
                 type="button"
                 className={`mm-settings-toggle ${preferences.autoplayTrailers ? 'on' : ''}`}
                 onClick={() => setPreferences({ ...preferences, autoplayTrailers: !preferences.autoplayTrailers })}
                 aria-label="Toggle autoplay trailers"
+              />
+            </div>
+            <div className="mm-settings-row" style={{ cursor: 'default' }}>
+              <div className="mm-settings-row-text">
+                <div className="mm-settings-row-title">Compact cards</div>
+                <div className="mm-settings-row-sub">Fit more posters on discovery and search surfaces</div>
+              </div>
+              <button
+                type="button"
+                className={`mm-settings-toggle ${preferences.cardDensity === 'compact' ? 'on' : ''}`}
+                onClick={() => setCardDensity(preferences.cardDensity === 'compact' ? 'rich' : 'compact')}
+                aria-label="Toggle compact cards"
               />
             </div>
           </div>
