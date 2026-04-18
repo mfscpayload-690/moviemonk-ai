@@ -127,6 +127,11 @@ export function WatchlistsDashboard() {
   }, []);
 
   useEffect(() => {
+    if (!supabase) {
+      setSearchHistory([]);
+      return;
+    }
+
     if (user?.id) {
       supabase
         .from('search_history')
@@ -143,7 +148,7 @@ export function WatchlistsDashboard() {
   }, [user?.id]);
 
   const handleClearHistory = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !supabase) return;
     try {
       const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
       if (error) throw error;
