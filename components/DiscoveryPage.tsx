@@ -74,8 +74,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
   const [showDeferredSections, setShowDeferredSections] = useState(!HAS_IDLE_CALLBACK_SUPPORT);
   const [railOrder, setRailOrder] = useState<string[]>(() => loadRailOrder());
-  const [draggingRailKey, setDraggingRailKey] = useState<string | null>(null);
-  const [dropTargetKey, setDropTargetKey] = useState<string | null>(null);
   const { ref: radarRevealRef, isRevealed: isRadarRevealed } = useScrollReveal<HTMLElement>();
   const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
   const prioritySections = useMemo(() => sections.slice(0, PRIORITY_SECTION_COUNT), [sections]);
@@ -291,26 +289,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
           title={rail.title}
           items={rail.items}
           isLoading={rail.isLoading}
-          draggable={!rail.isLoading}
-          isDropTarget={dropTargetKey === rail.key}
-          onDragStart={(key) => {
-            setDraggingRailKey(key);
-            setDropTargetKey(key);
-          }}
-          onDragOver={(key) => setDropTargetKey(key)}
-          onDrop={(key) => {
-            if (!draggingRailKey || draggingRailKey === key) {
-              setDraggingRailKey(null);
-              setDropTargetKey(null);
-              return;
-            }
-            const next = railOrder.filter((entry) => entry !== draggingRailKey);
-            const targetIndex = next.indexOf(key);
-            next.splice(targetIndex === -1 ? next.length : targetIndex, 0, draggingRailKey);
-            updateRailOrder(next);
-            setDraggingRailKey(null);
-            setDropTargetKey(null);
-          }}
           headerActions={(
             <>
               <button type="button" className="mm-icon-button" onClick={() => moveRailToTop(rail.key)} aria-label={`Pin ${rail.title} to top`}>
