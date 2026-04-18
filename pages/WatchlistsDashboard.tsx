@@ -105,6 +105,28 @@ export function WatchlistsDashboard() {
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
 
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    const previousHtmlOverflow = html.style.overflow;
+    const previousHtmlOverflowY = html.style.overflowY;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverflowY = body.style.overflowY;
+
+    html.style.overflow = 'auto';
+    html.style.overflowY = 'auto';
+    body.style.overflow = 'auto';
+    body.style.overflowY = 'auto';
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      html.style.overflowY = previousHtmlOverflowY;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overflowY = previousBodyOverflowY;
+    };
+  }, []);
+
+  useEffect(() => {
     if (user?.id) {
       supabase
         .from('search_history')
