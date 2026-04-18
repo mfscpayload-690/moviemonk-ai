@@ -20,7 +20,7 @@ import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   return (
-    <div className="app-container" style={{ background: '#121212', height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="app-container watchlists-dashboard-layout" style={{ background: '#121212' }}>
       <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50 sticky top-0">
         <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
           <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
@@ -35,8 +35,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         </button>
       </header>
       <main
-        className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8"
-        style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        className="w-full max-w-[92rem] mx-auto p-4 sm:p-6 lg:p-8 xl:px-10"
       >
         {children}
       </main>
@@ -106,6 +105,33 @@ export function WatchlistsDashboard() {
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
 
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    const previousHtmlOverflow = html.style.overflow;
+    const previousHtmlOverflowY = html.style.overflowY;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverflowY = body.style.overflowY;
+
+    html.style.overflow = 'auto';
+    html.style.overflowY = 'auto';
+    body.style.overflow = 'auto';
+    body.style.overflowY = 'auto';
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      html.style.overflowY = previousHtmlOverflowY;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overflowY = previousBodyOverflowY;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      setSearchHistory([]);
+      return;
+    }
+
     if (user?.id) {
       supabase
         .from('search_history')
@@ -122,7 +148,7 @@ export function WatchlistsDashboard() {
   }, [user?.id]);
 
   const handleClearHistory = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !supabase) return;
     try {
       const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
       if (error) throw error;
