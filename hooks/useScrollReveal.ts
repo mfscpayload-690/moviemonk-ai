@@ -48,7 +48,8 @@ export function useScrollReveal<T extends Element>({
     if (typeof window === 'undefined') return;
 
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (reducedMotionQuery.matches) {
+    const appReducedMotion = document.documentElement.dataset.motion === 'reduced';
+    if (reducedMotionQuery.matches || appReducedMotion) {
       setIsRevealed(true);
       return;
     }

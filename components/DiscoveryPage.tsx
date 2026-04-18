@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { track } from '@vercel/analytics/react';
+import { Pin, RotateCcw } from 'lucide-react';
 import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
@@ -11,6 +12,7 @@ import {
   recordDiscoverySectionRendered,
   recordDiscoverySectionSkipped
 } from '../services/observability';
+import { loadPreferenceSettings, savePreferenceSettings } from '../lib/userSettings';
 import { DiscoveryItem, WatchlistFolder } from '../types';
 import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
@@ -23,8 +25,31 @@ interface DiscoveryPageProps {
 }
 
 const PRIORITY_SECTION_COUNT = 2;
+const DISCOVERY_RAIL_ORDER_KEY = 'moviemonk_discovery_rail_order_v1';
 const HAS_IDLE_CALLBACK_SUPPORT =
   typeof window !== 'undefined' && 'requestIdleCallback' in window;
+
+type DiscoveryRail = {
+  key: string;
+  title: string;
+  items: DiscoveryItem[];
+  isLoading?: boolean;
+};
+
+function loadRailOrder(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DISCOVERY_RAIL_ORDER_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRailOrder(order: string[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(DISCOVERY_RAIL_ORDER_KEY, JSON.stringify(order));
+}
 
 const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist, watchlists }) => {
   const {
@@ -48,6 +73,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   const [radarError, setRadarError] = useState<string | null>(null);
   const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
   const [showDeferredSections, setShowDeferredSections] = useState(!HAS_IDLE_CALLBACK_SUPPORT);
+  const [railOrder, setRailOrder] = useState<string[]>(() => loadRailOrder());
   const { ref: radarRevealRef, isRevealed: isRadarRevealed } = useScrollReveal<HTMLElement>();
   const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
   const prioritySections = useMemo(() => sections.slice(0, PRIORITY_SECTION_COUNT), [sections]);
@@ -135,6 +161,86 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
     return `Last checked ${new Date(timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
   }, [radarCheckedAt]);
 
+  const discoveryRails = useMemo<DiscoveryRail[]>(() => {
+    const rails: DiscoveryRail[] = [];
+    if (radarLoading || radarItems.length > 0) {
+      rails.push({
+        key: 'release-radar',
+        title: 'Release Radar',
+        items: radarItems,
+        isLoading: radarLoading
+      });
+    }
+
+    prioritySections.forEach((section) => {
+      rails.push({ key: section.key, title: section.title, items: section.items, isLoading });
+    });
+
+    if (showDeferredSections) {
+      deferredSections.forEach((section) => {
+        rails.push({ key: section.key, title: section.title, items: section.items, isLoading });
+      });
+    }
+
+    return rails;
+  }, [deferredSections, isLoading, prioritySections, radarItems, radarLoading, showDeferredSections]);
+
+  const orderedRails = useMemo(() => {
+    const orderMap = new Map(railOrder.map((key, index) => [key, index]));
+    return [...discoveryRails].sort((a, b) => {
+      const aIndex = orderMap.get(a.key);
+      const bIndex = orderMap.get(b.key);
+      if (typeof aIndex === 'number' && typeof bIndex === 'number') return aIndex - bIndex;
+      if (typeof aIndex === 'number') return -1;
+      if (typeof bIndex === 'number') return 1;
+      return 0;
+    });
+  }, [discoveryRails, railOrder]);
+
+  useEffect(() => {
+    const availableKeys = discoveryRails.map((rail) => rail.key);
+    setRailOrder((current) => {
+      const next = [...current.filter((key) => availableKeys.includes(key)), ...availableKeys.filter((key) => !current.includes(key))];
+      if (next.join('|') !== current.join('|')) {
+        saveRailOrder(next);
+      }
+      return next;
+    });
+  }, [discoveryRails]);
+
+  const updateRailOrder = useCallback((nextOrder: string[]) => {
+    setRailOrder(nextOrder);
+    saveRailOrder(nextOrder);
+  }, []);
+
+  const moveRailToTop = useCallback((key: string) => {
+    const next = [key, ...railOrder.filter((entry) => entry !== key)];
+    updateRailOrder(next);
+  }, [railOrder, updateRailOrder]);
+
+  const moveRail = useCallback((key: string, direction: -1 | 1) => {
+    const currentIndex = railOrder.indexOf(key);
+    if (currentIndex === -1) return;
+    const nextIndex = Math.max(0, Math.min(railOrder.length - 1, currentIndex + direction));
+    if (nextIndex === currentIndex) return;
+    const next = [...railOrder];
+    const [rail] = next.splice(currentIndex, 1);
+    next.splice(nextIndex, 0, rail);
+    updateRailOrder(next);
+  }, [railOrder, updateRailOrder]);
+
+  const resetStrictFilters = useCallback(() => {
+    const current = loadPreferenceSettings();
+    savePreferenceSettings({
+      ...current,
+      genres: [],
+      languages: [],
+      favoriteDecades: [],
+      favoriteRegions: [],
+      contentMix: 'balanced'
+    });
+  }, []);
+
   return (
     <div className={`discovery-page animate-fade-in ${cardDensity === 'compact' ? 'is-compact' : 'is-rich'}`}>
       <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} isWatched={isWatched} onToggleWatched={onToggleWatched} onQuickSaveToWatchlist={onQuickSaveToWatchlist} />
@@ -161,59 +267,37 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
         {radarCheckedLabel && <p className="discovery-genre-caption mb-2">{radarCheckedLabel}</p>}
 
         {radarError && !radarLoading && (
-          <div className="discovery-error" role="status">
-            <div>
-              <p className="discovery-error-copy">{radarError}</p>
+          <div className="mm-empty-state" role="status">
+            <h3>Release radar is quiet right now</h3>
+            <p>{radarError} Add a few saved titles to sharpen the radar, or retry to pull a fresher release pass.</p>
+            <div className="mm-empty-state-actions">
+              <button type="button" className="mm-empty-state-cta" onClick={() => void loadRadar()}>
+                Retry release radar
+              </button>
+              <a href="/watchlists" className="mm-empty-state-cta-secondary">
+                Open watchlists
+              </a>
             </div>
-            <button type="button" className="discovery-cta discovery-cta-secondary" onClick={() => void loadRadar()}>
-              Retry
-            </button>
           </div>
-        )}
-
-        {(radarLoading || radarItems.length > 0) && (
-          <ContentCarousel
-            sectionKey="release-radar"
-            title="Release Radar"
-            items={radarItems}
-            isLoading={radarLoading}
-            onSectionVisible={handleSectionVisible}
-            onSectionSkipped={handleSectionSkipped}
-            onCardView={handleCardView}
-            onCardOpen={handleCardOpen}
-            onOpenTitle={onOpenTitle}
-            isWatched={isWatched}
-            onToggleWatched={onToggleWatched}
-            onQuickSaveToWatchlist={onQuickSaveToWatchlist}
-          />
         )}
       </section>
 
-      {prioritySections.map((section) => (
+      {orderedRails.map((rail) => (
         <ContentCarousel
-          key={section.key}
-          sectionKey={section.key}
-          title={section.title}
-          items={section.items}
-          isLoading={isLoading}
-          onSectionVisible={handleSectionVisible}
-          onSectionSkipped={handleSectionSkipped}
-          onCardView={handleCardView}
-          onCardOpen={handleCardOpen}
-          onOpenTitle={onOpenTitle}
-          isWatched={isWatched}
-          onToggleWatched={onToggleWatched}
-          onQuickSaveToWatchlist={onQuickSaveToWatchlist}
-        />
-      ))}
-
-      {showDeferredSections && deferredSections.map((section) => (
-        <ContentCarousel
-          key={section.key}
-          sectionKey={section.key}
-          title={section.title}
-          items={section.items}
-          isLoading={isLoading}
+          key={rail.key}
+          sectionKey={rail.key}
+          title={rail.title}
+          items={rail.items}
+          isLoading={rail.isLoading}
+          headerActions={(
+            <>
+              <button type="button" className="mm-icon-button" onClick={() => moveRailToTop(rail.key)} aria-label={`Pin ${rail.title} to top`}>
+                <Pin className="w-4 h-4" />
+              </button>
+              <button type="button" className="mm-chip-button" onClick={() => moveRail(rail.key, -1)}>Up</button>
+              <button type="button" className="mm-chip-button" onClick={() => moveRail(rail.key, 1)}>Down</button>
+            </>
+          )}
           onSectionVisible={handleSectionVisible}
           onSectionSkipped={handleSectionSkipped}
           onCardView={handleCardView}
@@ -226,13 +310,16 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
       ))}
 
       {isStrictPersonalized && !isLoading && sections.length === 0 && (
-        <section className="discovery-error" role="status">
-          <div>
-            <p className="discovery-section-kicker">No personalized matches</p>
-            <h2 className="discovery-section-title">Try broadening your preferences.</h2>
-            <p className="discovery-error-copy">
-              Your current language, genre, decade, and content mix filters are strict. Update preferences to see more titles.
-            </p>
+        <section className="mm-empty-state" role="status">
+          <h3>No personalized matches yet</h3>
+          <p>Your current language, genre, decade, and content-mix filters are very narrow. Relax them a little and MovieMonk will surface a wider discovery mix.</p>
+          <div className="mm-empty-state-actions">
+            <button type="button" className="mm-empty-state-cta" onClick={resetStrictFilters}>
+              Reset strict filters
+            </button>
+            <a href="/settings/preferences" className="mm-empty-state-cta-secondary">
+              Tune preferences
+            </a>
           </div>
         </section>
       )}
@@ -251,11 +338,16 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
           <div>
             <h2 className="discovery-section-title">Browse by mood</h2>
           </div>
-          {selectedGenre && (
-            <p className="discovery-genre-caption">
-              {isGenreLoading ? 'Refreshing titles...' : `Showing ${selectedGenre.name}`}
-            </p>
-          )}
+          <div className="mm-section-toolbar">
+            {selectedGenre && (
+              <p className="discovery-genre-caption">
+                {isGenreLoading ? 'Refreshing titles...' : `Showing ${selectedGenre.name}`}
+              </p>
+            )}
+            <button type="button" className="mm-icon-button" onClick={() => updateRailOrder(discoveryRails.map((rail) => rail.key))} aria-label="Reset discovery rail order">
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <GenrePills genres={movieGenres} selectedGenre={selectedGenre} onSelectGenre={selectGenre} />
         <ContentCarousel

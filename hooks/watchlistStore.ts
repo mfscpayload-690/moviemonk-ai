@@ -1,7 +1,13 @@
 import { MovieData, WatchlistFolder, WatchlistItem, WatchlistSaveReceipt } from '../types';
 
 export const WATCHLIST_STORAGE_KEY = 'moviemonk_watchlists_v1';
+export const WATCHLIST_ORDER_STORAGE_KEY = 'moviemonk_watchlist_order_v1';
 export const WATCHLIST_DEFAULT_ICON = 'folder';
+
+export type WatchlistOrderState = {
+  folderIds: string[];
+  itemIdsByFolder: Record<string, string[]>;
+};
 
 const generateId = () => `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
@@ -41,6 +47,99 @@ export function saveWatchlistsToStorage(
   folders: WatchlistFolder[]
 ): void {
   storage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(folders));
+}
+
+function safeOrderParse(value: string | null): WatchlistOrderState {
+  if (!value) {
+    return { folderIds: [], itemIdsByFolder: {} };
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return {
+      folderIds: Array.isArray(parsed?.folderIds) ? parsed.folderIds.map(String) : [],
+      itemIdsByFolder: typeof parsed?.itemIdsByFolder === 'object' && parsed?.itemIdsByFolder
+        ? Object.fromEntries(
+            Object.entries(parsed.itemIdsByFolder).map(([folderId, itemIds]) => [
+              String(folderId),
+              Array.isArray(itemIds) ? itemIds.map(String) : []
+            ])
+          )
+        : {}
+    };
+  } catch {
+    return { folderIds: [], itemIdsByFolder: {} };
+  }
+}
+
+export function loadWatchlistOrderState(storage: Pick<Storage, 'getItem'>): WatchlistOrderState {
+  return safeOrderParse(storage.getItem(WATCHLIST_ORDER_STORAGE_KEY));
+}
+
+export function saveWatchlistOrderState(
+  storage: Pick<Storage, 'setItem'>,
+  state: WatchlistOrderState
+): void {
+  storage.setItem(WATCHLIST_ORDER_STORAGE_KEY, JSON.stringify(state));
+}
+
+export function applyWatchlistOrder(
+  folders: WatchlistFolder[],
+  state: WatchlistOrderState
+): WatchlistFolder[] {
+  const folderOrder = new Map(state.folderIds.map((id, index) => [id, index]));
+
+  const orderedFolders = [...folders].sort((a, b) => {
+    const aIndex = folderOrder.get(a.id);
+    const bIndex = folderOrder.get(b.id);
+    if (typeof aIndex === 'number' && typeof bIndex === 'number') return aIndex - bIndex;
+    if (typeof aIndex === 'number') return -1;
+    if (typeof bIndex === 'number') return 1;
+    return 0;
+  });
+
+  return orderedFolders.map((folder) => {
+    const itemIds = state.itemIdsByFolder[folder.id] || [];
+    if (itemIds.length === 0) return folder;
+
+    const itemOrder = new Map(itemIds.map((id, index) => [id, index]));
+    return {
+      ...folder,
+      items: [...folder.items].sort((a, b) => {
+        const aIndex = itemOrder.get(a.id);
+        const bIndex = itemOrder.get(b.id);
+        if (typeof aIndex === 'number' && typeof bIndex === 'number') return aIndex - bIndex;
+        if (typeof aIndex === 'number') return -1;
+        if (typeof bIndex === 'number') return 1;
+        return 0;
+      })
+    };
+  });
+}
+
+export function buildWatchlistOrderState(folders: WatchlistFolder[]): WatchlistOrderState {
+  return {
+    folderIds: folders.map((folder) => folder.id),
+    itemIdsByFolder: Object.fromEntries(
+      folders.map((folder) => [folder.id, folder.items.map((item) => item.id)])
+    )
+  };
+}
+
+export function reorderByIds<T extends { id: string }>(
+  items: T[],
+  activeId: string,
+  overId: string
+): T[] {
+  const activeIndex = items.findIndex((item) => item.id === activeId);
+  const overIndex = items.findIndex((item) => item.id === overId);
+
+  if (activeIndex === -1 || overIndex === -1 || activeIndex === overIndex) return items;
+
+  const next = [...items];
+  const [moved] = next.splice(activeIndex, 1);
+  next.splice(overIndex, 0, moved);
+  return next;
 }
 
 export function addFolderToWatchlists(

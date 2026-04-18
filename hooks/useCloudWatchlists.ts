@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MovieData, WatchlistFolder, WatchlistItem, WatchlistSaveReceipt } from '../types';
+import { MovieData, WatchlistFolder, WatchlistSaveReceipt } from '../types';
 import { useWatchlists } from './useWatchlists';
 import {
+  applyWatchlistOrder,
+  buildWatchlistOrderState,
   WATCHLIST_DEFAULT_ICON,
   WATCHLIST_STORAGE_KEY,
+  loadWatchlistOrderState,
   loadWatchlistsFromStorage,
+  reorderByIds,
   rollbackWatchlistSave,
   saveMovieToFolderWithReceipt,
+  saveWatchlistOrderState,
   saveWatchlistsToStorage
 } from './watchlistStore';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,11 +28,6 @@ import {
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const CLOUD_MIGRATION_EVENT = 'watchlists:cloud-migrated';
-
-const getMovieKey = (movie: MovieData) => {
-  if (movie.tmdb_id) return `tmdb:${movie.tmdb_id}`;
-  return `${movie.title}-${movie.year}-${movie.type}`.toLowerCase();
-};
 
 function findItemInFolders(folders: WatchlistFolder[], folderId: string, itemId: string) {
   const folder = folders.find((entry) => entry.id === folderId);
@@ -47,7 +47,7 @@ export function useCloudWatchlists() {
     if (!user?.id || !isSupabaseConfigured) return;
     setCloudLoading(true);
     try {
-      const folders = await fetchCloudWatchlists(user.id);
+      const folders = applyWatchlistOrder(await fetchCloudWatchlists(user.id), loadWatchlistOrderState(localStorage));
       setCloudFolders(folders);
     } catch (error) {
       console.warn('Failed to refresh cloud watchlists', error);
@@ -71,7 +71,15 @@ export function useCloudWatchlists() {
   }, [user?.id, refreshCloud]);
 
   const updateCloudState = (updater: (prev: WatchlistFolder[]) => WatchlistFolder[]) => {
-    setCloudFolders((prev) => updater(prev));
+    setCloudFolders((prev) => {
+      const next = updater(prev);
+      try {
+        saveWatchlistOrderState(localStorage, buildWatchlistOrderState(next));
+      } catch (error) {
+        console.warn('Failed to persist cloud watchlist order', error);
+      }
+      return next;
+    });
   };
 
   const deleteLocalFolder = useCallback(
@@ -114,7 +122,7 @@ export function useCloudWatchlists() {
           throw new Error('Failed to save title to watchlist');
         }
 
-        setCloudFolders(result.next);
+        updateCloudState(() => result.next);
 
         try {
           await saveCloudItem(folderId, result.receipt.nextItem);
@@ -126,7 +134,7 @@ export function useCloudWatchlists() {
         }
       },
       rollbackSave: async (receipt: WatchlistSaveReceipt) => {
-        setCloudFolders((prev) => rollbackWatchlistSave(prev, receipt));
+        updateCloudState((prev) => rollbackWatchlistSave(prev, receipt));
 
         try {
           if (receipt.mode === 'insert') {
@@ -223,6 +231,18 @@ export function useCloudWatchlists() {
           console.warn('Failed to delete cloud folder', error);
           refreshCloud();
         });
+      },
+      reorderFolders: (activeId: string, overId: string) => {
+        if (!activeId || !overId) return;
+        updateCloudState((prev) => reorderByIds(prev, activeId, overId));
+      },
+      reorderItems: (folderId: string, activeId: string, overId: string) => {
+        if (!folderId || !activeId || !overId) return;
+        updateCloudState((prev) => prev.map((folder) => (
+          folder.id === folderId
+            ? { ...folder, items: reorderByIds(folder.items, activeId, overId) }
+            : folder
+        )));
       }
     }),
     [cloudFolders, refreshCloud, user?.id]
@@ -242,6 +262,8 @@ export function useCloudWatchlists() {
       moveItem: local.moveItem,
       deleteItem: local.deleteItem,
       deleteFolder: deleteLocalFolder,
+      reorderFolders: local.reorderFolders,
+      reorderItems: local.reorderItems,
       isCloud: false,
       isSyncing: false
     };

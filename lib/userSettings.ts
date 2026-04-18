@@ -15,6 +15,7 @@ export type UserPreferenceSettings = {
   favoriteRegions: string[];
   contentMix: 'balanced' | 'mostly_movies' | 'mostly_series';
   familySafe: boolean;
+  reducedMotion: boolean;
   autoplayTrailers: boolean;
   cardDensity: 'compact' | 'rich';
 };
@@ -34,6 +35,7 @@ export const DEFAULT_PREFERENCE_SETTINGS: UserPreferenceSettings = {
   favoriteRegions: [],
   contentMix: 'balanced',
   familySafe: true,
+  reducedMotion: false,
   autoplayTrailers: false,
   cardDensity: 'rich'
 };
@@ -65,4 +67,16 @@ export function loadPreferenceSettings(): UserPreferenceSettings {
 
 export function savePreferenceSettings(settings: UserPreferenceSettings): void {
   localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(settings));
+  applyPreferenceSettingsToDocument(settings);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('moviemonk:preferences-updated'));
+  }
+}
+
+export function applyPreferenceSettingsToDocument(settings: UserPreferenceSettings): void {
+  if (typeof document === 'undefined') return;
+
+  document.documentElement.dataset.motion = settings.reducedMotion ? 'reduced' : 'default';
+  document.documentElement.dataset.cardDensity = settings.cardDensity;
+  document.documentElement.style.setProperty('--mm-motion-multiplier', settings.reducedMotion ? '0.01' : '1');
 }

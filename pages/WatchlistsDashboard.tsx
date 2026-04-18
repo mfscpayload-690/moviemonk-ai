@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
 import { useWatched } from '../hooks/useWatched';
 import { loadProfileSettings } from '../lib/userSettings';
+import { ConfirmDialog, NoticeDialog, PromptDialog } from '../components/BrandedDialogs';
 import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon, Logo } from '../components/icons';
 import { WatchlistFolder } from '../types';
 import {
@@ -12,7 +13,7 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
-import { Share2, Copy, Check } from 'lucide-react';
+import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 
@@ -48,11 +49,15 @@ export function WatchlistsDashboard() {
   const navigate = useNavigate();
   const { folderName: folderNameParam } = useParams<{ folderName?: string }>();
   const { 
+    addFolder,
     folders, 
     renameFolder, 
     setFolderIcon,
     deleteFolder, 
     deleteItem,
+    moveItem,
+    reorderFolders,
+    reorderItems,
     isCloud, 
     isSyncing 
   } = useCloudWatchlists();
@@ -84,6 +89,19 @@ export function WatchlistsDashboard() {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const [folderDeleteTarget, setFolderDeleteTarget] = useState<{ id: string; name: string; count: number } | null>(null);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderError, setNewFolderError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ title: string; description: string; tone?: 'default' | 'destructive' | 'success' } | null>(null);
+  const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
+  const [folderDropTargetId, setFolderDropTargetId] = useState<string | null>(null);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  const [itemDropTargetId, setItemDropTargetId] = useState<string | null>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkMoveTarget, setBulkMoveTarget] = useState('');
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
 
@@ -268,9 +286,7 @@ export function WatchlistsDashboard() {
   }, []);
 
   const handleDeleteFolder = (id: string, name: string, count: number) => {
-    if (window.confirm(`Are you sure you want to delete "${name}" and its ${count} items?`)) {
-      deleteFolder(id);
-    }
+    setFolderDeleteTarget({ id, name, count });
   };
 
   const handleShareFolder = async (folder: WatchlistFolder) => {
@@ -299,7 +315,11 @@ export function WatchlistsDashboard() {
       setShareLink(data.share_url);
     } catch (err) {
       console.error('Share error:', err);
-      alert('Failed to create share link. Please try again.');
+      setNotice({
+        title: 'Could not create share link',
+        description: 'MovieMonk ran into an issue while generating that shared watchlist link. Please try again.',
+        tone: 'destructive'
+      });
     } finally {
       setShareLoading(false);
     }
@@ -316,10 +336,74 @@ export function WatchlistsDashboard() {
 
   const displayName = getAuthDisplayName(user, profile?.fullName);
   const avatarUrl = getAuthAvatarUrl(user, profile?.avatarUrl);
+  const sharingFolder = useMemo(() => folders.find((folder) => folder.id === sharingFolderId) || null, [folders, sharingFolderId]);
 
   useEffect(() => {
     setAvatarFailed(false);
   }, [avatarUrl]);
+
+  useEffect(() => {
+    if (!bulkMode) {
+      setSelectedItemIds([]);
+      setBulkMoveTarget('');
+    }
+  }, [bulkMode]);
+
+  const toggleSelectedItem = useCallback((itemId: string) => {
+    setSelectedItemIds((current) => current.includes(itemId)
+      ? current.filter((id) => id !== itemId)
+      : [...current, itemId]);
+  }, []);
+
+  const handleCreateFolder = useCallback(() => {
+    const trimmed = newFolderName.trim();
+    if (!trimmed) {
+      setNewFolderError('Give the folder a name before creating it.');
+      return;
+    }
+
+    addFolder(trimmed, '#7c3aed', WATCHLIST_ICON_DEFAULT);
+    setCreateFolderOpen(false);
+    setNewFolderName('');
+    setNewFolderError(null);
+    setNotice({
+      title: 'Watchlist created',
+      description: `"${trimmed}" is ready for your next save.`,
+      tone: 'success'
+    });
+  }, [addFolder, newFolderName]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (!activeFolderId) return;
+    selectedItemIds.forEach((itemId) => deleteItem(activeFolderId, itemId));
+    setBulkDeleteOpen(false);
+    setSelectedItemIds([]);
+    setBulkMode(false);
+  }, [activeFolderId, deleteItem, selectedItemIds]);
+
+  const handleBulkMove = useCallback(() => {
+    if (!activeFolderId || !bulkMoveTarget || bulkMoveTarget === activeFolderId) return;
+    selectedItemIds.forEach((itemId) => moveItem(activeFolderId, itemId, bulkMoveTarget));
+    setSelectedItemIds([]);
+    setBulkMoveTarget('');
+    setBulkMode(false);
+  }, [activeFolderId, bulkMoveTarget, moveItem, selectedItemIds]);
+
+  const handleBulkWatched = useCallback(async (markWatched: boolean) => {
+    const items = activeFolder?.items.filter((item) => selectedItemIds.includes(item.id)) || [];
+    await Promise.all(items.map(async (item) => {
+      const mediaType = item.movie.type === 'show' ? 'tv' : 'movie';
+      const alreadyWatched = watched.some((entry) => entry.tmdb_id === String(item.movie.tmdb_id || '') && entry.media_type === mediaType);
+      if ((markWatched && alreadyWatched) || (!markWatched && !alreadyWatched)) return;
+      await toggleWatched({
+        tmdb_id: String(item.movie.tmdb_id || ''),
+        media_type: mediaType,
+        title: item.movie.title,
+        poster_url: item.movie.poster_url,
+        year: item.movie.year
+      });
+    }));
+  }, [activeFolder?.items, selectedItemIds, toggleWatched, watched]);
 
   if (loading) {
     return <DashboardLayout><p className="text-center text-brand-text-light mt-10">Loading Dashboard...</p></DashboardLayout>;
@@ -557,30 +641,94 @@ export function WatchlistsDashboard() {
               <button 
                 onClick={() => {
                   handleDeleteFolder(activeFolder.id, activeFolder.name, activeFolder.items.length);
-                  openFolder(null);
                 }}
                 className="px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 flex items-center gap-2 text-sm font-medium transition-colors"
               >
                 <TrashIcon className="w-4 h-4" /> Delete
               </button>
+              <button
+                type="button"
+                onClick={() => setBulkMode((value) => !value)}
+                className={`px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${bulkMode ? 'bg-violet-500/20 text-violet-300' : 'bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10'}`}
+              >
+                {bulkMode ? <CheckSquare size={16} /> : <Square size={16} />}
+                {bulkMode ? 'Exit bulk mode' : 'Bulk actions'}
+              </button>
             </div>
           </div>
 
           {activeFolder.items.length === 0 ? (
-            <div className="glass-panel p-12 rounded-3xl text-center border border-white/5">
-              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-brand-text-dark" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+            <div className="mm-empty-state">
+              <h3>This folder is waiting for its first title</h3>
+              <p>Save a movie or series from discovery, search, or a detail page and it will appear here instantly.</p>
+              <div className="mm-empty-state-actions">
+                <Link to="/" className="mm-empty-state-cta">
+                  Go to discovery
+                </Link>
+                <Link to="/search" className="mm-empty-state-cta-secondary">
+                  Search titles
+                </Link>
               </div>
-              <p className="text-brand-text-light text-lg">This folder is empty.</p>
-              <Link to="/" className="mt-4 inline-block px-6 py-2 rounded-full bg-brand-primary hover:bg-brand-secondary text-white font-medium transition-colors">
-                Discover titles
-              </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+            <>
+              {bulkMode && (
+                <div className="glass-panel rounded-2xl border border-white/10 p-4 mb-5 flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-3 justify-between">
+                    <div className="text-sm text-white font-semibold">{selectedItemIds.length} selected</div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds(activeFolder.items.map((item) => item.id))}>Select all</button>
+                      <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds([])}>Clear</button>
+                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(true)}>Mark watched</button>
+                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(false)}>Mark unwatched</button>
+                      <button type="button" className="mm-chip-button" onClick={() => setBulkDeleteOpen(true)} disabled={selectedItemIds.length === 0}>Delete</button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={bulkMoveTarget}
+                      onChange={(event) => setBulkMoveTarget(event.target.value)}
+                      className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    >
+                      <option value="">Move to folder…</option>
+                      {folders.filter((folder) => folder.id !== activeFolder.id).map((folder) => (
+                        <option key={folder.id} value={folder.id}>{folder.name}</option>
+                      ))}
+                    </select>
+                    <button type="button" className="mm-chip-button" onClick={handleBulkMove} disabled={selectedItemIds.length === 0 || !bulkMoveTarget}>
+                      <ArrowRightLeft size={14} /> Move selected
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {activeFolder.items.map(item => (
-                <div key={item.id} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl">
-                  <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />
+                <div
+                  key={item.id}
+                  className={`group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl ${itemDropTargetId === item.id ? 'mm-drop-target' : ''}`}
+                  draggable
+                  onDragStart={() => {
+                    setDraggingItemId(item.id);
+                    setItemDropTargetId(item.id);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setItemDropTargetId(item.id);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (draggingItemId && draggingItemId !== item.id) {
+                      reorderItems(activeFolder.id, draggingItemId, item.id);
+                    }
+                    setDraggingItemId(null);
+                    setItemDropTargetId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggingItemId(null);
+                    setItemDropTargetId(null);
+                  }}
+                >
+                  {!bulkMode && <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />}
                   {item.movie.poster_url ? (
                     <img src={item.movie.poster_url} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   ) : (
@@ -604,13 +752,34 @@ export function WatchlistsDashboard() {
                   >
                     <TrashIcon className="w-4 h-4" />
                   </button>
+                  <div className="absolute top-2 left-2 z-30">
+                    {bulkMode ? (
+                      <button
+                        type="button"
+                        className="p-2 rounded-full bg-black/60 text-white"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleSelectedItem(item.id);
+                        }}
+                        aria-label={selectedItemIds.includes(item.id) ? 'Deselect item' : 'Select item'}
+                      >
+                        {selectedItemIds.includes(item.id) ? <CheckSquare size={16} /> : <Square size={16} />}
+                      </button>
+                    ) : (
+                      <div className="p-2 rounded-full bg-black/50 text-white/70">
+                        <GripVertical size={14} />
+                      </div>
+                    )}
+                  </div>
                   
-                  <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
+                  <div className="absolute top-12 left-2 z-20 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
                     {item.movie.type === 'show' ? 'Series' : 'Movie'}
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            </>
           )}
         </div>
       ) : (
@@ -620,29 +789,58 @@ export function WatchlistsDashboard() {
               <h2 className="wl-section-title">Watchlist Folders</h2>
               <p className="wl-section-subtitle">Your curated cinematic archives</p>
             </div>
-            {!isCloud && folders.length > 0 && (
-              <span className="text-xs bg-white/10 text-brand-text-light px-3 py-1 rounded-full">Local Storage</span>
-            )}
+            <div className="flex items-center gap-2">
+              <button type="button" className="mm-chip-button" onClick={() => setCreateFolderOpen(true)}>Create folder</button>
+              {!isCloud && folders.length > 0 && (
+                <span className="text-xs bg-white/10 text-brand-text-light px-3 py-1 rounded-full">Local Storage</span>
+              )}
+            </div>
           </div>
 
           {folders.length === 0 ? (
-        <div className="glass-panel rounded-3xl p-12 text-center border border-white/5">
-          <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-brand-text-dark" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
+        <div className="mm-empty-state">
+          <h3>Build your first watchlist</h3>
+          <p>Start with a folder for weekend picks, comfort rewatches, or what to see next. Then save titles into it from anywhere in the app.</p>
+          <div className="mm-empty-state-actions">
+            <button type="button" className="mm-empty-state-cta" onClick={() => setCreateFolderOpen(true)}>
+              Create your first watchlist
+            </button>
+            <Link to="/" className="mm-empty-state-cta-secondary">
+              Go to discovery
+            </Link>
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">No folders yet</h3>
-          <p className="text-brand-text-light max-w-sm mx-auto">Explore movies and series, and click "Save to List" to start building your collection.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {folders.map(folder => {
+          {folders.map((folder, index) => {
             const heroItem = folder.items[0];
             const heroPoster = heroItem?.movie?.poster_url || null;
             const folderColor = folder.color || '#7c3aed';
             return (
               <div
                 key={folder.id}
-                className="wl-folder-card"
+                className={`wl-folder-card ${folderDropTargetId === folder.id ? 'mm-drop-target' : ''}`}
+                draggable
+                onDragStart={() => {
+                  setDraggingFolderId(folder.id);
+                  setFolderDropTargetId(folder.id);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setFolderDropTargetId(folder.id);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (draggingFolderId && draggingFolderId !== folder.id) {
+                    reorderFolders(draggingFolderId, folder.id);
+                  }
+                  setDraggingFolderId(null);
+                  setFolderDropTargetId(null);
+                }}
+                onDragEnd={() => {
+                  setDraggingFolderId(null);
+                  setFolderDropTargetId(null);
+                }}
               >
                 {/* Poster Hero Area */}
                 <div className="wl-folder-poster" onClick={() => openFolder(folder.id)}>
@@ -668,6 +866,18 @@ export function WatchlistsDashboard() {
                   <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
                   <div className="wl-folder-actions">
                     <button
+                      type="button"
+                      className="wl-folder-action-btn"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (index > 0) {
+                          reorderFolders(folder.id, folders[index - 1].id);
+                        }
+                      }}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" /> Up
+                    </button>
+                    <button
                       onClick={(event) => {
                         event.stopPropagation();
                         startEditFolder(folder);
@@ -675,6 +885,18 @@ export function WatchlistsDashboard() {
                       className="wl-folder-action-btn"
                     >
                       <EditIcon className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="wl-folder-action-btn"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (index < folders.length - 1) {
+                          reorderFolders(folder.id, folders[index + 1].id);
+                        }
+                      }}
+                    >
+                      Down
                     </button>
                     <button
                       onClick={(event) => {
@@ -798,6 +1020,61 @@ export function WatchlistsDashboard() {
         </div>
       )}
 
+      <ConfirmDialog
+        open={Boolean(folderDeleteTarget)}
+        title={folderDeleteTarget ? `Delete "${folderDeleteTarget.name}"?` : 'Delete folder?'}
+        description={folderDeleteTarget ? `This removes the folder and its ${folderDeleteTarget.count} saved title${folderDeleteTarget.count === 1 ? '' : 's'}.` : undefined}
+        confirmLabel="Delete folder"
+        tone="destructive"
+        onConfirm={() => {
+          if (!folderDeleteTarget) return;
+          deleteFolder(folderDeleteTarget.id);
+          if (activeFolderId === folderDeleteTarget.id) {
+            openFolder(null);
+          }
+          setFolderDeleteTarget(null);
+        }}
+        onClose={() => setFolderDeleteTarget(null)}
+      />
+
+      <PromptDialog
+        open={createFolderOpen}
+        title="Create a new watchlist"
+        description="Give the folder a short, memorable name. You can update its icon later."
+        placeholder="Weekend picks"
+        confirmLabel="Create folder"
+        value={newFolderName}
+        error={newFolderError}
+        onChange={(value) => {
+          setNewFolderName(value);
+          if (newFolderError) setNewFolderError(null);
+        }}
+        onConfirm={handleCreateFolder}
+        onClose={() => {
+          setCreateFolderOpen(false);
+          setNewFolderName('');
+          setNewFolderError(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title="Delete selected titles?"
+        description={`Remove ${selectedItemIds.length} selected title${selectedItemIds.length === 1 ? '' : 's'} from this folder.`}
+        confirmLabel="Delete selected"
+        tone="destructive"
+        onConfirm={handleBulkDelete}
+        onClose={() => setBulkDeleteOpen(false)}
+      />
+
+      <NoticeDialog
+        open={Boolean(notice)}
+        title={notice?.title || ''}
+        description={notice?.description}
+        tone={notice?.tone}
+        onClose={() => setNotice(null)}
+      />
+
       {/* Share Modal */}
       {shareLink && (
         <div
@@ -819,7 +1096,7 @@ export function WatchlistsDashboard() {
             </h3>
             
             <p className="text-sm text-brand-text-light mb-4">
-              Anyone with this link can view your "{activeFolder?.name}" watchlist:
+              Anyone with this link can view your "{sharingFolder?.name || 'watchlist'}" watchlist:
             </p>
 
             <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-4 flex items-center gap-3">

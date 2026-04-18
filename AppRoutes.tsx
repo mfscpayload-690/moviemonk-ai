@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import UserPreferenceEffects from './components/UserPreferenceEffects';
 
 const App = lazy(() => import('./App-Responsive'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -34,6 +35,7 @@ export default function AppRoutes() {
         </div>
       }
     >
+      <UserPreferenceEffects />
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/search" element={<App />} />

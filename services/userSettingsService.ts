@@ -53,11 +53,24 @@ export async function upsertProfileSettings(userId: string, settings: UserProfil
 
 export async function fetchPreferenceSettings(userId: string): Promise<UserPreferenceSettings> {
   const client = getClientOrThrow();
-  const { data, error } = await client
+  let data: any;
+  let error: any;
+
+  ({ data, error } = await client
     .from('user_preferences')
-    .select('genres, languages, favorite_decades, favorite_regions, content_mix, maturity_filter, autoplay_trailers, card_density')
+    .select('genres, languages, favorite_decades, favorite_regions, content_mix, maturity_filter, reduced_motion, autoplay_trailers, card_density')
     .eq('user_id', userId)
-    .maybeSingle();
+    .maybeSingle());
+
+  if (error && /column .*reduced_motion|reduced_motion does not exist|schema cache/i.test(String(error?.message || error))) {
+    const fallback = await client
+      .from('user_preferences')
+      .select('genres, languages, favorite_decades, favorite_regions, content_mix, maturity_filter, autoplay_trailers, card_density')
+      .eq('user_id', userId)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) throw error;
 
@@ -72,6 +85,7 @@ export async function fetchPreferenceSettings(userId: string): Promise<UserPrefe
     favoriteRegions: Array.isArray(data.favorite_regions) ? data.favorite_regions : [],
     contentMix: data.content_mix || 'balanced',
     familySafe: data.maturity_filter !== 'strict',
+    reducedMotion: Boolean(data.reduced_motion),
     autoplayTrailers: Boolean(data.autoplay_trailers),
     cardDensity: data.card_density || 'rich'
   };
@@ -79,8 +93,7 @@ export async function fetchPreferenceSettings(userId: string): Promise<UserPrefe
 
 export async function upsertPreferenceSettings(userId: string, settings: UserPreferenceSettings): Promise<void> {
   const client = getClientOrThrow();
-
-  const { error } = await client.from('user_preferences').upsert({
+  const payload: Record<string, unknown> = {
     user_id: userId,
     genres: settings.genres,
     languages: settings.languages,
@@ -88,10 +101,19 @@ export async function upsertPreferenceSettings(userId: string, settings: UserPre
     favorite_regions: settings.favoriteRegions,
     content_mix: settings.contentMix,
     maturity_filter: settings.familySafe ? 'standard' : 'strict',
+    reduced_motion: settings.reducedMotion,
     autoplay_trailers: settings.autoplayTrailers,
     card_density: settings.cardDensity,
     updated_at: new Date().toISOString()
-  });
+  };
+
+  let { error } = await client.from('user_preferences').upsert(payload);
+
+  if (error && /column .*reduced_motion|reduced_motion does not exist|schema cache/i.test(String(error?.message || error))) {
+    delete payload.reduced_motion;
+    const retry = await client.from('user_preferences').upsert(payload);
+    error = retry.error;
+  }
 
   if (error) throw error;
 }
