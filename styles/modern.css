@@ -5448,6 +5448,17 @@ a:focus-visible {
     color: var(--brand-text-dark, #888);
 }
 
+/* Watchlists desktop layout: use normal page scroll and wider content */
+.watchlists-dashboard-layout {
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+}
+
+.watchlists-dashboard-layout > main {
+    overflow: visible;
+}
+
 @media (max-width: 639px) {
     .wl-metric-card {
         padding: 1rem 1.15rem;
