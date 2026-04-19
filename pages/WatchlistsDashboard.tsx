@@ -14,7 +14,7 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
-import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft, MoreVertical } from 'lucide-react';
+import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft, MoreVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 import {
@@ -441,12 +441,17 @@ export function WatchlistsDashboard() {
       return;
     }
 
+    if (folders.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
+      setNewFolderError('A folder with that name already exists');
+      return;
+    }
+
     addFolder(trimmed, WATCHLIST_ICON_DEFAULT);
     setCreateFolderOpen(false);
     setNewFolderName('');
     setNewFolderError(null);
     setActionToast({ message: 'Watchlist created', kind: 'watchlist' });
-  }, [addFolder, newFolderName]);
+  }, [addFolder, newFolderName, folders]);
 
   const handleBulkDelete = useCallback(() => {
     if (!activeFolderId) return;
@@ -1049,8 +1054,9 @@ export function WatchlistsDashboard() {
                           reorderFolders(folder.id, folders[index - 1].id);
                         }
                       }}
+                      aria-label="Move folder up"
                     >
-                      <GripVertical className="w-3.5 h-3.5" /> Up
+                      <ChevronUp className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(event) => {
@@ -1070,8 +1076,9 @@ export function WatchlistsDashboard() {
                           reorderFolders(folder.id, folders[index + 1].id);
                         }
                       }}
+                      aria-label="Move folder down"
                     >
-                      Down
+                      <ChevronDown className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(event) => {
