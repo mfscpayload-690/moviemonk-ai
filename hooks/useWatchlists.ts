@@ -51,8 +51,8 @@ export function useWatchlists() {
     setFolders(prev => updater(prev));
   };
 
-  const addFolder = (name: string, color: string, icon?: string) => {
-    const { folderId, next } = addFolderToWatchlists(folders, name, color, icon);
+  const addFolder = (name: string, icon?: string) => {
+    const { folderId, next } = addFolderToWatchlists(folders, name, icon);
     if (!folderId) return null;
     setFolders(next);
     return folderId;

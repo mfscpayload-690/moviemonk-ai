@@ -13,8 +13,8 @@ describe('hooks/watchlistStore icon behavior', () => {
     const storage = {
       getItem: () =>
         JSON.stringify([
-          { id: '1', name: 'Legacy', color: '#111111', items: [] },
-          { id: '2', name: 'Empty icon', color: '#222222', icon: '   ', items: [] }
+          { id: '1', name: 'Legacy', items: [] },
+          { id: '2', name: 'Empty icon', icon: '   ', items: [] }
         ])
     };
 
@@ -25,14 +25,14 @@ describe('hooks/watchlistStore icon behavior', () => {
   });
 
   it('stores icon when adding a folder', () => {
-    const result = addFolderToWatchlists([], 'Weekend Picks', '#7c3aed', 'heart');
+    const result = addFolderToWatchlists([], 'Weekend Picks', 'heart');
     expect(result.folderId).toBeTruthy();
     expect(result.next).toHaveLength(1);
     expect(result.next[0].icon).toBe('heart');
   });
 
   it('returns an insert receipt and rolls it back cleanly', () => {
-    const base = addFolderToWatchlists([], 'Friday Night', '#7c3aed', 'film').next;
+    const base = addFolderToWatchlists([], 'Friday Night', 'film').next;
     const movie = {
       tmdb_id: '42',
       title: 'Arrival',
@@ -69,7 +69,6 @@ describe('hooks/watchlistStore icon behavior', () => {
     const base = [{
       id: 'folder-1',
       name: 'Sci-Fi',
-      color: '#7c3aed',
       icon: 'film',
       items: [{
         id: 'item-1',
@@ -136,7 +135,6 @@ describe('hooks/watchlistStore icon behavior', () => {
       {
         id: 'folder-a',
         name: 'A',
-        color: '#111',
         icon: 'film',
         items: [
           { id: 'a-1', saved_title: 'One', movie: { tmdb_id: '1', title: 'One', year: '2020', type: 'movie', media_type: 'movie', genres: [], poster_url: '', backdrop_url: '', trailer_url: '', ratings: [], cast: [], crew: { director: '', writer: '', music: '' }, summary_short: '', summary_medium: '', summary_long_spoilers: '', suspense_breaker: '', where_to_watch: [], extra_images: [], ai_notes: '' }, added_at: '' },
@@ -146,7 +144,6 @@ describe('hooks/watchlistStore icon behavior', () => {
       {
         id: 'folder-b',
         name: 'B',
-        color: '#222',
         icon: 'film',
         items: []
       }
