@@ -5,6 +5,7 @@ import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
 import { useWatched } from '../hooks/useWatched';
 import { loadProfileSettings } from '../lib/userSettings';
 import { ConfirmDialog, NoticeDialog, PromptDialog } from '../components/BrandedDialogs';
+import ActionToast from '../components/ActionToast';
 import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon, Logo } from '../components/icons';
 import { WatchlistFolder } from '../types';
 import {
@@ -100,6 +101,8 @@ export function WatchlistsDashboard() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderError, setNewFolderError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; description: string; tone?: 'default' | 'destructive' | 'success' } | null>(null);
+  const [actionToast, setActionToast] = useState<{ message: string; kind: 'watchlist' | 'watched' } | null>(null);
+  const [deletingItemIds, setDeletingItemIds] = useState<string[]>([]);
   const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
   const [folderDropTargetId, setFolderDropTargetId] = useState<string | null>(null);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
@@ -133,6 +136,13 @@ export function WatchlistsDashboard() {
       body.style.overflowY = previousBodyOverflowY;
     };
   }, []);
+
+  useEffect(() => {
+    if (actionToast) {
+      const timer = setTimeout(() => setActionToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionToast]);
 
   useEffect(() => {
     if (!supabase) {
@@ -241,10 +251,7 @@ export function WatchlistsDashboard() {
       event: 'watchlist_reminder_dismissed',
       data: { reminder_id: reminderId }
     });
-    setNotice({
-      title: 'Reminder dismissed',
-      description: 'Got it. MovieMonk will pause this reminder for now.'
-    });
+    setActionToast({ message: 'Reminder dismissed', kind: 'watchlist' });
   };
 
   const handleNotifyReminder = async (reminder: (typeof watchlistReminders)[number]) => {
@@ -264,11 +271,7 @@ export function WatchlistsDashboard() {
       });
       return;
     }
-    setNotice({
-      title: 'Reminder sent',
-      description: `Sent a one-time browser alert for "${reminder.title}".`,
-      tone: 'success'
-    });
+    setActionToast({ message: 'Reminder sent', kind: 'watchlist' });
   };
 
   const startEditFolder = (folder: WatchlistFolder) => {
@@ -442,19 +445,20 @@ export function WatchlistsDashboard() {
     setCreateFolderOpen(false);
     setNewFolderName('');
     setNewFolderError(null);
-    setNotice({
-      title: 'Watchlist created',
-      description: `"${trimmed}" is ready for your next save.`,
-      tone: 'success'
-    });
+    setActionToast({ message: 'Watchlist created', kind: 'watchlist' });
   }, [addFolder, newFolderName]);
 
   const handleBulkDelete = useCallback(() => {
     if (!activeFolderId) return;
-    selectedItemIds.forEach((itemId) => deleteItem(activeFolderId, itemId));
-    setBulkDeleteOpen(false);
-    setSelectedItemIds([]);
-    setBulkMode(false);
+    setDeletingItemIds(selectedItemIds);
+    setTimeout(() => {
+      selectedItemIds.forEach((itemId) => deleteItem(activeFolderId, itemId));
+      setBulkDeleteOpen(false);
+      setSelectedItemIds([]);
+      setBulkMode(false);
+      setDeletingItemIds([]);
+      setActionToast({ message: `${selectedItemIds.length} item(s) deleted`, kind: 'watchlist' });
+    }, 300);
   }, [activeFolderId, deleteItem, selectedItemIds]);
 
   const handleBulkMove = useCallback(() => {
@@ -482,7 +486,41 @@ export function WatchlistsDashboard() {
   }, [activeFolder?.items, selectedItemIds, toggleWatched, watched]);
 
   if (loading) {
-    return <DashboardLayout><p className="text-center text-brand-text-light mt-10">Loading Dashboard...</p></DashboardLayout>;
+    return (
+      <DashboardLayout>
+        <div className="w-full mt-4 sm:mt-8 animate-pulse">
+          <div className="flex flex-col md:flex-row gap-8 mb-12">
+            <div className="flex-1 min-w-[320px] max-w-full md:max-w-md">
+              <div className="flex items-center gap-5 mb-8">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[2rem] bg-white/5 shrink-0" />
+                <div className="flex flex-col gap-2">
+                  <div className="h-8 w-48 bg-white/5 rounded-lg" />
+                  <div className="h-4 w-32 bg-white/5 rounded" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3">
+                <div className="h-24 rounded-3xl bg-white/5" />
+                <div className="h-24 rounded-3xl bg-white/5" />
+              </div>
+              <div className="h-20 rounded-3xl bg-white/5 w-full" />
+            </div>
+            <div className="flex-1 min-w-[280px]">
+              <div className="h-8 w-48 bg-white/5 rounded-lg mb-6" />
+              <div className="flex flex-col gap-3">
+                <div className="h-24 bg-white/5 rounded-2xl" />
+                <div className="h-24 bg-white/5 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+          <div className="h-8 w-48 bg-white/5 rounded-lg mb-6" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mt-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 rounded-3xl bg-white/5" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
@@ -493,7 +531,7 @@ export function WatchlistsDashboard() {
         <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
         
         <div className="flex items-center gap-5 relative z-10">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-2xl">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-2xl transition-transform hover:scale-105 duration-300">
             {avatarUrl && !avatarFailed ? (
               <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
             ) : (
@@ -728,7 +766,7 @@ export function WatchlistsDashboard() {
           )}
         </div>
       ) : activeFolder ? (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in transition-all duration-300">
           <button 
             onClick={() => openFolder(null)}
             className="text-brand-text-light hover:text-white mb-6 flex items-center gap-2 group transition-colors"
@@ -828,7 +866,7 @@ export function WatchlistsDashboard() {
                 return (
                 <div
                   key={item.id}
-                  className={`group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl ${itemDropTargetId === item.id ? 'mm-drop-target' : ''}`}
+                  className={`group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl transition-all duration-300 ${itemDropTargetId === item.id ? 'mm-drop-target' : ''} ${deletingItemIds.includes(item.id) ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
                   draggable
                   onDragStart={() => {
                     setDraggingItemId(item.id);
@@ -868,7 +906,12 @@ export function WatchlistsDashboard() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      deleteItem(activeFolder.id, item.id);
+                      setDeletingItemIds((prev) => [...prev, item.id]);
+                      setTimeout(() => {
+                        deleteItem(activeFolder.id, item.id);
+                        setDeletingItemIds((prev) => prev.filter((id) => id !== item.id));
+                        setActionToast({ message: '1 item deleted', kind: 'watchlist' });
+                      }, 300);
                     }}
                     className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                     title="Remove from folder"
@@ -879,7 +922,7 @@ export function WatchlistsDashboard() {
                     {bulkMode ? (
                       <button
                         type="button"
-                        className="p-2 rounded-full bg-black/60 text-white"
+                        className={`p-2 rounded-full transition-all hover:scale-110 active:scale-95 duration-200 ${selectedItemIds.includes(item.id) ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/60 text-white'}`}
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
@@ -945,7 +988,6 @@ export function WatchlistsDashboard() {
           {folders.map((folder, index) => {
             const heroItem = folder.items[0];
             const topPosters = folder.items.slice(0, 3).map(item => item.movie?.poster_url).filter(Boolean) as string[];
-            const folderColor = folder.color || '#7c3aed';
             return (
               <div
                 key={folder.id}
@@ -987,8 +1029,7 @@ export function WatchlistsDashboard() {
                   )}
                   <div className="wl-folder-poster-overlay" />
                   <span
-                    className="wl-folder-tag"
-                    style={{ background: `${folderColor}33`, color: folderColor }}
+                    className="absolute top-2 left-2 z-30 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold tracking-wider uppercase text-white/90 shadow-lg border border-white/10"
                   >
                     {folder.items.length} {folder.items.length === 1 ? 'title' : 'titles'}
                   </span>

@@ -4,7 +4,7 @@ import { TagIcon, WatchedIcon, XMarkIcon } from './icons';
 interface ActionToastProps {
   kind: 'watchlist' | 'watched';
   message: string;
-  onUndo: () => void;
+  onUndo?: () => void;
   onDismiss: () => void;
   isUndoing?: boolean;
 }
@@ -28,14 +28,16 @@ const ActionToast: React.FC<ActionToastProps> = ({
       <div className="mm-action-toast-body">
         <p className="mm-action-toast-message">{message}</p>
       </div>
-      <button
-        type="button"
-        className="mm-action-toast-undo"
-        onClick={onUndo}
-        disabled={isUndoing}
-      >
-        {isUndoing ? 'Undoing...' : 'Undo'}
-      </button>
+      {onUndo && (
+        <button
+          type="button"
+          className="mm-action-toast-undo"
+          onClick={onUndo}
+          disabled={isUndoing}
+        >
+          {isUndoing ? 'Undoing...' : 'Undo'}
+        </button>
+      )}
       <button
         type="button"
         className="mm-action-toast-close"
