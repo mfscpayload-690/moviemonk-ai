@@ -5681,6 +5681,61 @@ a:focus-visible {
     opacity: 0.9;
 }
 
+/* Poster Stack for Folders */
+.wl-poster-stack {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wl-folder-poster .wl-poster-stack img {
+    position: absolute;
+    width: 42%;
+    height: auto;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: 0.4rem;
+    box-shadow: 0 12px 24px -6px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Stack Positioning */
+.wl-folder-poster .wl-poster-stack img:nth-child(1) {
+    z-index: 30;
+    transform: scale(1) rotate(0deg) translateY(0);
+    opacity: 0.95;
+}
+
+.wl-folder-poster .wl-poster-stack img:nth-child(2) {
+    z-index: 20;
+    transform: scale(0.9) rotate(8deg) translateX(28px) translateY(8px);
+    opacity: 0.75;
+}
+
+.wl-folder-poster .wl-poster-stack img:nth-child(3) {
+    z-index: 10;
+    transform: scale(0.8) rotate(-8deg) translateX(-28px) translateY(14px);
+    opacity: 0.55;
+}
+
+/* Hover Enhancements */
+.wl-folder-card:hover .wl-folder-poster .wl-poster-stack img:nth-child(1) {
+    transform: scale(1.05) rotate(0deg) translateY(-4px);
+    opacity: 1;
+}
+
+.wl-folder-card:hover .wl-folder-poster .wl-poster-stack img:nth-child(2) {
+    transform: scale(0.95) rotate(12deg) translateX(34px) translateY(4px);
+    opacity: 0.85;
+}
+
+.wl-folder-card:hover .wl-folder-poster .wl-poster-stack img:nth-child(3) {
+    transform: scale(0.85) rotate(-12deg) translateX(-34px) translateY(10px);
+    opacity: 0.65;
+}
+
 .wl-folder-poster-overlay {
     position: absolute;
     inset: 0;
