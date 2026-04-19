@@ -1039,7 +1039,7 @@ export function WatchlistsDashboard() {
                 <div className="wl-folder-body">
                   <h3 className="wl-folder-name" onClick={() => openFolder(folder.id)}>{folder.name}</h3>
                   <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
-                  <div className="wl-folder-actions hidden sm:flex">
+                  <div className="wl-folder-actions !hidden sm:!flex">
                     <button
                       type="button"
                       className="wl-folder-action-btn"
