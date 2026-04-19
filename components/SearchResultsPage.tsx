@@ -11,7 +11,6 @@ import SeoHead from './SeoHead';
 import { toMetaDescription } from '../lib/seo';
 import { emitClientEvent } from '../services/clientObservability';
 import { applyRankingFeedback, recordQueryFeedback, recordResultFeedback } from '../services/rankingFeedback';
-import { getExperimentVariant, recordExperimentConversion, recordExperimentExposure } from '../lib/experiments';
 import '../styles/search-results-page.css';
 
 interface SearchResultsPageProps {
@@ -247,7 +246,6 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [emptySuggestions, setEmptySuggestions] = useState<SuggestionItem[]>([]);
   const [heroAiSnippet, setHeroAiSnippet] = useState<string>('');
-  const [queryFeedbackVote, setQueryFeedbackVote] = useState<'up' | 'down' | null>(null);
   const [rankingRefreshToken, setRankingRefreshToken] = useState(0);
 
   const { ref: heroRevealRef, isRevealed: isHeroRevealed } = useScrollReveal<HTMLElement>();
@@ -258,11 +256,6 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   const normalizedQuery = normalizeText(query);
   const heroTone = useAdaptiveImageTone(payload?.hero?.backdrop_url);
-  const feedbackExperimentVariant = useMemo(() => getExperimentVariant('search_feedback_nudge'), []);
-
-  useEffect(() => {
-    recordExperimentExposure('search_feedback_nudge', feedbackExperimentVariant);
-  }, [feedbackExperimentVariant]);
 
   useEffect(() => {
     setPage(1);
@@ -273,7 +266,6 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       setPayload(null);
       setError(null);
       setEmptySuggestions([]);
-      setQueryFeedbackVote(null);
       return;
     }
 
@@ -281,7 +273,6 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     const load = async () => {
       setIsLoading(true);
       setError(null);
-      setQueryFeedbackVote(null);
       emitClientEvent({
         event: 'search_request_started',
         data: {
@@ -456,27 +447,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         signal
       }
     });
-    recordExperimentConversion('search_feedback_nudge', feedbackExperimentVariant, 'result_feedback', {
-      signal,
-      media_type: item.media_type
-    });
   };
 
-  const handleQueryFeedback = (helpful: boolean) => {
-    const signal: 'up' | 'down' = helpful ? 'up' : 'down';
-    setQueryFeedbackVote(signal);
-    recordQueryFeedback(query, helpful);
-    emitClientEvent({
-      event: 'search_query_feedback_submitted',
-      data: {
-        query: query.trim(),
-        helpful
-      }
-    });
-    recordExperimentConversion('search_feedback_nudge', feedbackExperimentVariant, 'query_feedback', {
-      helpful
-    });
-  };
 
   return (
     <div className="search-page-shell">
@@ -615,29 +587,6 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             <div className="search-results-divider" />
           </div>
 
-          <div className="search-feedback-bar" role="group" aria-label="Search relevance feedback">
-            <p className="search-feedback-copy">
-              {feedbackExperimentVariant === 'variant'
-                ? 'Quick tune-up: are these results aligned with what you meant?'
-                : 'Are these results helpful?'}
-            </p>
-            <div className="search-feedback-actions">
-              <button
-                type="button"
-                className={`search-feedback-pill ${queryFeedbackVote === 'up' ? 'is-active' : ''}`}
-                onClick={() => handleQueryFeedback(true)}
-              >
-                Yes, helpful
-              </button>
-              <button
-                type="button"
-                className={`search-feedback-pill ${queryFeedbackVote === 'down' ? 'is-active is-negative' : 'is-negative'}`}
-                onClick={() => handleQueryFeedback(false)}
-              >
-                Needs better matches
-              </button>
-            </div>
-          </div>
 
           {renderDidYouMean.length > 0 && (
             <div className="search-did-you-mean">

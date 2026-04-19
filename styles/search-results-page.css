@@ -113,7 +113,16 @@ html[data-card-density="compact"] .search-result-body {
 .search-hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, var(--bg-base) 0%, rgba(14, 14, 14, 0.6) 50%, transparent 100%);
+  background: linear-gradient(to right, 
+    var(--bg-base) 0%, 
+    rgba(10, 10, 16, 0.8) 25%, 
+    rgba(10, 10, 16, 0.4) 50%, 
+    transparent 100%
+  ),
+  linear-gradient(to top,
+    rgba(10, 10, 16, 0.6) 0%,
+    transparent 40%
+  );
 }
 
 .search-hero-content {
