@@ -1251,7 +1251,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             onChange={() => setSelectedFolderId(folder.id)}
                                             className="accent-brand-primary"
                                         />
-                                        <span className="w-4 h-4 rounded-full" style={{ backgroundColor: folder.color }}></span>
+                                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-white/5 border border-white/10 text-white">
+                                            <WatchlistIconBadge iconKey={folder.icon || 'folder'} className="w-3 h-3" />
+                                        </span>
                                         <span className="text-sm text-white">{folder.name}</span>
                                         <span className="text-xs text-brand-text-dark ml-auto">{folder.items.length} saved</span>
                                     </label>

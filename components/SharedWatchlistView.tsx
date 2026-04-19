@@ -59,7 +59,6 @@ export function SharedWatchlistView() {
       
       // Create a new folder for this shared list
       const folderName = shareData?.folderName || 'Shared List';
-      const folderColor = shareData?.folderColor || '#3b82f6';
       const folderIcon = shareData?.folderIcon;
 
       // Save item to watchlist
@@ -87,7 +86,6 @@ export function SharedWatchlistView() {
       // Create new folder with shared list name
       const newFolderId = addFolder(
         `${shareData.folderName} (shared)`,
-        shareData.folderColor || '#3b82f6',
         shareData.folderIcon
       );
 

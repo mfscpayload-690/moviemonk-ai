@@ -23,7 +23,6 @@ const normalizeFolder = (folder: any): WatchlistFolder | null => {
   return {
     id: String(folder.id),
     name: String(folder.name),
-    color: typeof folder.color === 'string' && folder.color.trim() ? folder.color : '#7c3aed',
     icon: typeof folder.icon === 'string' && folder.icon.trim() ? folder.icon : WATCHLIST_DEFAULT_ICON,
     items
   };
@@ -145,14 +144,13 @@ export function reorderByIds<T extends { id: string }>(
 export function addFolderToWatchlists(
   folders: WatchlistFolder[],
   name: string,
-  color: string,
   icon?: string
 ): { next: WatchlistFolder[]; folderId: string | null } {
   const trimmed = name.trim();
   if (!trimmed) return { next: folders, folderId: null };
   const folderId = generateId();
   return {
-    next: [{ id: folderId, name: trimmed, color: color || '#7c3aed', icon: icon || WATCHLIST_DEFAULT_ICON, items: [] }, ...folders],
+    next: [{ id: folderId, name: trimmed, icon: icon || WATCHLIST_DEFAULT_ICON, items: [] }, ...folders],
     folderId
   };
 }

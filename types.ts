@@ -234,7 +234,6 @@ export interface WatchlistSaveReceipt {
 export interface WatchlistFolder {
   id: string;
   name: string;
-  color: string;
   icon?: string;
   items: WatchlistItem[];
 }
@@ -309,7 +308,6 @@ export interface SharedWatchlist {
   id: string; // Unique share ID (uuid)
   folderId: string; // Reference to original local folder  
   folderName: string;
-  folderColor?: string;
   folderIcon?: string;
   items: WatchlistItem[];
   created_by: string; // User ID
@@ -322,7 +320,6 @@ export interface SharedWatchlist {
 
 export interface SharedWatchlistView {
   folderName: string;
-  folderColor?: string;
   folderIcon?: string;
   items: WatchlistItem[];
   shared_by: string;

@@ -22,8 +22,7 @@ import {
   fetchCloudWatchlists,
   renameCloudFolder,
   saveCloudItem,
-  updateCloudFolderIcon,
-  updateCloudFolderColor
+  updateCloudFolderIcon
 } from '../services/watchlistSync';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -156,19 +155,18 @@ export function useCloudWatchlists() {
   const cloudApi = useMemo(
     () => ({
       folders: cloudFolders,
-      addFolder: (name: string, color: string, icon?: string) => {
+      addFolder: (name: string, icon?: string) => {
         const trimmed = name.trim();
         if (!trimmed || !user?.id) return null;
         const folderId = crypto.randomUUID();
         const nextFolder: WatchlistFolder = {
           id: folderId,
           name: trimmed,
-          color: color || '#7c3aed',
           icon: icon || WATCHLIST_DEFAULT_ICON,
           items: []
         };
         updateCloudState((prev) => [nextFolder, ...prev]);
-        void addCloudFolder(user.id, trimmed, nextFolder.color, nextFolder.icon, folderId).catch((error) => {
+        void addCloudFolder(user.id, trimmed, nextFolder.icon, folderId).catch((error) => {
           console.warn('Failed to add cloud folder', error);
           updateCloudState((prev) => prev.filter((folder) => folder.id !== folderId));
         });
@@ -221,14 +219,7 @@ export function useCloudWatchlists() {
           refreshCloud();
         });
       },
-      setFolderColor: (folderId: string, color: string) => {
-        if (!color) return;
-        updateCloudState((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, color } : folder)));
-        void updateCloudFolderColor(folderId, color).catch((error) => {
-          console.warn('Failed to update cloud folder color', error);
-          refreshCloud();
-        });
-      },
+
       setFolderIcon: (folderId: string, icon: string) => {
         if (!icon) return;
         updateCloudState((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, icon } : folder)));

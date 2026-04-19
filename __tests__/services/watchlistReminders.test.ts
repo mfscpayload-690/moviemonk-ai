@@ -11,7 +11,6 @@ describe('watchlistReminders', () => {
       {
         id: 'folder-1',
         name: 'Weekend',
-        color: '#7c3aed',
         items: [
           {
             id: 'item-1',

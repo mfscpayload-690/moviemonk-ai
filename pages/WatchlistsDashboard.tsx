@@ -5,6 +5,7 @@ import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
 import { useWatched } from '../hooks/useWatched';
 import { loadProfileSettings } from '../lib/userSettings';
 import { ConfirmDialog, NoticeDialog, PromptDialog } from '../components/BrandedDialogs';
+import ActionToast from '../components/ActionToast';
 import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon, Logo } from '../components/icons';
 import { WatchlistFolder } from '../types';
 import {
@@ -13,7 +14,7 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
-import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft } from 'lucide-react';
+import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 import {
@@ -100,6 +101,8 @@ export function WatchlistsDashboard() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderError, setNewFolderError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; description: string; tone?: 'default' | 'destructive' | 'success' } | null>(null);
+  const [actionToast, setActionToast] = useState<{ message: string; kind: 'watchlist' | 'watched' } | null>(null);
+  const [deletingItemIds, setDeletingItemIds] = useState<string[]>([]);
   const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
   const [folderDropTargetId, setFolderDropTargetId] = useState<string | null>(null);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
@@ -111,6 +114,7 @@ export function WatchlistsDashboard() {
   const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
+  const [mobileActionFolder, setMobileActionFolder] = useState<WatchlistFolder | null>(null);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -133,6 +137,13 @@ export function WatchlistsDashboard() {
       body.style.overflowY = previousBodyOverflowY;
     };
   }, []);
+
+  useEffect(() => {
+    if (actionToast) {
+      const timer = setTimeout(() => setActionToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionToast]);
 
   useEffect(() => {
     if (!supabase) {
@@ -241,10 +252,7 @@ export function WatchlistsDashboard() {
       event: 'watchlist_reminder_dismissed',
       data: { reminder_id: reminderId }
     });
-    setNotice({
-      title: 'Reminder dismissed',
-      description: 'Got it. MovieMonk will pause this reminder for now.'
-    });
+    setActionToast({ message: 'Reminder dismissed', kind: 'watchlist' });
   };
 
   const handleNotifyReminder = async (reminder: (typeof watchlistReminders)[number]) => {
@@ -264,11 +272,7 @@ export function WatchlistsDashboard() {
       });
       return;
     }
-    setNotice({
-      title: 'Reminder sent',
-      description: `Sent a one-time browser alert for "${reminder.title}".`,
-      tone: 'success'
-    });
+    setActionToast({ message: 'Reminder sent', kind: 'watchlist' });
   };
 
   const startEditFolder = (folder: WatchlistFolder) => {
@@ -376,7 +380,6 @@ export function WatchlistsDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           folderName: folder.name,
-          folderColor: folder.color,
           folderIcon: folder.icon,
           items: folder.items,
           created_by: displayName || 'MovieMonk User'
@@ -438,23 +441,24 @@ export function WatchlistsDashboard() {
       return;
     }
 
-    addFolder(trimmed, '#7c3aed', WATCHLIST_ICON_DEFAULT);
+    addFolder(trimmed, WATCHLIST_ICON_DEFAULT);
     setCreateFolderOpen(false);
     setNewFolderName('');
     setNewFolderError(null);
-    setNotice({
-      title: 'Watchlist created',
-      description: `"${trimmed}" is ready for your next save.`,
-      tone: 'success'
-    });
+    setActionToast({ message: 'Watchlist created', kind: 'watchlist' });
   }, [addFolder, newFolderName]);
 
   const handleBulkDelete = useCallback(() => {
     if (!activeFolderId) return;
-    selectedItemIds.forEach((itemId) => deleteItem(activeFolderId, itemId));
-    setBulkDeleteOpen(false);
-    setSelectedItemIds([]);
-    setBulkMode(false);
+    setDeletingItemIds(selectedItemIds);
+    setTimeout(() => {
+      selectedItemIds.forEach((itemId) => deleteItem(activeFolderId, itemId));
+      setBulkDeleteOpen(false);
+      setSelectedItemIds([]);
+      setBulkMode(false);
+      setDeletingItemIds([]);
+      setActionToast({ message: `${selectedItemIds.length} item(s) deleted`, kind: 'watchlist' });
+    }, 300);
   }, [activeFolderId, deleteItem, selectedItemIds]);
 
   const handleBulkMove = useCallback(() => {
@@ -482,7 +486,41 @@ export function WatchlistsDashboard() {
   }, [activeFolder?.items, selectedItemIds, toggleWatched, watched]);
 
   if (loading) {
-    return <DashboardLayout><p className="text-center text-brand-text-light mt-10">Loading Dashboard...</p></DashboardLayout>;
+    return (
+      <DashboardLayout>
+        <div className="w-full mt-4 sm:mt-8 animate-pulse">
+          <div className="flex flex-col md:flex-row gap-8 mb-12">
+            <div className="flex-1 min-w-[320px] max-w-full md:max-w-md">
+              <div className="flex items-center gap-5 mb-8">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[2rem] bg-white/5 shrink-0" />
+                <div className="flex flex-col gap-2">
+                  <div className="h-8 w-48 bg-white/5 rounded-lg" />
+                  <div className="h-4 w-32 bg-white/5 rounded" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3">
+                <div className="h-24 rounded-3xl bg-white/5" />
+                <div className="h-24 rounded-3xl bg-white/5" />
+              </div>
+              <div className="h-20 rounded-3xl bg-white/5 w-full" />
+            </div>
+            <div className="flex-1 min-w-[280px]">
+              <div className="h-8 w-48 bg-white/5 rounded-lg mb-6" />
+              <div className="flex flex-col gap-3">
+                <div className="h-24 bg-white/5 rounded-2xl" />
+                <div className="h-24 bg-white/5 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+          <div className="h-8 w-48 bg-white/5 rounded-lg mb-6" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mt-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 rounded-3xl bg-white/5" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
@@ -493,7 +531,7 @@ export function WatchlistsDashboard() {
         <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
         
         <div className="flex items-center gap-5 relative z-10">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-2xl">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-2xl transition-transform hover:scale-105 duration-300">
             {avatarUrl && !avatarFailed ? (
               <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
             ) : (
@@ -728,7 +766,7 @@ export function WatchlistsDashboard() {
           )}
         </div>
       ) : activeFolder ? (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in transition-all duration-300">
           <button 
             onClick={() => openFolder(null)}
             className="text-brand-text-light hover:text-white mb-6 flex items-center gap-2 group transition-colors"
@@ -800,8 +838,8 @@ export function WatchlistsDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds(activeFolder.items.map((item) => item.id))}>Select all</button>
                       <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds([])}>Clear</button>
-                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(true)}>Mark watched</button>
-                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(false)}>Mark unwatched</button>
+                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(true)} disabled={selectedItemIds.length === 0}>Mark watched</button>
+                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(false)} disabled={selectedItemIds.length === 0}>Mark unwatched</button>
                       <button type="button" className="mm-chip-button" onClick={() => setBulkDeleteOpen(true)} disabled={selectedItemIds.length === 0}>Delete</button>
                     </div>
                   </div>
@@ -823,10 +861,12 @@ export function WatchlistsDashboard() {
                 </div>
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-              {activeFolder.items.map(item => (
+              {activeFolder.items.map(item => {
+                const isWatched = watched.some((w) => w.tmdb_id === String(item.movie.tmdb_id || '') && w.media_type === (item.movie.type === 'show' ? 'tv' : 'movie'));
+                return (
                 <div
                   key={item.id}
-                  className={`group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl ${itemDropTargetId === item.id ? 'mm-drop-target' : ''}`}
+                  className={`group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl transition-all duration-300 ${itemDropTargetId === item.id ? 'mm-drop-target' : ''} ${deletingItemIds.includes(item.id) ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
                   draggable
                   onDragStart={() => {
                     setDraggingItemId(item.id);
@@ -866,7 +906,12 @@ export function WatchlistsDashboard() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      deleteItem(activeFolder.id, item.id);
+                      setDeletingItemIds((prev) => [...prev, item.id]);
+                      setTimeout(() => {
+                        deleteItem(activeFolder.id, item.id);
+                        setDeletingItemIds((prev) => prev.filter((id) => id !== item.id));
+                        setActionToast({ message: '1 item deleted', kind: 'watchlist' });
+                      }, 300);
                     }}
                     className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                     title="Remove from folder"
@@ -877,7 +922,7 @@ export function WatchlistsDashboard() {
                     {bulkMode ? (
                       <button
                         type="button"
-                        className="p-2 rounded-full bg-black/60 text-white"
+                        className={`p-2 rounded-full transition-all hover:scale-110 active:scale-95 duration-200 ${selectedItemIds.includes(item.id) ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/60 text-white'}`}
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
@@ -894,11 +939,18 @@ export function WatchlistsDashboard() {
                     )}
                   </div>
                   
-                  <div className="absolute top-12 left-2 z-20 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
-                    {item.movie.type === 'show' ? 'Series' : 'Movie'}
+                  <div className="absolute top-12 left-2 flex gap-1 z-20">
+                    <div className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
+                      {item.movie.type === 'show' ? 'Series' : 'Movie'}
+                    </div>
+                    {isWatched && (
+                      <div className="px-1.5 py-0.5 rounded-md bg-emerald-500/90 backdrop-blur-md text-white flex items-center justify-center shadow-lg" title="Watched">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" /></svg>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
+              );})}
               </div>
             </>
           )}
@@ -936,7 +988,6 @@ export function WatchlistsDashboard() {
           {folders.map((folder, index) => {
             const heroItem = folder.items[0];
             const topPosters = folder.items.slice(0, 3).map(item => item.movie?.poster_url).filter(Boolean) as string[];
-            const folderColor = folder.color || '#7c3aed';
             return (
               <div
                 key={folder.id}
@@ -978,8 +1029,7 @@ export function WatchlistsDashboard() {
                   )}
                   <div className="wl-folder-poster-overlay" />
                   <span
-                    className="wl-folder-tag"
-                    style={{ background: `${folderColor}33`, color: folderColor }}
+                    className="absolute top-2 left-2 z-30 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold tracking-wider uppercase text-white/90 shadow-lg border border-white/10"
                   >
                     {folder.items.length} {folder.items.length === 1 ? 'title' : 'titles'}
                   </span>
@@ -989,7 +1039,7 @@ export function WatchlistsDashboard() {
                 <div className="wl-folder-body">
                   <h3 className="wl-folder-name" onClick={() => openFolder(folder.id)}>{folder.name}</h3>
                   <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
-                  <div className="wl-folder-actions">
+                  <div className="wl-folder-actions !hidden sm:!flex">
                     <button
                       type="button"
                       className="wl-folder-action-btn"
@@ -1033,6 +1083,15 @@ export function WatchlistsDashboard() {
                       <TrashIcon className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMobileActionFolder(folder);
+                    }}
+                    className="sm:hidden absolute bottom-3 right-3 p-2 bg-white/5 border border-white/10 text-brand-text-light hover:text-white rounded-full z-30 shadow-lg backdrop-blur-md transition-colors"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
             );
@@ -1041,28 +1100,40 @@ export function WatchlistsDashboard() {
       )}
 
       {/* SEARCH HISTORY SECTION */}
-      {user && searchHistory.length > 0 && !activeFolder && (
+      {user && !activeFolder && (
         <div className="mt-12 animate-fade-in pb-12">
           <div className="wl-section-header mb-6 flex items-center justify-between">
             <div>
               <h2 className="wl-section-title text-2xl font-bold">Recent Searches</h2>
             </div>
-            <button type="button" onClick={handleClearHistory} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50">
-              <TrashIcon className="w-3.5 h-3.5" /> Clear History
-            </button>
+            {searchHistory.length > 0 && (
+              <button type="button" onClick={handleClearHistory} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50">
+                <TrashIcon className="w-3.5 h-3.5" /> Clear History
+              </button>
+            )}
           </div>
-          <div className="flex flex-wrap gap-3">
-            {searchHistory.map((sh, idx) => (
-              <Link 
-                key={sh.id || idx}
-                to={`/search?q=${encodeURIComponent(sh.query)}`}
-                className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2.5 text-sm font-medium shadow-sm"
-              >
-                <svg className="w-4 h-4 text-brand-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                {sh.query}
-              </Link>
-            ))}
-          </div>
+          
+          {searchHistory.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              {searchHistory.map((sh, idx) => (
+                <Link 
+                  key={sh.id || idx}
+                  to={`/search?q=${encodeURIComponent(sh.query)}`}
+                  className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2.5 text-sm font-medium shadow-sm"
+                >
+                  <svg className="w-4 h-4 text-brand-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  {sh.query}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="glass-panel p-8 rounded-2xl border border-white/5 text-center">
+              <svg className="w-10 h-10 text-white/20 mx-auto mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              <p className="text-brand-text-light text-sm">No recent searches yet — explore discovery or search for a title</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -1266,6 +1337,51 @@ export function WatchlistsDashboard() {
                 View Link
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Mobile Folder Action Sheet */}
+      {mobileActionFolder && (
+        <div className="fixed inset-0 z-[14000] sm:hidden flex items-end">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setMobileActionFolder(null)}
+          />
+          <div className="relative w-full bg-brand-surface border-t border-white/10 rounded-t-3xl shadow-2xl p-6 flex flex-col animate-scale-up pb-8">
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
+            <h3 className="text-xl font-bold text-white px-2 mb-4 line-clamp-1">{mobileActionFolder.name}</h3>
+            
+            <button
+              onClick={() => {
+                setMobileActionFolder(null);
+                startEditFolder(mobileActionFolder);
+              }}
+              className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-white/5 text-brand-text-light hover:text-white transition-colors text-left"
+            >
+              <EditIcon className="w-5 h-5" />
+              <span className="text-lg">Edit Folder</span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileActionFolder(null);
+                handleShareFolder(mobileActionFolder);
+              }}
+              className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-white/5 text-brand-text-light hover:text-white transition-colors text-left"
+            >
+              <Share2 className="w-5 h-5" />
+              <span className="text-lg">Share Folder</span>
+            </button>
+            <div className="h-px bg-white/5 mx-2 my-2" />
+            <button
+              onClick={() => {
+                setMobileActionFolder(null);
+                handleDeleteFolder(mobileActionFolder.id, mobileActionFolder.name, mobileActionFolder.items.length);
+              }}
+              className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-red-500/10 text-red-500 hover:text-red-400 transition-colors text-left"
+            >
+              <TrashIcon className="w-5 h-5" />
+              <span className="text-lg">Delete Folder</span>
+            </button>
           </div>
         </div>
       )}
