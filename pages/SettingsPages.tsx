@@ -371,7 +371,7 @@ export function SettingsHubPage() {
 
         <div className="mm-settings-grid">
           {/* Left column */}
-          <div className="mm-settings-grid-col">
+          <div className="mm-settings-grid-col mm-settings-grid-main">
             {/* Account */}
             <div className="mm-settings-section-label">Account</div>
             <div className="mm-settings-group">
@@ -438,7 +438,7 @@ export function SettingsHubPage() {
           </div>
 
           {/* Right column */}
-          <div className="mm-settings-grid-col">
+          <div className="mm-settings-grid-col mm-settings-grid-main">
             {/* Data & Privacy */}
             <div className="mm-settings-section-label">Data &amp; privacy</div>
             <div className="mm-settings-group">
@@ -499,10 +499,56 @@ export function SettingsHubPage() {
                 </div>
               </button>
             </div>
-
-            <div className="mm-settings-version">MovieMonk v{APP_VERSION} · MIT License</div>
           </div>
+
+          <aside className="mm-settings-desktop-aside" aria-label="Settings insights">
+            <div className="mm-settings-insight-card">
+              <div className="mm-settings-section-label">Quick overview</div>
+              <div className="mm-settings-insight-list">
+                <div className="mm-settings-insight-row">
+                  <span>Cloud sync</span>
+                  <strong className={isCloudSync ? 'mm-settings-insight-good' : 'mm-settings-insight-muted'}>
+                    {isCloudSync ? 'Connected' : 'Local only'}
+                  </strong>
+                </div>
+                <div className="mm-settings-insight-row">
+                  <span>Favorite genres</span>
+                  <strong>{genreCount}</strong>
+                </div>
+                <div className="mm-settings-insight-row">
+                  <span>Languages</span>
+                  <strong>{preferences.languages.length}</strong>
+                </div>
+                <div className="mm-settings-insight-row">
+                  <span>Content mix</span>
+                  <strong>
+                    {preferences.contentMix === 'balanced'
+                      ? 'Balanced'
+                      : preferences.contentMix === 'mostly_movies'
+                        ? 'Mostly movies'
+                        : 'Mostly series'}
+                  </strong>
+                </div>
+                <div className="mm-settings-insight-row">
+                  <span>Family-safe mode</span>
+                  <strong className={preferences.familySafe ? 'mm-settings-insight-good' : 'mm-settings-insight-muted'}>
+                    {preferences.familySafe ? 'On' : 'Off'}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="mm-settings-insight-card mm-settings-insight-card-soft">
+              <div className="mm-settings-section-label">Productivity tip</div>
+              <p className="mm-settings-insight-text">
+                Keep preferences updated to improve suggestion quality and reduce mismatch in discovery rails.
+              </p>
+            </div>
+
+            <div className="mm-settings-version mm-settings-version-desktop">MovieMonk v{APP_VERSION} · MIT License</div>
+          </aside>
         </div>
+        <div className="mm-settings-version mm-settings-version-mobile">MovieMonk v{APP_VERSION} · MIT License</div>
       </div>
       <ConfirmDialog
         open={clearHistoryOpen}
