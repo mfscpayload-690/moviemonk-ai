@@ -14,7 +14,7 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
-import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft, MoreVertical } from 'lucide-react';
+import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft, MoreVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 import {
@@ -1066,6 +1066,7 @@ export function WatchlistsDashboard() {
                           reorderFolders(folder.id, folders[index - 1].id);
                         }
                       }}
+                      aria-label="Move folder up"
                     >
                       <ChevronUpIcon className="w-4 h-4" />
                     </button>
@@ -1088,6 +1089,7 @@ export function WatchlistsDashboard() {
                           reorderFolders(folder.id, folders[index + 1].id);
                         }
                       }}
+                      aria-label="Move folder down"
                     >
                       <ChevronDownIcon className="w-4 h-4" />
                     </button>
