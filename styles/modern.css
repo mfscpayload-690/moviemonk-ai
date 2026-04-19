@@ -848,6 +848,82 @@ button:active,
     font-weight: 700;
 }
 
+.mm-chip-button-danger {
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #fecaca;
+}
+
+.mm-reminders-panel {
+    border-radius: 1.25rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mm-reminders-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.mm-reminders-panel-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.mm-reminders-panel-header p {
+    margin-top: 0.25rem;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+}
+
+.mm-reminders-notify-pill {
+    border-radius: 9999px;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    background: rgba(16, 185, 129, 0.14);
+    color: #d1fae5;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.3rem 0.65rem;
+}
+
+.mm-reminders-grid {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.mm-reminder-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+}
+
+.mm-reminder-card-body h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.mm-reminder-kicker {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+}
+
+.mm-reminder-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
 .mm-drag-active {
     opacity: 0.7;
 }
@@ -873,6 +949,74 @@ button:active,
 
     .mm-mobile-action-bar {
         display: grid;
+    }
+}
+
+@media (max-width: 640px) {
+    .mm-reminders-panel {
+        padding: 1rem 0.85rem;
+        border-radius: 1rem;
+    }
+
+    .mm-reminders-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .mm-reminders-panel-header h3 {
+        font-size: 1.1rem;
+    }
+
+    .mm-reminders-panel-header p {
+        font-size: 0.8rem;
+        line-height: 1.35;
+    }
+
+    .mm-reminders-notify-pill {
+        font-size: 0.7rem;
+        padding: 0.28rem 0.6rem;
+    }
+
+    .mm-reminders-grid {
+        gap: 0.55rem;
+    }
+
+    .mm-reminder-card {
+        padding: 0.8rem;
+        border-radius: 0.9rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+
+    .mm-reminder-card-body h4 {
+        font-size: 1.04rem;
+        line-height: 1.25;
+    }
+
+    .mm-reminder-kicker {
+        font-size: 0.78rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .mm-reminder-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .mm-reminder-actions .mm-chip-button {
+        width: 100%;
+        min-height: 2.45rem;
+        font-size: 0.86rem;
+        justify-content: center;
+    }
+
+    .mm-reminder-actions .mm-chip-button-danger {
+        grid-column: 1 / -1;
     }
 }
 

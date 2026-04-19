@@ -175,6 +175,7 @@ export default defineConfig(({ mode }) => {
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ type: 'movie', chosen: { id: 27205 } }));
           });
+
         }
       }
     ],

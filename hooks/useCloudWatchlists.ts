@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MovieData, WatchlistFolder, WatchlistSaveReceipt } from '../types';
 import { useWatchlists } from './useWatchlists';
 import {
@@ -28,6 +28,32 @@ import {
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const CLOUD_MIGRATION_EVENT = 'watchlists:cloud-migrated';
+const CLOUD_CACHE_PREFIX = 'moviemonk_cloud_watchlists_cache_v1';
+
+function toCloudCacheKey(userId: string): string {
+  return `${CLOUD_CACHE_PREFIX}:${userId}`;
+}
+
+function readCloudCache(userId: string): WatchlistFolder[] {
+  try {
+    const raw = localStorage.getItem(toCloudCacheKey(userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return applyWatchlistOrder(parsed as WatchlistFolder[], loadWatchlistOrderState(localStorage));
+  } catch (error) {
+    console.warn('Failed to read cloud watchlist cache', error);
+    return [];
+  }
+}
+
+function writeCloudCache(userId: string, folders: WatchlistFolder[]) {
+  try {
+    localStorage.setItem(toCloudCacheKey(userId), JSON.stringify(folders));
+  } catch (error) {
+    console.warn('Failed to write cloud watchlist cache', error);
+  }
+}
 
 function findItemInFolders(folders: WatchlistFolder[], folderId: string, itemId: string) {
   const folder = folders.find((entry) => entry.id === folderId);
@@ -42,6 +68,7 @@ export function useCloudWatchlists() {
   const { user } = useAuth();
   const [cloudFolders, setCloudFolders] = useState<WatchlistFolder[]>([]);
   const [cloudLoading, setCloudLoading] = useState(false);
+  const cloudCacheHydratedUserRef = useRef<string | null>(null);
 
   const refreshCloud = useCallback(async () => {
     if (!user?.id || !isSupabaseConfigured) return;
@@ -57,7 +84,16 @@ export function useCloudWatchlists() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id || !isSupabaseConfigured) return;
+    if (!user?.id || !isSupabaseConfigured) {
+      setCloudFolders([]);
+      cloudCacheHydratedUserRef.current = null;
+      return;
+    }
+    const cached = readCloudCache(user.id);
+    if (cached.length > 0) {
+      setCloudFolders(cached);
+    }
+    cloudCacheHydratedUserRef.current = user.id;
     refreshCloud();
   }, [user?.id, refreshCloud]);
 
@@ -69,6 +105,12 @@ export function useCloudWatchlists() {
     window.addEventListener(CLOUD_MIGRATION_EVENT, handleMigration);
     return () => window.removeEventListener(CLOUD_MIGRATION_EVENT, handleMigration);
   }, [user?.id, refreshCloud]);
+
+  useEffect(() => {
+    if (!user?.id || !isSupabaseConfigured) return;
+    if (cloudCacheHydratedUserRef.current !== user.id) return;
+    writeCloudCache(user.id, cloudFolders);
+  }, [cloudFolders, user?.id]);
 
   const updateCloudState = (updater: (prev: WatchlistFolder[]) => WatchlistFolder[]) => {
     setCloudFolders((prev) => {
