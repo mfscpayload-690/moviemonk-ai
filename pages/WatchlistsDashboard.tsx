@@ -108,6 +108,7 @@ export function WatchlistsDashboard() {
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkMoveTarget, setBulkMoveTarget] = useState('');
+  const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
 
@@ -230,11 +231,12 @@ export function WatchlistsDashboard() {
 
   const watchlistReminders = useMemo(
     () => deriveWatchlistReminders(folders, watched, 4),
-    [folders, watched]
+    [folders, watched, reminderRefreshToken]
   );
 
   const handleDismissReminder = (reminderId: string) => {
     dismissReminder(reminderId);
+    setReminderRefreshToken((value) => value + 1);
     emitClientEvent({
       event: 'watchlist_reminder_dismissed',
       data: { reminder_id: reminderId }
@@ -264,7 +266,7 @@ export function WatchlistsDashboard() {
     }
     setNotice({
       title: 'Reminder sent',
-      description: `You will get a nudge for "${reminder.title}".`,
+      description: `Sent a one-time browser alert for "${reminder.title}".`,
       tone: 'success'
     });
   };
@@ -612,10 +614,10 @@ export function WatchlistsDashboard() {
           <div className="mm-reminders-panel-header">
             <div>
               <h3>Watchlist reminders</h3>
-              <p>Titles that have been waiting in your lists for a while.</p>
+              <p>Titles waiting in your lists. Notify now sends a one-time browser alert.</p>
             </div>
             {canNotifyWatchlistReminders() && (
-              <span className="mm-reminders-notify-pill">Browser alerts available</span>
+                <span className="mm-reminders-notify-pill">Browser alerts available</span>
             )}
           </div>
           <div className="mm-reminders-grid">
@@ -635,7 +637,7 @@ export function WatchlistsDashboard() {
                     Open folder
                   </button>
                   <button type="button" className="mm-chip-button" onClick={() => void handleNotifyReminder(reminder)}>
-                    Notify me
+                    Notify now
                   </button>
                   <button
                     type="button"
