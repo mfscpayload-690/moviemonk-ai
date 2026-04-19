@@ -566,7 +566,7 @@ export function SettingsHubPage() {
                   <div className="mm-settings-row-sub">Stored locally on device</div>
                 </div>
                 <div className="mm-settings-row-right">
-                  <span style={{ fontSize: 12, color: '#EF9F27' }}>Clear</span>
+                  <span className="mm-settings-row-action">Clear</span>
                 </div>
               </button>
               <button type="button" className="mm-settings-row" onClick={() => setSignOutOpen(true)}>
@@ -581,9 +581,11 @@ export function SettingsHubPage() {
               </button>
             </div>
 
-            {/* Danger zone */}
-            <div className="mm-settings-section-label">Danger zone</div>
-            <div style={{ marginBottom: 20 }}>
+            <div className="mm-settings-section-head mm-settings-danger-wrap">
+              <div className="mm-settings-section-label">Danger zone</div>
+              <p className="mm-settings-section-intro">Permanent actions for your account and data.</p>
+            </div>
+            <div>
               <button
                 type="button"
                 className="mm-settings-danger-row"

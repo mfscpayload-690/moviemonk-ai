@@ -4863,6 +4863,11 @@ a:focus-visible {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
+    align-items: stretch;
+}
+
+.mm-settings-grid-col {
+    min-width: 0;
 }
 
 .mm-settings-column-surface {
@@ -4870,20 +4875,26 @@ a:focus-visible {
     border: 0.5px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     padding: 12px;
+    display: flex;
+    flex-direction: column;
 }
 
 .mm-settings-section-head {
-    margin-bottom: 8px;
+    margin: 0 0 10px;
 }
 
 .mm-settings-section-intro {
-    margin: 6px 4px 0;
+    margin: 0;
     font-size: 12px;
     color: #6b7280;
 }
 
 .mm-settings-desktop-rail {
     display: none;
+}
+
+.mm-settings-danger-wrap {
+    margin-top: 2px;
 }
 
 .mm-settings-rail-card {
@@ -4915,6 +4926,12 @@ a:focus-visible {
 
 .mm-settings-rail-cta:hover {
     background: rgba(106, 68, 255, 0.24);
+}
+
+.mm-settings-row-action {
+    font-size: 12px;
+    color: #ef9f27;
+    font-weight: 600;
 }
 
 .mm-settings-hero-top {
@@ -4982,7 +4999,7 @@ a:focus-visible {
     letter-spacing: 0.08em;
     color: #6b7280;
     text-transform: uppercase;
-    margin: 0 0 8px 4px;
+    margin: 0 0 6px;
 }
 
 .mm-settings-group {
@@ -5485,6 +5502,10 @@ a:focus-visible {
         margin-bottom: 18px;
     }
 
+    .mm-settings-danger-wrap {
+        margin-top: auto;
+    }
+
     .mm-settings-row {
         padding: 16px 18px;
     }
@@ -5512,7 +5533,7 @@ a:focus-visible {
 /* ── Large desktop ── */
 @media (min-width: 1024px) {
     .mm-settings-body {
-        max-width: 1080px;
+        max-width: 1120px;
         padding: 44px 40px 72px;
     }
 
@@ -5600,11 +5621,11 @@ a:focus-visible {
 
 @media (min-width: 1200px) {
     .mm-settings-body.mm-settings-hub-body {
-        max-width: 1260px;
+        max-width: 1320px;
     }
 
     .mm-settings-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 280px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 248px;
         gap: 20px;
     }
 
