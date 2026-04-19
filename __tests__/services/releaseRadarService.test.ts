@@ -71,7 +71,6 @@ const watchlists: WatchlistFolder[] = [
   {
     id: 'w1',
     name: 'Action Vault',
-    color: '#7c3aed',
     icon: 'action',
     items: [
       {

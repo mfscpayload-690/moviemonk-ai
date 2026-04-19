@@ -10,7 +10,6 @@ import { WatchlistFolder } from '../../types';
 const makeFolder = (id: string, name: string): WatchlistFolder => ({
   id,
   name,
-  color: '#7c3aed',
   icon: 'folder',
   items: []
 });
