@@ -848,6 +848,82 @@ button:active,
     font-weight: 700;
 }
 
+.mm-chip-button-danger {
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #fecaca;
+}
+
+.mm-reminders-panel {
+    border-radius: 1.25rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mm-reminders-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.mm-reminders-panel-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.mm-reminders-panel-header p {
+    margin-top: 0.25rem;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+}
+
+.mm-reminders-notify-pill {
+    border-radius: 9999px;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    background: rgba(16, 185, 129, 0.14);
+    color: #d1fae5;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.3rem 0.65rem;
+}
+
+.mm-reminders-grid {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.mm-reminder-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+}
+
+.mm-reminder-card-body h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.mm-reminder-kicker {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+}
+
+.mm-reminder-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
 .mm-drag-active {
     opacity: 0.7;
 }
