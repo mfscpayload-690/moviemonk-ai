@@ -193,15 +193,25 @@ export function WatchlistsDashboard() {
 
   // Sync URL when active folder changes
   const openFolder = (folderId: string | null) => {
-    setActiveFolderId(folderId);
-    if (folderId) {
-      setShowWatchedView(false);
-      const folder = folders.find(f => f.id === folderId);
-      if (folder) {
-        navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
+    const applyTransition = () => {
+      setActiveFolderId(folderId);
+      if (folderId) {
+        setShowWatchedView(false);
+        const folder = folders.find(f => f.id === folderId);
+        if (folder) {
+          navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
+        }
+      } else {
+        navigate('/watchlists', { replace: false });
       }
+    };
+
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        applyTransition();
+      });
     } else {
-      navigate('/watchlists', { replace: false });
+      applyTransition();
     }
   };
 
