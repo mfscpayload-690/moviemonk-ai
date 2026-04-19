@@ -12,7 +12,7 @@ const generatetoken = (): string => {
 };
 
 // In-memory store (in production, use Supabase)
-// Structure: { token: { folderId, folderName, folderColor?, folderIcon?, items, created_by, created_at } }
+// Structure: { token: { folderId, folderName, folderIcon?, items, created_by, created_at } }
 const sharedWatchlists = new Map<string, any>();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -52,7 +52,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const response = {
         folderName: shared.folderName,
-        folderColor: shared.folderColor,
         folderIcon: shared.folderIcon,
         items: shared.items || [],
         shared_by: shared.created_by || 'User',
@@ -64,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
-      const { folderName, folderColor, folderIcon, items, created_by, expires_at } = req.body;
+      const { folderName, folderIcon, items, created_by, expires_at } = req.body;
 
       if (!folderName || !items) {
         return sendApiError(res, 400, 'invalid_payload', 'Missing required fields');
@@ -77,7 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const sharedData = {
         id: generateId(),
         folderName,
-        folderColor,
         folderIcon,
         items,
         created_by: created_by || 'Anonymous',

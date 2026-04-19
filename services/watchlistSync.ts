@@ -19,7 +19,6 @@ type CloudFolderRow = {
   id: string;
   user_id: string;
   name: string;
-  color: string;
   icon?: string | null;
   created_at?: string;
 };
@@ -48,7 +47,7 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
 
   const folderQueryWithIcon = await client
     .from('watchlist_folders')
-    .select('id, user_id, name, color, icon, created_at')
+    .select('id, user_id, name, icon, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -58,7 +57,7 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
   if (folderError && /column .*icon|icon does not exist|schema cache/i.test(String(folderError?.message || folderError))) {
     const fallbackQuery = await client
       .from('watchlist_folders')
-      .select('id, user_id, name, color, created_at')
+      .select('id, user_id, name, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     folderRows = fallbackQuery.data;
@@ -93,7 +92,6 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
   return (folderRows as CloudFolderRow[]).map((folder) => ({
     id: folder.id,
     name: folder.name,
-    color: folder.color || '#7c3aed',
     icon: folder.icon || WATCHLIST_DEFAULT_ICON,
     items: itemsByFolder.get(folder.id) || []
   }));
@@ -107,7 +105,6 @@ export async function uploadWatchlistsToCloud(userId: string, folders: Watchlist
       id: folderId,
       user_id: userId,
       name: folder.name,
-      color: folder.color || '#7c3aed',
       icon: folder.icon || WATCHLIST_DEFAULT_ICON,
     };
 
@@ -148,7 +145,6 @@ export async function uploadWatchlistsToCloud(userId: string, folders: Watchlist
 export async function addCloudFolder(
   userId: string,
   name: string,
-  color: string,
   icon = WATCHLIST_DEFAULT_ICON,
   folderId = crypto.randomUUID()
 ): Promise<string> {
@@ -158,7 +154,6 @@ export async function addCloudFolder(
     id: safeId,
     user_id: userId,
     name: name.trim(),
-    color: color || '#7c3aed',
     icon,
   };
 
@@ -206,14 +201,6 @@ export async function renameCloudFolder(folderId: string, name: string): Promise
   if (error) throw error;
 }
 
-export async function updateCloudFolderColor(folderId: string, color: string): Promise<void> {
-  const client = getSupabaseOrThrow();
-  const { error } = await client
-    .from('watchlist_folders')
-    .update({ color, updated_at: new Date().toISOString() })
-    .eq('id', folderId);
-  if (error) throw error;
-}
 
 export async function updateCloudFolderIcon(folderId: string, icon: string): Promise<void> {
   const client = getSupabaseOrThrow();

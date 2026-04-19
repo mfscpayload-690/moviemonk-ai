@@ -380,7 +380,6 @@ export function WatchlistsDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           folderName: folder.name,
-          folderColor: folder.color,
           folderIcon: folder.icon,
           items: folder.items,
           created_by: displayName || 'MovieMonk User'
@@ -442,7 +441,7 @@ export function WatchlistsDashboard() {
       return;
     }
 
-    addFolder(trimmed, '#7c3aed', WATCHLIST_ICON_DEFAULT);
+    addFolder(trimmed, WATCHLIST_ICON_DEFAULT);
     setCreateFolderOpen(false);
     setNewFolderName('');
     setNewFolderError(null);
