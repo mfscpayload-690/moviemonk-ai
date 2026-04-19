@@ -800,8 +800,8 @@ export function WatchlistsDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds(activeFolder.items.map((item) => item.id))}>Select all</button>
                       <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds([])}>Clear</button>
-                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(true)}>Mark watched</button>
-                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(false)}>Mark unwatched</button>
+                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(true)} disabled={selectedItemIds.length === 0}>Mark watched</button>
+                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(false)} disabled={selectedItemIds.length === 0}>Mark unwatched</button>
                       <button type="button" className="mm-chip-button" onClick={() => setBulkDeleteOpen(true)} disabled={selectedItemIds.length === 0}>Delete</button>
                     </div>
                   </div>
