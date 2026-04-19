@@ -176,11 +176,6 @@ export default defineConfig(({ mode }) => {
             res.end(JSON.stringify({ type: 'movie', chosen: { id: 27205 } }));
           });
 
-          server.middlewares.use('/api/observability', (req, res) => {
-            res.statusCode = 202;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ ok: true }));
-          });
         }
       }
     ],

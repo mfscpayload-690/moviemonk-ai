@@ -10,6 +10,10 @@ function toEndpoint(): string {
   return '/api/observability';
 }
 
+function observabilityApiEnabled(): boolean {
+  return typeof import.meta !== 'undefined' && import.meta.env?.VITE_ENABLE_OBSERVABILITY_API === 'true';
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -45,6 +49,7 @@ export function emitClientEvent(input: ClientObservabilityEvent): void {
   if (typeof window === 'undefined') return;
   const event = { ...input, level: input.level || 'info' as ObservabilityLevel };
   devLog(event);
+  if (!observabilityApiEnabled()) return;
 
   const payload = safeJson({
     ts: nowIso(),
