@@ -9,6 +9,9 @@ import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
 import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 import SeoHead from './SeoHead';
 import { toMetaDescription } from '../lib/seo';
+import { emitClientEvent } from '../services/clientObservability';
+import { applyRankingFeedback, recordQueryFeedback, recordResultFeedback } from '../services/rankingFeedback';
+import { getExperimentVariant, recordExperimentConversion, recordExperimentExposure } from '../lib/experiments';
 import '../styles/search-results-page.css';
 
 interface SearchResultsPageProps {
@@ -66,6 +69,7 @@ interface SearchResultCardProps {
     year?: string | null;
   }) => void;
   onQuickSaveToWatchlist?: (item: QuickSaveTitle) => void;
+  onResultFeedback?: (item: SearchResult, signal: 'up' | 'down') => void;
 }
 
 const SearchResultCard: React.FC<SearchResultCardProps> = React.memo(({
@@ -74,7 +78,8 @@ const SearchResultCard: React.FC<SearchResultCardProps> = React.memo(({
   watched,
   onOpenTitle,
   onToggleWatched,
-  onQuickSaveToWatchlist
+  onQuickSaveToWatchlist,
+  onResultFeedback
 }) => {
   const { ref, isRevealed } = useScrollReveal<HTMLElement>();
   const { triggerFeedback, isFeedbackActive } = useActionFeedback();
@@ -155,6 +160,32 @@ const SearchResultCard: React.FC<SearchResultCardProps> = React.memo(({
             <span>{item.rating.toFixed(1)}</span>
           </div>
         )}
+        {onResultFeedback && (
+          <div className="search-result-feedback-strip">
+            <button
+              type="button"
+              className="search-result-feedback-btn"
+              onClick={(event) => {
+                event.stopPropagation();
+                onResultFeedback(item, 'up');
+              }}
+              aria-label={`Helpful recommendation for ${item.title}`}
+            >
+              Helpful
+            </button>
+            <button
+              type="button"
+              className="search-result-feedback-btn is-negative"
+              onClick={(event) => {
+                event.stopPropagation();
+                onResultFeedback(item, 'down');
+              }}
+              aria-label={`Not relevant for ${item.title}`}
+            >
+              Not relevant
+            </button>
+          </div>
+        )}
       </div>
       <div className="search-result-body">
         <h4>{item.title}</h4>
@@ -216,6 +247,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [emptySuggestions, setEmptySuggestions] = useState<SuggestionItem[]>([]);
   const [heroAiSnippet, setHeroAiSnippet] = useState<string>('');
+  const [queryFeedbackVote, setQueryFeedbackVote] = useState<'up' | 'down' | null>(null);
+  const [rankingRefreshToken, setRankingRefreshToken] = useState(0);
 
   const { ref: heroRevealRef, isRevealed: isHeroRevealed } = useScrollReveal<HTMLElement>();
   const { ref: resultsRevealRef, isRevealed: isResultsRevealed } = useScrollReveal<HTMLElement>();
@@ -225,6 +258,11 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   const normalizedQuery = normalizeText(query);
   const heroTone = useAdaptiveImageTone(payload?.hero?.backdrop_url);
+  const feedbackExperimentVariant = useMemo(() => getExperimentVariant('search_feedback_nudge'), []);
+
+  useEffect(() => {
+    recordExperimentExposure('search_feedback_nudge', feedbackExperimentVariant);
+  }, [feedbackExperimentVariant]);
 
   useEffect(() => {
     setPage(1);
@@ -235,6 +273,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       setPayload(null);
       setError(null);
       setEmptySuggestions([]);
+      setQueryFeedbackVote(null);
       return;
     }
 
@@ -242,6 +281,14 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     const load = async () => {
       setIsLoading(true);
       setError(null);
+      setQueryFeedbackVote(null);
+      emitClientEvent({
+        event: 'search_request_started',
+        data: {
+          query: query.trim(),
+          page
+        }
+      });
 
       try {
         const searchBody: Record<string, unknown> = {
@@ -289,6 +336,14 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         if (!response.ok) throw new Error(`Search failed (${response.status})`);
         const data = (await response.json()) as SearchPageResponse;
         setPayload(data);
+        emitClientEvent({
+          event: 'search_request_succeeded',
+          data: {
+            query: query.trim(),
+            page,
+            total_results: data.total_results
+          }
+        });
 
         const noTitles = (data.results?.length || 0) === 0;
         if (noTitles) {
@@ -307,6 +362,15 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         if (err?.name === 'AbortError') return;
         setError(err?.message || 'Failed to load search results');
         setPayload(null);
+        emitClientEvent({
+          event: 'search_request_failed',
+          level: 'warn',
+          data: {
+            query: query.trim(),
+            page,
+            message: err?.message || 'unknown_error'
+          }
+        });
       } finally {
         setIsLoading(false);
       }
@@ -361,6 +425,11 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     return payload.results.filter((item) => resultKey(item) !== heroKey);
   }, [payload]);
 
+  const rerankedAlsoMatching = useMemo(
+    () => applyRankingFeedback(alsoMatching),
+    [alsoMatching, rankingRefreshToken]
+  );
+
   const hasResults = Boolean(payload && ((payload.hero && payload.hero.id) || payload.results.length > 0));
 
   const renderDidYouMean = payload?.did_you_mean && payload.did_you_mean.length > 0
@@ -374,6 +443,40 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         `Search results for ${query.trim()} on MovieMonk.`
       )
     : `Search MovieMonk for "${query.trim()}" across movies, TV shows, actors, and directors.`;
+
+  const handleResultFeedback = (item: SearchResult, signal: 'up' | 'down') => {
+    recordResultFeedback(query, item, signal);
+    setRankingRefreshToken((value) => value + 1);
+    emitClientEvent({
+      event: 'search_result_feedback_submitted',
+      data: {
+        query: query.trim(),
+        result_id: item.id,
+        media_type: item.media_type,
+        signal
+      }
+    });
+    recordExperimentConversion('search_feedback_nudge', feedbackExperimentVariant, 'result_feedback', {
+      signal,
+      media_type: item.media_type
+    });
+  };
+
+  const handleQueryFeedback = (helpful: boolean) => {
+    const signal: 'up' | 'down' = helpful ? 'up' : 'down';
+    setQueryFeedbackVote(signal);
+    recordQueryFeedback(query, helpful);
+    emitClientEvent({
+      event: 'search_query_feedback_submitted',
+      data: {
+        query: query.trim(),
+        helpful
+      }
+    });
+    recordExperimentConversion('search_feedback_nudge', feedbackExperimentVariant, 'query_feedback', {
+      helpful
+    });
+  };
 
   return (
     <div className="search-page-shell">
@@ -512,6 +615,30 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             <div className="search-results-divider" />
           </div>
 
+          <div className="search-feedback-bar" role="group" aria-label="Search relevance feedback">
+            <p className="search-feedback-copy">
+              {feedbackExperimentVariant === 'variant'
+                ? 'Quick tune-up: are these results aligned with what you meant?'
+                : 'Are these results helpful?'}
+            </p>
+            <div className="search-feedback-actions">
+              <button
+                type="button"
+                className={`search-feedback-pill ${queryFeedbackVote === 'up' ? 'is-active' : ''}`}
+                onClick={() => handleQueryFeedback(true)}
+              >
+                Yes, helpful
+              </button>
+              <button
+                type="button"
+                className={`search-feedback-pill ${queryFeedbackVote === 'down' ? 'is-active is-negative' : 'is-negative'}`}
+                onClick={() => handleQueryFeedback(false)}
+              >
+                Needs better matches
+              </button>
+            </div>
+          </div>
+
           {renderDidYouMean.length > 0 && (
             <div className="search-did-you-mean">
               <span>Did you mean?</span>
@@ -520,7 +647,16 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                   <button
                     key={term}
                     type="button"
-                    onClick={() => onSearchQuery(term)}
+                    onClick={() => {
+                      emitClientEvent({
+                        event: 'search_did_you_mean_clicked',
+                        data: {
+                          original_query: query.trim(),
+                          selected_query: term
+                        }
+                      });
+                      onSearchQuery(term);
+                    }}
                     className="search-did-you-mean-chip"
                   >
                     {term}
@@ -530,9 +666,9 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             </div>
           )}
 
-          {alsoMatching.length > 0 && (
+          {rerankedAlsoMatching.length > 0 && (
             <div className="search-results-grid">
-              {alsoMatching.map((item, index) => {
+              {rerankedAlsoMatching.map((item, index) => {
                 const watched = Boolean(isWatched?.(item.id, item.media_type));
                 return (
                   <SearchResultCard
@@ -543,6 +679,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                     onOpenTitle={onOpenTitle}
                     onToggleWatched={onToggleWatched}
                     onQuickSaveToWatchlist={onQuickSaveToWatchlist}
+                    onResultFeedback={handleResultFeedback}
                   />
                 );
               })}
