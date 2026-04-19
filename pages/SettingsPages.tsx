@@ -245,6 +245,7 @@ export function SettingsHubPage() {
   const [deleteConfirmError, setDeleteConfirmError] = useState<string | null>(null);
   const [workingState, setWorkingState] = useState<'history' | 'signout' | 'delete' | null>(null);
   const [notice, setNotice] = useState<{ title: string; description: string; tone?: 'default' | 'destructive' | 'success' } | null>(null);
+  const [searchHistoryCount, setSearchHistoryCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -262,6 +263,34 @@ export function SettingsHubPage() {
     void syncSettingsFromCloud(user.id, setProfile, setPreferences);
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user?.id || !isSupabaseConfigured || !supabase) {
+      setSearchHistoryCount(null);
+      return;
+    }
+
+    let active = true;
+    void (async () => {
+      try {
+        const { count, error } = await supabase
+          .from('search_history')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if (error) throw error;
+        if (active) setSearchHistoryCount(typeof count === 'number' ? count : 0);
+      } catch (error) {
+        if (active) {
+          setSearchHistoryCount(null);
+          console.warn('Failed to load search history count', error);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
   const handleClearHistory = useCallback(async () => {
     setClearHistoryOpen(false);
     if (!user?.id || !isSupabaseConfigured || !supabase) {
@@ -275,6 +304,7 @@ export function SettingsHubPage() {
     setWorkingState('history');
     try {
       await supabase.from('search_history').delete().eq('user_id', user.id);
+      setSearchHistoryCount(0);
       setNotice({
         title: 'Search history cleared',
         description: 'Your recent searches were removed from your account history.',
@@ -352,6 +382,18 @@ export function SettingsHubPage() {
   const email = user.email || '';
   const genreCount = preferences.genres.length;
   const isCloudSync = Boolean(user.id);
+  const historyCountLabel = searchHistoryCount === null ? '—' : String(searchHistoryCount);
+  const profileCompletionChecks = [
+    { done: Boolean(profile.fullName.trim()), label: 'Add full name' },
+    { done: Boolean(profile.countryCode), label: 'Set country' },
+    { done: preferences.genres.length > 0, label: 'Pick favorite genres' },
+    { done: preferences.languages.length > 0, label: 'Choose content languages' },
+    { done: preferences.favoriteDecades.length > 0, label: 'Select favorite decades' },
+    { done: preferences.favoriteRegions.length > 0, label: 'Set favorite regions' }
+  ];
+  const profileCompletionScore = profileCompletionChecks.filter((item) => item.done).length;
+  const profileCompletionPercent = Math.round((profileCompletionScore / profileCompletionChecks.length) * 100);
+  const remainingSuggestions = profileCompletionChecks.filter((item) => !item.done).map((item) => item.label).slice(0, 3);
 
   return (
     <SettingsLayout>
@@ -369,11 +411,68 @@ export function SettingsHubPage() {
           </div>
         </div>
 
+        <div className="mm-settings-status-grid">
+          <div className="mm-settings-status-card">
+            <span className="mm-settings-status-label">Cloud sync</span>
+            <strong className={isCloudSync ? 'mm-settings-status-value good' : 'mm-settings-status-value'}>
+              {isCloudSync ? 'Connected' : 'Local only'}
+            </strong>
+          </div>
+          <div className="mm-settings-status-card">
+            <span className="mm-settings-status-label">Profile completion</span>
+            <strong className="mm-settings-status-value">{profileCompletionPercent}%</strong>
+          </div>
+          <div className="mm-settings-status-card">
+            <span className="mm-settings-status-label">Family-safe mode</span>
+            <strong className="mm-settings-status-value">{preferences.familySafe ? 'On' : 'Off'}</strong>
+          </div>
+          <div className="mm-settings-status-card">
+            <span className="mm-settings-status-label">Search history</span>
+            <strong className="mm-settings-status-value">{historyCountLabel}</strong>
+          </div>
+        </div>
+
+        <div className="mm-settings-quick-actions">
+          <button type="button" className="mm-settings-quick-btn primary" onClick={() => navigate('/settings/preferences')}>
+            Tune preferences
+          </button>
+          <button type="button" className="mm-settings-quick-btn" onClick={() => navigate('/settings/profile')}>
+            Edit profile
+          </button>
+          <button type="button" className="mm-settings-quick-btn" onClick={() => setClearHistoryOpen(true)}>
+            Clear history
+          </button>
+          <button type="button" className="mm-settings-quick-btn" onClick={() => setSignOutOpen(true)}>
+            Sign out
+          </button>
+        </div>
+
+        <section className="mm-settings-progress-card" aria-label="Profile completion">
+          <div className="mm-settings-progress-header">
+            <h2>Setup progress</h2>
+            <span>{profileCompletionPercent}% complete</span>
+          </div>
+          <div className="mm-settings-progress-track" aria-hidden="true">
+            <span className="mm-settings-progress-fill" style={{ width: `${profileCompletionPercent}%` }} />
+          </div>
+          {remainingSuggestions.length > 0 ? (
+            <div className="mm-settings-progress-tips">
+              {remainingSuggestions.map((tip) => (
+                <span key={tip} className="mm-settings-progress-tip">{tip}</span>
+              ))}
+            </div>
+          ) : (
+            <p className="mm-settings-progress-note">Great — your profile setup is complete.</p>
+          )}
+        </section>
+
         <div className="mm-settings-grid">
           {/* Left column */}
-          <div className="mm-settings-grid-col mm-settings-grid-main">
-            {/* Account */}
-            <div className="mm-settings-section-label">Account</div>
+          <div className="mm-settings-grid-col mm-settings-column-surface">
+            <div className="mm-settings-section-head">
+              <div className="mm-settings-section-label">Account</div>
+              <p className="mm-settings-section-intro">Identity and profile details for your account.</p>
+            </div>
             <div className="mm-settings-group">
               <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/profile')}>
                 <div className="mm-settings-row-icon mm-icon-purple">
@@ -388,8 +487,10 @@ export function SettingsHubPage() {
 
             </div>
 
-            {/* Discovery */}
-            <div className="mm-settings-section-label">Discovery</div>
+            <div className="mm-settings-section-head">
+              <div className="mm-settings-section-label">Discovery</div>
+              <p className="mm-settings-section-intro">Control recommendations and feed behavior.</p>
+            </div>
             <div className="mm-settings-group">
               <button type="button" className="mm-settings-row" onClick={() => navigate('/settings/preferences')}>
                 <div className="mm-settings-row-icon mm-icon-teal" style={{ color: '#5DCAA5' }}>
@@ -438,9 +539,11 @@ export function SettingsHubPage() {
           </div>
 
           {/* Right column */}
-          <div className="mm-settings-grid-col mm-settings-grid-main">
-            {/* Data & Privacy */}
-            <div className="mm-settings-section-label">Data &amp; privacy</div>
+          <div className="mm-settings-grid-col mm-settings-column-surface">
+            <div className="mm-settings-section-head">
+              <div className="mm-settings-section-label">Data &amp; privacy</div>
+              <p className="mm-settings-section-intro">Sync, account actions, and history controls.</p>
+            </div>
             <div className="mm-settings-group">
               <div className="mm-settings-row" style={{ cursor: 'default' }}>
                 <div className="mm-settings-row-icon mm-icon-teal">
@@ -501,54 +604,19 @@ export function SettingsHubPage() {
             </div>
           </div>
 
-          <aside className="mm-settings-desktop-aside" aria-label="Settings insights">
-            <div className="mm-settings-insight-card">
-              <div className="mm-settings-section-label">Quick overview</div>
-              <div className="mm-settings-insight-list">
-                <div className="mm-settings-insight-row">
-                  <span>Cloud sync</span>
-                  <strong className={isCloudSync ? 'mm-settings-insight-good' : 'mm-settings-insight-muted'}>
-                    {isCloudSync ? 'Connected' : 'Local only'}
-                  </strong>
-                </div>
-                <div className="mm-settings-insight-row">
-                  <span>Favorite genres</span>
-                  <strong>{genreCount}</strong>
-                </div>
-                <div className="mm-settings-insight-row">
-                  <span>Languages</span>
-                  <strong>{preferences.languages.length}</strong>
-                </div>
-                <div className="mm-settings-insight-row">
-                  <span>Content mix</span>
-                  <strong>
-                    {preferences.contentMix === 'balanced'
-                      ? 'Balanced'
-                      : preferences.contentMix === 'mostly_movies'
-                        ? 'Mostly movies'
-                        : 'Mostly series'}
-                  </strong>
-                </div>
-                <div className="mm-settings-insight-row">
-                  <span>Family-safe mode</span>
-                  <strong className={preferences.familySafe ? 'mm-settings-insight-good' : 'mm-settings-insight-muted'}>
-                    {preferences.familySafe ? 'On' : 'Off'}
-                  </strong>
-                </div>
-              </div>
+          <aside className="mm-settings-desktop-rail" aria-label="Settings summary">
+            <div className="mm-settings-rail-card">
+              <div className="mm-settings-section-label">Summary</div>
+              <p className="mm-settings-rail-line">Sync: {isCloudSync ? 'Connected' : 'Local only'}</p>
+              <p className="mm-settings-rail-line">Completion: {profileCompletionPercent}%</p>
+              <p className="mm-settings-rail-line">Genres: {genreCount}</p>
+              <button type="button" className="mm-settings-rail-cta" onClick={() => navigate('/settings/preferences')}>
+                Improve recommendations
+              </button>
             </div>
-
-            <div className="mm-settings-insight-card mm-settings-insight-card-soft">
-              <div className="mm-settings-section-label">Productivity tip</div>
-              <p className="mm-settings-insight-text">
-                Keep preferences updated to improve suggestion quality and reduce mismatch in discovery rails.
-              </p>
-            </div>
-
-            <div className="mm-settings-version mm-settings-version-desktop">MovieMonk v{APP_VERSION} · MIT License</div>
           </aside>
         </div>
-        <div className="mm-settings-version mm-settings-version-mobile">MovieMonk v{APP_VERSION} · MIT License</div>
+        <div className="mm-settings-version">MovieMonk v{APP_VERSION} · MIT License</div>
       </div>
       <ConfirmDialog
         open={clearHistoryOpen}

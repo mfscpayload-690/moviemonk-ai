@@ -4997,67 +4997,6 @@ a:focus-visible {
     margin-top: 8px;
 }
 
-.mm-settings-version-desktop {
-    display: none;
-}
-
-.mm-settings-desktop-aside {
-    display: none;
-}
-
-.mm-settings-insight-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 0.5px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    padding: 14px;
-    margin-bottom: 14px;
-}
-
-.mm-settings-insight-card-soft {
-    background:
-        radial-gradient(circle at top right, rgba(106, 68, 255, 0.16), transparent 50%),
-        rgba(255, 255, 255, 0.03);
-}
-
-.mm-settings-insight-list {
-    display: grid;
-    gap: 8px;
-    margin-top: 4px;
-}
-
-.mm-settings-insight-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 12.5px;
-    color: #9ca3af;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.mm-settings-insight-row strong {
-    color: #f3f4f6;
-    font-size: 12.5px;
-    font-weight: 600;
-}
-
-.mm-settings-insight-good {
-    color: #97c459 !important;
-}
-
-.mm-settings-insight-muted {
-    color: #9ca3af !important;
-}
-
-.mm-settings-insight-text {
-    margin-top: 6px;
-    color: #b7bfcc;
-    font-size: 12.5px;
-    line-height: 1.5;
-}
-
 .mm-settings-nav-back {
     display: flex;
     align-items: center;
@@ -5365,22 +5304,8 @@ a:focus-visible {
 /* ── Large desktop ── */
 @media (min-width: 1024px) {
     .mm-settings-body {
-        max-width: 1160px;
+        max-width: 1000px;
         padding: 44px 40px 72px;
-        position: relative;
-    }
-
-    .mm-settings-body::before {
-        content: '';
-        position: absolute;
-        top: 20px;
-        right: 50px;
-        width: 220px;
-        height: 220px;
-        border-radius: 999px;
-        background: radial-gradient(circle, rgba(106, 68, 255, 0.2), transparent 70%);
-        pointer-events: none;
-        filter: blur(16px);
     }
 
     .mm-settings-hero-top {
@@ -5399,17 +5324,9 @@ a:focus-visible {
     }
 
     .mm-settings-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(250px, 0.92fr);
-        gap: 0 24px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 0 32px;
         align-items: start;
-    }
-
-    .mm-settings-grid-main {
-        min-width: 0;
-    }
-
-    .mm-settings-desktop-aside {
-        display: block;
     }
 
     .mm-settings-group {
@@ -5465,16 +5382,6 @@ a:focus-visible {
         width: 88px;
         height: 88px;
         font-size: 32px;
-    }
-
-    .mm-settings-version-mobile {
-        display: none;
-    }
-
-    .mm-settings-version-desktop {
-        display: block;
-        margin-top: 6px;
-        text-align: left;
     }
 }
 
