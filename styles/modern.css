@@ -891,19 +891,62 @@ button:active,
 
 .mm-reminders-grid {
     display: grid;
-    gap: 0.65rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 0.8rem;
 }
 
 .mm-reminder-card {
+    position: relative;
     border-radius: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.03);
-    padding: 0.75rem;
+    padding: 1rem 1.25rem;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.7rem;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.mm-reminder-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.mm-reminder-dismiss-icon {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.4);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    z-index: 5;
+    opacity: 1; /* Always show for accessibility, or 0 and hover for group */
+}
+
+@media (min-width: 768px) {
+    .mm-reminder-dismiss-icon {
+        opacity: 0;
+    }
+    .mm-reminder-card:hover .mm-reminder-dismiss-icon {
+        opacity: 1;
+    }
+}
+
+.mm-reminder-dismiss-icon:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.25);
+    transform: scale(1.1);
 }
 
 .mm-reminder-card-body h4 {
@@ -1002,21 +1045,16 @@ button:active,
     }
 
     .mm-reminder-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: 100%;
+        display: flex;
         gap: 0.5rem;
+        width: 100%;
     }
 
     .mm-reminder-actions .mm-chip-button {
-        width: 100%;
-        min-height: 2.45rem;
-        font-size: 0.86rem;
+        flex: 1;
+        min-height: 2.25rem;
+        font-size: 0.82rem;
         justify-content: center;
-    }
-
-    .mm-reminder-actions .mm-chip-button-danger {
-        grid-column: 1 / -1;
     }
 }
 
@@ -4089,6 +4127,7 @@ a:focus-visible {
     font-size: 0.71rem;
     color: #9aa1af;
 }
+
 
 .person-filmography-header {
     display: flex;

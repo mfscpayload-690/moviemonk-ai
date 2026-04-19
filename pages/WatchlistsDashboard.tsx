@@ -241,7 +241,7 @@ export function WatchlistsDashboard() {
   }, [folders]);
 
   const watchlistReminders = useMemo(
-    () => deriveWatchlistReminders(folders, watched, 4),
+    () => deriveWatchlistReminders(folders, watched, 2),
     [folders, watched, reminderRefreshToken]
   );
 
@@ -665,10 +665,18 @@ export function WatchlistsDashboard() {
           </div>
           <div className="mm-reminders-grid">
             {watchlistReminders.map((reminder) => (
-              <article key={reminder.id} className="mm-reminder-card">
+              <article key={reminder.id} className="mm-reminder-card relative group">
+                <button
+                  type="button"
+                  className="mm-reminder-dismiss-icon"
+                  onClick={() => handleDismissReminder(reminder.id)}
+                  aria-label="Dismiss reminder"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
                 <div className="mm-reminder-card-body">
                   <p className="mm-reminder-kicker">
-                    {reminder.folderName} • saved {reminder.daysSaved} days ago
+                    {reminder.folderName} • {reminder.daysSaved}d ago
                   </p>
                   <h4>
                     {reminder.title}
@@ -677,17 +685,10 @@ export function WatchlistsDashboard() {
                 </div>
                 <div className="mm-reminder-actions">
                   <button type="button" className="mm-chip-button" onClick={() => openFolder(reminder.folderId)}>
-                    Open folder
+                    View folder
                   </button>
                   <button type="button" className="mm-chip-button" onClick={() => void handleNotifyReminder(reminder)}>
-                    Notify now
-                  </button>
-                  <button
-                    type="button"
-                    className="mm-chip-button mm-chip-button-danger"
-                    onClick={() => handleDismissReminder(reminder.id)}
-                  >
-                    Dismiss
+                    Notify
                   </button>
                 </div>
               </article>
