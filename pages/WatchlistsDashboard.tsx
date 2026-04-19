@@ -16,6 +16,13 @@ import {
 import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
+import {
+  canNotifyWatchlistReminders,
+  deriveWatchlistReminders,
+  dismissReminder,
+  notifyReminder
+} from '../services/watchlistReminders';
+import { emitClientEvent } from '../services/clientObservability';
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -220,6 +227,47 @@ export function WatchlistsDashboard() {
       topFormat: totalItems > 0 ? topFormat : 'N/A'
     };
   }, [folders]);
+
+  const watchlistReminders = useMemo(
+    () => deriveWatchlistReminders(folders, watched, 4),
+    [folders, watched]
+  );
+
+  const handleDismissReminder = (reminderId: string) => {
+    dismissReminder(reminderId);
+    emitClientEvent({
+      event: 'watchlist_reminder_dismissed',
+      data: { reminder_id: reminderId }
+    });
+    setNotice({
+      title: 'Reminder dismissed',
+      description: 'Got it. MovieMonk will pause this reminder for now.'
+    });
+  };
+
+  const handleNotifyReminder = async (reminder: (typeof watchlistReminders)[number]) => {
+    const delivered = await notifyReminder(reminder);
+    emitClientEvent({
+      event: 'watchlist_reminder_notify_attempted',
+      data: {
+        reminder_id: reminder.id,
+        delivered
+      }
+    });
+    if (!delivered) {
+      setNotice({
+        title: 'Browser notifications are off',
+        description: 'Enable notifications for this site to receive watchlist reminders.',
+        tone: 'destructive'
+      });
+      return;
+    }
+    setNotice({
+      title: 'Reminder sent',
+      description: `You will get a nudge for "${reminder.title}".`,
+      tone: 'success'
+    });
+  };
 
   const startEditFolder = (folder: WatchlistFolder) => {
     setEditingFolderId(folder.id);
@@ -557,6 +605,50 @@ export function WatchlistsDashboard() {
             </div>
           </button>
         </div>
+      )}
+
+      {!activeFolderId && !showWatchedView && watchlistReminders.length > 0 && (
+        <section className="mm-reminders-panel glass-panel mb-10">
+          <div className="mm-reminders-panel-header">
+            <div>
+              <h3>Watchlist reminders</h3>
+              <p>Titles that have been waiting in your lists for a while.</p>
+            </div>
+            {canNotifyWatchlistReminders() && (
+              <span className="mm-reminders-notify-pill">Browser alerts available</span>
+            )}
+          </div>
+          <div className="mm-reminders-grid">
+            {watchlistReminders.map((reminder) => (
+              <article key={reminder.id} className="mm-reminder-card">
+                <div className="mm-reminder-card-body">
+                  <p className="mm-reminder-kicker">
+                    {reminder.folderName} • saved {reminder.daysSaved} days ago
+                  </p>
+                  <h4>
+                    {reminder.title}
+                    {reminder.year ? ` (${reminder.year})` : ''}
+                  </h4>
+                </div>
+                <div className="mm-reminder-actions">
+                  <button type="button" className="mm-chip-button" onClick={() => openFolder(reminder.folderId)}>
+                    Open folder
+                  </button>
+                  <button type="button" className="mm-chip-button" onClick={() => void handleNotifyReminder(reminder)}>
+                    Notify me
+                  </button>
+                  <button
+                    type="button"
+                    className="mm-chip-button mm-chip-button-danger"
+                    onClick={() => handleDismissReminder(reminder.id)}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* 3. Watched List View */}

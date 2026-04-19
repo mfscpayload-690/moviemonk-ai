@@ -324,6 +324,54 @@ html[data-card-density="compact"] .search-result-body {
   white-space: nowrap;
 }
 
+.search-feedback-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 15, 20, 0.55);
+}
+
+.search-feedback-copy {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.search-feedback-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-feedback-pill {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-main);
+  border-radius: 9999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-feedback-pill.is-negative {
+  border-color: rgba(244, 114, 182, 0.35);
+}
+
+.search-feedback-pill.is-active {
+  border-color: rgba(167, 139, 250, 0.75);
+  background: rgba(167, 139, 250, 0.22);
+}
+
+.search-feedback-pill.is-active.is-negative {
+  border-color: rgba(244, 114, 182, 0.8);
+  background: rgba(244, 114, 182, 0.2);
+}
+
 .search-results-divider {
   flex: 1;
   height: 1px;
@@ -447,6 +495,41 @@ html[data-card-density="compact"] .search-result-body {
   width: 0.75rem;
   height: 0.75rem;
   color: var(--brand-secondary);
+}
+
+.search-result-feedback-strip {
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  display: flex;
+  gap: 0.4rem;
+  z-index: 25;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.search-result-card:hover .search-result-feedback-strip,
+.search-result-card:focus-within .search-result-feedback-strip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.search-result-feedback-btn {
+  flex: 1;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.62);
+  color: #f8fafc;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.3rem 0.35rem;
+  cursor: pointer;
+}
+
+.search-result-feedback-btn.is-negative {
+  border-color: rgba(244, 114, 182, 0.45);
 }
 
 .search-result-body h4 {
