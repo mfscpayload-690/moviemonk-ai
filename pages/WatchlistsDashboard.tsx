@@ -442,7 +442,7 @@ export function WatchlistsDashboard() {
     }
 
     if (folders.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
-      setNewFolderError('A folder with that name already exists');
+      setNewFolderError('A folder with that name already exists.');
       return;
     }
 
