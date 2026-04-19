@@ -273,7 +273,7 @@ const App: React.FC = () => {
 
     let folderId = quickSaveFolderId;
     if (!folderId && quickSaveNewFolderName.trim()) {
-      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderColor, quickSaveNewFolderIcon) || '';
+      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderIcon) || '';
     }
 
     if (!folderId) return;
