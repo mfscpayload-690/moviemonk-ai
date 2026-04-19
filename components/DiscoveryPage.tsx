@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { track } from '@vercel/analytics/react';
-import { Pin, RotateCcw } from 'lucide-react';
+import { Pin, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
@@ -294,8 +294,12 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
               <button type="button" className="mm-icon-button" onClick={() => moveRailToTop(rail.key)} aria-label={`Pin ${rail.title} to top`}>
                 <Pin className="w-4 h-4" />
               </button>
-              <button type="button" className="mm-chip-button" onClick={() => moveRail(rail.key, -1)}>Up</button>
-              <button type="button" className="mm-chip-button" onClick={() => moveRail(rail.key, 1)}>Down</button>
+              <button type="button" className="mm-icon-button" onClick={() => moveRail(rail.key, -1)} aria-label="Move up">
+                <ChevronUp className="w-4 h-4" />
+              </button>
+              <button type="button" className="mm-icon-button" onClick={() => moveRail(rail.key, 1)} aria-label="Move down">
+                <ChevronDown className="w-4 h-4" />
+              </button>
             </>
           )}
           onSectionVisible={handleSectionVisible}

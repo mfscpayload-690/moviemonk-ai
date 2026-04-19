@@ -6,7 +6,7 @@ import { useWatched } from '../hooks/useWatched';
 import { loadProfileSettings } from '../lib/userSettings';
 import { ConfirmDialog, NoticeDialog, PromptDialog } from '../components/BrandedDialogs';
 import ActionToast from '../components/ActionToast';
-import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon, Logo } from '../components/icons';
+import { TrashIcon, EditIcon, CheckIcon, XMarkIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon, Logo } from '../components/icons';
 import { WatchlistFolder } from '../types';
 import {
   getWatchlistIconOption,
@@ -193,15 +193,25 @@ export function WatchlistsDashboard() {
 
   // Sync URL when active folder changes
   const openFolder = (folderId: string | null) => {
-    setActiveFolderId(folderId);
-    if (folderId) {
-      setShowWatchedView(false);
-      const folder = folders.find(f => f.id === folderId);
-      if (folder) {
-        navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
+    const applyTransition = () => {
+      setActiveFolderId(folderId);
+      if (folderId) {
+        setShowWatchedView(false);
+        const folder = folders.find(f => f.id === folderId);
+        if (folder) {
+          navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
+        }
+      } else {
+        navigate('/watchlists', { replace: false });
       }
+    };
+
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        applyTransition();
+      });
     } else {
-      navigate('/watchlists', { replace: false });
+      applyTransition();
     }
   };
 
@@ -241,7 +251,7 @@ export function WatchlistsDashboard() {
   }, [folders]);
 
   const watchlistReminders = useMemo(
-    () => deriveWatchlistReminders(folders, watched, 4),
+    () => deriveWatchlistReminders(folders, watched, 2),
     [folders, watched, reminderRefreshToken]
   );
 
@@ -442,7 +452,7 @@ export function WatchlistsDashboard() {
     }
 
     if (folders.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
-      setNewFolderError('A folder with that name already exists.');
+      setNewFolderError('A folder with that name already exists');
       return;
     }
 
@@ -665,10 +675,18 @@ export function WatchlistsDashboard() {
           </div>
           <div className="mm-reminders-grid">
             {watchlistReminders.map((reminder) => (
-              <article key={reminder.id} className="mm-reminder-card">
+              <article key={reminder.id} className="mm-reminder-card relative group">
+                <button
+                  type="button"
+                  className="mm-reminder-dismiss-icon"
+                  onClick={() => handleDismissReminder(reminder.id)}
+                  aria-label="Dismiss reminder"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
                 <div className="mm-reminder-card-body">
                   <p className="mm-reminder-kicker">
-                    {reminder.folderName} • saved {reminder.daysSaved} days ago
+                    {reminder.folderName} • {reminder.daysSaved}d ago
                   </p>
                   <h4>
                     {reminder.title}
@@ -677,17 +695,10 @@ export function WatchlistsDashboard() {
                 </div>
                 <div className="mm-reminder-actions">
                   <button type="button" className="mm-chip-button" onClick={() => openFolder(reminder.folderId)}>
-                    Open folder
+                    View folder
                   </button>
                   <button type="button" className="mm-chip-button" onClick={() => void handleNotifyReminder(reminder)}>
-                    Notify now
-                  </button>
-                  <button
-                    type="button"
-                    className="mm-chip-button mm-chip-button-danger"
-                    onClick={() => handleDismissReminder(reminder.id)}
-                  >
-                    Dismiss
+                    Notify
                   </button>
                 </div>
               </article>
@@ -902,8 +913,8 @@ export function WatchlistsDashboard() {
                       {item.movie.title}
                     </div>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-12 z-20 pointer-events-none">
-                    <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md">{item.movie.title}</h4>
+                    <div className="absolute inset-x-0 bottom-0 mm-scrim-bottom p-3 pt-12 z-20 pointer-events-none">
+                    <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md text-depth">{item.movie.title}</h4>
                     <span className="text-xs text-brand-text-light block mt-0.5">{item.movie.year || 'Unknown'}</span>
                   </div>
                   
@@ -1032,7 +1043,7 @@ export function WatchlistsDashboard() {
                       <svg fill="none" stroke="currentColor" strokeWidth="1.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-2.625 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125" /></svg>
                     </div>
                   )}
-                  <div className="wl-folder-poster-overlay" />
+                  <div className="wl-folder-poster-overlay mm-scrim-bottom" />
                   <span
                     className="absolute top-2 left-2 z-30 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold tracking-wider uppercase text-white/90 shadow-lg border border-white/10"
                   >
@@ -1044,10 +1055,11 @@ export function WatchlistsDashboard() {
                 <div className="wl-folder-body">
                   <h3 className="wl-folder-name" onClick={() => openFolder(folder.id)}>{folder.name}</h3>
                   <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
-                  <div className="wl-folder-actions !hidden sm:!flex">
+                  <div className="wl-folder-actions hidden sm:flex">
                     <button
                       type="button"
                       className="wl-folder-action-btn"
+                      title="Move Up"
                       onClick={(event) => {
                         event.stopPropagation();
                         if (index > 0) {
@@ -1056,7 +1068,7 @@ export function WatchlistsDashboard() {
                       }}
                       aria-label="Move folder up"
                     >
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUpIcon className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(event) => {
@@ -1065,11 +1077,12 @@ export function WatchlistsDashboard() {
                       }}
                       className="wl-folder-action-btn"
                     >
-                      <EditIcon className="w-3.5 h-3.5" /> Edit
+                      <EditIcon className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       className="wl-folder-action-btn"
+                      title="Move Down"
                       onClick={(event) => {
                         event.stopPropagation();
                         if (index < folders.length - 1) {
@@ -1078,7 +1091,7 @@ export function WatchlistsDashboard() {
                       }}
                       aria-label="Move folder down"
                     >
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDownIcon className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(event) => {
@@ -1095,7 +1108,7 @@ export function WatchlistsDashboard() {
                       e.stopPropagation();
                       setMobileActionFolder(folder);
                     }}
-                    className="sm:hidden absolute bottom-3 right-3 p-2 bg-white/5 border border-white/10 text-brand-text-light hover:text-white rounded-full z-30 shadow-lg backdrop-blur-md transition-colors"
+                    className="sm:hidden absolute bottom-2.5 right-2.5 p-2.5 bg-brand-surface/90 border border-white/10 text-white rounded-full z-30 shadow-xl backdrop-blur-xl transition-all active:scale-95 hover:bg-white/10"
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>

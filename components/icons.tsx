@@ -6,6 +6,8 @@ import {
     Bot,
     CheckCircle2,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
     ClipboardCheck,
     Edit3,
     Globe,
@@ -288,6 +290,14 @@ export const FilterIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
     <ChevronRight {...baseIconProps} className={className} />
+);
+
+export const ChevronDownIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <ChevronDown {...baseIconProps} className={className} />
+);
+
+export const ChevronUpIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <ChevronUp {...baseIconProps} className={className} />
 );
 
 export const ShieldIcon: React.FC<{ className?: string }> = ({ className }) => (
