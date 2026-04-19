@@ -397,7 +397,7 @@ export function SettingsHubPage() {
 
   return (
     <SettingsLayout>
-      <div className="mm-settings-body">
+      <div className="mm-settings-body mm-settings-hub-body">
         {/* Hero */}
         <div className="mm-settings-hero-top">
           <Avatar user={user} profile={profile} />

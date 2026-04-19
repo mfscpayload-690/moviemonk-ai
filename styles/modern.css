@@ -4722,6 +4722,201 @@ a:focus-visible {
     padding: 24px 16px 48px;
 }
 
+.mm-settings-hub-body {
+    position: relative;
+    background:
+        radial-gradient(120% 110% at 0% -10%, rgba(106, 68, 255, 0.12), transparent 48%),
+        radial-gradient(120% 110% at 100% -20%, rgba(236, 72, 153, 0.09), transparent 52%);
+}
+
+.mm-settings-status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.mm-settings-status-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-height: 68px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.mm-settings-status-label {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.mm-settings-status-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f3f4f6;
+}
+
+.mm-settings-status-value.good {
+    color: #86efac;
+}
+
+.mm-settings-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.mm-settings-quick-btn {
+    border: 0.5px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.03);
+    color: #e5e7eb;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 36px;
+    padding: 0 10px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.mm-settings-quick-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+.mm-settings-quick-btn.primary {
+    background: rgba(106, 68, 255, 0.2);
+    border-color: rgba(106, 68, 255, 0.56);
+    color: #d8b4fe;
+}
+
+.mm-settings-progress-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.mm-settings-progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.mm-settings-progress-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #f3f4f6;
+}
+
+.mm-settings-progress-header span {
+    font-size: 12px;
+    color: #c4b5fd;
+    font-weight: 600;
+}
+
+.mm-settings-progress-track {
+    width: 100%;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.mm-settings-progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #6a44ff, #a855f7);
+}
+
+.mm-settings-progress-tips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.mm-settings-progress-tip {
+    font-size: 11px;
+    color: #ddd6fe;
+    border: 0.5px solid rgba(167, 139, 250, 0.48);
+    background: rgba(124, 58, 237, 0.14);
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+
+.mm-settings-progress-note {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.mm-settings-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+}
+
+.mm-settings-column-surface {
+    background: rgba(17, 24, 39, 0.42);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.mm-settings-section-head {
+    margin-bottom: 8px;
+}
+
+.mm-settings-section-intro {
+    margin: 6px 4px 0;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.mm-settings-desktop-rail {
+    display: none;
+}
+
+.mm-settings-rail-card {
+    background: rgba(17, 24, 39, 0.62);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.mm-settings-rail-line {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: #cbd5e1;
+}
+
+.mm-settings-rail-cta {
+    width: 100%;
+    margin-top: 4px;
+    border: 0.5px solid rgba(106, 68, 255, 0.56);
+    background: rgba(106, 68, 255, 0.16);
+    color: #e9d5ff;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 36px;
+    padding: 0 10px;
+    transition: background 0.15s ease;
+}
+
+.mm-settings-rail-cta:hover {
+    background: rgba(106, 68, 255, 0.24);
+}
+
 .mm-settings-hero-top {
     display: flex;
     align-items: center;
@@ -4795,7 +4990,7 @@ a:focus-visible {
     border: 0.5px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     overflow: hidden;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .mm-settings-row {
@@ -5238,12 +5433,16 @@ a:focus-visible {
         max-width: 520px;
         padding: 32px 24px 56px;
     }
+
+    .mm-settings-quick-actions {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 /* ── Desktop: 2-column hub layout ── */
 @media (min-width: 768px) {
     .mm-settings-body {
-        max-width: 760px;
+        max-width: 860px;
         padding: 40px 32px 64px;
     }
 
@@ -5269,12 +5468,21 @@ a:focus-visible {
     .mm-settings-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0 28px;
+        gap: 16px;
         align-items: start;
     }
 
+    .mm-settings-column-surface {
+        padding: 14px;
+    }
+
+    .mm-settings-status-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
     .mm-settings-group {
-        margin-bottom: 24px;
+        margin-bottom: 18px;
     }
 
     .mm-settings-row {
@@ -5304,7 +5512,7 @@ a:focus-visible {
 /* ── Large desktop ── */
 @media (min-width: 1024px) {
     .mm-settings-body {
-        max-width: 1000px;
+        max-width: 1080px;
         padding: 44px 40px 72px;
     }
 
@@ -5325,12 +5533,17 @@ a:focus-visible {
 
     .mm-settings-grid {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 0 32px;
+        gap: 18px;
         align-items: start;
     }
 
     .mm-settings-group {
         border-radius: 16px;
+    }
+
+    .mm-settings-column-surface {
+        border-radius: 16px;
+        padding: 16px;
     }
 
     .mm-settings-row {
@@ -5382,6 +5595,26 @@ a:focus-visible {
         width: 88px;
         height: 88px;
         font-size: 32px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .mm-settings-body.mm-settings-hub-body {
+        max-width: 1260px;
+    }
+
+    .mm-settings-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 280px;
+        gap: 20px;
+    }
+
+    .mm-settings-desktop-rail {
+        display: block;
+    }
+
+    .mm-settings-rail-card {
+        position: sticky;
+        top: 92px;
     }
 }
 
