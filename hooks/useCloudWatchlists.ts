@@ -69,33 +69,48 @@ export function useCloudWatchlists() {
   const [cloudFolders, setCloudFolders] = useState<WatchlistFolder[]>([]);
   const [cloudLoading, setCloudLoading] = useState(false);
   const cloudCacheHydratedUserRef = useRef<string | null>(null);
+  const cloudFoldersOwnerRef = useRef<string | null>(null);
+  const activeCloudUserIdRef = useRef<string | null>(null);
+
+  const setCloudFoldersForUser = useCallback((userId: string, folders: WatchlistFolder[]) => {
+    cloudFoldersOwnerRef.current = userId;
+    setCloudFolders(folders);
+  }, []);
 
   const refreshCloud = useCallback(async () => {
-    if (!user?.id || !isSupabaseConfigured) return;
+    const userId = user?.id;
+    if (!userId || !isSupabaseConfigured) return;
     setCloudLoading(true);
     try {
-      const folders = applyWatchlistOrder(await fetchCloudWatchlists(user.id), loadWatchlistOrderState(localStorage));
-      setCloudFolders(folders);
+      const folders = applyWatchlistOrder(await fetchCloudWatchlists(userId), loadWatchlistOrderState(localStorage));
+      if (activeCloudUserIdRef.current !== userId) return;
+      setCloudFoldersForUser(userId, folders);
     } catch (error) {
       console.warn('Failed to refresh cloud watchlists', error);
     } finally {
       setCloudLoading(false);
     }
-  }, [user?.id]);
+  }, [setCloudFoldersForUser, user?.id]);
 
   useEffect(() => {
     if (!user?.id || !isSupabaseConfigured) {
+      activeCloudUserIdRef.current = null;
+      cloudFoldersOwnerRef.current = null;
       setCloudFolders([]);
       cloudCacheHydratedUserRef.current = null;
       return;
     }
+    activeCloudUserIdRef.current = user.id;
+    cloudFoldersOwnerRef.current = null;
+    setCloudFolders([]);
+
     const cached = readCloudCache(user.id);
     if (cached.length > 0) {
-      setCloudFolders(cached);
+      setCloudFoldersForUser(user.id, cached);
     }
     cloudCacheHydratedUserRef.current = user.id;
     refreshCloud();
-  }, [user?.id, refreshCloud]);
+  }, [refreshCloud, setCloudFoldersForUser, user?.id]);
 
   useEffect(() => {
     if (!user?.id || !isSupabaseConfigured) return;
@@ -109,6 +124,7 @@ export function useCloudWatchlists() {
   useEffect(() => {
     if (!user?.id || !isSupabaseConfigured) return;
     if (cloudCacheHydratedUserRef.current !== user.id) return;
+    if (cloudFoldersOwnerRef.current !== user.id) return;
     writeCloudCache(user.id, cloudFolders);
   }, [cloudFolders, user?.id]);
 

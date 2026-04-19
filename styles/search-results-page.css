@@ -508,12 +508,14 @@ html[data-card-density="compact"] .search-result-body {
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
 }
 
 .search-result-card:hover .search-result-feedback-strip,
 .search-result-card:focus-within .search-result-feedback-strip {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
 }
 
 .search-result-feedback-btn {
