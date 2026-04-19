@@ -14,7 +14,7 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
-import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft } from 'lucide-react';
+import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 import {
@@ -114,6 +114,7 @@ export function WatchlistsDashboard() {
   const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
+  const [mobileActionFolder, setMobileActionFolder] = useState<WatchlistFolder | null>(null);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -1039,7 +1040,7 @@ export function WatchlistsDashboard() {
                 <div className="wl-folder-body">
                   <h3 className="wl-folder-name" onClick={() => openFolder(folder.id)}>{folder.name}</h3>
                   <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
-                  <div className="wl-folder-actions">
+                  <div className="wl-folder-actions hidden sm:flex">
                     <button
                       type="button"
                       className="wl-folder-action-btn"
@@ -1083,6 +1084,15 @@ export function WatchlistsDashboard() {
                       <TrashIcon className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMobileActionFolder(folder);
+                    }}
+                    className="sm:hidden absolute bottom-3 right-3 p-2 bg-white/5 border border-white/10 text-brand-text-light hover:text-white rounded-full z-30 shadow-lg backdrop-blur-md transition-colors"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
             );
@@ -1328,6 +1338,51 @@ export function WatchlistsDashboard() {
                 View Link
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Mobile Folder Action Sheet */}
+      {mobileActionFolder && (
+        <div className="fixed inset-0 z-[14000] sm:hidden flex items-end">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setMobileActionFolder(null)}
+          />
+          <div className="relative w-full bg-brand-surface border-t border-white/10 rounded-t-3xl shadow-2xl p-6 flex flex-col animate-scale-up pb-8">
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
+            <h3 className="text-xl font-bold text-white px-2 mb-4 line-clamp-1">{mobileActionFolder.name}</h3>
+            
+            <button
+              onClick={() => {
+                setMobileActionFolder(null);
+                startEditFolder(mobileActionFolder);
+              }}
+              className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-white/5 text-brand-text-light hover:text-white transition-colors text-left"
+            >
+              <EditIcon className="w-5 h-5" />
+              <span className="text-lg">Edit Folder</span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileActionFolder(null);
+                handleShareFolder(mobileActionFolder);
+              }}
+              className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-white/5 text-brand-text-light hover:text-white transition-colors text-left"
+            >
+              <Share2 className="w-5 h-5" />
+              <span className="text-lg">Share Folder</span>
+            </button>
+            <div className="h-px bg-white/5 mx-2 my-2" />
+            <button
+              onClick={() => {
+                setMobileActionFolder(null);
+                handleDeleteFolder(mobileActionFolder.id, mobileActionFolder.name, mobileActionFolder.items.length);
+              }}
+              className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-red-500/10 text-red-500 hover:text-red-400 transition-colors text-left"
+            >
+              <TrashIcon className="w-5 h-5" />
+              <span className="text-lg">Delete Folder</span>
+            </button>
           </div>
         </div>
       )}
