@@ -31,6 +31,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
