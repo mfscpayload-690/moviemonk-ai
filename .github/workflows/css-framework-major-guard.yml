@@ -47,7 +47,12 @@ jobs:
               pull_number: pr.number,
               per_page: 100,
             });
-            const hasReviewerApproval = reviews.some((review) => review.state === 'APPROVED');
+            // Derive approval from each reviewer's latest state only, not any historical approval
+            const latestReviewByAuthor = {};
+            for (const review of reviews) {
+              latestReviewByAuthor[review.user.login] = review.state;
+            }
+            const hasReviewerApproval = Object.values(latestReviewByAuthor).some((state) => state === 'APPROVED');
 
             const visualCriticalDeps = [
               'tailwindcss',
@@ -64,7 +69,9 @@ jobs:
 
             const extractMajor = (versionRange) => {
               if (!versionRange || typeof versionRange !== 'string') return null;
-              const match = versionRange.match(/(\d+)\.(\d+)\.(\d+)/);
+              // Handle various npm version formats: x.y.z, ^x.y.z, ~x.y, x, >=x.y.z, etc.
+              const normalized = versionRange.replace(/^[~^=><\s]+/, '');
+              const match = normalized.match(/^(\d+)/);
               return match ? Number(match[1]) : null;
             };
 
