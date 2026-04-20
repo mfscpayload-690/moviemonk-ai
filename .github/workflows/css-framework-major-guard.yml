@@ -1,0 +1,153 @@
+name: CSS Framework Major Guard
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard-css-framework-majors:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Block unapproved major CSS framework upgrades
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const prNumber =
+              context.payload.pull_request?.number ||
+              context.payload.review?.pull_request_url?.split('/').pop();
+
+            if (!prNumber) {
+              core.setFailed('Could not resolve pull request number from event payload.');
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: Number(prNumber),
+            });
+
+            const approvalLabel = 'ui-major-approved';
+            const hasApprovalLabel = pr.labels.some((label) => label.name === approvalLabel);
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            // Derive approval from each reviewer's latest state only, not any historical approval
+            const latestReviewByAuthor = {};
+            for (const review of reviews) {
+              latestReviewByAuthor[review.user.login] = review.state;
+            }
+            const hasReviewerApproval = Object.values(latestReviewByAuthor).some((state) => state === 'APPROVED');
+
+            const visualCriticalDeps = [
+              'tailwindcss',
+              '@tailwindcss/postcss',
+              'bootstrap',
+              'bulma',
+              'foundation-sites',
+              'semantic-ui-css',
+              'materialize-css',
+              '@mui/material',
+              'antd',
+              'tachyons',
+            ];
+
+            const extractMajor = (versionRange) => {
+              if (!versionRange || typeof versionRange !== 'string') return null;
+              // Handle various npm version formats: x.y.z, ^x.y.z, ~x.y, x, >=x.y.z, etc.
+              const normalized = versionRange.replace(/^[~^=><\s]+/, '');
+              const match = normalized.match(/^(\d+)/);
+              return match ? Number(match[1]) : null;
+            };
+
+            const parsePackageJsonAtRef = async (ref) => {
+              try {
+                const response = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: 'package.json',
+                  ref,
+                });
+
+                const raw = Buffer.from(response.data.content, 'base64').toString('utf8');
+                return JSON.parse(raw);
+              } catch (error) {
+                if (error.status === 404) return null;
+                throw error;
+              }
+            };
+
+            const basePkg = await parsePackageJsonAtRef(pr.base.sha);
+            const headPkg = await parsePackageJsonAtRef(pr.head.sha);
+
+            if (!basePkg || !headPkg) {
+              core.notice('package.json missing in base or head; skipping CSS major guard.');
+              return;
+            }
+
+            const sections = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
+            const riskyBumps = [];
+
+            for (const depName of visualCriticalDeps) {
+              let fromVersion = null;
+              let toVersion = null;
+
+              for (const section of sections) {
+                if (basePkg[section]?.[depName] && fromVersion === null) fromVersion = basePkg[section][depName];
+                if (headPkg[section]?.[depName] && toVersion === null) toVersion = headPkg[section][depName];
+              }
+
+              if (!fromVersion || !toVersion) continue;
+
+              const fromMajor = extractMajor(fromVersion);
+              const toMajor = extractMajor(toVersion);
+
+              if (fromMajor === null || toMajor === null) continue;
+
+              if (toMajor > fromMajor) {
+                riskyBumps.push({ depName, fromVersion, toVersion, fromMajor, toMajor });
+              }
+            }
+
+            if (riskyBumps.length === 0) {
+              core.notice('No major visual-critical CSS framework changes detected.');
+              return;
+            }
+
+            if (hasApprovalLabel || hasReviewerApproval) {
+              const approvals = [];
+              if (hasApprovalLabel) approvals.push(`label:${approvalLabel}`);
+              if (hasReviewerApproval) approvals.push('review:APPROVED');
+              core.notice(`Major CSS framework bump allowed due to explicit approval (${approvals.join(', ')}).`);
+              return;
+            }
+
+            const bumpLines = riskyBumps
+              .map((bump) => `- ${bump.depName}: ${bump.fromVersion} -> ${bump.toVersion}`)
+              .join('\n');
+
+            core.setFailed(
+              [
+                'Major visual-critical CSS framework upgrade detected without explicit approval.',
+                '',
+                'Detected changes:',
+                bumpLines,
+                '',
+                `To proceed, either add the PR label "${approvalLabel}" or get at least one approving review.`,
+              ].join('\n')
+            );
