@@ -1,0 +1,138 @@
+name: UI Visual Smoke
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  ui-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+        env:
+          GROQ_API_KEY: test-key
+          MISTRAL_API_KEY: test-key
+          OPENROUTER_API_KEY: test-key
+          TMDB_API_KEY: test-key
+          TMDB_READ_TOKEN: test-token
+          PERPLEXITY_API_KEY: test-key
+          OMDB_API_KEY: test-key
+
+      - name: Start preview server
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 &
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:4173 > /dev/null; then
+              echo "Preview server is ready"
+              break
+            fi
+            if [ "$i" -eq 45 ]; then
+              echo "Preview server did not start in time"
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Install Playwright runtime
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run visual smoke checks
+        run: |
+          node <<'EOF'
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+
+            const consoleErrors = [];
+            page.on('console', (msg) => {
+              if (msg.type() === 'error') {
+                consoleErrors.push(msg.text());
+              }
+            });
+
+            await page.goto('http://127.0.0.1:4173', { waitUntil: 'networkidle' });
+            await page.waitForTimeout(1500);
+
+            const appMounted = await page.locator('#root > *').count();
+            if (appMounted === 0) {
+              throw new Error('App root did not mount any UI content.');
+            }
+
+            const hasReadableText = await page.evaluate(() => {
+              return Array.from(document.querySelectorAll('body *'))
+                .map((el) => (el.textContent || '').trim())
+                .filter((text) => text.length > 0)
+                .some((text) => text.length >= 8);
+            });
+            if (!hasReadableText) {
+              throw new Error('No readable UI text detected after render.');
+            }
+
+            const hasNonTransparentBackground = await page.evaluate(() => {
+              const bodyBg = getComputedStyle(document.body).backgroundColor;
+              return bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent';
+            });
+            if (!hasNonTransparentBackground) {
+              throw new Error('Body background is transparent, indicating CSS may not be loaded.');
+            }
+
+            const hasLikelyStyledElement = await page.evaluate(() => {
+              return Array.from(document.querySelectorAll('body *')).some((el) => {
+                const css = getComputedStyle(el);
+                return css.display === 'flex' || css.position === 'fixed' || css.borderRadius !== '0px';
+              });
+            });
+            if (!hasLikelyStyledElement) {
+              throw new Error('Could not find styled elements; utility/component CSS may be missing.');
+            }
+
+            const svgCount = await page.locator('svg').count();
+            if (svgCount === 0) {
+              throw new Error('No SVG icons detected; icon render pipeline may be broken.');
+            }
+
+            await page.screenshot({ path: 'ui-smoke-home.png', fullPage: true });
+
+            if (consoleErrors.length > 0) {
+              console.log('Console errors captured during smoke test:');
+              for (const err of consoleErrors) {
+                console.log(`- ${err}`);
+              }
+            }
+
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          EOF
+
+      - name: Upload smoke screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-smoke-home
+          path: ui-smoke-home.png
+          if-no-files-found: warn
