@@ -98,6 +98,17 @@ const getYouTubeEmbedUrlWithOptions = (url: string, autoplay: boolean): string |
 
     return null;
 };
+const getYouTubeHoverPreviewUrl = (url: string): string | null => {
+    const base = getYouTubeEmbedUrlWithOptions(url, true);
+    if (!base) return null;
+    return `${base}&mute=1&controls=0&playsinline=1&loop=1&playlist=${extractYouTubeId(url) || ''}`;
+};
+
+const extractYouTubeId = (url: string): string | null => {
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    return match && match[1] ? match[1] : null;
+};
 
 
 interface ImageWithFallbackProps {
@@ -221,6 +232,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
     const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+    const [isPosterPreviewing, setIsPosterPreviewing] = useState(false);
     const [showAllCast, setShowAllCast] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isLoadingFullPlot, setIsLoadingFullPlot] = useState(false);
@@ -296,6 +308,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     }, [showWatchlistModal]);
 
     const embedUrl = movie ? getYouTubeEmbedUrlWithOptions(movie.trailer_url, autoplayTrailers) : null;
+    const hoverPreviewUrl = movie ? getYouTubeHoverPreviewUrl(movie.trailer_url) : null;
+    const canHoverPreview = useMemo(() => {
+        if (typeof window === 'undefined') return false;
+        return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    }, []);
 
     // Ensure ratings is always an array (handle legacy cached data)
     const safeRatings = movie && Array.isArray(movie.ratings) ? movie.ratings : [];
@@ -714,7 +731,16 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                     {/* Mobile: column, Desktop: row */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto">
                         {/* Poster Card - Shows Above text on mobile now */}
-                        <div className="flex-shrink-0 animate-fade-in will-change-transform" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>
+                        <div
+                            className="relative flex-shrink-0 animate-fade-in will-change-transform"
+                            style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}
+                            onMouseEnter={() => {
+                                if (canHoverPreview && hoverPreviewUrl) {
+                                    setIsPosterPreviewing(true);
+                                }
+                            }}
+                            onMouseLeave={() => setIsPosterPreviewing(false)}
+                        >
                             <ImageWithFallback
                                 src={heroPosterSrc}
                                 alt={`${movie.title} poster`}
@@ -723,6 +749,20 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 fetchPriority="high"
                                 sizes="(max-width: 640px) 160px, (max-width: 1024px) 224px, 256px"
                             />
+                            {hoverPreviewUrl && isPosterPreviewing && (
+                                <div className="absolute inset-0 rounded-lg md:rounded-xl overflow-hidden border-2 md:border-4 border-brand-primary/40 shadow-2xl pointer-events-none">
+                                    <iframe
+                                        src={hoverPreviewUrl}
+                                        title={`${movie.title} trailer preview`}
+                                        className="w-full h-full"
+                                        allow="autoplay; encrypted-media; picture-in-picture"
+                                        loading="lazy"
+                                    />
+                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-2 py-1.5 text-[10px] font-semibold tracking-wide text-white">
+                                        Trailer preview
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Title and Info Card */}
