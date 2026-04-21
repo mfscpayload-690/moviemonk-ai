@@ -8,7 +8,6 @@ jest.mock('../../components/icons', () => ({
   ArrowLeftIcon: () => React.createElement('span', null, '<'),
   ArrowRightIcon: () => React.createElement('span', null, '>')
 }));
-jest.mock('../../components/PersonalizedFeedPanel', () => () => React.createElement('div', null, 'Personalized Feed'));
 
 import { useDiscovery } from '../../hooks/useDiscovery';
 import DiscoveryPage from '../../components/DiscoveryPage';

@@ -4,7 +4,6 @@ import { Pin, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
-import PersonalizedFeedPanel from './PersonalizedFeedPanel';
 import { useDiscovery } from '../hooks/useDiscovery';
 import { loadReleaseRadarSnapshot } from '../services/releaseRadarService';
 import {
@@ -247,11 +246,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
     <div className={`discovery-page animate-fade-in ${cardDensity === 'compact' ? 'is-compact' : 'is-rich'}`}>
       <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} isWatched={isWatched} onToggleWatched={onToggleWatched} onQuickSaveToWatchlist={onQuickSaveToWatchlist} />
 
-      <PersonalizedFeedPanel
-        onRunQuery={onRunQuery}
-        onOpenTitle={onOpenTitle}
-        watchlists={watchlists}
-      />
 
       {error && (
         <section className="discovery-error" role="alert">
