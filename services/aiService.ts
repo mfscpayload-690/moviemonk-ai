@@ -1,7 +1,13 @@
 import { ChatMessage, MovieData, QueryComplexity, FetchResult, AIProvider } from '../types';
 import { fetchMovieData as fetchFromGroq } from './groqService';
 import { fetchMovieData as fetchFromPerplexity } from './perplexityService';
-import { getCachedResponse, cacheResponse, clearOldCacheEntries } from './cacheService';
+import {
+  getCachedResponse,
+  cacheResponse,
+  clearOldCacheEntries,
+  resolveEntityFromQuery,
+  getCachedByEntity
+} from './cacheService';
 import { getFromIndexedDB, saveToIndexedDB, clearOldIndexedDBEntries } from './indexedDBService';
 import { parseQuery, shouldUseComplexModel } from './queryParser';
 import { getFromTMDB } from './tmdbService';
@@ -162,7 +168,21 @@ export async function fetchMovieData(
       };
     }
 
-    // Check localStorage second
+    // Entity-first localStorage path (query -> entity -> payload).
+    const queryEntity = resolveEntityFromQuery(query, provider);
+    if (queryEntity) {
+      const entityCached = getCachedByEntity(provider, queryEntity.media_type, queryEntity.tmdb_id);
+      if (entityCached) {
+        debugLog('[ai] cache hit from localStorage entity key');
+        saveToIndexedDB(query, provider, entityCached.movieData, entityCached.sources);
+        return {
+          ...entityCached,
+          error: undefined
+        };
+      }
+    }
+
+    // Legacy query-key fallback (with automatic entity backfill in cacheService)
     const cached = getCachedResponse(query, provider);
     if (cached) {
       debugLog('[ai] cache hit from localStorage');
