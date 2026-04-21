@@ -27,7 +27,7 @@
     "react-helmet-async": "^3.0.0",
     "react-router-dom": "^7.14.1",
     "react-window": "^2.2.7",
-    "redis": "^5.11.0",
+    "redis": "^5.12.1",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
