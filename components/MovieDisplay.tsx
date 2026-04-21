@@ -93,7 +93,8 @@ const getYouTubeEmbedUrlWithOptions = (url: string, autoplay: boolean): string |
     }
 
     if (videoId) {
-        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${autoplay ? '1' : '0'}&rel=0&modestbranding=1`;
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${autoplay ? '1' : '0'}&rel=0&modestbranding=1${origin ? `&origin=${encodeURIComponent(origin)}` : ''}`;
     }
 
     return null;

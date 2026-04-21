@@ -49,7 +49,10 @@ async function sampleImageBrightness(url: string): Promise<ScrimTone> {
     };
 
     image.onerror = () => resolve('balanced');
-    image.src = url;
+    // TMDB images sometimes fail CORS checks if the browser cached them without CORS headers previously.
+    // Appending a small query param forces a fresh fetch with the correct headers.
+    const finalUrl = url.includes('tmdb.org') ? `${url}${url.includes('?') ? '&' : '?'}cors=1` : url;
+    image.src = finalUrl;
   });
 }
 

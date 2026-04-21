@@ -498,9 +498,9 @@ async function fetchVibeDiscoveryCandidates(
   mediaTypeFilter: MediaTypeFilter,
   page: number
 ): Promise<{ items: SearchResultRecord[]; totalPages: number; totalResults: number }> {
-  const includeGenreIds = mapGenreNamesToIds(vibe.hard_constraints.include_genres);
-  const excludeGenreIds = mapGenreNamesToIds(vibe.hard_constraints.exclude_genres);
-  const includePeopleIds = await resolvePersonIds(tmdbApiKey, tmdbReadToken, toStringArray(vibe.hard_constraints.include_people));
+  const includeGenreIds = mapGenreNamesToIds(vibe?.hard_constraints?.include_genres);
+  const excludeGenreIds = mapGenreNamesToIds(vibe?.hard_constraints?.exclude_genres);
+  const includePeopleIds = await resolvePersonIds(tmdbApiKey, tmdbReadToken, toStringArray(vibe?.hard_constraints?.include_people));
   const sortBy = context.highRatingSignal || context.derivedRatingMin !== null ? 'vote_average.desc' : 'popularity.desc';
 
   const buildParams = (type: 'movie' | 'tv') => {
@@ -521,10 +521,10 @@ async function fetchVibeDiscoveryCandidates(
     if (context.derivedYearMin !== null) {
       params[type === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte'] = `${context.derivedYearMin}-01-01`;
     }
-    if (vibe.hard_constraints.release_year_max !== null) {
+    if (vibe?.hard_constraints?.release_year_max !== null && vibe?.hard_constraints?.release_year_max !== undefined) {
       params[type === 'movie' ? 'primary_release_date.lte' : 'first_air_date.lte'] = `${vibe.hard_constraints.release_year_max}-12-31`;
     }
-    if (vibe.hard_constraints.languages.length === 1) {
+    if (vibe?.hard_constraints?.languages && vibe.hard_constraints.languages.length === 1) {
       params.with_original_language = vibe.hard_constraints.languages[0];
     }
     if (includePeopleIds.length > 0) {
@@ -825,13 +825,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const hasSemanticVibeSignals = Boolean(vibe && (
-      vibe.hard_constraints.include_genres.length > 0
-      || vibe.hard_constraints.exclude_genres.length > 0
-      || vibe.hard_constraints.languages.length > 0
-      || vibe.hard_constraints.include_people.length > 0
-      || vibe.soft_preferences.tone_tags.length > 0
-      || vibe.soft_preferences.story_cues.length > 0
-      || vibe.soft_preferences.reference_titles.length > 0
+      (vibe?.hard_constraints?.include_genres?.length || 0) > 0
+      || (vibe?.hard_constraints?.exclude_genres?.length || 0) > 0
+      || (vibe?.hard_constraints?.languages?.length || 0) > 0
+      || (vibe?.hard_constraints?.include_people?.length || 0) > 0
+      || (vibe?.soft_preferences?.tone_tags?.length || 0) > 0
+      || (vibe?.soft_preferences?.story_cues?.length || 0) > 0
+      || (vibe?.soft_preferences?.reference_titles?.length || 0) > 0
       || vibeContext.recentSignal
       || vibeContext.highRatingSignal
     ));
