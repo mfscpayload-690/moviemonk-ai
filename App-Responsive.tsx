@@ -956,6 +956,7 @@ const App: React.FC = () => {
             {currentView === 'discovery' ? (
               <DiscoveryPage
                 onOpenTitle={(item) => handleOpenTitle(item)}
+                onRunQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE, 'groq')}
                 isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
                 onToggleWatched={(item) => { void runWatchedToggle({
                   tmdb_id: String(item.id),

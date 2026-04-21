@@ -4,6 +4,7 @@ import { Pin, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
 import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
+import PersonalizedFeedPanel from './PersonalizedFeedPanel';
 import { useDiscovery } from '../hooks/useDiscovery';
 import { loadReleaseRadarSnapshot } from '../services/releaseRadarService';
 import {
@@ -18,6 +19,7 @@ import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/
 
 interface DiscoveryPageProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
+  onRunQuery: (query: string) => void;
   isWatched?: (id: number, mediaType: 'movie' | 'tv') => boolean;
   onToggleWatched?: (item: DiscoveryItem) => void;
   onQuickSaveToWatchlist?: (item: DiscoveryItem) => void;
@@ -51,7 +53,7 @@ function saveRailOrder(order: string[]) {
   localStorage.setItem(DISCOVERY_RAIL_ORDER_KEY, JSON.stringify(order));
 }
 
-const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, onToggleWatched, onQuickSaveToWatchlist, watchlists }) => {
+const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, isWatched, onToggleWatched, onQuickSaveToWatchlist, watchlists }) => {
   const {
     heroItems,
     sections,
@@ -244,6 +246,12 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, isWatched, o
   return (
     <div className={`discovery-page animate-fade-in ${cardDensity === 'compact' ? 'is-compact' : 'is-rich'}`}>
       <HeroSpotlight items={heroCandidates} isLoading={isLoading} onOpenTitle={onOpenTitle} isWatched={isWatched} onToggleWatched={onToggleWatched} onQuickSaveToWatchlist={onQuickSaveToWatchlist} />
+
+      <PersonalizedFeedPanel
+        onRunQuery={onRunQuery}
+        onOpenTitle={onOpenTitle}
+        watchlists={watchlists}
+      />
 
       {error && (
         <section className="discovery-error" role="alert">

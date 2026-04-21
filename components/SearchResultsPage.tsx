@@ -11,6 +11,7 @@ import SeoHead from './SeoHead';
 import { toMetaDescription } from '../lib/seo';
 import { emitClientEvent } from '../services/clientObservability';
 import { applyRankingFeedback, recordQueryFeedback, recordResultFeedback } from '../services/rankingFeedback';
+import { streamGroqText } from '../services/groqService';
 import '../styles/search-results-page.css';
 
 interface SearchResultsPageProps {
@@ -379,25 +380,61 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     }
 
     let cancelled = false;
+    const controller = new AbortController();
     const loadHeroSnippet = async () => {
       try {
-        const response = await fetch('/api/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            q: `${hero.title}${hero.year ? ` ${hero.year}` : ''}`,
-            mode: 'short'
-          })
+        const system = 'You write short, spoiler-free movie and TV teaser blurbs.';
+        const userPrompt = [
+          `Title: ${hero.title}${hero.year ? ` (${hero.year})` : ''}`,
+          `Type: ${hero.type === 'show' ? 'TV Show' : 'Movie'}`,
+          `Overview: ${hero.overview || hero.summary_snippet || ''}`,
+          'Task: Return one spoiler-free teaser sentence under 150 characters. Plain text only.'
+        ].join('\n');
+
+        let streamed = '';
+        await streamGroqText({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.35,
+          max_tokens: 120,
+          signal: controller.signal,
+          onDelta: (delta) => {
+            streamed += delta;
+            if (!cancelled) {
+              setHeroAiSnippet(streamed.trim());
+            }
+          }
         });
 
-        if (!response.ok) return;
-        const data = await response.json();
-        const nextSnippet = data?.summary?.summary_short;
-        if (!cancelled && typeof nextSnippet === 'string' && nextSnippet.trim()) {
-          setHeroAiSnippet(nextSnippet.trim());
+        if (!cancelled && streamed.trim()) {
+          setHeroAiSnippet(streamed.trim());
+          return;
         }
       } catch {
-        // Keep fallback synopsis when AI snippet fails.
+        // Fallback to query endpoint when stream fails.
+        try {
+          const response = await fetch('/api/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              q: `${hero.title}${hero.year ? ` ${hero.year}` : ''}`,
+              mode: 'short'
+            }),
+            signal: controller.signal
+          });
+
+          if (!response.ok) return;
+          const data = await response.json();
+          const nextSnippet = data?.summary?.summary_short;
+          if (!cancelled && typeof nextSnippet === 'string' && nextSnippet.trim()) {
+            setHeroAiSnippet(nextSnippet.trim());
+          }
+        } catch {
+          // Keep fallback synopsis when AI snippet fails.
+        }
       }
     };
 
@@ -406,6 +443,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [payload?.hero?.id, payload?.hero?.title, payload?.hero?.year]);
 
