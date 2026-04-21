@@ -6,6 +6,8 @@ const mockFetch = jest.fn();
 
 jest.mock('../../services/cacheService', () => ({
   getCachedResponse: jest.fn().mockReturnValue(null),
+  getCachedByEntity: jest.fn().mockReturnValue(null),
+  resolveEntityFromQuery: jest.fn().mockReturnValue(null),
   cacheResponse: jest.fn(),
   clearOldCacheEntries: jest.fn()
 }));
