@@ -24,6 +24,24 @@ const GENRE_ID_BY_NAME: Record<string, number> = Object.entries(GENRE_MAP).reduc
   return acc;
 }, {} as Record<string, number>);
 
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: 'English',
+  ko: 'Korean',
+  ja: 'Japanese',
+  zh: 'Chinese',
+  hi: 'Hindi',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  it: 'Italian',
+  pt: 'Portuguese',
+  ru: 'Russian',
+  ar: 'Arabic'
+};
+
+const VIBE_RECENT_SIGNAL = /\b(recent|latest|newest|new|fresh|current|recently released|just released)\b/i;
+const VIBE_HIGH_RATING_SIGNAL = /\b(strong ratings|highly rated|top rated|best rated|well rated|critically acclaimed|acclaimed|award[- ]winning|must[- ]watch)\b/i;
+
 type SearchResultRecord = {
   id: number;
   title: string;
@@ -40,6 +58,8 @@ type SearchResultRecord = {
   confidence: number;
   popularity?: number;
   original_language?: string;
+  vibe_score?: number;
+  match_reasons?: string[];
 };
 
 type PersonCandidate = {
@@ -217,6 +237,333 @@ function mapTmdbToPerson(item: any): PersonCandidate | null {
     profile_url: item.profile_path
       ? `https://image.tmdb.org/t/p/w185${item.profile_path}`
       : undefined,
+  };
+}
+
+type VibeSearchContext = {
+  searchMode: 'keyword' | 'vibe' | 'mixed';
+  summary: string;
+  signals: string[];
+  recentSignal: boolean;
+  highRatingSignal: boolean;
+  derivedYearMin: number | null;
+  derivedRatingMin: number | null;
+};
+
+function buildVibeSearchContext(query: string, vibe: VibeParseResult | null, ratingMin: number | null): VibeSearchContext {
+  const vibeQuery = (vibe?.query_raw || query || '').trim();
+  const recentSignal = VIBE_RECENT_SIGNAL.test(vibeQuery);
+  const highRatingSignal = VIBE_HIGH_RATING_SIGNAL.test(vibeQuery);
+  const derivedYearMin = vibe?.hard_constraints?.release_year_min ?? (recentSignal ? new Date().getFullYear() - 5 : null);
+  const derivedRatingMin = ratingMin ?? (highRatingSignal ? 7 : null);
+
+  const signals: string[] = [];
+  const includeGenres = toStringArray(vibe?.hard_constraints?.include_genres).slice(0, 3);
+  const toneTags = toStringArray(vibe?.soft_preferences?.tone_tags).slice(0, 3);
+  const storyCues = toStringArray(vibe?.soft_preferences?.story_cues).slice(0, 2);
+  const referenceTitles = toStringArray(vibe?.soft_preferences?.reference_titles).slice(0, 2).map((title) => `like ${title}`);
+  const includePeople = toStringArray(vibe?.hard_constraints?.include_people).slice(0, 2).map((name) => `with ${name}`);
+
+  signals.push(...includeGenres);
+  signals.push(...toneTags);
+  signals.push(...storyCues);
+  signals.push(...referenceTitles);
+  signals.push(...includePeople);
+
+  if (recentSignal) signals.push('recent');
+  if (highRatingSignal) signals.push('high-rated');
+  if (derivedYearMin !== null) signals.push(`since ${derivedYearMin}`);
+
+  const summaryParts = [
+    ...includeGenres,
+    ...toneTags.slice(0, 2),
+    ...storyCues.slice(0, 1),
+    ...referenceTitles.slice(0, 1),
+    ...(recentSignal ? ['recent'] : []),
+    ...(highRatingSignal ? ['high-rated'] : [])
+  ].filter(Boolean);
+
+  const searchMode: VibeSearchContext['searchMode'] = vibe
+    ? (vibe.intent_type === 'mixed' ? 'mixed' : vibe.intent_type === 'vibe_discovery' ? 'vibe' : 'keyword')
+    : 'keyword';
+
+  return {
+    searchMode,
+    summary: summaryParts.length > 0 ? summaryParts.join(' • ') : 'Curated picks',
+    signals: Array.from(new Set(signals.filter(Boolean))),
+    recentSignal,
+    highRatingSignal,
+    derivedYearMin,
+    derivedRatingMin
+  };
+}
+
+function buildLanguageLabel(languageCode?: string): string | null {
+  if (!languageCode) return null;
+  const normalized = languageCode.toLowerCase();
+  return LANGUAGE_LABELS[normalized] || normalized.toUpperCase();
+}
+
+function buildVibeReasons(item: SearchResultRecord, vibe: VibeParseResult | null, context: VibeSearchContext): string[] {
+  const reasons: string[] = [];
+  const itemGenreNames = (item.genre_ids || [])
+    .map((genreId) => GENRE_MAP[genreId])
+    .filter(Boolean)
+    .map((genre) => genre.toLowerCase());
+  const includeGenres = toStringArray(vibe?.hard_constraints?.include_genres).map((genre) => genre.toLowerCase());
+  const matchedGenres = includeGenres.filter((genre) => itemGenreNames.some((itemGenre) => itemGenre === genre || itemGenre.includes(genre) || genre.includes(itemGenre)));
+
+  matchedGenres.slice(0, 2).forEach((genre) => {
+    const label = GENRE_ID_BY_NAME[genre] ? GENRE_MAP[GENRE_ID_BY_NAME[genre]] : genre;
+    reasons.push(label || genre);
+  });
+
+  if (context.recentSignal && item.year) {
+    const year = Number(item.year);
+    if (Number.isFinite(year) && year >= (context.derivedYearMin ?? year)) {
+      reasons.push('Recent');
+    }
+  }
+
+  if (context.highRatingSignal && typeof item.rating === 'number' && item.rating >= (context.derivedRatingMin ?? 7)) {
+    reasons.push(`Rated ${item.rating.toFixed(1)}`);
+  }
+
+  const itemLanguageLabel = buildLanguageLabel(item.original_language);
+  if (itemLanguageLabel && toStringArray(vibe?.hard_constraints?.languages).some((language) => language.toLowerCase() === String(item.original_language || '').toLowerCase())) {
+    reasons.push(itemLanguageLabel);
+  }
+
+  const overview = normalizeRepeatedLetters((item.overview || '').toLowerCase());
+  for (const cue of toStringArray(vibe?.soft_preferences?.tone_tags).slice(0, 3)) {
+    const normalizedCue = normalizeRepeatedLetters(cue.toLowerCase());
+    if (normalizedCue && (overview.includes(normalizedCue) || item.title.toLowerCase().includes(normalizedCue))) {
+      reasons.push(cue);
+    }
+  }
+
+  for (const cue of toStringArray(vibe?.soft_preferences?.story_cues).slice(0, 2)) {
+    const normalizedCue = normalizeRepeatedLetters(cue.toLowerCase());
+    if (normalizedCue && (overview.includes(normalizedCue) || item.title.toLowerCase().includes(normalizedCue))) {
+      reasons.push(cue);
+    }
+  }
+
+  if (reasons.length === 0 && context.searchMode === 'vibe') {
+    reasons.push('Vibe match');
+  }
+
+  return Array.from(new Set(reasons)).slice(0, 4);
+}
+
+function scoreVibeResult(item: SearchResultRecord, vibe: VibeParseResult | null, context: VibeSearchContext): number {
+  const reasons = buildVibeReasons(item, vibe, context);
+  let score = 35;
+
+  if (reasons.some((reason) => toStringArray(vibe?.hard_constraints?.include_genres).some((genre) => reason.toLowerCase() === genre.toLowerCase()))) {
+    score += 30;
+  }
+
+  if (reasons.includes('Recent')) {
+    score += 15;
+  }
+
+  if (reasons.some((reason) => /^Rated\s/i.test(reason))) {
+    score += 15;
+  }
+
+  if (reasons.some((reason) => buildLanguageLabel(item.original_language) === reason)) {
+    score += 10;
+  }
+
+  if (reasons.some((reason) => toStringArray(vibe?.soft_preferences?.tone_tags).some((cue) => cue.toLowerCase() === reason.toLowerCase())) ||
+      reasons.some((reason) => toStringArray(vibe?.soft_preferences?.story_cues).some((cue) => cue.toLowerCase() === reason.toLowerCase()))) {
+    score += 12;
+  }
+
+  if (typeof item.rating === 'number') {
+    score += Math.min(15, Math.max(0, item.rating - 5) * 4);
+  }
+
+  if (typeof item.popularity === 'number') {
+    score += Math.min(10, item.popularity / 50);
+  }
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function decorateVibeResults(items: SearchResultRecord[], vibe: VibeParseResult | null, context: VibeSearchContext): SearchResultRecord[] {
+  return items
+    .map((item) => {
+      const matchReasons = buildVibeReasons(item, vibe, context);
+      const vibeScore = scoreVibeResult(item, vibe, context);
+
+      return {
+        ...item,
+        match_reasons: matchReasons,
+        vibe_score: vibeScore
+      };
+    })
+    .sort((a, b) => {
+      const vibeDiff = (b.vibe_score ?? 0) - (a.vibe_score ?? 0);
+      if (vibeDiff !== 0) return vibeDiff;
+      const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
+      if (ratingDiff !== 0) return ratingDiff;
+      return (b.popularity ?? 0) - (a.popularity ?? 0);
+    });
+}
+
+async function tmdbSearchPerson(
+  tmdbApiKey: string | undefined,
+  tmdbReadToken: string | undefined,
+  query: string
+): Promise<any> {
+  const url = new URL(`${TMDB_BASE}/search/person`);
+  url.searchParams.set('query', query);
+  url.searchParams.set('include_adult', 'false');
+
+  if (tmdbApiKey) {
+    url.searchParams.set('api_key', tmdbApiKey);
+  }
+
+  const headers: Record<string, string> = tmdbReadToken
+    ? { Authorization: `Bearer ${tmdbReadToken}` }
+    : {};
+
+  const response = await fetch(url.toString(), { headers });
+  if (!response.ok) {
+    throw new Error(`TMDB person search failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function resolvePersonIds(
+  tmdbApiKey: string | undefined,
+  tmdbReadToken: string | undefined,
+  names: string[]
+): Promise<number[]> {
+  const uniqueNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
+  if (uniqueNames.length === 0) return [];
+
+  const lookups = await Promise.all(uniqueNames.map(async (name) => {
+    try {
+      const data = await tmdbSearchPerson(tmdbApiKey, tmdbReadToken, name);
+      const hit = Array.isArray(data?.results)
+        ? data.results.find((person: any) => person?.id && typeof person.id === 'number')
+        : null;
+      return typeof hit?.id === 'number' ? hit.id : null;
+    } catch {
+      return null;
+    }
+  }));
+
+  return Array.from(new Set(lookups.filter((id): id is number => typeof id === 'number' && Number.isFinite(id))));
+}
+
+async function tmdbDiscover(
+  tmdbApiKey: string | undefined,
+  tmdbReadToken: string | undefined,
+  path: '/discover/movie' | '/discover/tv',
+  params: Record<string, string | number | undefined>
+): Promise<any> {
+  const url = new URL(`${TMDB_BASE}${path}`);
+  url.searchParams.set('include_adult', 'false');
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  if (tmdbApiKey) {
+    url.searchParams.set('api_key', tmdbApiKey);
+  }
+
+  const headers: Record<string, string> = tmdbReadToken
+    ? { Authorization: `Bearer ${tmdbReadToken}` }
+    : {};
+
+  const response = await fetch(url.toString(), { headers });
+  if (!response.ok) {
+    throw new Error(`TMDB discover failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function fetchVibeDiscoveryCandidates(
+  tmdbApiKey: string | undefined,
+  tmdbReadToken: string | undefined,
+  vibe: VibeParseResult,
+  context: VibeSearchContext,
+  mediaTypeFilter: MediaTypeFilter,
+  page: number
+): Promise<{ items: SearchResultRecord[]; totalPages: number; totalResults: number }> {
+  const includeGenreIds = mapGenreNamesToIds(vibe?.hard_constraints?.include_genres);
+  const excludeGenreIds = mapGenreNamesToIds(vibe?.hard_constraints?.exclude_genres);
+  const includePeopleIds = await resolvePersonIds(tmdbApiKey, tmdbReadToken, toStringArray(vibe?.hard_constraints?.include_people));
+  const sortBy = context.highRatingSignal || context.derivedRatingMin !== null ? 'vote_average.desc' : 'popularity.desc';
+
+  const buildParams = (type: 'movie' | 'tv') => {
+    const params: Record<string, string | number | undefined> = {
+      language: 'en-US',
+      sort_by: sortBy,
+      page,
+      'vote_count.gte': context.highRatingSignal ? 50 : undefined,
+      'vote_average.gte': context.derivedRatingMin ?? undefined
+    };
+
+    if (includeGenreIds.length > 0) {
+      params.with_genres = includeGenreIds.join(',');
+    }
+    if (excludeGenreIds.length > 0) {
+      params.without_genres = excludeGenreIds.join(',');
+    }
+    if (context.derivedYearMin !== null) {
+      params[type === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte'] = `${context.derivedYearMin}-01-01`;
+    }
+    if (vibe?.hard_constraints?.release_year_max !== null && vibe?.hard_constraints?.release_year_max !== undefined) {
+      params[type === 'movie' ? 'primary_release_date.lte' : 'first_air_date.lte'] = `${vibe.hard_constraints.release_year_max}-12-31`;
+    }
+    if (vibe?.hard_constraints?.languages && vibe.hard_constraints.languages.length === 1) {
+      params.with_original_language = vibe.hard_constraints.languages[0];
+    }
+    if (includePeopleIds.length > 0) {
+      params.with_people = includePeopleIds.join(',');
+    }
+
+    return params;
+  };
+
+  const discoverRequests: Array<Promise<any>> = [];
+  if (mediaTypeFilter === 'movie' || mediaTypeFilter === 'all') {
+    discoverRequests.push(
+      tmdbDiscover(tmdbApiKey, tmdbReadToken, '/discover/movie', buildParams('movie'))
+        .then(res => ({
+          ...res,
+          results: (res.results || []).map((item: any) => ({ ...item, media_type: 'movie' }))
+        }))
+    );
+  }
+  if (mediaTypeFilter === 'tv' || mediaTypeFilter === 'all') {
+    discoverRequests.push(
+      tmdbDiscover(tmdbApiKey, tmdbReadToken, '/discover/tv', buildParams('tv'))
+        .then(res => ({
+          ...res,
+          results: (res.results || []).map((item: any) => ({ ...item, media_type: 'tv' }))
+        }))
+    );
+  }
+
+  const responses = await Promise.all(discoverRequests);
+  const items = responses
+    .flatMap((response) => Array.isArray(response?.results) ? response.results : [])
+    .map(mapTmdbToSearchResult)
+    .filter((item): item is SearchResultRecord => Boolean(item));
+
+  return {
+    items,
+    totalPages: Math.max(1, ...responses.map((response) => Number(response?.total_pages) || 1)),
+    totalResults: responses.reduce((sum, response) => sum + (Number(response?.total_results) || 0), 0)
   };
 }
 
@@ -416,6 +763,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const yearMaxRaw = parseNumber(input.yearMax);
   const exactYear = parseNumber(input.year);
   const vibe = normalizeVibeInput((input as any).vibe);
+  const vibeContext = buildVibeSearchContext(q, vibe, ratingMin);
   const vibeGenres = mapGenreNamesToIds(vibe?.hard_constraints?.include_genres);
   const vibeExcludedGenres = new Set(toStringArray(vibe?.hard_constraints?.exclude_genres).map((value) => value.toLowerCase()));
   const vibeLanguages = new Set(toStringArray(vibe?.hard_constraints?.languages).map((value) => value.toLowerCase()));
@@ -428,7 +776,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const mediaTypeFilter = normalizeMediaTypeFilter(String(input.type || vibe?.hard_constraints?.media_type || baseMediaTypeFilter));
 
   try {
-    const cacheKey = withCacheKey('search_v2', {
+    const cacheKey = withCacheKey('search_v3', {
       q: effectiveQuery.toLowerCase(),
       page,
       type: mediaTypeFilter,
@@ -439,6 +787,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ratingMin: ratingMin ?? '',
       languages: Array.from(vibeLanguages).join(','),
       excludedGenres: Array.from(vibeExcludedGenres).join(','),
+      vibeIntent: vibe?.intent_type ?? '',
+      vibeQuery: vibe?.query_raw?.toLowerCase() ?? ''
     });
 
     const cached = await getCache(cacheKey);
@@ -486,7 +836,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       yearMax
     });
 
-    let results = applyTitleFilters(pageNMappedTitles, {
+    const hasSemanticVibeSignals = Boolean(vibe && (
+      (vibe?.hard_constraints?.include_genres?.length || 0) > 0
+      || (vibe?.hard_constraints?.exclude_genres?.length || 0) > 0
+      || (vibe?.hard_constraints?.languages?.length || 0) > 0
+      || (vibe?.hard_constraints?.include_people?.length || 0) > 0
+      || (vibe?.soft_preferences?.tone_tags?.length || 0) > 0
+      || (vibe?.soft_preferences?.story_cues?.length || 0) > 0
+      || (vibe?.soft_preferences?.reference_titles?.length || 0) > 0
+      || vibeContext.recentSignal
+      || vibeContext.highRatingSignal
+    ));
+
+    const shouldUseVibeDiscovery = Boolean(vibe && (
+      vibe.intent_type !== 'title_lookup'
+      || (page1MappedTitles.length === 0 && hasSemanticVibeSignals)
+    ));
+    const discoverySnapshot = shouldUseVibeDiscovery
+      ? await fetchVibeDiscoveryCandidates(tmdbKey, tmdbReadToken, vibe!, vibeContext, mediaTypeFilter, page)
+      : { items: [], totalPages: 1, totalResults: 0 };
+
+    const combinedResults = Array.from(
+      new Map<string, SearchResultRecord>([
+        ...pageNMappedTitles,
+        ...discoverySnapshot.items
+      ].map((item) => [`${item.media_type}:${item.id}`, item])).values()
+    );
+
+    let results = applyTitleFilters(combinedResults, {
       mediaTypeFilter,
       genreFilters,
       ratingMin,
@@ -508,27 +885,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // --- Select hero: best filtered title from page 1 with a backdrop ---
-    const hero = filteredPage1Titles.find((item) => Boolean(item.backdrop_url))
+    const vibeRankingContext = shouldUseVibeDiscovery && vibe
+      ? { ...vibeContext, searchMode: vibe.intent_type === 'mixed' ? 'mixed' as const : 'vibe' as const }
+      : vibeContext;
+
+    const rankedResults = shouldUseVibeDiscovery
+      ? decorateVibeResults(results, vibe, vibeRankingContext)
+      : (() => {
+          const sortedResults = [...results];
+          if (sortBy === 'vote_average.desc') {
+            sortedResults.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+          } else if (sortBy === 'release_date.desc') {
+            sortedResults.sort((a, b) => parseInt(b.year || '0', 10) - parseInt(a.year || '0', 10));
+          } else if (sortBy === 'title.asc') {
+            sortedResults.sort((a, b) => a.title.localeCompare(b.title));
+          } else {
+            sortedResults.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+          }
+          return sortedResults;
+        })();
+
+    const hero = rankedResults.find((item) => Boolean(item.backdrop_url))
+      || rankedResults[0]
+      || filteredPage1Titles.find((item) => Boolean(item.backdrop_url))
       || filteredPage1Titles[0]
       || null;
 
-    // Sort results
-    if (sortBy === 'vote_average.desc') {
-      results.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-    } else if (sortBy === 'release_date.desc') {
-      results.sort((a, b) => parseInt(b.year || '0', 10) - parseInt(a.year || '0', 10));
-    } else if (sortBy === 'title.asc') {
-      results.sort((a, b) => a.title.localeCompare(b.title));
-    } else {
-      // Default: popularity.desc (TMDB order)
-      results.sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
-    }
-
-    // Limit per page
-    results = results.slice(0, MAX_RESULTS_PER_PAGE);
-
-    // --- People (always from page 1) ---
     const people = page1Results
       .filter((item) => item?.media_type === 'person')
       .map(mapTmdbToPerson)
@@ -536,18 +918,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
       .slice(0, 8);
 
-    const didYouMean = buildDidYouMean(effectiveQuery, page1MappedTitles);
+    const didYouMean = shouldUseVibeDiscovery ? [] : buildDidYouMean(effectiveQuery, page1MappedTitles);
+    const searchMode = vibe
+      ? (vibe.intent_type === 'mixed' ? 'mixed' : shouldUseVibeDiscovery ? 'vibe' : 'keyword')
+      : 'keyword';
+    const totalResultCount = shouldUseVibeDiscovery
+      ? Math.max(rankedResults.length, discoverySnapshot.totalResults, page1Data?.total_results ?? 0)
+      : totalResults;
+    const totalPageCount = shouldUseVibeDiscovery
+      ? Math.min(20, Math.max(page1Data?.total_pages ?? 1, discoverySnapshot.totalPages))
+      : Math.min(totalPages, 20);
 
     const payload = {
       ok: true,
       query: effectiveQuery,
       page,
-      total_pages: Math.min(totalPages, 20), // Cap at 20 pages
-      total_results: totalResults,
+      total_pages: totalPageCount,
+      total_results: totalResultCount,
+      search_mode: searchMode,
       hero,
-      results,
+      results: rankedResults.slice(0, MAX_RESULTS_PER_PAGE),
       people,
       did_you_mean: didYouMean,
+      vibe: vibe
+        ? {
+            intent_type: vibe.intent_type,
+            summary: vibeContext.summary,
+            signals: vibeContext.signals
+          }
+        : undefined,
       applied_filters: {
         type: mediaTypeFilter,
         sortBy,
@@ -559,7 +958,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     await setCache(cacheKey, payload, SEARCH_CACHE_TTL_SECONDS);
-    obs.finish(200, { cached: false, total: totalResults });
+    obs.finish(200, { cached: false, total: totalResultCount });
     return res.status(200).json(payload);
   } catch (error: any) {
     obs.log('search_failed', 'error', { error: error?.message || 'Search request failed' });

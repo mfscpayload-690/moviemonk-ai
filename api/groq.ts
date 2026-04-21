@@ -41,7 +41,7 @@ module.exports = async function handler(req: any, res: any) {
     return sendError(405, 'method_not_allowed', 'Only POST supported');
   }
 
-  const { messages, model, max_tokens, temperature, response_format } = req.body;
+  const { messages, model, max_tokens, temperature, response_format, stream } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     return sendError(400, 'invalid_body', 'messages array required');
@@ -65,7 +65,8 @@ module.exports = async function handler(req: any, res: any) {
         messages,
         max_tokens: max_tokens || 4000,
         temperature: temperature !== undefined ? temperature : 0.2,
-        response_format: response_format || { type: 'json_object' }
+        response_format: response_format || (stream ? undefined : { type: 'json_object' }),
+        stream: Boolean(stream)
       })
     });
 
@@ -73,6 +74,35 @@ module.exports = async function handler(req: any, res: any) {
       const errorText = await response.text();
       console.error('Groq API error:', response.status, errorText);
       return sendError(response.status, 'upstream_error', `Groq API error ${response.status}`, errorText);
+    }
+
+    if (stream) {
+      if (!response.body) {
+        return sendError(500, 'stream_unavailable', 'Upstream stream body unavailable');
+      }
+
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive'
+      });
+
+      const reader = response.body.getReader();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            res.write(Buffer.from(value));
+          }
+        }
+        return res.end();
+      } catch (streamError: any) {
+        console.error('Groq stream proxy error:', streamError);
+        res.write(`event: error\ndata: ${JSON.stringify({ message: streamError?.message || 'Stream failed' })}\n\n`);
+        return res.end();
+      }
     }
 
     const data = await response.json();

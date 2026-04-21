@@ -11,6 +11,7 @@ import SeoHead from './SeoHead';
 import { toMetaDescription } from '../lib/seo';
 import { emitClientEvent } from '../services/clientObservability';
 import { applyRankingFeedback, recordQueryFeedback, recordResultFeedback } from '../services/rankingFeedback';
+import { streamGroqText } from '../services/groqService';
 import '../styles/search-results-page.css';
 
 interface SearchResultsPageProps {
@@ -192,6 +193,22 @@ const SearchResultCard: React.FC<SearchResultCardProps> = React.memo(({
           <span>{item.year || 'TBA'}</span>
           <span>{item.type === 'show' ? 'TV Show' : 'Movie'}</span>
         </div>
+        {(typeof item.vibe_score === 'number' || (item.match_reasons?.length || 0) > 0) && (
+          <div className="search-result-vibe-block">
+            {typeof item.vibe_score === 'number' && (
+              <span className="search-result-vibe-score">{item.vibe_score}% vibe</span>
+            )}
+            {(item.match_reasons?.length || 0) > 0 && (
+              <div className="search-result-reason-chips" aria-label={`Why ${item.title} matches the vibe`}>
+                {item.match_reasons!.slice(0, 4).map((reason) => (
+                  <span key={reason} className="search-result-reason-chip">
+                    {reason}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -256,6 +273,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   const normalizedQuery = normalizeText(query);
   const heroTone = useAdaptiveImageTone(payload?.hero?.backdrop_url);
+  const searchMode = payload?.search_mode || (payload?.vibe ? 'vibe' : 'keyword');
+  const isVibeMode = searchMode !== 'keyword';
 
   useEffect(() => {
     setPage(1);
@@ -379,25 +398,61 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     }
 
     let cancelled = false;
+    const controller = new AbortController();
     const loadHeroSnippet = async () => {
       try {
-        const response = await fetch('/api/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            q: `${hero.title}${hero.year ? ` ${hero.year}` : ''}`,
-            mode: 'short'
-          })
+        const system = 'You write short, spoiler-free movie and TV teaser blurbs.';
+        const userPrompt = [
+          `Title: ${hero.title}${hero.year ? ` (${hero.year})` : ''}`,
+          `Type: ${hero.type === 'show' ? 'TV Show' : 'Movie'}`,
+          `Overview: ${hero.overview || hero.summary_snippet || ''}`,
+          'Task: Return one spoiler-free teaser sentence under 150 characters. Plain text only.'
+        ].join('\n');
+
+        let streamed = '';
+        await streamGroqText({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.35,
+          max_tokens: 120,
+          signal: controller.signal,
+          onDelta: (delta) => {
+            streamed += delta;
+            if (!cancelled) {
+              setHeroAiSnippet(streamed.trim());
+            }
+          }
         });
 
-        if (!response.ok) return;
-        const data = await response.json();
-        const nextSnippet = data?.summary?.summary_short;
-        if (!cancelled && typeof nextSnippet === 'string' && nextSnippet.trim()) {
-          setHeroAiSnippet(nextSnippet.trim());
+        if (!cancelled && streamed.trim()) {
+          setHeroAiSnippet(streamed.trim());
+          return;
         }
       } catch {
-        // Keep fallback synopsis when AI snippet fails.
+        // Fallback to query endpoint when stream fails.
+        try {
+          const response = await fetch('/api/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              q: `${hero.title}${hero.year ? ` ${hero.year}` : ''}`,
+              mode: 'short'
+            }),
+            signal: controller.signal
+          });
+
+          if (!response.ok) return;
+          const data = await response.json();
+          const nextSnippet = data?.summary?.summary_short;
+          if (!cancelled && typeof nextSnippet === 'string' && nextSnippet.trim()) {
+            setHeroAiSnippet(nextSnippet.trim());
+          }
+        } catch {
+          // Keep fallback synopsis when AI snippet fails.
+        }
       }
     };
 
@@ -406,6 +461,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [payload?.hero?.id, payload?.hero?.title, payload?.hero?.year]);
 
@@ -423,7 +479,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   const hasResults = Boolean(payload && ((payload.hero && payload.hero.id) || payload.results.length > 0));
 
-  const renderDidYouMean = payload?.did_you_mean && payload.did_you_mean.length > 0
+  const renderDidYouMean = !isVibeMode && payload?.did_you_mean && payload.did_you_mean.length > 0
     ? payload.did_you_mean
     : [];
   const searchDescription = payload?.hero
@@ -433,6 +489,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         payload.hero.overview ||
         `Search results for ${query.trim()} on MovieMonk.`
       )
+    : payload?.vibe
+      ? `${payload.vibe.summary}. Search MovieMonk for "${query.trim()}" across movies, TV shows, actors, and directors.`
     : `Search MovieMonk for "${query.trim()}" across movies, TV shows, actors, and directors.`;
 
   const handleResultFeedback = (item: SearchResult, signal: 'up' | 'down') => {
@@ -501,7 +559,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           <div className="search-hero-overlay" />
           <div className="search-hero-content">
             <div className="search-hero-top-row">
-              <span className="search-hero-label">Best Match</span>
+              <span className="search-hero-label">{isVibeMode ? 'Best Vibe Match' : 'Best Match'}</span>
               {typeof payload.hero.rating === 'number' && (
                 <div className="search-hero-rating">
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -582,8 +640,27 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           data-reveal-variant="fade"
           style={buildRevealStyle(0, 420)}
         >
+          {isVibeMode && payload?.vibe && (
+            <div className="search-vibe-banner" aria-label="Vibe search summary">
+              <div className="search-vibe-copy">
+                <span className="search-vibe-kicker">Vibe mode</span>
+                <strong>{payload.vibe.summary}</strong>
+                <p>Ranked from mood signals, not just the exact words you typed.</p>
+              </div>
+              {payload.vibe.signals.length > 0 && (
+                <div className="search-vibe-signals">
+                  {payload.vibe.signals.slice(0, 5).map((signal) => (
+                    <span key={signal} className="search-vibe-signal">
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="search-results-header">
-            <h3>Also matching</h3>
+            <h3>{isVibeMode ? 'Vibe matches' : 'Also matching'}</h3>
             <div className="search-results-divider" />
           </div>
 
@@ -677,7 +754,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           data-reveal-variant="fade"
           style={buildRevealStyle(0, 420)}
         >
-          <h3>People matching "{query.trim()}"</h3>
+          <h3>{isVibeMode ? 'Related people' : `People matching "${query.trim()}"`}</h3>
           <div className="search-people-strip">
             {payload.people.map((person, index) => (
               <SearchPersonCard

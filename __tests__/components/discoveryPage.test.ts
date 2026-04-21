@@ -18,6 +18,7 @@ function renderPage() {
   return renderToStaticMarkup(
     React.createElement(DiscoveryPage, {
       onOpenTitle: () => undefined,
+      onRunQuery: () => undefined,
       watchlists: []
     })
   );

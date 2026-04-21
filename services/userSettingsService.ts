@@ -62,7 +62,7 @@ export async function fetchPreferenceSettings(userId: string): Promise<UserPrefe
     .eq('user_id', userId)
     .maybeSingle());
 
-  if (error && /column .*reduced_motion|reduced_motion does not exist|schema cache/i.test(String(error?.message || error))) {
+  if (error && (error.code === '42703' || /column .*reduced_motion|reduced_motion does not exist|schema cache/i.test(String(error?.message || error)))) {
     const fallback = await client
       .from('user_preferences')
       .select('genres, languages, favorite_decades, favorite_regions, content_mix, maturity_filter, autoplay_trailers, card_density')
@@ -109,7 +109,7 @@ export async function upsertPreferenceSettings(userId: string, settings: UserPre
 
   let { error } = await client.from('user_preferences').upsert(payload);
 
-  if (error && /column .*reduced_motion|reduced_motion does not exist|schema cache/i.test(String(error?.message || error))) {
+  if (error && (error.code === '42703' || /column .*reduced_motion|reduced_motion does not exist|schema cache/i.test(String(error?.message || error)))) {
     delete payload.reduced_motion;
     const retry = await client.from('user_preferences').upsert(payload);
     error = retry.error;
