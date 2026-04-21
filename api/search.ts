@@ -536,10 +536,22 @@ async function fetchVibeDiscoveryCandidates(
 
   const discoverRequests: Array<Promise<any>> = [];
   if (mediaTypeFilter === 'movie' || mediaTypeFilter === 'all') {
-    discoverRequests.push(tmdbDiscover(tmdbApiKey, tmdbReadToken, '/discover/movie', buildParams('movie')));
+    discoverRequests.push(
+      tmdbDiscover(tmdbApiKey, tmdbReadToken, '/discover/movie', buildParams('movie'))
+        .then(res => ({
+          ...res,
+          results: (res.results || []).map((item: any) => ({ ...item, media_type: 'movie' }))
+        }))
+    );
   }
   if (mediaTypeFilter === 'tv' || mediaTypeFilter === 'all') {
-    discoverRequests.push(tmdbDiscover(tmdbApiKey, tmdbReadToken, '/discover/tv', buildParams('tv')));
+    discoverRequests.push(
+      tmdbDiscover(tmdbApiKey, tmdbReadToken, '/discover/tv', buildParams('tv'))
+        .then(res => ({
+          ...res,
+          results: (res.results || []).map((item: any) => ({ ...item, media_type: 'tv' }))
+        }))
+    );
   }
 
   const responses = await Promise.all(discoverRequests);
