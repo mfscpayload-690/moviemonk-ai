@@ -193,6 +193,22 @@ const SearchResultCard: React.FC<SearchResultCardProps> = React.memo(({
           <span>{item.year || 'TBA'}</span>
           <span>{item.type === 'show' ? 'TV Show' : 'Movie'}</span>
         </div>
+        {(typeof item.vibe_score === 'number' || (item.match_reasons?.length || 0) > 0) && (
+          <div className="search-result-vibe-block">
+            {typeof item.vibe_score === 'number' && (
+              <span className="search-result-vibe-score">{item.vibe_score}% vibe</span>
+            )}
+            {(item.match_reasons?.length || 0) > 0 && (
+              <div className="search-result-reason-chips" aria-label={`Why ${item.title} matches the vibe`}>
+                {item.match_reasons!.slice(0, 4).map((reason) => (
+                  <span key={reason} className="search-result-reason-chip">
+                    {reason}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -257,6 +273,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   const normalizedQuery = normalizeText(query);
   const heroTone = useAdaptiveImageTone(payload?.hero?.backdrop_url);
+  const searchMode = payload?.search_mode || (payload?.vibe ? 'vibe' : 'keyword');
+  const isVibeMode = searchMode !== 'keyword';
 
   useEffect(() => {
     setPage(1);
@@ -461,7 +479,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   const hasResults = Boolean(payload && ((payload.hero && payload.hero.id) || payload.results.length > 0));
 
-  const renderDidYouMean = payload?.did_you_mean && payload.did_you_mean.length > 0
+  const renderDidYouMean = !isVibeMode && payload?.did_you_mean && payload.did_you_mean.length > 0
     ? payload.did_you_mean
     : [];
   const searchDescription = payload?.hero
@@ -471,6 +489,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         payload.hero.overview ||
         `Search results for ${query.trim()} on MovieMonk.`
       )
+    : payload?.vibe
+      ? `${payload.vibe.summary}. Search MovieMonk for "${query.trim()}" across movies, TV shows, actors, and directors.`
     : `Search MovieMonk for "${query.trim()}" across movies, TV shows, actors, and directors.`;
 
   const handleResultFeedback = (item: SearchResult, signal: 'up' | 'down') => {
@@ -539,7 +559,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           <div className="search-hero-overlay" />
           <div className="search-hero-content">
             <div className="search-hero-top-row">
-              <span className="search-hero-label">Best Match</span>
+              <span className="search-hero-label">{isVibeMode ? 'Best Vibe Match' : 'Best Match'}</span>
               {typeof payload.hero.rating === 'number' && (
                 <div className="search-hero-rating">
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -620,8 +640,27 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           data-reveal-variant="fade"
           style={buildRevealStyle(0, 420)}
         >
+          {isVibeMode && payload?.vibe && (
+            <div className="search-vibe-banner" aria-label="Vibe search summary">
+              <div className="search-vibe-copy">
+                <span className="search-vibe-kicker">Vibe mode</span>
+                <strong>{payload.vibe.summary}</strong>
+                <p>Ranked from mood signals, not just the exact words you typed.</p>
+              </div>
+              {payload.vibe.signals.length > 0 && (
+                <div className="search-vibe-signals">
+                  {payload.vibe.signals.slice(0, 5).map((signal) => (
+                    <span key={signal} className="search-vibe-signal">
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="search-results-header">
-            <h3>Also matching</h3>
+            <h3>{isVibeMode ? 'Vibe matches' : 'Also matching'}</h3>
             <div className="search-results-divider" />
           </div>
 
@@ -715,7 +754,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           data-reveal-variant="fade"
           style={buildRevealStyle(0, 420)}
         >
-          <h3>People matching "{query.trim()}"</h3>
+          <h3>{isVibeMode ? 'Related people' : `People matching "${query.trim()}"`}</h3>
           <div className="search-people-strip">
             {payload.people.map((person, index) => (
               <SearchPersonCard

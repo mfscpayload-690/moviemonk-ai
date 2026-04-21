@@ -327,6 +327,61 @@ html[data-card-density="compact"] .search-result-body {
   gap: 2rem;
 }
 
+.search-vibe-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: 1.15rem;
+  background: linear-gradient(135deg, rgba(224, 142, 254, 0.14), rgba(68, 214, 185, 0.08));
+  border: 1px solid rgba(224, 142, 254, 0.18);
+  box-shadow: 0 14px 32px -24px rgba(224, 142, 254, 0.45);
+}
+
+.search-vibe-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.search-vibe-kicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.search-vibe-copy strong {
+  color: var(--color-text-main);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.search-vibe-copy p {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.search-vibe-signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.search-vibe-signal {
+  padding: 0.42rem 0.72rem;
+  border-radius: 9999px;
+  background: rgba(15, 15, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-text-main);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
 .search-results-header h3 {
   font-size: 1.5rem;
   font-weight: 700;
@@ -560,6 +615,42 @@ html[data-card-density="compact"] .search-result-body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.search-result-vibe-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.search-result-vibe-score {
+  align-self: flex-start;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(224, 142, 254, 0.16);
+  border: 1px solid rgba(224, 142, 254, 0.22);
+  color: var(--brand-primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.search-result-reason-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.search-result-reason-chip {
+  padding: 0.35rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1;
 }
 
 /* People String */

@@ -378,6 +378,8 @@ export interface SearchResult {
   confidence: number;
   popularity?: number;
   original_language?: string;
+  vibe_score?: number;
+  match_reasons?: string[];
 }
 
 export interface SearchPageResponse {
@@ -386,10 +388,16 @@ export interface SearchPageResponse {
   page: number;
   total_pages: number;
   total_results: number;
+  search_mode?: 'keyword' | 'vibe' | 'mixed';
   hero: SearchResult | null;
   results: SearchResult[];
   people: PersonSearchCandidate[];
   did_you_mean?: string[];
+  vibe?: {
+    intent_type: VibeIntentType;
+    summary: string;
+    signals: string[];
+  };
   applied_filters?: {
     type: 'all' | 'movie' | 'tv';
     sortBy: 'popularity.desc' | 'vote_average.desc' | 'release_date.desc' | 'title.asc' | string;
