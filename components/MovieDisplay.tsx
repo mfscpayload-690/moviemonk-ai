@@ -135,13 +135,6 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     useEffect(() => {
         setError(false);
         setLoaded(false);
-
-        // Fallback: force show image after 2 seconds if onLoad doesn't fire
-        const timeout = setTimeout(() => {
-            setLoaded(true);
-        }, 2000);
-
-        return () => clearTimeout(timeout);
     }, [src]);
 
     const handleError = () => {

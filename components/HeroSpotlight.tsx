@@ -414,6 +414,8 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
                   decoding="async"
                   fetchPriority={isActive ? 'high' : 'low'}
                   sizes="100vw"
+                  width={1280}
+                  height={720}
                 />
               )}
               {shouldShowPreview && (
