@@ -16,6 +16,7 @@ interface SeoHeadProps {
   type?: string;
   robots?: string;
   structuredData?: Array<Record<string, unknown>>;
+  preloadImage?: string;
 }
 
 const SeoHead: React.FC<SeoHeadProps> = ({
@@ -25,7 +26,8 @@ const SeoHead: React.FC<SeoHeadProps> = ({
   image,
   type = 'website',
   robots = 'index,follow',
-  structuredData = []
+  structuredData = [],
+  preloadImage
 }) => {
   const resolvedTitle = buildPageTitle(title);
   const resolvedDescription = toMetaDescription(description);
@@ -58,6 +60,10 @@ const SeoHead: React.FC<SeoHeadProps> = ({
           {JSON.stringify(item)}
         </script>
       ))}
+
+      {preloadImage && (
+        <link rel="preload" as="image" href={preloadImage} />
+      )}
     </Helmet>
   );
 };

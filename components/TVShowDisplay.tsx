@@ -234,6 +234,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                 image={movie.poster_url || movie.backdrop_url || undefined}
                 type="video.tv_show"
                 structuredData={[buildMovieJsonLd(movie)]}
+                preloadImage={movie.poster_url || movie.backdrop_url || undefined}
             />
             {/* TV Show Header */}
             <div className="tv-show-header">

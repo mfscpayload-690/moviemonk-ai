@@ -701,6 +701,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 image={movie.poster_url || movie.backdrop_url || undefined}
                 type="video.movie"
                 structuredData={[buildMovieJsonLd(movie)]}
+                preloadImage={movie.poster_url || movie.backdrop_url || undefined}
             />
             {/* Hero Section with Poster Card */}
             <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">

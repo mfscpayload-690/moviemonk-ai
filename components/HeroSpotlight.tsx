@@ -408,6 +408,7 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
               {(isActive || isAdjacent) && item.backdrop_url && (
                 <img
                   src={item.backdrop_url}
+                  srcSet={item.backdrop_url ? `${item.backdrop_url} 780w, ${item.backdrop_url.replace('/w780/', '/w1280/')} 1280w` : undefined}
                   alt={`${item.title} backdrop`}
                   className={`discovery-hero-backdrop ${isSlidePreviewPlaying ? 'is-preview-playing' : ''}`}
                   loading={index === 0 ? "eager" : "lazy"}
