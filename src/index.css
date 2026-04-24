@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fallback font with metrics matched to Inter to reduce CLS during font swap */
+@font-face {
+  font-family: 'Inter-fallback';
+  src: local('Arial');
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

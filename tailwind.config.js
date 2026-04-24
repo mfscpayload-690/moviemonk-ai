@@ -14,7 +14,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'Inter-fallback', 'sans-serif'],
       },
       colors: {
         'brand-bg': '#121212',
