@@ -33,7 +33,7 @@ function getPreferredWatchRegion(): string {
   return 'US';
 }
 
-function buildImageUrl(path: string | null | undefined, size: 'w500'|'w780'|'original' = 'original'): string {
+function buildImageUrl(path: string | null | undefined, size: 'w185'|'w342'|'w500'|'w780'|'w1280'|'original' = 'original'): string {
   if (!path) return '';
   return `${IMG_BASE}/${size}${path}`;
 }
@@ -68,7 +68,7 @@ function normalizeDiscoveryItem(raw: any): DiscoveryItem | null {
     title,
     year: typeof releaseDate === 'string' ? releaseDate.substring(0, 4) : '',
     overview: typeof raw?.overview === 'string' ? raw.overview : '',
-    poster_url: buildImageUrl(raw?.poster_path, 'w500'),
+    poster_url: buildImageUrl(raw?.poster_path, 'w342'),
     backdrop_url: buildImageUrl(raw?.backdrop_path, 'w780'),
     rating: typeof raw?.vote_average === 'number' ? raw.vote_average : null,
     genre_ids: Array.isArray(raw?.genre_ids)

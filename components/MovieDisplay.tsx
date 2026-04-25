@@ -135,13 +135,6 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     useEffect(() => {
         setError(false);
         setLoaded(false);
-
-        // Fallback: force show image after 2 seconds if onLoad doesn't fire
-        const timeout = setTimeout(() => {
-            setLoaded(true);
-        }, 2000);
-
-        return () => clearTimeout(timeout);
     }, [src]);
 
     const handleError = () => {
@@ -708,6 +701,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                 image={movie.poster_url || movie.backdrop_url || undefined}
                 type="video.movie"
                 structuredData={[buildMovieJsonLd(movie)]}
+                preloadImage={movie.poster_url || movie.backdrop_url || undefined}
             />
             {/* Hero Section with Poster Card */}
             <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">

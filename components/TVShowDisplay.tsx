@@ -234,14 +234,22 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                 image={movie.poster_url || movie.backdrop_url || undefined}
                 type="video.tv_show"
                 structuredData={[buildMovieJsonLd(movie)]}
+                preloadImage={movie.poster_url || movie.backdrop_url || undefined}
             />
             {/* TV Show Header */}
             <div className="tv-show-header">
-                <div className="backdrop-container" style={{
-                    backgroundImage: movie.backdrop_url ? `url(${movie.backdrop_url})` : 'none',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                }}>
+                <div className="backdrop-container">
+                    {movie.backdrop_url && (
+                        <img
+                            src={movie.backdrop_url}
+                            alt={`${movie.title} backdrop`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loading="eager"
+                            fetchPriority="high"
+                            decoding="async"
+                            sizes="100vw"
+                        />
+                    )}
                     <div className="backdrop-overlay"></div>
                 </div>
 
@@ -251,6 +259,10 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                             src={movie.poster_url}
                             alt={movie.title}
                             className="tv-show-poster"
+                            loading="eager"
+                            fetchPriority="high"
+                            decoding="async"
+                            sizes="(max-width: 640px) 140px, 200px"
                         />
                     )}
 

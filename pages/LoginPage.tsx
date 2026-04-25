@@ -5,6 +5,7 @@ import { Logo } from '../components/icons';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import ParticleBackground from '../components/ParticleBackground';
 import { APP_VERSION } from '../lib/appMeta';
+import '../styles/login-page.css';
 
 /* ── Inline SVG icons for OAuth providers ── */
 const GoogleIcon: React.FC = () => (

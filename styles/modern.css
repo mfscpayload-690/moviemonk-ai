@@ -2849,6 +2849,7 @@ a:focus-visible {
 .discovery-section {
     margin-top: 2rem;
     padding: 0 1rem;
+    contain: layout style;
 }
 
 .discovery-section-heading {
@@ -2904,6 +2905,7 @@ a:focus-visible {
     flex: 0 0 100%;
     width: 100%;
     min-height: clamp(22rem, 58vw, 31rem);
+    aspect-ratio: 16 / 7;
     cursor: pointer;
 }
 

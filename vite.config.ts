@@ -186,6 +186,18 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-supabase': ['@supabase/supabase-js'],
+            'vendor-motion': ['framer-motion'],
+            'vendor-analytics': ['@vercel/analytics', '@vercel/speed-insights'],
+          }
+        }
+      }
     }
   };
 });

@@ -523,6 +523,9 @@ const App: React.FC = () => {
     const cached = cacheGet<any>('movie', cKey);
     if (cached) {
       debugLog('[cache] movie hit', item.id, item.mediaType);
+      // Start loading LCP images immediately before React re-renders
+      if (cached.poster_url) { const img = new Image(); img.src = cached.poster_url; }
+      if (cached.backdrop_url) { const img = new Image(); img.src = cached.backdrop_url; }
       startTransition(() => {
         setMovieData(cached);
         setPersonData(null);

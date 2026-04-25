@@ -320,94 +320,26 @@ export async function loadDiscoverySnapshot(
   signal?: AbortSignal,
   preferences?: UserPreferenceSettings
 ): Promise<DiscoverySnapshot> {
+  // ── Phase 1: Hero + essential sections (5 calls) ───────────────────────
   const settled = await Promise.allSettled([
     fetchTrending('all', 'week', { signal }),
     fetchTrending('movie', 'week', { signal }),
-    fetchTrending('tv', 'week', { signal }),
     fetchUpcoming({ signal }),
-    fetchNowPlaying({ signal }),
-    fetchPopular('tv', { signal }),
-    fetchOnTheAir({ signal }),
-    fetchTopRated('movie', { signal }),
-    fetchTopRated('tv', { signal }),
     fetchGenreList('movie', { signal }),
     fetchGenreList('tv', { signal })
   ]);
 
   const trendingAll = settled[0].status === 'fulfilled' ? settled[0].value : [];
   const trendingMovies = settled[1].status === 'fulfilled' ? settled[1].value : [];
-  const trendingTv = settled[2].status === 'fulfilled' ? settled[2].value : [];
-  const upcoming = settled[3].status === 'fulfilled' ? settled[3].value : [];
-  const nowPlaying = settled[4].status === 'fulfilled' ? settled[4].value : [];
-  const popularTv = settled[5].status === 'fulfilled' ? settled[5].value : [];
-  const onTheAir = settled[6].status === 'fulfilled' ? settled[6].value : [];
-  const topRatedMovies = settled[7].status === 'fulfilled' ? settled[7].value : [];
-  const topRatedTv = settled[8].status === 'fulfilled' ? settled[8].value : [];
-  const movieGenres = settled[9].status === 'fulfilled' ? settled[9].value : [];
-  const tvGenres = settled[10].status === 'fulfilled' ? settled[10].value : [];
-
-  const dramaGenreId = tvGenres.find((genre) => genre.name === 'Drama')?.id;
-
-  const [bollywoodMovies, asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh] = await Promise.all([
-    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal }), [], 'bollywood discovery'),
-    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'ja' }, { signal }), [], 'japanese discovery'),
-    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'ko' }, { signal }), [], 'korean discovery'),
-    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'zh' }, { signal }), [], 'chinese discovery'),
-    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'th' }, { signal }), [], 'thai discovery')
-  ]);
-
-  const asianMovies = mergeUniqueDiscoveryItems(asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh);
-
-  const [koreanSeries, japaneseSeries, chineseSeries, thaiSeries] = await Promise.all([
-    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ko' }, { signal }), [], 'k-drama discovery'),
-    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ja' }, { signal }), [], 'japanese series discovery'),
-    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'zh' }, { signal }), [], 'chinese series discovery'),
-    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'th' }, { signal }), [], 'thai series discovery')
-  ]);
-
-  const kDramaAndAsianSeries = mergeUniqueDiscoveryItems(
-    koreanSeries,
-    japaneseSeries,
-    chineseSeries,
-    thaiSeries
-  ).slice(0, 24);
-
-  const globalWebSeriesAndTv = mergeUniqueDiscoveryItems(onTheAir, topRatedTv, popularTv, trendingTv).slice(0, 24);
-  const trendingMoviesMixed = buildBalancedMixRow(
-    20,
-    {
-      global: trendingMovies,
-      bollywood: bollywoodMovies,
-      asian: asianMovies
-    },
-    [
-      { pool: 'global', ratio: 0.7 },
-      { pool: 'bollywood', ratio: 0.15 },
-      { pool: 'asian', ratio: 0.15 }
-    ]
-  );
-
-  const nowPlayingMixed = buildBalancedMixRow(
-    20,
-    {
-      global: nowPlaying,
-      bollywood: bollywoodMovies,
-      asian: asianMovies
-    },
-    [
-      { pool: 'global', ratio: 0.7 },
-      { pool: 'bollywood', ratio: 0.15 },
-      { pool: 'asian', ratio: 0.15 }
-    ]
-  );
-
-  const topRatedMoviesAndSeries = mergeUniqueDiscoveryItems(topRatedMovies, topRatedTv).slice(0, 24);
+  const upcoming = settled[2].status === 'fulfilled' ? settled[2].value : [];
+  const movieGenres = settled[3].status === 'fulfilled' ? settled[3].value : [];
+  const tvGenres = settled[4].status === 'fulfilled' ? settled[4].value : [];
 
   const curatedGenres = getCuratedMovieGenres(movieGenres);
-
   const strictPrefs = preferences || DEFAULT_PREFERENCE_SETTINGS;
   const strictEnabled = hasStrictPreferenceFilters(strictPrefs);
 
+  // Handle strict personalization path early
   if (strictEnabled) {
     const languageCodes = [...new Set([
       ...pickLanguageCodes(strictPrefs.languages),
@@ -474,10 +406,78 @@ export async function loadDiscoverySnapshot(
     };
   }
 
+  // ── Phase 2: Deferred sections (non-blocking) ──────────────────────────
+  const dramaGenreId = tvGenres.find((genre) => genre.name === 'Drama')?.id;
+
+  const [
+    trendingTv, nowPlaying, popularTv, onTheAir,
+    topRatedMovies, topRatedTv,
+    bollywoodMovies,
+    asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh,
+    koreanSeries, japaneseSeries, chineseSeries, thaiSeries,
+    selectedGenreItemsRaw
+  ] = await Promise.all([
+    settleOrDefault(fetchTrending('tv', 'week', { signal }), [], 'trending tv'),
+    settleOrDefault(fetchNowPlaying({ signal }), [], 'now playing'),
+    settleOrDefault(fetchPopular('tv', { signal }), [], 'popular tv'),
+    settleOrDefault(fetchOnTheAir({ signal }), [], 'on the air'),
+    settleOrDefault(fetchTopRated('movie', { signal }), [], 'top rated movies'),
+    settleOrDefault(fetchTopRated('tv', { signal }), [], 'top rated tv'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'hi' }, { signal }), [], 'bollywood discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'ja' }, { signal }), [], 'japanese discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'ko' }, { signal }), [], 'korean discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'zh' }, { signal }), [], 'chinese discovery'),
+    settleOrDefault(fetchDiscoverMovie({ withOriginalLanguage: 'th' }, { signal }), [], 'thai discovery'),
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ko' }, { signal }), [], 'k-drama discovery'),
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'ja' }, { signal }), [], 'japanese series discovery'),
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'zh' }, { signal }), [], 'chinese series discovery'),
+    settleOrDefault(fetchDiscoverTv({ withGenres: dramaGenreId ? [dramaGenreId] : undefined, withOriginalLanguage: 'th' }, { signal }), [], 'thai series discovery'),
+    (curatedGenres[0] || movieGenres[0])
+      ? settleOrDefault(fetchByGenre((curatedGenres[0] || movieGenres[0]).id, 'movie', { signal }), [], 'genre picks')
+      : Promise.resolve([] as DiscoveryItem[])
+  ]);
+
+  const asianMovies = mergeUniqueDiscoveryItems(asianMoviesJa, asianMoviesKo, asianMoviesZh, asianMoviesTh);
+
+  const kDramaAndAsianSeries = mergeUniqueDiscoveryItems(
+    koreanSeries,
+    japaneseSeries,
+    chineseSeries,
+    thaiSeries
+  ).slice(0, 24);
+
+  const globalWebSeriesAndTv = mergeUniqueDiscoveryItems(onTheAir, topRatedTv, popularTv, trendingTv).slice(0, 24);
+  const trendingMoviesMixed = buildBalancedMixRow(
+    20,
+    {
+      global: trendingMovies,
+      bollywood: bollywoodMovies,
+      asian: asianMovies
+    },
+    [
+      { pool: 'global', ratio: 0.7 },
+      { pool: 'bollywood', ratio: 0.15 },
+      { pool: 'asian', ratio: 0.15 }
+    ]
+  );
+
+  const nowPlayingMixed = buildBalancedMixRow(
+    20,
+    {
+      global: nowPlaying,
+      bollywood: bollywoodMovies,
+      asian: asianMovies
+    },
+    [
+      { pool: 'global', ratio: 0.7 },
+      { pool: 'bollywood', ratio: 0.15 },
+      { pool: 'asian', ratio: 0.15 }
+    ]
+  );
+
+  const topRatedMoviesAndSeries = mergeUniqueDiscoveryItems(topRatedMovies, topRatedTv).slice(0, 24);
+
   const selectedGenre = curatedGenres[0] || movieGenres[0] || null;
-  const selectedGenreItems = selectedGenre
-    ? await settleOrDefault(fetchByGenre(selectedGenre.id, 'movie', { signal }), [], 'genre picks')
-    : [];
 
   const prioritizedSections: DiscoverySection[] = [
     { key: 'trending-movies', title: 'Trending Movies', items: trendingMoviesMixed },
@@ -493,7 +493,7 @@ export async function loadDiscoverySnapshot(
     sections: dedupeSectionsByTitle(prioritizedSections),
     movieGenres: curatedGenres,
     selectedGenre,
-    selectedGenreItems
+    selectedGenreItems: selectedGenreItemsRaw
   };
 }
 

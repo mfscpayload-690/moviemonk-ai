@@ -7,9 +7,6 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { HelmetProvider } from 'react-helmet-async';
 import './styles/modern.css';
 import './styles/dynamic-search-island.css';
-import './styles/filter-panel.css';
-import './styles/shared-watchlist.css';
-import './styles/login-page.css';
 import AppRoutes from './AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
 
