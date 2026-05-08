@@ -31,3 +31,33 @@ dist-ssr
 .gemini/ui-improvements-checklist.md
 .codex
 .env*.local
+
+# Backend (FastAPI)
+server/__pycache__/
+server/venv/
+server/.venv/
+server/env/
+server/.env
+server/build/
+server/dist/
+server/*.pyc
+server/*.pyo
+server/.pytest_cache/
+server/.mypy_cache/
+server/.ruff_cache/
+
+# General Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.toast
+.lucid
+.replit
+.python-version
