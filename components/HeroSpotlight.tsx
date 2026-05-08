@@ -5,6 +5,7 @@ import { ArrowLeftIcon, ArrowRightIcon } from './icons';
 import { TagIcon } from './icons';
 import { useActionFeedback } from '../hooks/useActionFeedback';
 import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
+import { apiGet } from '../lib/apiClient';
 
 interface HeroSpotlightProps {
   items: DiscoveryItem[];
@@ -265,15 +266,11 @@ const HeroSpotlight: React.FC<HeroSpotlightProps> = ({ items, isLoading = false,
 
     const loadPreview = async () => {
       try {
-        const response = await fetch(`/api/tmdb?${params.toString()}`, { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error(`Trailer lookup failed (${response.status})`);
-        }
-        const payload = await response.json();
+        const payload = await apiGet<any>('/api/tmdb', Object.fromEntries(params.entries()), controller.signal);
         const nextUrl = buildYoutubeEmbedPreview(payload?.results || []);
         setPreviewUrlByItem((previous) => ({ ...previous, [activeItemKey]: nextUrl }));
       } catch (error: any) {
-        if (error?.name === 'AbortError') return;
+        if (error?.name === 'AbortError' || error?.message?.includes('Abort')) return;
         setPreviewUrlByItem((previous) => ({ ...previous, [activeItemKey]: null }));
       }
     };
