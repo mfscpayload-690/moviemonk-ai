@@ -17,7 +17,6 @@
     "@google/genai": "^1.51.0",
     "@supabase/supabase-js": "^2.105.3",
     "@vercel/analytics": "^2.0.1",
-    "@vercel/kv": "^3.0.0",
     "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.38.0",
     "fuse.js": "^7.3.0",
@@ -27,7 +26,6 @@
     "react-helmet-async": "^3.0.0",
     "react-router-dom": "^7.14.2",
     "react-window": "^2.2.7",
-    "redis": "^5.12.1",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
@@ -39,7 +37,6 @@
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.5.0",
     "jest": "^30.3.0",
-    "node-mocks-http": "^1.14.1",
     "postcss": "^8.5.13",
     "tailwindcss": "^3.4.19",
     "ts-jest": "^29.4.9",
