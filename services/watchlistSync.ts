@@ -20,6 +20,7 @@ type CloudFolderRow = {
   user_id: string;
   name: string;
   icon?: string | null;
+  is_public?: boolean;
   created_at?: string;
 };
 
@@ -47,7 +48,7 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
 
   const folderQueryWithIcon = await client
     .from('watchlist_folders')
-    .select('id, user_id, name, icon, created_at')
+    .select('id, user_id, name, icon, is_public, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -93,6 +94,7 @@ export async function fetchCloudWatchlists(userId: string): Promise<WatchlistFol
     id: folder.id,
     name: folder.name,
     icon: folder.icon || WATCHLIST_DEFAULT_ICON,
+    is_public: folder.is_public ?? false,
     items: itemsByFolder.get(folder.id) || []
   }));
 }
@@ -106,6 +108,7 @@ export async function uploadWatchlistsToCloud(userId: string, folders: Watchlist
       user_id: userId,
       name: folder.name,
       icon: folder.icon || WATCHLIST_DEFAULT_ICON,
+      is_public: folder.is_public ?? false,
     };
 
     let { error: folderError } = await client.from('watchlist_folders').upsert(
@@ -146,6 +149,7 @@ export async function addCloudFolder(
   userId: string,
   name: string,
   icon = WATCHLIST_DEFAULT_ICON,
+  is_public = false,
   folderId = crypto.randomUUID()
 ): Promise<string> {
   const client = getSupabaseOrThrow();
@@ -155,6 +159,7 @@ export async function addCloudFolder(
     user_id: userId,
     name: name.trim(),
     icon,
+    is_public,
   };
 
   let { error } = await client.from('watchlist_folders').insert(payload);
@@ -214,6 +219,15 @@ export async function updateCloudFolderIcon(folderId: string, icon: string): Pro
     error = null;
   }
 
+  if (error) throw error;
+}
+
+export async function updateCloudFolderPrivacy(folderId: string, isPublic: boolean): Promise<void> {
+  const client = getSupabaseOrThrow();
+  const { error } = await client
+    .from('watchlist_folders')
+    .update({ is_public: isPublic, updated_at: new Date().toISOString() })
+    .eq('id', folderId);
   if (error) throw error;
 }
 

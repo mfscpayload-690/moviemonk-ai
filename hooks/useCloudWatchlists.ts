@@ -22,7 +22,8 @@ import {
   fetchCloudWatchlists,
   renameCloudFolder,
   saveCloudItem,
-  updateCloudFolderIcon
+  updateCloudFolderIcon,
+  updateCloudFolderPrivacy
 } from '../services/watchlistSync';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
@@ -155,7 +156,7 @@ export function useCloudWatchlists() {
   const cloudApi = useMemo(
     () => ({
       folders: cloudFolders,
-      addFolder: (name: string, icon?: string) => {
+      addFolder: (name: string, color?: string, icon?: string, isPublic = false) => {
         const trimmed = name.trim();
         if (!trimmed || !user?.id) return null;
         const folderId = crypto.randomUUID();
@@ -163,10 +164,11 @@ export function useCloudWatchlists() {
           id: folderId,
           name: trimmed,
           icon: icon || WATCHLIST_DEFAULT_ICON,
+          is_public: isPublic,
           items: []
         };
         updateCloudState((prev) => [nextFolder, ...prev]);
-        void addCloudFolder(user.id, trimmed, nextFolder.icon, folderId).catch((error) => {
+        void addCloudFolder(user.id, trimmed, nextFolder.icon, isPublic, folderId).catch((error) => {
           console.warn('Failed to add cloud folder', error);
           updateCloudState((prev) => prev.filter((folder) => folder.id !== folderId));
         });
@@ -225,6 +227,13 @@ export function useCloudWatchlists() {
         updateCloudState((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, icon } : folder)));
         void updateCloudFolderIcon(folderId, icon).catch((error) => {
           console.warn('Failed to update cloud folder icon', error);
+          refreshCloud();
+        });
+      },
+      setFolderPrivacy: (folderId: string, isPublic: boolean) => {
+        updateCloudState((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, is_public: isPublic } : folder)));
+        void updateCloudFolderPrivacy(folderId, isPublic).catch((error) => {
+          console.warn('Failed to update cloud folder privacy', error);
           refreshCloud();
         });
       },
@@ -313,6 +322,7 @@ export function useCloudWatchlists() {
       deleteFolder: deleteLocalFolder,
       reorderFolders: local.reorderFolders,
       reorderItems: local.reorderItems,
+      setFolderPrivacy: () => {},
       isCloud: false,
       isSyncing: false
     };

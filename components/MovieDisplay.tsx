@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
@@ -25,7 +25,7 @@ interface MovieDisplayProps {
     onQuickSearch: (title: string) => void;
     onOpenTitle?: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
     watchlists: WatchlistFolder[];
-    onCreateWatchlist: (name: string, color: string, icon?: string) => string | null;
+    onCreateWatchlist: (name: string, color: string, icon?: string, isPublic?: boolean) => string | null;
     onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
     isWatched?: boolean;
     onToggleWatched?: () => void;
@@ -238,6 +238,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
     const [newFolderIcon, setNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+    const [newFolderPublic, setNewFolderPublic] = useState(false);
     const [customSavedTitle, setCustomSavedTitle] = useState('');
     const [showRelatedModal, setShowRelatedModal] = useState(false);
     const [autoplayTrailers, setAutoplayTrailers] = useState(loadPreferenceSettings().autoplayTrailers);
@@ -344,7 +345,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         if (!movie) return;
         let folderId = selectedFolderId;
         if (!folderId && newFolderName.trim()) {
-            const createdId = onCreateWatchlist(newFolderName, newFolderColor, newFolderIcon);
+            const createdId = onCreateWatchlist(newFolderName, newFolderColor, newFolderIcon, newFolderPublic);
             if (createdId) {
                 folderId = createdId;
                 setSelectedFolderId(createdId);
@@ -1306,6 +1307,17 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 <p className="text-xs text-red-400">{newFolderNameError}</p>
                             )}
                             <WatchlistIconPicker selectedIcon={newFolderIcon} onSelect={setNewFolderIcon} compactLabel="Pick a folder icon" />
+                            <div className="flex items-center gap-3 py-1">
+                                <label className="flex items-center gap-2.5 cursor-pointer group">
+                                    <div 
+                                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${newFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
+                                        onClick={() => setNewFolderPublic(!newFolderPublic)}
+                                    >
+                                        {newFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                                    </div>
+                                    <span className="text-sm text-brand-text-light font-medium" onClick={() => setNewFolderPublic(!newFolderPublic)}>Make this watchlist public</span>
+                                </label>
+                            </div>
                             <p className="text-xs text-brand-text-dark">Pick an icon so the folder stands out on your watchlists page.</p>
                         </div>
 

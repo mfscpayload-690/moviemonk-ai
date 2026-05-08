@@ -11,7 +11,7 @@ import { NoticeDialog } from './components/BrandedDialogs';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt } from './types';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { apiGet, apiPost } from './lib/apiClient';
-import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
+import { CheckIcon, ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
 import { useCloudWatchlists } from './hooks/useCloudWatchlists';
@@ -83,6 +83,7 @@ const App: React.FC = () => {
   const [quickSaveNewFolderName, setQuickSaveNewFolderName] = useState('');
   const [quickSaveNewFolderColor, setQuickSaveNewFolderColor] = useState(QUICK_SAVE_DEFAULT_COLOR);
   const [quickSaveNewFolderIcon, setQuickSaveNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+  const [quickSaveNewFolderPublic, setQuickSaveNewFolderPublic] = useState(false);
   const [shareFallbackLink, setShareFallbackLink] = useState<string | null>(null);
   const quickSaveDialogRef = useRef<HTMLDivElement | null>(null);
   const quickSavePreviousFocusRef = useRef<HTMLElement | null>(null);
@@ -273,7 +274,7 @@ const App: React.FC = () => {
 
     let folderId = quickSaveFolderId;
     if (!folderId && quickSaveNewFolderName.trim()) {
-      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderIcon) || '';
+      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderColor, quickSaveNewFolderIcon, quickSaveNewFolderPublic) || '';
     }
 
     if (!folderId) return;
@@ -869,6 +870,17 @@ const App: React.FC = () => {
                     />
                   </div>
                   <WatchlistIconPicker selectedIcon={quickSaveNewFolderIcon} onSelect={setQuickSaveNewFolderIcon} compactLabel="Pick a folder icon" />
+                  <div className="flex items-center gap-3 py-1">
+                    <label className="flex items-center gap-2.5 cursor-pointer group">
+                      <div 
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${quickSaveNewFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
+                        onClick={() => setQuickSaveNewFolderPublic(!quickSaveNewFolderPublic)}
+                      >
+                        {quickSaveNewFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                      </div>
+                      <span className="text-sm text-brand-text-light font-medium" onClick={() => setQuickSaveNewFolderPublic(!quickSaveNewFolderPublic)}>Make this watchlist public</span>
+                    </label>
+                  </div>
                   <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>
                 </div>
 

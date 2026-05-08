@@ -120,12 +120,16 @@ async def generate_creative_fields(
             if not parsed:
                 return empty
 
+            ai_notes = parsed.get("ai_notes", "")
+            if isinstance(ai_notes, list):
+                ai_notes = "\n".join([str(item) for item in ai_notes])
+
             return {
                 "summary_short": parsed.get("summary_short", "")[:300],
                 "summary_medium": parsed.get("summary_medium", "")[:600],
                 "summary_long_spoilers": parsed.get("summary_long_spoilers", ""),
                 "suspense_breaker": parsed.get("suspense_breaker", "")[:300],
-                "ai_notes": parsed.get("ai_notes", ""),
+                "ai_notes": ai_notes,
             }
     except httpx.TimeoutException:
         logger.warning("Groq timed out after %.1fs", timeout_seconds)

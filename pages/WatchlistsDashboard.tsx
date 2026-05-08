@@ -14,7 +14,7 @@ import {
   WatchlistIconPicker,
   WATCHLIST_ICON_DEFAULT,
 } from '../components/WatchlistIconPicker';
-import { Share2, Copy, Check, GripVertical, Square, CheckSquare, ArrowRightLeft, MoreVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Share2, Copy, Check, GripVertical, Square, CheckSquare, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 import {
@@ -56,18 +56,19 @@ export function WatchlistsDashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { folderName: folderNameParam } = useParams<{ folderName?: string }>();
-  const { 
+  const {
     addFolder,
-    folders, 
-    renameFolder, 
+    folders,
+    renameFolder,
     setFolderIcon,
-    deleteFolder, 
+    deleteFolder,
     deleteItem,
     moveItem,
     reorderFolders,
     reorderItems,
-    isCloud, 
-    isSyncing 
+    setFolderPrivacy,
+    isCloud,
+    isSyncing
   } = useCloudWatchlists();
   const { watchedCount, watched, toggle: toggleWatched } = useWatched();
 
@@ -82,6 +83,7 @@ export function WatchlistsDashboard() {
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderIcon, setEditFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+  const [editFolderPublic, setEditFolderPublic] = useState(false);
   const [syncBadgeVisible, setSyncBadgeVisible] = useState(false);
   const [justSynced, setJustSynced] = useState(false);
   const syncHideTimerRef = useRef<number | null>(null);
@@ -100,6 +102,7 @@ export function WatchlistsDashboard() {
   const [folderDeleteTarget, setFolderDeleteTarget] = useState<{ id: string; name: string; count: number } | null>(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderPublic, setNewFolderPublic] = useState(false);
   const [newFolderError, setNewFolderError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; description: string; tone?: 'default' | 'destructive' | 'success' } | null>(null);
   const [actionToast, setActionToast] = useState<{ message: string; kind: 'watchlist' | 'watched' } | null>(null);
@@ -108,10 +111,6 @@ export function WatchlistsDashboard() {
   const [folderDropTargetId, setFolderDropTargetId] = useState<string | null>(null);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const [itemDropTargetId, setItemDropTargetId] = useState<string | null>(null);
-  const [bulkMode, setBulkMode] = useState(false);
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [bulkMoveTarget, setBulkMoveTarget] = useState('');
   const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
@@ -233,7 +232,7 @@ export function WatchlistsDashboard() {
     let totalItems = 0;
     let movies = 0;
     let series = 0;
-    
+
     folders.forEach(f => {
       totalItems += f.items.length;
       f.items.forEach(i => {
@@ -243,7 +242,7 @@ export function WatchlistsDashboard() {
     });
 
     const topFormat = movies > series ? 'Movies' : series > movies ? 'Series' : 'Balanced Mix';
-    
+
     return {
       totalFolders: folders.length,
       totalSaved: totalItems,
@@ -290,6 +289,7 @@ export function WatchlistsDashboard() {
     setEditingFolderId(folder.id);
     setEditFolderName(folder.name);
     setEditFolderIcon(getWatchlistIconOption(folder.icon).key);
+    setEditFolderPublic(folder.is_public || false);
   };
 
   const closeEditFolder = useCallback(() => {
@@ -307,6 +307,9 @@ export function WatchlistsDashboard() {
     }
     if ((editFolderIcon || WATCHLIST_ICON_DEFAULT) !== (folder.icon || WATCHLIST_ICON_DEFAULT)) {
       setFolderIcon(folder.id, editFolderIcon);
+    }
+    if (editFolderPublic !== (folder.is_public || false)) {
+      setFolderPrivacy(folder.id, editFolderPublic);
     }
     closeEditFolder();
   };
@@ -422,18 +425,6 @@ export function WatchlistsDashboard() {
     setAvatarFailed(false);
   }, [avatarUrl]);
 
-  useEffect(() => {
-    if (!bulkMode) {
-      setSelectedItemIds([]);
-      setBulkMoveTarget('');
-    }
-  }, [bulkMode]);
-
-  const toggleSelectedItem = useCallback((itemId: string) => {
-    setSelectedItemIds((current) => current.includes(itemId)
-      ? current.filter((id) => id !== itemId)
-      : [...current, itemId]);
-  }, []);
 
   const handleCreateFolder = useCallback(() => {
     const trimmed = newFolderName.trim();
@@ -447,49 +438,14 @@ export function WatchlistsDashboard() {
       return;
     }
 
-    addFolder(trimmed, WATCHLIST_ICON_DEFAULT);
+    addFolder(trimmed, undefined, WATCHLIST_ICON_DEFAULT, newFolderPublic);
     setCreateFolderOpen(false);
     setNewFolderName('');
     setNewFolderError(null);
+    setNewFolderPublic(false);
     setActionToast({ message: 'Watchlist created', kind: 'watchlist' });
   }, [addFolder, newFolderName, folders]);
 
-  const handleBulkDelete = useCallback(() => {
-    if (!activeFolderId) return;
-    setDeletingItemIds(selectedItemIds);
-    setTimeout(() => {
-      selectedItemIds.forEach((itemId) => deleteItem(activeFolderId, itemId));
-      setBulkDeleteOpen(false);
-      setSelectedItemIds([]);
-      setBulkMode(false);
-      setDeletingItemIds([]);
-      setActionToast({ message: `${selectedItemIds.length} item(s) deleted`, kind: 'watchlist' });
-    }, 300);
-  }, [activeFolderId, deleteItem, selectedItemIds]);
-
-  const handleBulkMove = useCallback(() => {
-    if (!activeFolderId || !bulkMoveTarget || bulkMoveTarget === activeFolderId) return;
-    selectedItemIds.forEach((itemId) => moveItem(activeFolderId, itemId, bulkMoveTarget));
-    setSelectedItemIds([]);
-    setBulkMoveTarget('');
-    setBulkMode(false);
-  }, [activeFolderId, bulkMoveTarget, moveItem, selectedItemIds]);
-
-  const handleBulkWatched = useCallback(async (markWatched: boolean) => {
-    const items = activeFolder?.items.filter((item) => selectedItemIds.includes(item.id)) || [];
-    await Promise.all(items.map(async (item) => {
-      const mediaType = item.movie.type === 'show' ? 'tv' : 'movie';
-      const alreadyWatched = watched.some((entry) => entry.tmdb_id === String(item.movie.tmdb_id || '') && entry.media_type === mediaType);
-      if ((markWatched && alreadyWatched) || (!markWatched && !alreadyWatched)) return;
-      await toggleWatched({
-        tmdb_id: String(item.movie.tmdb_id || ''),
-        media_type: mediaType,
-        title: item.movie.title,
-        poster_url: item.movie.poster_url,
-        year: item.movie.year
-      });
-    }));
-  }, [activeFolder?.items, selectedItemIds, toggleWatched, watched]);
 
   if (loading) {
     return (
@@ -535,7 +491,7 @@ export function WatchlistsDashboard() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-6 glass-panel p-6 sm:p-8 rounded-3xl border border-white/5 relative overflow-hidden">
         {/* Subtle background glow */}
         <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
-        
+
         <div className="flex items-center gap-5 relative z-10">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-2xl transition-transform hover:scale-105 duration-300">
             {avatarUrl && !avatarFailed ? (
@@ -552,13 +508,12 @@ export function WatchlistsDashboard() {
               <p className="text-brand-text-light">Your Cinematic Collection</p>
               {isCloud ? (
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${
-                    isSyncing || syncBadgeVisible
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${isSyncing || syncBadgeVisible
                       ? 'border-brand-primary/40 bg-brand-primary/10 text-brand-primary'
                       : justSynced
                         ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
                         : 'border-white/15 bg-white/5 text-brand-text-light'
-                  }`}
+                    }`}
                 >
                   {isSyncing || syncBadgeVisible ? (
                     <>
@@ -661,7 +616,7 @@ export function WatchlistsDashboard() {
               <p>Titles waiting in your lists. Notify now sends a one-time browser alert.</p>
             </div>
             {canNotifyWatchlistReminders() && (
-                <span className="mm-reminders-notify-pill">Browser alerts available</span>
+              <span className="mm-reminders-notify-pill">Browser alerts available</span>
             )}
           </div>
           <div className="mm-reminders-grid">
@@ -774,14 +729,14 @@ export function WatchlistsDashboard() {
         </div>
       ) : activeFolder ? (
         <div className="animate-fade-in transition-all duration-300">
-          <button 
+          <button
             onClick={() => openFolder(null)}
             className="text-brand-text-light hover:text-white mb-6 flex items-center gap-2 group transition-colors"
           >
             <ChevronRightIcon className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
             Back to Folders
           </button>
-          
+
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white shadow-lg">
@@ -789,36 +744,39 @@ export function WatchlistsDashboard() {
               </div>
               <h2 className="text-3xl font-bold text-white tracking-tight">{activeFolder.name}</h2>
             </div>
-            
+
             <div className="flex items-center gap-2 flex-wrap">
-              <button 
+              <button
+                onClick={() => setFolderPrivacy(activeFolder.id, !activeFolder.is_public)}
+                className={`px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-all ${activeFolder.is_public
+                    ? 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20'
+                    : 'bg-white/5 text-brand-text-dark hover:bg-white/10 hover:text-brand-text-light'
+                  }`}
+                title={activeFolder.is_public ? 'Make Private' : 'Make Public'}
+              >
+                {activeFolder.is_public ? <CheckSquare size={16} /> : <Square size={16} />}
+                {activeFolder.is_public ? 'Public' : 'Private'}
+              </button>
+              <button
                 onClick={() => handleShareFolder(activeFolder)}
                 disabled={shareLoading}
                 className="px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
               >
                 <Share2 size={16} /> {shareLoading ? 'Creating link...' : 'Share'}
               </button>
-              <button 
+              <button
                 onClick={() => startEditFolder(activeFolder)}
                 className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-2 text-sm font-medium transition-colors"
               >
                 <EditIcon className="w-4 h-4" /> Edit Folder
               </button>
-              <button 
+              <button
                 onClick={() => {
                   handleDeleteFolder(activeFolder.id, activeFolder.name, activeFolder.items.length);
                 }}
                 className="px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 flex items-center gap-2 text-sm font-medium transition-colors"
               >
                 <TrashIcon className="w-4 h-4" /> Delete
-              </button>
-              <button
-                type="button"
-                onClick={() => setBulkMode((value) => !value)}
-                className={`px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${bulkMode ? 'bg-violet-500/20 text-violet-300' : 'bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10'}`}
-              >
-                {bulkMode ? <CheckSquare size={16} /> : <Square size={16} />}
-                {bulkMode ? 'Exit bulk mode' : 'Bulk actions'}
               </button>
             </div>
           </div>
@@ -838,126 +796,81 @@ export function WatchlistsDashboard() {
             </div>
           ) : (
             <>
-              {bulkMode && (
-                <div className="glass-panel rounded-2xl border border-white/10 p-4 mb-5 flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center gap-3 justify-between">
-                    <div className="text-sm text-white font-semibold">{selectedItemIds.length} selected</div>
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds(activeFolder.items.map((item) => item.id))}>Select all</button>
-                      <button type="button" className="mm-chip-button" onClick={() => setSelectedItemIds([])}>Clear</button>
-                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(true)} disabled={selectedItemIds.length === 0}>Mark watched</button>
-                      <button type="button" className="mm-chip-button" onClick={() => void handleBulkWatched(false)} disabled={selectedItemIds.length === 0}>Mark unwatched</button>
-                      <button type="button" className="mm-chip-button" onClick={() => setBulkDeleteOpen(true)} disabled={selectedItemIds.length === 0}>Delete</button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      value={bulkMoveTarget}
-                      onChange={(event) => setBulkMoveTarget(event.target.value)}
-                      className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                    >
-                      <option value="">Move to folder…</option>
-                      {folders.filter((folder) => folder.id !== activeFolder.id).map((folder) => (
-                        <option key={folder.id} value={folder.id}>{folder.name}</option>
-                      ))}
-                    </select>
-                    <button type="button" className="mm-chip-button" onClick={handleBulkMove} disabled={selectedItemIds.length === 0 || !bulkMoveTarget}>
-                      <ArrowRightLeft size={14} /> Move selected
-                    </button>
-                  </div>
-                </div>
-              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-              {activeFolder.items.map(item => {
-                const isWatched = watched.some((w) => w.tmdb_id === String(item.movie.tmdb_id || '') && w.media_type === (item.movie.type === 'show' ? 'tv' : 'movie'));
-                return (
-                <div
-                  key={item.id}
-                  className={`group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl transition-all duration-300 ${itemDropTargetId === item.id ? 'mm-drop-target' : ''} ${deletingItemIds.includes(item.id) ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
-                  draggable
-                  onDragStart={() => {
-                    setDraggingItemId(item.id);
-                    setItemDropTargetId(item.id);
-                  }}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setItemDropTargetId(item.id);
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    if (draggingItemId && draggingItemId !== item.id) {
-                      reorderItems(activeFolder.id, draggingItemId, item.id);
-                    }
-                    setDraggingItemId(null);
-                    setItemDropTargetId(null);
-                  }}
-                  onDragEnd={() => {
-                    setDraggingItemId(null);
-                    setItemDropTargetId(null);
-                  }}
-                >
-                  {!bulkMode && <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />}
-                  {item.movie.poster_url ? (
-                    <img src={item.movie.poster_url} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40">
-                      {item.movie.title}
-                    </div>
-                  )}
-                    <div className="absolute inset-x-0 bottom-0 mm-scrim-bottom p-3 pt-12 z-20 pointer-events-none">
-                    <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md text-depth">{item.movie.title}</h4>
-                    <span className="text-xs text-brand-text-light block mt-0.5">{item.movie.year || 'Unknown'}</span>
-                  </div>
-                  
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setDeletingItemIds((prev) => [...prev, item.id]);
-                      setTimeout(() => {
-                        deleteItem(activeFolder.id, item.id);
-                        setDeletingItemIds((prev) => prev.filter((id) => id !== item.id));
-                        setActionToast({ message: '1 item deleted', kind: 'watchlist' });
-                      }, 300);
-                    }}
-                    className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
-                    title="Remove from folder"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                  <div className="absolute top-2 left-2 z-30">
-                    {bulkMode ? (
+                {activeFolder.items.map(item => {
+                  const isWatched = watched.some((w) => w.tmdb_id === String(item.movie.tmdb_id || '') && w.media_type === (item.movie.type === 'show' ? 'tv' : 'movie'));
+                  return (
+                    <div
+                      key={item.id}
+                      className={`group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl transition-all duration-300 ${itemDropTargetId === item.id ? 'mm-drop-target' : ''} ${deletingItemIds.includes(item.id) ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+                      draggable
+                      onDragStart={() => {
+                        setDraggingItemId(item.id);
+                        setItemDropTargetId(item.id);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        setItemDropTargetId(item.id);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        if (draggingItemId && draggingItemId !== item.id) {
+                          reorderItems(activeFolder.id, draggingItemId, item.id);
+                        }
+                        setDraggingItemId(null);
+                        setItemDropTargetId(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggingItemId(null);
+                        setItemDropTargetId(null);
+                      }}
+                    >
+                      <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />
+                      {item.movie.poster_url ? (
+                        <img src={item.movie.poster_url} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40">
+                          {item.movie.title}
+                        </div>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 mm-scrim-bottom p-3 pt-12 z-20 pointer-events-none">
+                        <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md text-depth">{item.movie.title}</h4>
+                        <span className="text-xs text-brand-text-light block mt-0.5">{item.movie.year || 'Unknown'}</span>
+                      </div>
+
                       <button
-                        type="button"
-                        className={`p-2 rounded-full transition-all hover:scale-110 active:scale-95 duration-200 ${selectedItemIds.includes(item.id) ? 'bg-emerald-500 text-white shadow-lg' : 'bg-black/60 text-white'}`}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          toggleSelectedItem(item.id);
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeletingItemIds((prev) => [...prev, item.id]);
+                          setTimeout(() => {
+                            deleteItem(activeFolder.id, item.id);
+                            setDeletingItemIds((prev) => prev.filter((id) => id !== item.id));
+                            setActionToast({ message: '1 item deleted', kind: 'watchlist' });
+                          }, 300);
                         }}
-                        aria-label={selectedItemIds.includes(item.id) ? 'Deselect item' : 'Select item'}
+                        className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                        title="Remove from folder"
                       >
-                        {selectedItemIds.includes(item.id) ? <CheckSquare size={16} /> : <Square size={16} />}
+                        <TrashIcon className="w-4 h-4" />
                       </button>
-                    ) : (
                       <div className="p-2 rounded-full bg-black/50 text-white/70">
                         <GripVertical size={14} />
                       </div>
-                    )}
-                  </div>
-                  
-                  <div className="absolute top-12 left-2 flex gap-1 z-20">
-                    <div className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
-                      {item.movie.type === 'show' ? 'Series' : 'Movie'}
-                    </div>
-                    {isWatched && (
-                      <div className="px-1.5 py-0.5 rounded-md bg-emerald-500/90 backdrop-blur-md text-white flex items-center justify-center shadow-lg" title="Watched">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" /></svg>
+
+                      <div className="absolute top-12 left-2 flex gap-1 z-20">
+                        <div className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
+                          {item.movie.type === 'show' ? 'Series' : 'Movie'}
+                        </div>
+                        {isWatched && (
+                          <div className="px-1.5 py-0.5 rounded-md bg-emerald-500/90 backdrop-blur-md text-white flex items-center justify-center shadow-lg" title="Watched">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" /></svg>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              );})}
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
@@ -978,177 +891,182 @@ export function WatchlistsDashboard() {
           </div>
 
           {folders.length === 0 ? (
-        <div className="mm-empty-state">
-          <h3>Build your first watchlist</h3>
-          <p>Start with a folder for weekend picks, comfort rewatches, or what to see next. Then save titles into it from anywhere in the app.</p>
-          <div className="mm-empty-state-actions">
-            <button type="button" className="mm-empty-state-cta" onClick={() => setCreateFolderOpen(true)}>
-              Create your first watchlist
-            </button>
-            <Link to="/" className="mm-empty-state-cta-secondary">
-              Go to discovery
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {folders.map((folder, index) => {
-            const heroItem = folder.items[0];
-            const topPosters = folder.items.slice(0, 3).map(item => item.movie?.poster_url).filter(Boolean) as string[];
-            return (
-              <div
-                key={folder.id}
-                className={`wl-folder-card ${folderDropTargetId === folder.id ? 'mm-drop-target' : ''}`}
-                draggable
-                onDragStart={() => {
-                  setDraggingFolderId(folder.id);
-                  setFolderDropTargetId(folder.id);
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setFolderDropTargetId(folder.id);
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  if (draggingFolderId && draggingFolderId !== folder.id) {
-                    reorderFolders(draggingFolderId, folder.id);
-                  }
-                  setDraggingFolderId(null);
-                  setFolderDropTargetId(null);
-                }}
-                onDragEnd={() => {
-                  setDraggingFolderId(null);
-                  setFolderDropTargetId(null);
-                }}
-              >
-                {/* Poster Hero Area */}
-                <div className="wl-folder-poster" onClick={() => openFolder(folder.id)}>
-                  {topPosters.length > 0 ? (
-                    <div className="wl-poster-stack">
-                      {topPosters.map((poster, i) => (
-                        <img key={`${folder.id}-poster-${i}`} src={poster} alt={`${folder.name} stack ${i}`} loading="lazy" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="wl-folder-poster-empty">
-                      <svg fill="none" stroke="currentColor" strokeWidth="1.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-2.625 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125" /></svg>
-                    </div>
-                  )}
-                  <div className="wl-folder-poster-overlay mm-scrim-bottom" />
-                  <span
-                    className="absolute top-2 left-2 z-30 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold tracking-wider uppercase text-white/90 shadow-lg border border-white/10"
-                  >
-                    {folder.items.length} {folder.items.length === 1 ? 'title' : 'titles'}
-                  </span>
-                </div>
-
-                {/* Card Body */}
-                <div className="wl-folder-body">
-                  <h3 className="wl-folder-name" onClick={() => openFolder(folder.id)}>{folder.name}</h3>
-                  <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
-                  <div className="wl-folder-actions hidden sm:flex">
-                    <button
-                      type="button"
-                      className="wl-folder-action-btn"
-                      title="Move Up"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (index > 0) {
-                          reorderFolders(folder.id, folders[index - 1].id);
-                        }
-                      }}
-                      aria-label="Move folder up"
-                    >
-                      <ChevronUpIcon className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        startEditFolder(folder);
-                      }}
-                      className="wl-folder-action-btn"
-                    >
-                      <EditIcon className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      className="wl-folder-action-btn"
-                      title="Move Down"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (index < folders.length - 1) {
-                          reorderFolders(folder.id, folders[index + 1].id);
-                        }
-                      }}
-                      aria-label="Move folder down"
-                    >
-                      <ChevronDownIcon className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleDeleteFolder(folder.id, folder.name, folder.items.length);
-                      }}
-                      className="wl-folder-action-btn danger"
-                    >
-                      <TrashIcon className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMobileActionFolder(folder);
-                    }}
-                    className="sm:hidden absolute bottom-2.5 right-2.5 p-2.5 bg-brand-surface/90 border border-white/10 text-white rounded-full z-30 shadow-xl backdrop-blur-xl transition-all active:scale-95 hover:bg-white/10"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* SEARCH HISTORY SECTION */}
-      {user && !activeFolder && (
-        <div className="mt-12 animate-fade-in pb-12">
-          <div className="wl-section-header mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="wl-section-title text-2xl font-bold">Recent Searches</h2>
-            </div>
-            {searchHistory.length > 0 && (
-              <button type="button" onClick={handleClearHistory} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50">
-                <TrashIcon className="w-3.5 h-3.5" /> Clear History
-              </button>
-            )}
-          </div>
-          
-          {searchHistory.length > 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {searchHistory.map((sh, idx) => (
-                <Link 
-                  key={sh.id || idx}
-                  to={`/search?q=${encodeURIComponent(sh.query)}`}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2.5 text-sm font-medium shadow-sm"
-                >
-                  <svg className="w-4 h-4 text-brand-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  {sh.query}
+            <div className="mm-empty-state">
+              <h3>Build your first watchlist</h3>
+              <p>Start with a folder for weekend picks, comfort rewatches, or what to see next. Then save titles into it from anywhere in the app.</p>
+              <div className="mm-empty-state-actions">
+                <button type="button" className="mm-empty-state-cta" onClick={() => setCreateFolderOpen(true)}>
+                  Create your first watchlist
+                </button>
+                <Link to="/" className="mm-empty-state-cta-secondary">
+                  Go to discovery
                 </Link>
-              ))}
+              </div>
             </div>
           ) : (
-            <div className="glass-panel p-8 rounded-2xl border border-white/5 text-center">
-              <svg className="w-10 h-10 text-white/20 mx-auto mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-              <p className="text-brand-text-light text-sm">No recent searches yet — explore discovery or search for a title</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {folders.map((folder, index) => {
+                const heroItem = folder.items[0];
+                const topPosters = folder.items.slice(0, 3).map(item => item.movie?.poster_url).filter(Boolean) as string[];
+                return (
+                  <div
+                    key={folder.id}
+                    className={`wl-folder-card ${folderDropTargetId === folder.id ? 'mm-drop-target' : ''}`}
+                    draggable
+                    onDragStart={() => {
+                      setDraggingFolderId(folder.id);
+                      setFolderDropTargetId(folder.id);
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setFolderDropTargetId(folder.id);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      if (draggingFolderId && draggingFolderId !== folder.id) {
+                        reorderFolders(draggingFolderId, folder.id);
+                      }
+                      setDraggingFolderId(null);
+                      setFolderDropTargetId(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggingFolderId(null);
+                      setFolderDropTargetId(null);
+                    }}
+                  >
+                    {/* Poster Hero Area */}
+                    <div className="wl-folder-poster" onClick={() => openFolder(folder.id)}>
+                      {topPosters.length > 0 ? (
+                        <div className="wl-poster-stack">
+                          {topPosters.map((poster, i) => (
+                            <img key={`${folder.id}-poster-${i}`} src={poster} alt={`${folder.name} stack ${i}`} loading="lazy" />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="wl-folder-poster-empty">
+                          <svg fill="none" stroke="currentColor" strokeWidth="1.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-2.625 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125" /></svg>
+                        </div>
+                      )}
+                      <div className="wl-folder-poster-overlay mm-scrim-bottom" />
+                      <span
+                        className="absolute top-2 left-2 z-30 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold tracking-wider uppercase text-white/90 shadow-lg border border-white/10"
+                      >
+                        {folder.items.length} {folder.items.length === 1 ? 'title' : 'titles'}
+                      </span>
+                      {folder.is_public && (
+                        <span className="absolute top-2 right-2 z-30 px-2 py-0.5 rounded-md bg-brand-primary/80 backdrop-blur-md text-[10px] font-bold tracking-wider uppercase text-white shadow-lg border border-white/10 flex items-center gap-1">
+                          <Share2 size={10} /> Public
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="wl-folder-body">
+                      <h3 className="wl-folder-name" onClick={() => openFolder(folder.id)}>{folder.name}</h3>
+                      <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
+                      <div className="wl-folder-actions hidden sm:flex">
+                        <button
+                          type="button"
+                          className="wl-folder-action-btn"
+                          title="Move Up"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (index > 0) {
+                              reorderFolders(folder.id, folders[index - 1].id);
+                            }
+                          }}
+                          aria-label="Move folder up"
+                        >
+                          <ChevronUpIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            startEditFolder(folder);
+                          }}
+                          className="wl-folder-action-btn"
+                        >
+                          <EditIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          className="wl-folder-action-btn"
+                          title="Move Down"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (index < folders.length - 1) {
+                              reorderFolders(folder.id, folders[index + 1].id);
+                            }
+                          }}
+                          aria-label="Move folder down"
+                        >
+                          <ChevronDownIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteFolder(folder.id, folder.name, folder.items.length);
+                          }}
+                          className="wl-folder-action-btn danger"
+                        >
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileActionFolder(folder);
+                        }}
+                        className="sm:hidden absolute bottom-2.5 right-2.5 p-2.5 bg-brand-surface/90 border border-white/10 text-white rounded-full z-30 shadow-xl backdrop-blur-xl transition-all active:scale-95 hover:bg-white/10"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-        </div>
-      )}
 
-      </div>
+          {/* SEARCH HISTORY SECTION */}
+          {user && !activeFolder && (
+            <div className="mt-12 animate-fade-in pb-12">
+              <div className="wl-section-header mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="wl-section-title text-2xl font-bold">Recent Searches</h2>
+                </div>
+                {searchHistory.length > 0 && (
+                  <button type="button" onClick={handleClearHistory} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50">
+                    <TrashIcon className="w-3.5 h-3.5" /> Clear History
+                  </button>
+                )}
+              </div>
+
+              {searchHistory.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {searchHistory.map((sh, idx) => (
+                    <Link
+                      key={sh.id || idx}
+                      to={`/search?q=${encodeURIComponent(sh.query)}`}
+                      className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2.5 text-sm font-medium shadow-sm"
+                    >
+                      <svg className="w-4 h-4 text-brand-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                      {sh.query}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="glass-panel p-8 rounded-2xl border border-white/5 text-center">
+                  <svg className="w-10 h-10 text-white/20 mx-auto mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                  <p className="text-brand-text-light text-sm">No recent searches yet — explore discovery or search for a title</p>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
       )}
 
       {editingFolder && (
@@ -1201,8 +1119,20 @@ export function WatchlistsDashboard() {
                 />
               </div>
 
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
                 <WatchlistIconPicker selectedIcon={editFolderIcon} onSelect={setEditFolderIcon} compactLabel="Folder icon" />
+
+                <div className="flex items-center gap-3 pt-1">
+                  <label className="flex items-center gap-2.5 cursor-pointer group">
+                    <div
+                      className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${editFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
+                      onClick={() => setEditFolderPublic(!editFolderPublic)}
+                    >
+                      {editFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    <span className="text-sm text-brand-text-light font-medium" onClick={() => setEditFolderPublic(!editFolderPublic)}>Make this watchlist public</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -1260,19 +1190,23 @@ export function WatchlistsDashboard() {
         onClose={() => {
           setCreateFolderOpen(false);
           setNewFolderName('');
+          setNewFolderPublic(false);
           setNewFolderError(null);
         }}
-      />
+      >
+        <div className="flex items-center gap-3 py-2">
+          <label className="flex items-center gap-2.5 cursor-pointer group">
+            <div
+              className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${newFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
+              onClick={() => setNewFolderPublic(!newFolderPublic)}
+            >
+              {newFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+            </div>
+            <span className="text-sm text-brand-text-light font-medium" onClick={() => setNewFolderPublic(!newFolderPublic)}>Make this watchlist public</span>
+          </label>
+        </div>
+      </PromptDialog>
 
-      <ConfirmDialog
-        open={bulkDeleteOpen}
-        title="Delete selected titles?"
-        description={`Remove ${selectedItemIds.length} selected title${selectedItemIds.length === 1 ? '' : 's'} from this folder.`}
-        confirmLabel="Delete selected"
-        tone="destructive"
-        onConfirm={handleBulkDelete}
-        onClose={() => setBulkDeleteOpen(false)}
-      />
 
       <NoticeDialog
         open={Boolean(notice)}
@@ -1301,7 +1235,7 @@ export function WatchlistsDashboard() {
             <h3 id="share-modal-title" className="text-xl font-bold text-white mb-4">
               Share Watchlist
             </h3>
-            
+
             <p className="text-sm text-brand-text-light mb-4">
               Anyone with this link can view your "{sharingFolder?.name || 'watchlist'}" watchlist:
             </p>
@@ -1354,14 +1288,14 @@ export function WatchlistsDashboard() {
       {/* Mobile Folder Action Sheet */}
       {mobileActionFolder && (
         <div className="fixed inset-0 z-[14000] sm:hidden flex items-end">
-          <div 
+          <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
             onClick={() => setMobileActionFolder(null)}
           />
           <div className="relative w-full bg-brand-surface border-t border-white/10 rounded-t-3xl shadow-2xl p-6 flex flex-col animate-scale-up pb-8">
             <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
             <h3 className="text-xl font-bold text-white px-2 mb-4 line-clamp-1">{mobileActionFolder.name}</h3>
-            
+
             <button
               onClick={() => {
                 setMobileActionFolder(null);
@@ -1396,7 +1330,7 @@ export function WatchlistsDashboard() {
           </div>
         </div>
       )}
-      
+
     </DashboardLayout>
   );
 }
