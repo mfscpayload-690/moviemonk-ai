@@ -1,3 +1,5 @@
+import { apiPost, getApiUrl } from '../lib/apiClient';
+
 type ObservabilityLevel = 'info' | 'warn' | 'error';
 
 export type ClientObservabilityEvent = {
@@ -62,16 +64,11 @@ export function emitClientEvent(input: ClientObservabilityEvent): void {
 
   if (canUseBeacon()) {
     const body = new Blob([payload], { type: 'application/json' });
-    navigator.sendBeacon(toEndpoint(), body);
+    navigator.sendBeacon(getApiUrl(toEndpoint()), body);
     return;
   }
 
-  void fetch(toEndpoint(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: payload,
-    keepalive: true
-  }).catch((error) => {
+  void apiPost(toEndpoint(), JSON.parse(payload), undefined, { keepalive: 'true' } as any).catch((error) => {
     if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
       console.warn('observability_transport_failed', error);
     }
