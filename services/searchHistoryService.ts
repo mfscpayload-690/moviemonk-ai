@@ -1,3 +1,5 @@
+import { apiGet, apiPost } from '../lib/apiClient';
+
 /**
  * Search History & Autocomplete Service
  * Manages search history, trending searches, and smart autocomplete suggestions
@@ -165,10 +167,7 @@ async function fetchAutocompleteSuggestions(
   });
 
   try {
-    const response = await fetch(`/api/suggest?${params.toString()}`);
-    if (!response.ok) return [];
-
-    const data = await response.json();
+    const data = await apiGet<any>('/api/suggest', { q: query, mode: 'autocomplete' });
     if (!data.ok || !Array.isArray(data.suggestions)) return [];
 
     // Transform API results to AutocompleteResult
