@@ -9,8 +9,8 @@ import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { NoticeDialog } from './components/BrandedDialogs';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt } from './types';
-import { fetchFullPlotDetails } from './services/aiService';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
+import { apiGet, apiPost } from './lib/apiClient';
 import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
@@ -410,7 +410,7 @@ const App: React.FC = () => {
       setError(null);
     }
     try {
-      const data = await fetch(`/api/person/${personId}`).then(r => r.json());
+      const data = await apiGet<any>(`/api/person/${personId}`);
       cacheSet('person', personCacheKey(personId), data);
       startTransition(() => {
         setPersonData(data);
@@ -539,13 +539,9 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const detailsRes = await fetch(
-        `/api/ai?action=details&id=${item.id}&media_type=${item.mediaType}&provider=${activeProvider}`
+      const detailsData = await apiGet<any>(
+        `/api/details/${item.mediaType}/${item.id}`
       );
-      if (!detailsRes.ok) {
-        throw new Error('Failed to load title details');
-      }
-      const detailsData = await detailsRes.json();
       cacheSet('movie', cKey, detailsData);
       startTransition(() => {
         setMovieData(detailsData);
@@ -646,13 +642,9 @@ const App: React.FC = () => {
   const handleBriefMe = useCallback(async (name: string) => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: name, mode: 'detailed' })
-      });
-      const json = await res.json();
-      if (json?.ok) {
+      const json = await apiPost<any>('/api/query', { q: name, mode: 'detailed' });
+      
+      if (json?.ok || json) {
         startTransition(() => {
           setSummaryModal({ title: name, short: json?.summary?.summary_short, long: json?.summary?.summary_long });
         });
@@ -1005,7 +997,10 @@ const App: React.FC = () => {
                 isLoading={isLoading}
                 sources={sources}
                 selectedProvider={selectedProvider}
-                onFetchFullPlot={fetchFullPlotDetails}
+                onFetchFullPlot={async (title: string, year: string, type: string) => {
+                  const res = await apiPost<any>('/api/query', { q: `${title} (${year})`, mode: 'full_plot' });
+                  return res?.summary?.summary_long || "Plot details unavailable";
+                }}
                 onQuickSearch={handleQuickSearch}
                 onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
                 watchlists={watchlists}
