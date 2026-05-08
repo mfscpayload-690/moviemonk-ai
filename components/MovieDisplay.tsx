@@ -14,6 +14,7 @@ import { useActionFeedback } from '../hooks/useActionFeedback';
 import SeoHead from './SeoHead';
 import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
 import { loadPreferenceSettings } from '../lib/userSettings';
+import { apiGet } from '../lib/apiClient';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -521,9 +522,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             page: String(page)
         });
         if (language) params.set('language', language);
-        const response = await fetch(`/api/tmdb?${params.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch TMDB reviews');
-        const data = await response.json();
+        const data = await apiGet<any>('/api/tmdb', Object.fromEntries(params.entries()));
         return {
             reviews: normalizeTmdbReviews(data),
             totalPages: data?.total_pages ?? 1
@@ -578,8 +577,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             if (merged.length < 2) {
                 try {
                     const recEndpoint = `${mediaType}/${movie.tmdb_id}/recommendations`;
-                    const recResponse = await fetch(`/api/tmdb?endpoint=${encodeURIComponent(recEndpoint)}&language=en-US&page=1`);
-                    const recData = await recResponse.json();
+                    const recData = await apiGet<any>('/api/tmdb', { endpoint: recEndpoint, language: 'en-US', page: 1 });
                     const recIds: number[] = Array.isArray(recData?.results)
                         ? recData.results.slice(0, 4).map((entry: any) => entry?.id).filter(Boolean)
                         : [];
@@ -1589,8 +1587,7 @@ const CrewCard: React.FC<{ name: string; role: string; onClick: () => void }> = 
             return;
         }
         let cancelled = false;
-        fetch(`/api/resolveEntity?q=${encodeURIComponent(name)}`)
-            .then(r => r.json())
+        apiGet<any>('/api/resolve', { q: name })
             .then(data => {
                 if (cancelled) return;
                 // Pick the top person candidate's profile_url
