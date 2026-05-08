@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview, WatchOption } from '../types';
 import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon } from './icons';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
+import { apiGet } from '../lib/apiClient';
 import RatingDisplay from './RatingDisplay';
 import SeoHead from './SeoHead';
 import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
@@ -144,9 +145,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
             page: '1'
         });
         if (language) params.set('language', language);
-        const response = await fetch(`/api/tmdb?${params.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch TV reviews');
-        const data = await response.json();
+        const data = await apiGet<any>('/api/tmdb', Object.fromEntries(params.entries()));
         return normalizeTmdbReviews(data);
     }, [normalizeTmdbReviews]);
 
@@ -180,8 +179,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                         language: 'en-US',
                         page: '1'
                     });
-                    const recResponse = await fetch(`/api/tmdb?${recParams.toString()}`);
-                    const recData = await recResponse.json();
+                    const recData = await apiGet<any>('/api/tmdb', Object.fromEntries(recParams.entries()));
                     const recIds: number[] = Array.isArray(recData?.results)
                         ? recData.results.slice(0, 4).map((entry: any) => entry?.id).filter(Boolean)
                         : [];
