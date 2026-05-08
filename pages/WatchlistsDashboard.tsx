@@ -24,6 +24,7 @@ import {
   notifyReminder
 } from '../services/watchlistReminders';
 import { emitClientEvent } from '../services/clientObservability';
+import { apiPost } from '../lib/apiClient';
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -385,22 +386,12 @@ export function WatchlistsDashboard() {
       setSharingFolderId(folder.id);
       setShareLink(null);
 
-      const response = await fetch('/api/watchlists/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          folderName: folder.name,
-          folderIcon: folder.icon,
-          items: folder.items,
-          created_by: displayName || 'MovieMonk User'
-        })
+      const data = await apiPost<any>('/api/watchlists/share', {
+        folderName: folder.name,
+        folderIcon: folder.icon,
+        items: folder.items,
+        created_by: displayName || 'MovieMonk User'
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to create share link');
-      }
-
-      const data = await response.json();
       setShareLink(data.share_url);
     } catch (err) {
       console.error('Share error:', err);
