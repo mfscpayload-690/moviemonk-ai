@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Copy, Check } from 'lucide-react';
 import type { SharedWatchlistView, WatchlistItem } from '../types';
+import { apiGet } from '../lib/apiClient';
 import { useWatchlists } from '../hooks/useWatchlists';
 import '../styles/shared-watchlist.css';
 
@@ -33,13 +34,8 @@ export function SharedWatchlistView() {
         }
 
         // Fetch shared watchlist from backend
-        const res = await fetch(`/api/watchlists/share?token=${encodeURIComponent(token)}`);
+        const data = await apiGet<SharedWatchlistView>('/api/watchlists/share', { token });
         
-        if (!res.ok) {
-          throw new Error(`Failed to load shared watchlist: ${res.status}`);
-        }
-
-        const data: SharedWatchlistView = await res.json();
         setShareData(data);
         setError(null);
       } catch (err) {
