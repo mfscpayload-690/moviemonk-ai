@@ -66,7 +66,6 @@ const App: React.FC = () => {
 
   const [movieData, setMovieData] = useState<MovieData | null>(null);
   const [personData, setPersonData] = useState<any | null>(null);
-  const [sources, setSources] = useState<GroundingSource[] | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('groq');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -396,7 +395,6 @@ const App: React.FC = () => {
       startTransition(() => {
         setPersonData(cached);
         setMovieData(null);
-        setSources(cached?.sources || null);
         setCurrentView('person');
         if (titleHint || cached?.person?.name) {
           setCurrentQuery(titleHint || cached?.person?.name || '');
@@ -416,7 +414,6 @@ const App: React.FC = () => {
       startTransition(() => {
         setPersonData(data);
         setMovieData(null);
-        setSources(data?.sources || null);
         setCurrentView('person');
         if (titleHint || data?.person?.name) {
           setCurrentQuery(titleHint || data?.person?.name || '');
@@ -491,7 +488,6 @@ const App: React.FC = () => {
       setCurrentView('discovery');
       setMovieData(null);
       setPersonData(null);
-      setSources(null);
       setCurrentQuery('');
     });
     scrollMainContentToTop();
@@ -534,7 +530,6 @@ const App: React.FC = () => {
       startTransition(() => {
         setMovieData(actualData);
         setPersonData(null);
-        setSources(actualSources || [{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
         setCurrentView('movie');
         setCurrentQuery(actualData?.title || '');
       });
@@ -552,7 +547,6 @@ const App: React.FC = () => {
       startTransition(() => {
         setMovieData(detailsData);
         setPersonData(null);
-        setSources(response.sources || [{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
         setCurrentView('movie');
         setCurrentQuery(detailsData?.title || '');
       });
@@ -578,7 +572,6 @@ const App: React.FC = () => {
       setCurrentView('search');
       setMovieData(null);
       setPersonData(null);
-      setSources(null);
       setShortlistCandidates(null);
     });
     if (!options.skipNavigate) {
@@ -716,7 +709,6 @@ const App: React.FC = () => {
       setCurrentView('search');
       setMovieData(null);
       setPersonData(null);
-      setSources(null);
       if (route.query) {
         track('shared_link_opened', { query: route.query, type: 'search-route' });
       }
@@ -1012,7 +1004,6 @@ const App: React.FC = () => {
                 key={movieData?.tmdb_id ?? 'movie-display'}
                 movie={movieData}
                 isLoading={isLoading}
-                sources={sources}
                 selectedProvider={selectedProvider}
                 onFetchFullPlot={async (title: string, year: string, type: string) => {
                   const res = await apiPost<any>('/api/query', { q: `${title} (${year})`, mode: 'full_plot' });

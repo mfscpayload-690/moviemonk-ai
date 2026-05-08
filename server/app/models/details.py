@@ -81,6 +81,20 @@ class WikipediaEnrichment(BaseModel):
     wikipedia_url: str | None = None
 
 
+class TechnicalSpecs(BaseModel):
+    """Technical details for cinephiles."""
+    camera: str | None = None
+    aspect_ratio: str | None = None
+    audio_format: str | None = None
+    color: str | None = None  # e.g., Color | Black and White
+
+
+class MovieFinancials(BaseModel):
+    """Financial data from TMDB/OMDB."""
+    budget: int | None = None
+    revenue: int | None = None
+
+
 class MovieData(BaseModel):
     """Full movie/show detail payload — wire-compatible with the
     TypeScript ``MovieData`` interface in ``types.ts``."""
@@ -108,6 +122,20 @@ class MovieData(BaseModel):
 
     # Wikipedia enrichment (new)
     wikipedia: WikipediaEnrichment | None = None
+
+    # Premium Metadata (Financials & Tech)
+    budget: str | None = None
+    revenue: str | None = None
+    technical_specs: TechnicalSpecs | None = None
+
+    # Contextual & Safety
+    content_rating: str | None = None
+    vibe_check: str | None = None
+    content_advisory: list[str] = []
+    best_watched_with: str | None = None
+
+    # Similar titles (attached to MovieData for easier frontend access)
+    related: list[RelatedTitle] = []
 
 
 class RelatedTitle(BaseModel):

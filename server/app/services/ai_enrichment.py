@@ -28,6 +28,9 @@ CREATIVE_PROMPT = (
     '- summary_long_spoilers: Full plot with ALL spoilers (start with "SPOILER WARNING")\n'
     '- suspense_breaker: One sentence revealing the twist/ending\n'
     '- ai_notes: Markdown trivia, quotes, themes, similar titles (3-5 bullets)\n'
+    '- vibe_check: 2-4 word mood description (e.g. "Gritty, Neon, Tense")\n'
+    '- best_watched_with: One short recommendation (e.g. "Late night with headphones")\n'
+    '- technical_specs: object with {camera: str, aspect_ratio: str, audio_format: str}\n'
     "Return ONLY valid JSON. Be creative and insightful!"
 )
 
@@ -69,6 +72,7 @@ async def generate_creative_fields(
     year: str = "",
     genres: list[str] | None = None,
     overview: str = "",
+    media_type: str = "movie",
     timeout_seconds: float = 9.0,
 ) -> dict[str, str]:
     empty = {
@@ -77,6 +81,9 @@ async def generate_creative_fields(
         "summary_long_spoilers": "",
         "suspense_breaker": "",
         "ai_notes": "",
+        "vibe_check": "",
+        "best_watched_with": "",
+        "technical_specs": {},
     }
 
     api_key = _get_next_key()
@@ -85,7 +92,7 @@ async def generate_creative_fields(
         return empty
 
     user_content = (
-        f"Title: {title}\nYear: {year}\n"
+        f"Type: {media_type.upper()}\nTitle: {title}\nYear: {year}\n"
         f"Genres: {', '.join(genres or ['Unknown'])}\nOverview: {overview}"
     )
 
@@ -131,6 +138,9 @@ async def generate_creative_fields(
                 "summary_long_spoilers": str(parsed.get("summary_long_spoilers") or ""),
                 "suspense_breaker": str(parsed.get("suspense_breaker") or "")[:300],
                 "ai_notes": ai_notes,
+                "vibe_check": str(parsed.get("vibe_check") or ""),
+                "best_watched_with": str(parsed.get("best_watched_with") or ""),
+                "technical_specs": parsed.get("technical_specs") or {},
             }
     except httpx.TimeoutException:
         logger.warning("Groq timed out after %.1fs", timeout_seconds)

@@ -72,6 +72,18 @@ def _build_watch_options(providers_data: dict, region: str) -> list[WatchOption]
     return options[:8]
 
 
+def _format_currency(amount: int | None) -> str | None:
+    if not amount or amount <= 0:
+        return None
+    if amount >= 1_000_000_000:
+        return f"${amount / 1_000_000_000:.1f}B"
+    if amount >= 1_000_000:
+        return f"${amount / 1_000_000:.1f}M"
+    if amount >= 1_000:
+        return f"${amount / 1_000:.1f}K"
+    return f"${amount:,}"
+
+
 @router.get("/details/{media_type}/{tmdb_id}")
 async def get_details(
     media_type: str = Path(..., description="movie or tv"),
@@ -80,7 +92,7 @@ async def get_details(
     if media_type not in ("movie", "tv"):
         return api_error(400, "invalid_type", "media_type must be 'movie' or 'tv'")
 
-    cache_key = build_cache_key("details_v2", {"mt": media_type, "id": tmdb_id})
+    cache_key = build_cache_key("details_v3", {"mt": media_type, "id": tmdb_id})
     cached = await get_cache(cache_key)
     if cached:
         return {**cached, "cached": True}
@@ -178,7 +190,7 @@ async def get_details(
         omdb_task = omdb.fetch_ratings(imdb_id) if imdb_id else _empty_ratings()
         wiki_task = wikipedia.enrich_movie(title, year)
         wikimedia_task = wikimedia.get_movie_images(title, year)
-        ai_task = ai_enrichment.generate_creative_fields(title, year, genres, overview)
+        ai_task = ai_enrichment.generate_creative_fields(title, year, genres, overview, media_type)
 
         ratings_raw, wiki_data, wiki_images, ai_fields = await asyncio.gather(
             omdb_task, wiki_task, wikimedia_task, ai_task,
@@ -238,14 +250,21 @@ async def get_details(
             ratings=ratings,
             cast=cast,
             crew=crew,
-            summary_short=creative.get("summary_short") or (overview[:200] if overview else ""),
-            summary_medium=creative.get("summary_medium") or (overview[:500] if overview else ""),
-            summary_long_spoilers=creative.get("summary_long_spoilers") or "",
-            suspense_breaker=creative.get("suspense_breaker") or "",
+            summary_short=str(creative.get("summary_short") or (overview[:200] if overview else "")),
+            summary_medium=str(creative.get("summary_medium") or (overview[:500] if overview else "")),
+            summary_long_spoilers=str(creative.get("summary_long_spoilers") or ""),
+            suspense_breaker=str(creative.get("suspense_breaker") or ""),
             where_to_watch=watch_options,
             extra_images=extra_images[:10],
-            ai_notes=creative.get("ai_notes") or "",
+            ai_notes=str(creative.get("ai_notes") or ""),
+            tv_show=None,  # Will be populated later if needed
             wikipedia=wiki_enrichment,
+            budget=_format_currency(details.get("budget")),
+            revenue=_format_currency(details.get("revenue")),
+            vibe_check=creative.get("vibe_check"),
+            best_watched_with=creative.get("best_watched_with"),
+            technical_specs=creative.get("technical_specs"),
+            related=similar_titles,
         )
 
         sources = [{"name": "TMDB", "url": f"https://www.themoviedb.org/{media_type}/{tmdb_id}"}]
