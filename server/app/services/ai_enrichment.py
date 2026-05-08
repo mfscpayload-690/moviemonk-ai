@@ -120,15 +120,16 @@ async def generate_creative_fields(
             if not parsed:
                 return empty
 
-            ai_notes = parsed.get("ai_notes", "")
+            ai_notes = parsed.get("ai_notes") or ""
             if isinstance(ai_notes, list):
                 ai_notes = "\n".join([str(item) for item in ai_notes])
+            ai_notes = str(ai_notes)
 
             return {
-                "summary_short": parsed.get("summary_short", "")[:300],
-                "summary_medium": parsed.get("summary_medium", "")[:600],
-                "summary_long_spoilers": parsed.get("summary_long_spoilers", ""),
-                "suspense_breaker": parsed.get("suspense_breaker", "")[:300],
+                "summary_short": str(parsed.get("summary_short") or "")[:300],
+                "summary_medium": str(parsed.get("summary_medium") or "")[:600],
+                "summary_long_spoilers": str(parsed.get("summary_long_spoilers") or ""),
+                "suspense_breaker": str(parsed.get("suspense_breaker") or "")[:300],
                 "ai_notes": ai_notes,
             }
     except httpx.TimeoutException:

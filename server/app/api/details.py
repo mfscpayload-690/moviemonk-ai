@@ -238,13 +238,13 @@ async def get_details(
             ratings=ratings,
             cast=cast,
             crew=crew,
-            summary_short=creative.get("summary_short", overview[:200] if overview else ""),
-            summary_medium=creative.get("summary_medium", overview[:500] if overview else ""),
-            summary_long_spoilers=creative.get("summary_long_spoilers", ""),
-            suspense_breaker=creative.get("suspense_breaker", ""),
+            summary_short=creative.get("summary_short") or (overview[:200] if overview else ""),
+            summary_medium=creative.get("summary_medium") or (overview[:500] if overview else ""),
+            summary_long_spoilers=creative.get("summary_long_spoilers") or "",
+            suspense_breaker=creative.get("suspense_breaker") or "",
             where_to_watch=watch_options,
             extra_images=extra_images[:10],
-            ai_notes=creative.get("ai_notes", ""),
+            ai_notes=creative.get("ai_notes") or "",
             wikipedia=wiki_enrichment,
         )
 

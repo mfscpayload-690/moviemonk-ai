@@ -524,15 +524,19 @@ const App: React.FC = () => {
     const cached = cacheGet<any>('movie', cKey);
     if (cached) {
       debugLog('[cache] movie hit', item.id, item.mediaType);
+      // Migration: Handle legacy cache format where the entire response envelope was cached
+      const actualData = (cached.ok === true && cached.data) ? cached.data : cached;
+      const actualSources = (cached.ok === true && cached.sources) ? cached.sources : null;
+
       // Start loading LCP images immediately before React re-renders
-      if (cached.poster_url) { const img = new Image(); img.src = cached.poster_url; }
-      if (cached.backdrop_url) { const img = new Image(); img.src = cached.backdrop_url; }
+      if (actualData.poster_url) { const img = new Image(); img.src = actualData.poster_url; }
+      if (actualData.backdrop_url) { const img = new Image(); img.src = actualData.backdrop_url; }
       startTransition(() => {
-        setMovieData(cached);
+        setMovieData(actualData);
         setPersonData(null);
-        setSources([{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
+        setSources(actualSources || [{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
         setCurrentView('movie');
-        setCurrentQuery(cached?.title || '');
+        setCurrentQuery(actualData?.title || '');
       });
       return;
     }
@@ -540,14 +544,15 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const detailsData = await apiGet<any>(
+      const response = await apiGet<any>(
         `/api/details/${item.mediaType}/${item.id}`
       );
+      const detailsData = response.data;
       cacheSet('movie', cKey, detailsData);
       startTransition(() => {
         setMovieData(detailsData);
         setPersonData(null);
-        setSources([{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
+        setSources(response.sources || [{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
         setCurrentView('movie');
         setCurrentQuery(detailsData?.title || '');
       });
