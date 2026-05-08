@@ -32,7 +32,47 @@ It supports both search-first users who know exactly what they want and browse-f
 4. Tap filmography cards to jump directly into movie/show details.
 5. Save promising picks to watchlists and share links with others.
 
-## Why MovieMonk
-- Reduces search friction with a true browse + search hybrid.
-- Improves result quality for people queries through role-aware ranking.
-- Keeps the interface focused, minimal, and content-first on both desktop and mobile.
+## Technical Architecture
+
+MovieMonk uses a modern, decoupled architecture designed for security, scalability, and high-quality AI inference.
+
+- **Frontend**: React 19 + Vite 7 (hosted on Vercel).
+- **Backend**: FastAPI + Python 3.11 (hosted on Hugging Face Spaces).
+- **Database**: Supabase (Postgres + Auth).
+- **AI Stack**: Groq (LLM Inference), Perplexity (Search Fallback).
+- **Data Source**: TMDB API (proxied via backend).
+
+### Why this architecture?
+1. **Security**: Sensitive API keys (TMDB, Groq, Perplexity) are kept strictly server-side. The frontend never sees these credentials.
+2. **Performance**: FastAPI handles high-concurrency streaming responses for AI summaries more efficiently than Serverless functions.
+3. **Open Source**: The architecture allows for easy self-hosting of both the frontend and the inference backend.
+
+## Getting Started (Local Development)
+
+### 1. Prerequisites
+- Node.js 22.x
+- Python 3.11+
+- TMDB API Key
+
+### 2. Backend Setup
+```bash
+cd server
+pip install -r requirements.txt
+cp .env.example .env
+# Add your TMDB_API_KEY and GROQ_API_KEY to .env
+python main.py
+```
+The backend will run on `http://localhost:8000`.
+
+### 3. Frontend Setup
+```bash
+# In the root directory
+npm install
+cp .env.example .env.local
+# Set VITE_API_BASE_URL=http://localhost:8000
+npm run dev
+```
+The frontend will run on `http://localhost:3000`.
+
+## License
+MIT
