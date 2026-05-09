@@ -299,6 +299,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
         setNewFolderName('');
         setNewFolderColor('#7c3aed');
         setNewFolderIcon(WATCHLIST_ICON_DEFAULT);
+        setNewFolderPublic(false);
     }, [movie, watchlists]);
 
     useEffect(() => {
@@ -315,6 +316,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     useEffect(() => {
         if (showWatchlistModal) {
             setSelectedFolderId('');
+            setNewFolderPublic(false);
         }
     }, [showWatchlistModal]);
 
@@ -1341,13 +1343,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             <WatchlistIconPicker selectedIcon={newFolderIcon} onSelect={setNewFolderIcon} compactLabel="Pick a folder icon" />
                             <div className="flex items-center gap-3 py-1">
                                 <label className="flex items-center gap-2.5 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={newFolderPublic}
+                                        onChange={(e) => setNewFolderPublic(e.target.checked)}
+                                    />
                                     <div 
                                         className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${newFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
-                                        onClick={() => setNewFolderPublic(!newFolderPublic)}
+                                        aria-hidden="true"
                                     >
                                         {newFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
                                     </div>
-                                    <span className="text-sm text-brand-text-light font-medium" onClick={() => setNewFolderPublic(!newFolderPublic)}>Make this watchlist public</span>
+                                    <span className="text-sm text-brand-text-light font-medium select-none">Make this watchlist public</span>
                                 </label>
                             </div>
                             <p className="text-xs text-brand-text-dark">Pick an icon so the folder stands out on your watchlists page.</p>

@@ -107,6 +107,7 @@ const App: React.FC = () => {
     setQuickSaveNewFolderName(next.newFolderName);
     setQuickSaveNewFolderColor(next.newFolderColor);
     setQuickSaveNewFolderIcon(next.newFolderIcon);
+    setQuickSaveNewFolderPublic(false);
   }, []);
 
   // Lock body scroll when quick-save modal is open
@@ -266,6 +267,7 @@ const App: React.FC = () => {
     setQuickSaveNewFolderName(next.newFolderName);
     setQuickSaveNewFolderColor(next.newFolderColor);
     setQuickSaveNewFolderIcon(next.newFolderIcon);
+    setQuickSaveNewFolderPublic(false);
   }, [watchlists]);
 
   const handleConfirmQuickSave = useCallback(async () => {
@@ -643,7 +645,7 @@ const App: React.FC = () => {
       setIsLoading(true);
       const json = await apiPost<any>('/api/query', { q: name, mode: 'detailed' });
       
-      if (json?.ok || json) {
+      if (json?.ok && json?.summary) {
         startTransition(() => {
           setSummaryModal({ title: name, short: json?.summary?.summary_short, long: json?.summary?.summary_long });
         });
@@ -869,13 +871,19 @@ const App: React.FC = () => {
                   <WatchlistIconPicker selectedIcon={quickSaveNewFolderIcon} onSelect={setQuickSaveNewFolderIcon} compactLabel="Pick a folder icon" />
                   <div className="flex items-center gap-3 py-1">
                     <label className="flex items-center gap-2.5 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={quickSaveNewFolderPublic}
+                        onChange={(e) => setQuickSaveNewFolderPublic(e.target.checked)}
+                      />
                       <div 
                         className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${quickSaveNewFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
-                        onClick={() => setQuickSaveNewFolderPublic(!quickSaveNewFolderPublic)}
+                        aria-hidden="true"
                       >
                         {quickSaveNewFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
                       </div>
-                      <span className="text-sm text-brand-text-light font-medium" onClick={() => setQuickSaveNewFolderPublic(!quickSaveNewFolderPublic)}>Make this watchlist public</span>
+                      <span className="text-sm text-brand-text-light font-medium select-none">Make this watchlist public</span>
                     </label>
                   </div>
                   <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>

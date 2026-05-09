@@ -24,13 +24,14 @@ describe('services/watchlistSync icon writes', () => {
   it('includes icon payload when adding a cloud folder', async () => {
     mockInsert.mockResolvedValue({ error: null });
 
-    await addCloudFolder('user-1', 'Favorites', 'heart', '3d62034e-ec72-4d9f-8ff7-84e28c6540f4');
+    await addCloudFolder('user-1', 'Favorites', 'heart', false, '3d62034e-ec72-4d9f-8ff7-84e28c6540f4');
 
     expect(mockInsert).toHaveBeenCalledWith({
       id: '3d62034e-ec72-4d9f-8ff7-84e28c6540f4',
       user_id: 'user-1',
       name: 'Favorites',
-      icon: 'heart'
+      icon: 'heart',
+      is_public: false
     });
   });
 

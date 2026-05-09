@@ -6,28 +6,45 @@ from ``types.ts`` for wire-compatible responses.
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
-class CastMember(BaseModel):
+def to_camel(string: str) -> str:
+    """Convert snake_case to camelCase."""
+    components = string.split("_")
+    return components[0] + "".join(x.title() for x in components[1:])
+
+
+class CamelModel(BaseModel):
+    """Base model that automatically converts snake_case to camelCase for serialization."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
+
+
+class CastMember(CamelModel):
     name: str
     role: str
     known_for: str = ""
     profile_url: str | None = None
 
 
-class Crew(BaseModel):
-    director: str = ""
-    writer: str = ""
-    music: str = ""
+class Crew(CamelModel):
+    director: str | None = None
+    writer: str | None = None
+    music: str | None = None
+    producer: str | None = None
 
 
-class Rating(BaseModel):
+class Rating(CamelModel):
     source: str
-    score: str
+    value: str
+    score: float | None = None  # Normalized score 0.0-10.0
 
 
-class WatchOption(BaseModel):
+class WatchOption(CamelModel):
     platform: str
     link: str = ""
     type: str = "subscription"  # subscription | rent | free | buy
@@ -36,7 +53,7 @@ class WatchOption(BaseModel):
     region: str | None = None
 
 
-class TVShowSeason(BaseModel):
+class TVShowSeason(CamelModel):
     number: int
     name: str = ""
     episode_count: int = 0
@@ -46,7 +63,7 @@ class TVShowSeason(BaseModel):
     summary: str | None = None
 
 
-class TVShowEpisode(BaseModel):
+class TVShowEpisode(CamelModel):
     id: int
     season: int
     episode: int
@@ -58,7 +75,7 @@ class TVShowEpisode(BaseModel):
     summary: str | None = None
 
 
-class TVShowData(BaseModel):
+class TVShowData(CamelModel):
     status: str = ""
     premiered: str | None = None
     ended: str | None = None
@@ -71,7 +88,7 @@ class TVShowData(BaseModel):
     episodes: list[TVShowEpisode] = []
 
 
-class WikipediaEnrichment(BaseModel):
+class WikipediaEnrichment(CamelModel):
     """Extra metadata sourced from Wikipedia."""
     plot_extended: str | None = None
     production_notes: str | None = None
@@ -81,7 +98,7 @@ class WikipediaEnrichment(BaseModel):
     wikipedia_url: str | None = None
 
 
-class TechnicalSpecs(BaseModel):
+class TechnicalSpecs(CamelModel):
     """Technical details for cinephiles."""
     camera: str | None = None
     aspect_ratio: str | None = None
@@ -89,13 +106,23 @@ class TechnicalSpecs(BaseModel):
     color: str | None = None  # e.g., Color | Black and White
 
 
-class MovieFinancials(BaseModel):
+class MovieFinancials(CamelModel):
     """Financial data from TMDB/OMDB."""
     budget: int | None = None
     revenue: int | None = None
 
 
-class MovieData(BaseModel):
+class RelatedTitle(CamelModel):
+    id: int
+    title: str
+    year: str | None = None
+    media_type: str  # movie | tv
+    poster_url: str | None = None
+    popularity: float | None = None
+    source: str = "tmdb-similar"
+
+
+class MovieData(CamelModel):
     """Full movie/show detail payload — wire-compatible with the
     TypeScript ``MovieData`` interface in ``types.ts``."""
     tmdb_id: str | None = None
@@ -138,17 +165,7 @@ class MovieData(BaseModel):
     related: list[RelatedTitle] = []
 
 
-class RelatedTitle(BaseModel):
-    id: int
-    title: str
-    year: str | None = None
-    media_type: str  # movie | tv
-    poster_url: str | None = None
-    popularity: float | None = None
-    source: str = "tmdb-similar"
-
-
-class DetailsResponse(BaseModel):
+class DetailsResponse(CamelModel):
     """Envelope for the /api/details endpoint."""
     ok: bool = True
     data: MovieData

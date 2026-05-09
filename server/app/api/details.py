@@ -19,7 +19,7 @@ from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
 from app.models.details import (
     CastMember, Crew, DetailsResponse, MovieData, Rating, RelatedTitle,
-    WatchOption, WikipediaEnrichment,
+    TVShowData, TVShowSeason, WatchOption, WikipediaEnrichment,
 )
 from app.services import ai_enrichment, omdb, tmdb, wikimedia, wikipedia
 
@@ -37,12 +37,14 @@ def _build_watch_options(providers_data: dict, region: str) -> list[WatchOption]
     results = providers_data.get("results", {})
     priority = [region, "US", "IN", "GB"]
     selected = None
+    selected_region = region
     for r in priority:
         if r in results:
             selected = results[r]
+            selected_region = r
             break
     if not selected and results:
-        selected = next(iter(results.values()))
+        selected_region, selected = next(iter(results.items()))
     if not selected:
         return []
 
@@ -63,7 +65,7 @@ def _build_watch_options(providers_data: dict, region: str) -> list[WatchOption]
                     link=selected.get("link", ""),
                     type=mapped_type,
                     confidence=type_confidence.get(mapped_type, 70),
-                    region=region,
+                    region=selected_region,
                 )
             elif type_priority.get(mapped_type, 9) < type_priority.get(seen[key].type, 9):
                 seen[key].type = mapped_type
@@ -236,6 +238,36 @@ async def get_details(
                     popularity=item.get("popularity"),
                 ))
 
+        # TV Show specific data
+        tv_show_data = None
+        if media_type == "tv":
+            seasons = []
+            for s in details.get("seasons", []):
+                seasons.append(TVShowSeason(
+                    number=s.get("season_number", 0),
+                    name=s.get("name", ""),
+                    episode_count=s.get("episode_count", 0),
+                    premiere_date=s.get("air_date"),
+                    image=tmdb.build_image_url(s.get("poster_path"), "w185"),
+                    summary=s.get("overview")
+                ))
+            
+            networks = details.get("networks", [])
+            network_name = networks[0].get("name", "") if networks else ""
+            
+            tv_show_data = TVShowData(
+                status=details.get("status", ""),
+                premiered=details.get("first_air_date"),
+                ended=details.get("last_air_date"),
+                total_seasons=details.get("number_of_seasons", 0),
+                total_episodes=details.get("number_of_episodes", 0),
+                network=network_name,
+                language=details.get("original_language", ""),
+                official_site=details.get("homepage"),
+                seasons=seasons,
+                episodes=[]
+            )
+
         movie_data = MovieData(
             tmdb_id=str(tmdb_id),
             title=title,
@@ -257,7 +289,7 @@ async def get_details(
             where_to_watch=watch_options,
             extra_images=extra_images[:10],
             ai_notes=str(creative.get("ai_notes") or ""),
-            tv_show=None,  # Will be populated later if needed
+            tv_show=tv_show_data,
             wikipedia=wiki_enrichment,
             budget=_format_currency(details.get("budget")),
             revenue=_format_currency(details.get("revenue")),

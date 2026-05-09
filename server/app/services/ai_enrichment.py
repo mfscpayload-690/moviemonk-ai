@@ -132,6 +132,17 @@ async def generate_creative_fields(
                 ai_notes = "\n".join([str(item) for item in ai_notes])
             ai_notes = str(ai_notes)
 
+            # Sanitize technical_specs
+            specs = parsed.get("technical_specs")
+            if isinstance(specs, str):
+                try:
+                    import json
+                    specs = json.loads(specs)
+                except:
+                    specs = {}
+            if not isinstance(specs, dict):
+                specs = {}
+
             return {
                 "summary_short": str(parsed.get("summary_short") or "")[:300],
                 "summary_medium": str(parsed.get("summary_medium") or "")[:600],
@@ -140,7 +151,7 @@ async def generate_creative_fields(
                 "ai_notes": ai_notes,
                 "vibe_check": str(parsed.get("vibe_check") or ""),
                 "best_watched_with": str(parsed.get("best_watched_with") or ""),
-                "technical_specs": parsed.get("technical_specs") or {},
+                "technical_specs": specs,
             }
     except httpx.TimeoutException:
         logger.warning("Groq timed out after %.1fs", timeout_seconds)

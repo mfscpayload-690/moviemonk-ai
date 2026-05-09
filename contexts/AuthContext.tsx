@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Wait a tick for Supabase to process OAuth callback from URL hash
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { data, error: sessionError } = await supabase!.auth.getSession();
         if (sessionError) throw sessionError;
         if (!isMounted) return;
         setSession(data.session ?? null);
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+    } = supabase!.auth.onAuthStateChange((event, nextSession) => {
       if (isMounted) {
         setSession(nextSession ?? null);
         setUser(nextSession?.user ?? null);
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (emailType) {
-           await supabase.functions.invoke('send-email', {
+           await supabase!.functions.invoke('send-email', {
               body: {
                  email: currentUser.email,
                  name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || 'Movie Fan',
