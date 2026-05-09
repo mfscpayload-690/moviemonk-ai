@@ -12,10 +12,13 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+import { API_BASE_URL } from './config';
+
+const API_BASE = API_BASE_URL || '';
 
 export function getApiUrl(path: string): string {
-  const url = new URL(`${API_BASE}${path}`, window.location.origin);
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+  const url = new URL(`${API_BASE}${path}`, origin);
   return API_BASE.startsWith('http') ? url.toString() : `${url.pathname}${url.search}`;
 }
 
@@ -32,11 +35,22 @@ async function fetchWithHandler<T>(url: string, options: RequestInit): Promise<T
     const response = await fetch(url, { ...options, headers });
 
     let data;
-    const contentType = response.headers.get('content-type');
+    const contentType = response.headers?.get?.('content-type');
+    const text = await response.text();
+    
     if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        data = text;
+      }
     } else {
-      data = await response.text();
+      // Fallback for environments/mocks without proper headers
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
     }
 
     if (!response.ok || (data && typeof data === 'object' && data.ok === false)) {
@@ -72,7 +86,8 @@ export async function apiGet<T>(
   signal?: AbortSignal
 ): Promise<T> {
   // Use a dummy base if API_BASE is relative or empty, to parse URL properly
-  const url = new URL(`${API_BASE}${path}`, window.location.origin);
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+  const url = new URL(`${API_BASE}${path}`, origin);
 
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
