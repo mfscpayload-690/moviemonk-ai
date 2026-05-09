@@ -18,6 +18,7 @@ import { FilterPanel } from './FilterPanel';
 import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
+import { apiGet } from '../lib/apiClient';
 import '../styles/dynamic-search-island.css';
 
 // Helper to get icon component by suggestion type
@@ -110,9 +111,7 @@ const fetchTmdbResults = async (
   });
 
   try {
-    const response = await fetch(`/api/tmdb?${query.toString()}`);
-    if (!response.ok) return [];
-    const payload = await response.json();
+    const payload = await apiGet<any>('/api/tmdb', Object.fromEntries(query.entries()));
     return Array.isArray(payload?.results) ? payload.results : [];
   } catch {
     return [];
@@ -262,8 +261,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
     if (!genresLoadedRef.current) {
       const fetchGenres = async () => {
         try {
-          const res = await fetch('/api/tmdb?endpoint=genre/movie/list');
-          const data = await res.json();
+          const data = await apiGet<any>('/api/tmdb', { endpoint: 'genre/movie/list' });
           if (Array.isArray(data?.genres)) {
             setGenres(data.genres);
             genresLoadedRef.current = true;
@@ -496,15 +494,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const request = fetch(`/api/suggest?q=${encodeURIComponent(rawQuery.trim())}`, {
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          return [] as SuggestionItem[];
-        }
-
-        const payload = await response.json();
+    const request = apiGet<any>('/api/suggest', { q: rawQuery.trim() }, controller.signal)
+      .then(async (payload) => {
         const nextSuggestions = Array.isArray(payload?.suggestions)
           ? payload.suggestions.filter((candidate: any) => typeof candidate?.title === 'string')
           : [];

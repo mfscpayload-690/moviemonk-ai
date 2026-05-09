@@ -214,6 +214,25 @@ export interface MovieData {
 
   // TV Show specific data (optional, only for type === 'show')
   tvShow?: TVShowData;
+
+  // Premium Metadata (Financials & Tech)
+  budget?: string;
+  revenue?: string;
+  technical_specs?: TechnicalSpecs;
+
+  // Contextual & Safety
+  content_rating?: string;
+  vibe_check?: string;
+  content_advisory?: string[];
+  best_watched_with?: string;
+  related?: RelatedTitle[];
+}
+
+export interface TechnicalSpecs {
+  camera?: string;
+  aspect_ratio?: string;
+  audio_format?: string;
+  color?: string;
 }
 
 export interface WatchlistItem {
@@ -235,6 +254,7 @@ export interface WatchlistFolder {
   id: string;
   name: string;
   icon?: string;
+  is_public?: boolean;
   items: WatchlistItem[];
 }
 

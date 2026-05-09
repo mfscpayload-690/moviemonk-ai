@@ -1,0 +1,22 @@
+# Web framework
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+
+# Async HTTP client
+httpx==0.28.1
+
+# Validation & settings
+pydantic==2.11.3
+pydantic-settings==2.9.1
+
+# Redis async client with C extension
+redis[hiredis]==5.3.0
+
+# Supabase (server-side auth + DB)
+supabase==2.15.2
+
+# JWT verification
+python-jose[cryptography]==3.4.0
+
+# Structured logging
+python-json-logger==3.3.0

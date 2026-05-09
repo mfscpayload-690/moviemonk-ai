@@ -9,9 +9,9 @@ import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { NoticeDialog } from './components/BrandedDialogs';
 import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt } from './types';
-import { fetchFullPlotDetails } from './services/aiService';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
+import { apiGet, apiPost } from './lib/apiClient';
+import { CheckIcon, ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { track } from '@vercel/analytics/react';
 import { useCloudWatchlists } from './hooks/useCloudWatchlists';
@@ -66,7 +66,6 @@ const App: React.FC = () => {
 
   const [movieData, setMovieData] = useState<MovieData | null>(null);
   const [personData, setPersonData] = useState<any | null>(null);
-  const [sources, setSources] = useState<GroundingSource[] | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('groq');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +82,7 @@ const App: React.FC = () => {
   const [quickSaveNewFolderName, setQuickSaveNewFolderName] = useState('');
   const [quickSaveNewFolderColor, setQuickSaveNewFolderColor] = useState(QUICK_SAVE_DEFAULT_COLOR);
   const [quickSaveNewFolderIcon, setQuickSaveNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+  const [quickSaveNewFolderPublic, setQuickSaveNewFolderPublic] = useState(false);
   const [shareFallbackLink, setShareFallbackLink] = useState<string | null>(null);
   const quickSaveDialogRef = useRef<HTMLDivElement | null>(null);
   const quickSavePreviousFocusRef = useRef<HTMLElement | null>(null);
@@ -107,6 +107,7 @@ const App: React.FC = () => {
     setQuickSaveNewFolderName(next.newFolderName);
     setQuickSaveNewFolderColor(next.newFolderColor);
     setQuickSaveNewFolderIcon(next.newFolderIcon);
+    setQuickSaveNewFolderPublic(false);
   }, []);
 
   // Lock body scroll when quick-save modal is open
@@ -266,6 +267,7 @@ const App: React.FC = () => {
     setQuickSaveNewFolderName(next.newFolderName);
     setQuickSaveNewFolderColor(next.newFolderColor);
     setQuickSaveNewFolderIcon(next.newFolderIcon);
+    setQuickSaveNewFolderPublic(false);
   }, [watchlists]);
 
   const handleConfirmQuickSave = useCallback(async () => {
@@ -273,7 +275,7 @@ const App: React.FC = () => {
 
     let folderId = quickSaveFolderId;
     if (!folderId && quickSaveNewFolderName.trim()) {
-      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderIcon) || '';
+      folderId = addFolder(quickSaveNewFolderName, quickSaveNewFolderColor, quickSaveNewFolderIcon, quickSaveNewFolderPublic) || '';
     }
 
     if (!folderId) return;
@@ -395,7 +397,6 @@ const App: React.FC = () => {
       startTransition(() => {
         setPersonData(cached);
         setMovieData(null);
-        setSources(cached?.sources || null);
         setCurrentView('person');
         if (titleHint || cached?.person?.name) {
           setCurrentQuery(titleHint || cached?.person?.name || '');
@@ -410,12 +411,11 @@ const App: React.FC = () => {
       setError(null);
     }
     try {
-      const data = await fetch(`/api/person/${personId}`).then(r => r.json());
+      const data = await apiGet<any>(`/api/person/${personId}`);
       cacheSet('person', personCacheKey(personId), data);
       startTransition(() => {
         setPersonData(data);
         setMovieData(null);
-        setSources(data?.sources || null);
         setCurrentView('person');
         if (titleHint || data?.person?.name) {
           setCurrentQuery(titleHint || data?.person?.name || '');
@@ -490,7 +490,6 @@ const App: React.FC = () => {
       setCurrentView('discovery');
       setMovieData(null);
       setPersonData(null);
-      setSources(null);
       setCurrentQuery('');
     });
     scrollMainContentToTop();
@@ -523,15 +522,18 @@ const App: React.FC = () => {
     const cached = cacheGet<any>('movie', cKey);
     if (cached) {
       debugLog('[cache] movie hit', item.id, item.mediaType);
+      // Migration: Handle legacy cache format where the entire response envelope was cached
+      const actualData = (cached.ok === true && cached.data) ? cached.data : cached;
+      const actualSources = (cached.ok === true && cached.sources) ? cached.sources : null;
+
       // Start loading LCP images immediately before React re-renders
-      if (cached.poster_url) { const img = new Image(); img.src = cached.poster_url; }
-      if (cached.backdrop_url) { const img = new Image(); img.src = cached.backdrop_url; }
+      if (actualData.poster_url) { const img = new Image(); img.src = actualData.poster_url; }
+      if (actualData.backdrop_url) { const img = new Image(); img.src = actualData.backdrop_url; }
       startTransition(() => {
-        setMovieData(cached);
+        setMovieData(actualData);
         setPersonData(null);
-        setSources([{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
         setCurrentView('movie');
-        setCurrentQuery(cached?.title || '');
+        setCurrentQuery(actualData?.title || '');
       });
       return;
     }
@@ -539,18 +541,14 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const detailsRes = await fetch(
-        `/api/ai?action=details&id=${item.id}&media_type=${item.mediaType}&provider=${activeProvider}`
+      const response = await apiGet<any>(
+        `/api/details/${item.mediaType}/${item.id}`
       );
-      if (!detailsRes.ok) {
-        throw new Error('Failed to load title details');
-      }
-      const detailsData = await detailsRes.json();
+      const detailsData = response.data;
       cacheSet('movie', cKey, detailsData);
       startTransition(() => {
         setMovieData(detailsData);
         setPersonData(null);
-        setSources([{ web: { uri: `https://www.themoviedb.org/${item.mediaType}/${item.id}`, title: 'The Movie Database (TMDB)' } }]);
         setCurrentView('movie');
         setCurrentQuery(detailsData?.title || '');
       });
@@ -576,7 +574,6 @@ const App: React.FC = () => {
       setCurrentView('search');
       setMovieData(null);
       setPersonData(null);
-      setSources(null);
       setShortlistCandidates(null);
     });
     if (!options.skipNavigate) {
@@ -646,13 +643,9 @@ const App: React.FC = () => {
   const handleBriefMe = useCallback(async (name: string) => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: name, mode: 'detailed' })
-      });
-      const json = await res.json();
-      if (json?.ok) {
+      const json = await apiPost<any>('/api/query', { q: name, mode: 'detailed' });
+      
+      if (json?.ok && json?.summary) {
         startTransition(() => {
           setSummaryModal({ title: name, short: json?.summary?.summary_short, long: json?.summary?.summary_long });
         });
@@ -718,7 +711,6 @@ const App: React.FC = () => {
       setCurrentView('search');
       setMovieData(null);
       setPersonData(null);
-      setSources(null);
       if (route.query) {
         track('shared_link_opened', { query: route.query, type: 'search-route' });
       }
@@ -877,6 +869,23 @@ const App: React.FC = () => {
                     />
                   </div>
                   <WatchlistIconPicker selectedIcon={quickSaveNewFolderIcon} onSelect={setQuickSaveNewFolderIcon} compactLabel="Pick a folder icon" />
+                  <div className="flex items-center gap-3 py-1">
+                    <label className="flex items-center gap-2.5 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={quickSaveNewFolderPublic}
+                        onChange={(e) => setQuickSaveNewFolderPublic(e.target.checked)}
+                      />
+                      <div 
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${quickSaveNewFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
+                        aria-hidden="true"
+                      >
+                        {quickSaveNewFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                      </div>
+                      <span className="text-sm text-brand-text-light font-medium select-none">Make this watchlist public</span>
+                    </label>
+                  </div>
                   <p className="text-xs text-brand-text-dark">If you type a new folder name, it will be created when you save.</p>
                 </div>
 
@@ -1003,9 +1012,11 @@ const App: React.FC = () => {
                 key={movieData?.tmdb_id ?? 'movie-display'}
                 movie={movieData}
                 isLoading={isLoading}
-                sources={sources}
                 selectedProvider={selectedProvider}
-                onFetchFullPlot={fetchFullPlotDetails}
+                onFetchFullPlot={async (title: string, year: string, type: string) => {
+                  const res = await apiPost<any>('/api/query', { q: `${title} (${year})`, mode: 'full_plot' });
+                  return res?.summary?.summary_long || "Plot details unavailable";
+                }}
                 onQuickSearch={handleQuickSearch}
                 onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
                 watchlists={watchlists}

@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
@@ -14,17 +14,17 @@ import { useActionFeedback } from '../hooks/useActionFeedback';
 import SeoHead from './SeoHead';
 import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
 import { loadPreferenceSettings } from '../lib/userSettings';
+import { apiGet } from '../lib/apiClient';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
     isLoading: boolean;
-    sources: GroundingSource[] | null;
     selectedProvider: AIProvider;
     onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
     onQuickSearch: (title: string) => void;
     onOpenTitle?: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
     watchlists: WatchlistFolder[];
-    onCreateWatchlist: (name: string, color: string, icon?: string) => string | null;
+    onCreateWatchlist: (name: string, color: string, icon?: string, isPublic?: boolean) => string | null;
     onSaveToWatchlist: (folderId: string, movie: MovieData, savedTitle?: string) => void;
     isWatched?: boolean;
     onToggleWatched?: () => void;
@@ -219,9 +219,25 @@ const DISCOVER_TITLES = [
 
 const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
 
-const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, selectedProvider, onFetchFullPlot, onQuickSearch, onOpenTitle, watchlists, onCreateWatchlist, onSaveToWatchlist, isWatched = false, onToggleWatched, onToggleRelatedWatched, isRelatedWatched, onQuickSaveToWatchlist }) => {
+const MovieDisplay: React.FC<MovieDisplayProps> = ({
+    movie,
+    isLoading,
+    selectedProvider,
+    onFetchFullPlot,
+    onQuickSearch,
+    onOpenTitle,
+    watchlists,
+    onCreateWatchlist,
+    onSaveToWatchlist,
+    isWatched = false,
+    onToggleWatched,
+    onToggleRelatedWatched,
+    isRelatedWatched,
+    onQuickSaveToWatchlist
+}) => {
     useRenderCounter('MovieDisplay');
     const { triggerFeedback, isFeedbackActive } = useActionFeedback();
+    const activeTmdbIdRef = useRef<string | null>(null);
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
@@ -237,6 +253,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#7c3aed');
     const [newFolderIcon, setNewFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
+    const [newFolderPublic, setNewFolderPublic] = useState(false);
     const [customSavedTitle, setCustomSavedTitle] = useState('');
     const [showRelatedModal, setShowRelatedModal] = useState(false);
     const [autoplayTrailers, setAutoplayTrailers] = useState(loadPreferenceSettings().autoplayTrailers);
@@ -282,6 +299,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         setNewFolderName('');
         setNewFolderColor('#7c3aed');
         setNewFolderIcon(WATCHLIST_ICON_DEFAULT);
+        setNewFolderPublic(false);
     }, [movie, watchlists]);
 
     useEffect(() => {
@@ -298,6 +316,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
     useEffect(() => {
         if (showWatchlistModal) {
             setSelectedFolderId('');
+            setNewFolderPublic(false);
         }
     }, [showWatchlistModal]);
 
@@ -343,7 +362,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         if (!movie) return;
         let folderId = selectedFolderId;
         if (!folderId && newFolderName.trim()) {
-            const createdId = onCreateWatchlist(newFolderName, newFolderColor, newFolderIcon);
+            const createdId = onCreateWatchlist(newFolderName, newFolderColor, newFolderIcon, newFolderPublic);
             if (createdId) {
                 folderId = createdId;
                 setSelectedFolderId(createdId);
@@ -521,9 +540,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
             page: String(page)
         });
         if (language) params.set('language', language);
-        const response = await fetch(`/api/tmdb?${params.toString()}`);
-        if (!response.ok) throw new Error('Failed to fetch TMDB reviews');
-        const data = await response.json();
+        const data = await apiGet<any>('/api/tmdb', Object.fromEntries(params.entries()));
         return {
             reviews: normalizeTmdbReviews(data),
             totalPages: data?.total_pages ?? 1
@@ -543,6 +560,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
     const loadReviews = useCallback(async () => {
         if (!movie?.tmdb_id) return;
+        const currentId = movie.tmdb_id;
+        activeTmdbIdRef.current = currentId;
+        const isStillActive = () => activeTmdbIdRef.current === currentId;
+
         const mediaType = movie.tvShow ? 'tv' : 'movie';
         setReviews([]);
         setExpandedRev(null);
@@ -554,7 +575,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
         const preferredLanguage = movie.language && movie.language.trim() ? movie.language.trim() : undefined;
 
         try {
-            const primary = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, 1, 'en-US');
+            const primary = await fetchTmdbReviewsPage(mediaType, currentId, 1, 'en-US');
+            if (!isStillActive()) return;
+
             let merged = primary.reviews;
             let sourceLabel = 'TMDB';
 
@@ -567,19 +590,22 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
                 for (const language of fallbackLanguages) {
                     try {
-                        const next = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, 1, language);
+                        const next = await fetchTmdbReviewsPage(mediaType, currentId, 1, language);
+                        if (!isStillActive()) return;
                         merged = dedupeReviews([...merged, ...next.reviews]);
                     } catch {
-                        // Best-effort fallback, ignore per-language failure.
+                        // Best-effort fallback
                     }
                 }
             }
 
+            // Only fetch recommendations reviews if we still have almost nothing
             if (merged.length < 2) {
                 try {
-                    const recEndpoint = `${mediaType}/${movie.tmdb_id}/recommendations`;
-                    const recResponse = await fetch(`/api/tmdb?endpoint=${encodeURIComponent(recEndpoint)}&language=en-US&page=1`);
-                    const recData = await recResponse.json();
+                    const recEndpoint = `${mediaType}/${currentId}/recommendations`;
+                    const recData = await apiGet<any>('/api/tmdb', { endpoint: recEndpoint, language: 'en-US', page: 1 });
+                    if (!isStillActive()) return;
+
                     const recIds: number[] = Array.isArray(recData?.results)
                         ? recData.results.slice(0, 4).map((entry: any) => entry?.id).filter(Boolean)
                         : [];
@@ -590,28 +616,36 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         if (merged.length >= 8) break;
                         try {
                             const related = await fetchTmdbReviewsPage(mediaType, String(recId), 1, 'en-US');
+                            if (!isStillActive()) return;
                             merged = dedupeReviews([...merged, ...related.reviews]);
                         } catch {
-                            // Ignore per-title review fetch failures.
+                            // Ignore
                         }
                     }
                 } catch {
-                    // Keep base reviews only when recommendations fail.
+                    // Ignore
                 }
             }
 
-            setReviews(merged);
-            setRevTotal(primary.totalPages);
-            setReviewsSourceLabel(sourceLabel);
+            if (isStillActive()) {
+                setReviews(merged);
+                setRevTotal(primary.totalPages);
+                setReviewsSourceLabel(sourceLabel);
+            }
         } catch {
-            setReviews([]);
+            if (isStillActive()) setReviews([]);
         } finally {
-            setRevLoading(false);
+            if (isStillActive()) setRevLoading(false);
         }
     }, [dedupeReviews, fetchTmdbReviewsPage, movie?.language, movie?.tmdb_id, movie?.tvShow]);
 
     useEffect(() => {
-        if (!movie?.tmdb_id) return;
+        if (!movie?.tmdb_id) {
+            setReviews([]);
+            return;
+        }
+        // Clear immediately to avoid showing stale data during transitions
+        setReviews([]);
         void loadReviews();
     }, [loadReviews, movie?.tmdb_id]);
 
@@ -772,6 +806,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     <span key={genre} className="px-2 py-1 md:px-3 md:py-1.5 bg-white/20 text-white text-xs md:text-sm font-bold rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">{genre}</span>
                                 ))}
                             </div>
+
 
                             <div className="mt-3 md:mt-6 flex flex-wrap justify-center sm:justify-start gap-2 md:gap-4 items-center animate-slide-up" style={{ animationDelay: '0.45s', animationFillMode: 'forwards' }}>
                                 {/* Ratings Grid - With hover effects and improved touch targets */}
@@ -1022,13 +1057,13 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
 
                 <div className="lg:col-span-1 space-y-8">
                     {/* Similar Titles above Where to Watch */}
-                    {Array.isArray((movie as any).related) && (movie as any).related.length > 0 && (
+                    {movie.related && movie.related.length > 0 && (
                         <Section title="Similar Titles">
                             <div className="space-y-3">
                                 {/* Horizontal scroll with fade indicator */}
                                 <div className="horizontal-scroll-fade-right relative">
                                     <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth">
-                                        {(movie as any).related.slice(0, 12).map((it: any, idx: number) => renderRelatedTile(it, idx, 'inline'))}
+                                        {movie.related.slice(0, 12).map((it: any, idx: number) => renderRelatedTile(it, idx, 'inline'))}
                                     </div>
                                 </div>
                                 <div className="flex justify-end">
@@ -1037,6 +1072,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                             </div>
                         </Section>
                     )}
+
                     <Section title="Where to Watch">
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                             {safeWhereToWatch.length > 0 ? (
@@ -1053,15 +1089,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                         </div>
                     </Section>
 
-                    {sources && sources.length > 0 && (
-                        <Section title="Data Sources">
-                            <div className="space-y-3">
-                                {sources.map((source, index) => (
-                                    source.web && <SourceCard key={index} source={source.web} />
-                                ))}
-                            </div>
-                        </Section>
-                    )}
                 </div>
             </div>
 
@@ -1146,51 +1173,53 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                             ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
                                             : null;
                                         return (
-                                            <div key={rev.id} className="flex flex-col rounded-2xl p-5 bg-white/[0.03] border border-white/6 hover:border-white/10 hover:bg-white/[0.05] transition-all duration-200">
+                                            <div key={rev.id} className="flex flex-col rounded-2xl p-5 bg-brand-surface/60 backdrop-blur-md border border-white/10 hover:border-brand-primary/30 hover:bg-brand-surface/80 transition-all duration-300 shadow-xl group">
                                                 {/* Author row */}
-                                                <div className="flex items-start gap-3 mb-3">
+                                                <div className="flex items-start gap-3 mb-4">
                                                     {/* Avatar */}
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-violet-600/60 to-pink-600/60 flex items-center justify-center border border-white/10 mt-0.5">
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary/60 to-brand-secondary/60 flex items-center justify-center border border-white/10 mt-0.5 group-hover:scale-105 transition-transform duration-300">
                                                         {rev.avatar_url ? (
                                                             <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
                                                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                             />
                                                         ) : (
-                                                            <span className="text-sm font-bold text-white/80">{rev.author[0]?.toUpperCase() || '?'}</span>
+                                                            <span className="text-sm font-bold text-white/90">{rev.author[0]?.toUpperCase() || '?'}</span>
                                                         )}
                                                     </div>
                                                     {/* Name + meta */}
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-semibold text-sm text-white leading-tight truncate">{rev.author}</p>
-                                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                        <p className="font-bold text-sm text-white leading-tight truncate group-hover:text-brand-primary transition-colors">{rev.author}</p>
+                                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                             {rev.rating !== null && (
-                                                                <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                                                <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-md border border-amber-500/20">
                                                                     ★ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}<span className="text-amber-400/50">/10</span>
                                                                 </span>
                                                             )}
-                                                            {date && <span className="text-[10px] text-brand-text-dark">{date}</span>}
+                                                            {date && <span className="text-[10px] font-medium text-brand-text-dark tracking-wide uppercase">{date}</span>}
                                                         </div>
                                                     </div>
                                                     {/* TMDB link */}
                                                     {rev.url && (
                                                         <a href={rev.url} target="_blank" rel="noopener noreferrer"
-                                                            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg text-brand-text-dark hover:text-brand-primary hover:bg-white/10 transition-all"
+                                                            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg text-brand-text-dark hover:text-brand-primary hover:bg-brand-primary/10 transition-all border border-transparent hover:border-brand-primary/20"
                                                             title="Full review on TMDB" aria-label="Read full review on TMDB"
                                                         >
-                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                            </svg>
+                                                            <LinkIcon className="w-3.5 h-3.5" />
                                                         </a>
                                                     )}
                                                 </div>
                                                 {/* Divider */}
-                                                <div className="border-t border-white/5 mb-3" />
+                                                <div className="border-t border-white/5 mb-4" />
                                                 {/* Review text */}
-                                                <p className="text-[13px] text-brand-text-light leading-relaxed flex-1">{text}</p>
+                                                <div className="flex-1 overflow-hidden">
+                                                    <p className="text-[13px] text-brand-text-light leading-relaxed font-medium">
+                                                        {text}
+                                                    </p>
+                                                </div>
                                                 {isLong && (
                                                     <button
                                                         onClick={() => setExpandedRev(isExp ? null : rev.id)}
-                                                        className="mt-3 text-[11px] text-brand-primary hover:text-brand-secondary font-semibold transition-colors self-start flex items-center gap-1"
+                                                        className="mt-4 text-[11px] text-brand-primary hover:text-brand-accent font-bold transition-colors self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-primary/5 hover:bg-brand-primary/10 border border-brand-primary/10"
                                                     >
                                                         {isExp ? (
                                                             <><span>Show less</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg></>
@@ -1209,24 +1238,28 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                     <div className="flex justify-center mt-6">
                                         <button
                                             onClick={async () => {
+                                                if (!movie?.tmdb_id) return;
+                                                const currentId = movie.tmdb_id;
+
                                                 if (reviewsVisible < reviews.length) {
                                                     setReviewsVisible(v => Math.min(v + 2, reviews.length));
                                                     return;
                                                 }
-                                                if (reviewsPage >= reviewsTotalPages || !movie?.tmdb_id) return;
+                                                if (reviewsPage >= reviewsTotalPages) return;
 
                                                 const nextPage = reviewsPage + 1;
-                                                const mediaType = movie?.tvShow ? 'tv' : 'movie';
+                                                const mediaType = movie.tvShow ? 'tv' : 'movie';
                                                 setRevLoadMore(true);
                                                 try {
-                                                    const next = await fetchTmdbReviewsPage(mediaType, movie.tmdb_id, nextPage, 'en-US');
+                                                    const next = await fetchTmdbReviewsPage(mediaType, currentId, nextPage, 'en-US');
+                                                    if (activeTmdbIdRef.current !== currentId) return;
                                                     setReviews(prev => dedupeReviews([...prev, ...next.reviews]));
                                                     setReviewsVisible(prev => prev + 2);
                                                     setReviewsPage(nextPage);
                                                 } catch {
                                                     // Keep existing reviews on transient errors.
                                                 } finally {
-                                                    setRevLoadMore(false);
+                                                    if (activeTmdbIdRef.current === currentId) setRevLoadMore(false);
                                                 }
                                             }}
                                             disabled={reviewsLoadingMore}
@@ -1308,6 +1341,23 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({ movie, isLoading, sources, 
                                 <p className="text-xs text-red-400">{newFolderNameError}</p>
                             )}
                             <WatchlistIconPicker selectedIcon={newFolderIcon} onSelect={setNewFolderIcon} compactLabel="Pick a folder icon" />
+                            <div className="flex items-center gap-3 py-1">
+                                <label className="flex items-center gap-2.5 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={newFolderPublic}
+                                        onChange={(e) => setNewFolderPublic(e.target.checked)}
+                                    />
+                                    <div 
+                                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${newFolderPublic ? 'bg-brand-primary border-brand-primary' : 'border-white/20 group-hover:border-white/40'}`}
+                                        aria-hidden="true"
+                                    >
+                                        {newFolderPublic && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                                    </div>
+                                    <span className="text-sm text-brand-text-light font-medium select-none">Make this watchlist public</span>
+                                </label>
+                            </div>
                             <p className="text-xs text-brand-text-dark">Pick an icon so the folder stands out on your watchlists page.</p>
                         </div>
 
@@ -1589,8 +1639,7 @@ const CrewCard: React.FC<{ name: string; role: string; onClick: () => void }> = 
             return;
         }
         let cancelled = false;
-        fetch(`/api/resolveEntity?q=${encodeURIComponent(name)}`)
-            .then(r => r.json())
+        apiGet<any>('/api/resolve', { q: name })
             .then(data => {
                 if (cancelled) return;
                 // Pick the top person candidate's profile_url
@@ -1755,18 +1804,6 @@ const WatchCard: React.FC<{ option: WatchOption }> = ({ option }) => {
     );
 };
 
-
-const SourceCard: React.FC<{ source: WebSource }> = ({ source }) => (
-    <a href={source.uri} target="_blank" rel="noopener noreferrer" className="flex items-start space-x-2 md:space-x-3 bg-white/5 p-2 md:p-3 rounded-lg hover:bg-brand-primary/20 transition-colors group">
-        <div className="flex-shrink-0 bg-brand-primary/20 p-1.5 md:p-2 rounded-md mt-1">
-            <LinkIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-brand-primary group-hover:text-white transition-colors" />
-        </div>
-        <div>
-            <p className="font-semibold text-xs md:text-sm text-brand-text-light line-clamp-2 leading-tight">{source.title}</p>
-            <p className="text-xs text-brand-text-dark truncate">{source.uri}</p>
-        </div>
-    </a>
-);
 
 
 export default MovieDisplay;

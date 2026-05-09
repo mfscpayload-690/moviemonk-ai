@@ -15,7 +15,7 @@ interface CacheEntry<T> {
 }
 
 function storageKey(namespace: string, id: string): string {
-  return `mm_cache:${namespace}:${id}`;
+  return `mm_cache_v2:${namespace}:${id}`;
 }
 
 /** Write a value to sessionStorage cache. Silently ignores QuotaExceededError. */

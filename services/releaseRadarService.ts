@@ -1,4 +1,5 @@
 import { DiscoveryItem, WatchlistFolder } from '../types';
+import { apiGet } from '../lib/apiClient';
 
 const RELEASE_RADAR_CACHE_KEY = 'moviemonk_release_radar_v4';
 const RELEASE_RADAR_LIMIT = 12;
@@ -132,9 +133,7 @@ async function fetchTmdbResults(
   });
 
   try {
-    const response = await fetch(`/api/tmdb?${query.toString()}`);
-    if (!response.ok) return [];
-    const payload = await response.json();
+    const payload = await apiGet<any>('/api/tmdb', { endpoint, ...params });
     return Array.isArray(payload?.results) ? payload.results : [];
   } catch {
     return [];
@@ -142,18 +141,20 @@ async function fetchTmdbResults(
 }
 
 async function fetchGenreIdMap(): Promise<Map<string, number>> {
-  const response = await fetch('/api/tmdb?endpoint=genre/movie/list&language=en-US');
-  if (!response.ok) return new Map();
-  const payload = await response.json();
-  const genres = Array.isArray(payload?.genres) ? payload.genres : [];
-  const map = new Map<string, number>();
-  genres.forEach((entry: any) => {
-    if (typeof entry?.id !== 'number') return;
-    const name = typeof entry?.name === 'string' ? entry.name.trim().toLowerCase() : '';
-    if (!name) return;
-    map.set(name, entry.id);
-  });
-  return map;
+  try {
+    const payload = await apiGet<any>('/api/tmdb', { endpoint: 'genre/movie/list', language: 'en-US' });
+    const genres = Array.isArray(payload?.genres) ? payload.genres : [];
+    const map = new Map<string, number>();
+    genres.forEach((entry: any) => {
+      if (typeof entry?.id !== 'number') return;
+      const name = typeof entry?.name === 'string' ? entry.name.trim().toLowerCase() : '';
+      if (!name) return;
+      map.set(name, entry.id);
+    });
+    return map;
+  } catch {
+    return new Map();
+  }
 }
 
 async function resolvePersonIds(names: string[]): Promise<number[]> {

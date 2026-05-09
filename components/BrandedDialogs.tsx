@@ -218,6 +218,7 @@ export interface PromptDialogProps {
   busy?: boolean;
   value: string;
   error?: string | null;
+  children?: React.ReactNode;
   onChange: (nextValue: string) => void;
   onConfirm: () => void;
   onClose: () => void;
@@ -237,7 +238,8 @@ export function PromptDialog({
   error,
   onChange,
   onConfirm,
-  onClose
+  onClose,
+  children
 }: PromptDialogProps) {
   return (
     <DialogShell
@@ -263,21 +265,24 @@ export function PromptDialog({
         </>
       )}
     >
-      <div className="space-y-3">
-        <input
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className={`mm-dialog-input ${error ? 'is-invalid' : ''}`}
-          placeholder={placeholder}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !busy) {
-              event.preventDefault();
-              onConfirm();
-            }
-          }}
-        />
-        {error && <p className="mm-dialog-error" role="alert">{error}</p>}
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className={`mm-dialog-input ${error ? 'is-invalid' : ''}`}
+            placeholder={placeholder}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !busy) {
+                event.preventDefault();
+                onConfirm();
+              }
+            }}
+          />
+          {error && <p className="mm-dialog-error" role="alert">{error}</p>}
+        </div>
+        {children}
       </div>
     </DialogShell>
   );

@@ -7,16 +7,15 @@
 import { MovieData, ChatMessage, QueryComplexity, FetchResult } from '../types';
 import { ParsedQuery, formatForAIPrompt, parseQuery } from './queryParser';
 import { sanitizeMovieData } from './movieDataValidation';
+import { apiGet } from '../lib/apiClient';
 
 const PERPLEXITY_API = 'https://api.perplexity.ai/chat/completions';
 
 async function fetchViaServerDetails(parsed: ParsedQuery): Promise<MovieData | null> {
   try {
     const query = parsed.originalQuery || parsed.title;
-    const searchRes = await fetch(`/api/ai?action=search&q=${encodeURIComponent(query)}`);
-    if (!searchRes.ok) return null;
-
-    const searchJson: any = await searchRes.json();
+    const searchJson = await apiGet<any>('/api/search', { q: query });
+    
     const best = (searchJson?.results || []).find(
       (item: any) => item && item.type === 'movie' && Number.isFinite(item.id)
     );
@@ -24,13 +23,8 @@ async function fetchViaServerDetails(parsed: ParsedQuery): Promise<MovieData | n
     if (!best) return null;
 
     const mediaType = best.media_type === 'tv' ? 'tv' : 'movie';
-    const detailsRes = await fetch(
-      `/api/ai?action=details&id=${best.id}&media_type=${mediaType}&provider=perplexity`
-    );
+    const details = await apiGet<any>(`/api/details/${mediaType}/${best.id}`);
 
-    if (!detailsRes.ok) return null;
-
-    const details: any = await detailsRes.json();
     return sanitizeMovieData(details);
   } catch {
     return null;

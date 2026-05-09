@@ -12,6 +12,7 @@ import { toMetaDescription } from '../lib/seo';
 import { emitClientEvent } from '../services/clientObservability';
 import { applyRankingFeedback, recordQueryFeedback, recordResultFeedback } from '../services/rankingFeedback';
 import { streamGroqText } from '../services/groqService';
+import { apiGet, apiPost } from '../lib/apiClient';
 import '../styles/search-results-page.css';
 
 interface SearchResultsPageProps {
@@ -307,15 +308,9 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         };
 
         try {
-          const vibeResponse = await fetch('/api/vibe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: controller.signal,
-            body: JSON.stringify({ q: query.trim() })
-          });
+          const vibe = await apiPost<VibeParseResult>('/api/vibe', { q: query.trim() }, controller.signal);
 
-          if (vibeResponse.ok) {
-            const vibe = (await vibeResponse.json()) as VibeParseResult;
+          if (vibe) {
             searchBody.vibe = vibe;
             const fallback = (vibe.fallback_query_terms || []).join(' ').trim();
             if (fallback) {
@@ -337,14 +332,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           // Fall back to raw search query when vibe parsing fails.
         }
 
-        const response = await fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify(searchBody)
-        });
-        if (!response.ok) throw new Error(`Search failed (${response.status})`);
-        const data = (await response.json()) as SearchPageResponse;
+        const data = await apiPost<SearchPageResponse>('/api/search', searchBody, controller.signal);
         setPayload(data);
         emitClientEvent({
           event: 'search_request_succeeded',
@@ -357,12 +345,11 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
         const noTitles = (data.results?.length || 0) === 0;
         if (noTitles) {
-          const suggestRes = await fetch(`/api/suggest?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal });
-          if (suggestRes.ok) {
-            const suggestData = await suggestRes.json();
+          try {
+            const suggestData = await apiGet<{ suggestions: SuggestionItem[] }>('/api/suggest', { q: query.trim() }, controller.signal);
             const nextSuggestions = Array.isArray(suggestData?.suggestions) ? suggestData.suggestions : [];
             setEmptySuggestions(nextSuggestions.slice(0, 5));
-          } else {
+          } catch {
             setEmptySuggestions([]);
           }
         } else {
@@ -434,21 +421,15 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       } catch {
         // Fallback to query endpoint when stream fails.
         try {
-          const response = await fetch('/api/query', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              q: `${hero.title}${hero.year ? ` ${hero.year}` : ''}`,
-              mode: 'short'
-            }),
-            signal: controller.signal
-          });
-
-          if (!response.ok) return;
-          const data = await response.json();
-          const nextSnippet = data?.summary?.summary_short;
-          if (!cancelled && typeof nextSnippet === 'string' && nextSnippet.trim()) {
-            setHeroAiSnippet(nextSnippet.trim());
+          // Fallback to resolve + details if stream fails
+          const resolve = await apiGet<any>('/api/resolve', { q: `${hero.title}${hero.year ? ` ${hero.year}` : ''}` }, controller.signal);
+          if (resolve?.chosen) {
+            const type = resolve.chosen.media_type || resolve.type || hero.type;
+            const details = await apiGet<any>(`/api/details/${type}/${resolve.chosen.id || resolve.chosen.tmdb_id}`, undefined, controller.signal);
+            const nextSnippet = details?.data?.summary_short || details?.summary_short;
+            if (!cancelled && typeof nextSnippet === 'string' && nextSnippet.trim()) {
+              setHeroAiSnippet(nextSnippet.trim());
+            }
           }
         } catch {
           // Keep fallback synopsis when AI snippet fails.

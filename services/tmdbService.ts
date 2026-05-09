@@ -4,19 +4,8 @@ import { ParsedQuery } from './queryParser';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
-// Use proxy for TMDB calls (API key stays server-side). Support Node/Jest.
-const TMDB_PROXY = (typeof window !== 'undefined')
-  ? (process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000/api/tmdb'
-      : `${window.location.origin}/api/tmdb`)
-  : process.env.TMDB_PROXY || 'http://localhost:3000/api/tmdb';
+import { apiGet } from '../lib/apiClient';
 
-// Use proxy for OMDB calls (API key stays server-side). Support Node/Jest.
-const OMDB_PROXY = (typeof window !== 'undefined')
-  ? (process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000/api/omdb'
-      : `${window.location.origin}/api/omdb`)
-  : process.env.OMDB_PROXY || 'http://localhost:3000/api/omdb';
 
 function getPreferredWatchRegion(): string {
   if (typeof window === 'undefined') return 'US';
@@ -96,28 +85,17 @@ async function tmdbFetch(
   params: Record<string, string | number | undefined> = {},
   options: TMDBFetchOptions = {}
 ): Promise<any> {
-  // Build query string for proxy
-  const queryParams = new URLSearchParams();
-  queryParams.set('endpoint', path.replace(/^\//, '')); // Remove leading slash
+  const queryParams: Record<string, string | number | boolean> = {
+    endpoint: path.replace(/^\//, '')
+  };
   
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') {
-      queryParams.set(k, String(v));
+      queryParams[k] = v;
     }
   });
   
-  const url = `${TMDB_PROXY}?${queryParams.toString()}`;
-  const res = await fetch(url, { signal: options.signal });
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`TMDB ${path} failed: ${res.status} ${text.slice(0, 180)}`);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error(`TMDB ${path} returned invalid JSON: ${text.slice(0, 180)}`);
-  }
+  return apiGet('/api/tmdb', queryParams, options.signal);
 }
 
 export async function fetchTrending(
@@ -368,49 +346,10 @@ async function getIMDBId(mediaType: 'movie'|'tv', id: number): Promise<string | 
  */
 async function fetchOMDBRatings(imdbId: string): Promise<Rating[]> {
   try {
-    const url = `${OMDB_PROXY}?i=${encodeURIComponent(imdbId)}`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      // 4xx from OMDB proxy commonly means missing/invalid key in deployment.
-      // Keep UX functional by silently falling back to empty ratings.
-      if (response.status >= 500) {
-        console.warn(`OMDB proxy error: ${response.status}`);
-      }
-      return [];
-    }
-    
-    const data: any = await response.json();
-    
-    if (data.Response === 'False') {
-      return [];
-    }
-    
-    const ratings: Rating[] = [];
-    
-    // IMDB Rating
-    if (data.imdbRating && data.imdbRating !== 'N/A') {
-      ratings.push({
-        source: 'IMDb',
-        score: `${data.imdbRating}/10`
-      });
-    }
-    
-    // Other ratings from Ratings array
-    if (data.Ratings && Array.isArray(data.Ratings)) {
-      data.Ratings.forEach((r: any) => {
-        if (r.Source && r.Value) {
-          ratings.push({
-            source: r.Source,
-            score: r.Value
-          });
-        }
-      });
-    }
-    
-    return ratings;
-  } catch (e) {
-    console.warn('OMDB ratings fetch error:', e);
+    const data = await apiGet<Rating[]>('/api/omdb', { i: imdbId });
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('OMDB fetch failed:', error);
     return [];
   }
 }
@@ -579,32 +518,14 @@ type RecommendationSeed = {
 };
 
 async function tmdbDirectFetch(path: string): Promise<any> {
-  const base = 'https://api.themoviedb.org/3';
-  const readToken = process.env.TMDB_READ_TOKEN;
-  const apiKey = process.env.TMDB_API_KEY;
-
-  if (!readToken && !apiKey) {
-    throw new Error('TMDB credentials missing');
+  // Use backend proxy instead of direct fetch to protect keys
+  const [endpoint, queryString] = path.split('?');
+  const params: Record<string, string> = {};
+  if (queryString) {
+    const searchParams = new URLSearchParams(queryString);
+    searchParams.forEach((v, k) => { params[k] = v; });
   }
-
-  if (readToken) {
-    const res = await fetch(`${base}${path}`, {
-      headers: {
-        Authorization: `Bearer ${readToken}`
-      }
-    });
-    if (!res.ok) {
-      throw new Error(`TMDB ${path} failed: ${res.status}`);
-    }
-    return res.json();
-  }
-
-  const separator = path.includes('?') ? '&' : '?';
-  const res = await fetch(`${base}${path}${separator}api_key=${encodeURIComponent(apiKey as string)}`);
-  if (!res.ok) {
-    throw new Error(`TMDB ${path} failed: ${res.status}`);
-  }
-  return res.json();
+  return tmdbFetch(endpoint, params);
 }
 
 function mapRecommendationItem(it: any, source: 'tmdb-similar' | 'tmdb-recommendations'): RecommendationCandidate | null {
@@ -719,12 +640,8 @@ export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'):
 }
 
   export async function fetchRelatedPeopleForPerson(personId: number): Promise<import('../types').RelatedPerson[]> {
-    const token = getTMDBToken();
-    const base = 'https://api.themoviedb.org/3';
-    const headers = { Authorization: `Bearer ${token}` } as any;
     try {
-      const creditsRes = await fetch(`${base}/person/${personId}/combined_credits`, { headers });
-      const credits: any = await creditsRes.json();
+      const credits: any = await tmdbFetch(`/person/${personId}/combined_credits`);
       const works = ([] as any[])
         .concat(credits?.cast || [], credits?.crew || [])
         .filter((work: any) => work?.id && (work?.media_type === 'movie' || work?.media_type === 'tv'))
@@ -755,9 +672,7 @@ export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'):
 
       await Promise.all(topWorks.map(async (work: any) => {
         try {
-          const creditsRes = await fetch(`${base}/${work.media_type}/${work.id}/credits`, { headers });
-          if (!creditsRes.ok) return;
-          const details: any = await creditsRes.json();
+          const details: any = await tmdbFetch(`/${work.media_type}/${work.id}/credits`);
 
           const castMembers = Array.isArray(details?.cast) ? details.cast.slice(0, 20) : [];
           const crewMembers = Array.isArray(details?.crew)
@@ -809,12 +724,6 @@ export async function fetchSimilarTitles(id: number, mediaType: 'movie' | 'tv'):
     } catch {
       return [];
     }
-  }
-
-  function getTMDBToken(): string {
-    const token = process.env.TMDB_READ_TOKEN || process.env.TMDB_API_KEY;
-    if (!token) throw new Error('TMDB token missing');
-    return token as string;
   }
 
   function dedupeById<T extends { id: number }>(arr: T[]): T[] {

@@ -3,10 +3,10 @@ import { INITIAL_PROMPT } from '../constants';
 import { enrichWithTMDB } from './tmdbService';
 import { sanitizeMovieData } from './movieDataValidation';
 
-// Use proxy for Groq calls (API key stays server-side)
-const GROQ_PROXY = (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development')
-  ? `${window.location.origin}/api/groq`
-  : 'http://localhost:3000/api/groq';
+import { apiPost, getApiUrl } from '../lib/apiClient';
+
+// Use backend for Groq calls (API key stays server-side)
+const GROQ_PROXY = getApiUrl('/api/groq');
 
 const parseJsonResponse = (text: string): MovieData | null => {
   try {
@@ -90,31 +90,14 @@ export async function fetchMovieData(
   messages.push({ role: 'user', content: query });
 
   try {
-    const response = await fetch(GROQ_PROXY, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.2, // Standardized for accuracy
-        max_tokens: 4000,
-        response_format: { type: 'json_object' }
-      })
+    const data = await apiPost<any>(GROQ_PROXY, {
+      model,
+      messages,
+      temperature: 0.2, // Standardized for accuracy
+      max_tokens: 4000,
+      response_format: { type: 'json_object' }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Groq API error:', response.status, errorText);
-      return { 
-        movieData: null, 
-        sources: null, 
-        error: `Groq API error: ${response.status} - ${errorText}` 
-      };
-    }
-
-    const data: any = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {

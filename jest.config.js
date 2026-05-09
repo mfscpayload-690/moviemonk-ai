@@ -9,6 +9,8 @@ module.exports = {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }]
   },
   moduleNameMapper: {
+    '^.*/lib/config$': '<rootDir>/__tests__/__mocks__/config.ts',
+    '\\./config$': '<rootDir>/__tests__/__mocks__/config.ts',
     '^../lib/(.*)$': '<rootDir>/lib/$1',
     '^../services/(.*)$': '<rootDir>/services/$1'
   },
