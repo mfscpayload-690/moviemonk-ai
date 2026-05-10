@@ -14,7 +14,7 @@ from fastapi import APIRouter, Query
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
 from app.models.search import (
-    AppliedFilters, PersonSearchCandidate, SearchPageResponse, SearchResult, VibeInfo,
+    AppliedFilters, PersonSearchCandidate, SearchPageResponse, SearchRequest, SearchResult, VibeInfo,
 )
 from app.services import tmdb
 from app.services.entity_resolver import resolve
@@ -76,9 +76,9 @@ def _normalise_result(item: dict, media_type: str | None = None) -> SearchResult
     )
 
 
-@router.get("/search")
+@router.api_route("/search", methods=["GET", "POST"])
 async def search(
-    q: str = Query(..., min_length=1),
+    q: str | None = Query(None, min_length=1),
     page: int = Query(1, ge=1, le=500),
     type: str = Query("all", description="all | movie | tv"),
     genres: str | None = Query(None, description="Comma-separated genre IDs"),
@@ -86,10 +86,23 @@ async def search(
     yearMax: int | None = Query(None, alias="yearMax"),
     ratingMin: float | None = Query(None, alias="ratingMin"),
     sortBy: str = Query("popularity.desc", alias="sortBy"),
+    body: SearchRequest | None = None,
 ) -> SearchPageResponse:
-    query = q.strip()
-    if len(query) < 1:
+    # Use body if provided (POST), otherwise use query params
+    if body:
+        q = body.q
+        page = body.page
+        type = body.type
+        genres = body.genres
+        yearMin = body.yearMin
+        yearMax = body.yearMax
+        ratingMin = body.ratingMin
+        sortBy = body.sortBy
+
+    if not q or len(q.strip()) < 1:
         return api_error(400, "query_too_short", "Query too short")
+
+    query = q.strip()
 
     await _ensure_genre_map()
 
