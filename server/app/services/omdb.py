@@ -46,17 +46,39 @@ async def fetch_ratings(imdb_id: str) -> list[Rating]:
 
             ratings: list[Rating] = []
 
+            def parse_score(val: str) -> float | None:
+                try:
+                    if "/" in val:
+                        parts = val.split("/")
+                        return float(parts[0].strip())
+                    if "%" in val:
+                        return float(val.replace("%", "").strip()) / 10.0
+                    return float(val.strip())
+                except (ValueError, IndexError):
+                    return None
+
             # IMDb rating
-            imdb_rating = data.get("imdbRating")
-            if imdb_rating and imdb_rating != "N/A":
-                ratings.append(Rating(source="IMDb", score=f"{imdb_rating}/10"))
+            imdb_val = data.get("imdbRating")
+            if imdb_val and imdb_val != "N/A":
+                ratings.append(Rating(
+                    source="IMDb",
+                    value=f"{imdb_val}/10",
+                    score=parse_score(imdb_val)
+                ))
 
             # Other ratings (Rotten Tomatoes, Metacritic, etc.)
             for entry in data.get("Ratings", []):
-                source = entry.get("Source", "")
-                value = entry.get("Value", "")
-                if source and value:
-                    ratings.append(Rating(source=source, score=value))
+                src = entry.get("Source", "")
+                val = entry.get("Value", "")
+                if src and val:
+                    # Skip duplicate IMDb if already added
+                    if src == "Internet Movie Database" and any(r.source == "IMDb" for r in ratings):
+                        continue
+                    ratings.append(Rating(
+                        source=src,
+                        value=val,
+                        score=parse_score(val)
+                    ))
 
             return ratings
 
