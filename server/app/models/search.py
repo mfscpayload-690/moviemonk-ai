@@ -71,3 +71,20 @@ class SearchPageResponse(BaseModel):
     did_you_mean: list[str] = []
     vibe: VibeInfo | None = None
     applied_filters: AppliedFilters | None = None
+
+
+class SearchRequest(BaseModel):
+    """JSON body for POST /api/search."""
+    q: str
+    page: int = 1
+    type: str = "all"
+    genres: str | None = None
+    yearMin: int | None = None
+    yearMax: int | None = None
+    ratingMin: float | None = None
+    sortBy: str = "popularity.desc"
+
+
+class VibeRequest(BaseModel):
+    """JSON body for POST /api/vibe."""
+    q: str
