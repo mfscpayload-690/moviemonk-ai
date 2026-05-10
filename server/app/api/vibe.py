@@ -9,6 +9,7 @@ from fastapi import APIRouter, Query
 
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
+from app.models.search import VibeRequest
 from app.services.vibe_parser import local_vibe_fallback, parse_vibe_query
 
 router = APIRouter()
@@ -16,9 +17,18 @@ router = APIRouter()
 _CACHE_TTL = 3600  # 1 hour
 
 
-@router.get("/vibe")
-async def vibe_parse(q: str = Query(..., min_length=2)):
+@router.api_route("/vibe", methods=["GET", "POST"])
+async def vibe_parse(
+    q: str | None = Query(None, min_length=2),
+    body: VibeRequest | None = None
+):
     """Parse a natural language movie query into structured constraints."""
+    if body:
+        q = body.q
+
+    if not q:
+        return api_error(400, "query_missing", "Query parameter 'q' is required")
+
     query = q.strip()
 
     cache_key = build_cache_key("vibe", {"q": query.lower()})
