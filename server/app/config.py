@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # ── CORS ──
     ALLOWED_ORIGINS: str = (
-        "https://moviemonk-ai.vercel.app,http://localhost:3000,http://127.0.0.1:3000"
+        "https://moviemonk-ai.vercel.app,http://localhost:3000,http://127.0.0.1:3000,http://127.0.0.1:4173"
     )
 
     @property
