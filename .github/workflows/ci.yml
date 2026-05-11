@@ -7,9 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  frontend-build-and-test:
+    name: Frontend Build & Test
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -28,17 +28,41 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # CI only needs non-empty placeholders to satisfy build-time checks.
+          # CI only needs placeholders to satisfy build-time checks.
           GROQ_API_KEY: test-key
-          MISTRAL_API_KEY: test-key
-          OPENROUTER_API_KEY: test-key
           TMDB_API_KEY: test-key
           TMDB_READ_TOKEN: test-token
-          PERPLEXITY_API_KEY: test-key
-          OMDB_API_KEY: test-key
+          VITE_API_BASE_URL: https://test-api.hf.space
 
       - name: Test
         run: npm test
         env:
           TMDB_API_KEY: test-key
           REDIS_URL: redis://localhost:6379
+
+  backend-validation:
+    name: Backend Validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff mypy
+
+      - name: Lint with Ruff
+        run: ruff check app
+
+      - name: Type Check with MyPy
+        run: mypy app --ignore-missing-imports
