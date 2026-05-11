@@ -6,16 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   frontend-build-and-test:
     name: Frontend Build & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@e2a7746817296b1c676233d45f317b2031a29369 # v6.0.0
         with:
           node-version: 22
 
@@ -28,16 +31,13 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # CI only needs placeholders to satisfy build-time checks.
-          GROQ_API_KEY: test-key
-          TMDB_API_KEY: test-key
-          TMDB_READ_TOKEN: test-token
+          # CI uses secrets or remains empty to satisfy build checks without leaking placeholders.
           VITE_API_BASE_URL: ${{ secrets['VITE_API_BASE_URL'] }}
 
       - name: Test
         run: npm test
         env:
-          TMDB_API_KEY: test-key
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY || 'ci-placeholder' }}
           REDIS_URL: redis://localhost:6379
 
   backend-validation:
@@ -48,10 +48,10 @@ jobs:
         working-directory: server
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@c8813ba6b4859a0f44917539031c26b8017c6993 # v5.5.0
         with:
           python-version: "3.11"
 

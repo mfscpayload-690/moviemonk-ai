@@ -18,10 +18,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@e2a7746817296b1c676233d45f317b2031a29369 # v6.0.0
         with:
           node-version: 22
           cache: npm

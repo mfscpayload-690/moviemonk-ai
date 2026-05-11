@@ -7,12 +7,15 @@ on:
       - 'server/**'
       - '.github/workflows/deploy-backend.yml'
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
         with:
           fetch-depth: 0
           lfs: true
@@ -25,8 +28,11 @@ jobs:
           git config --global user.email "bot@moviemonk.ai"
           git config --global user.name "MovieMonk CI"
           
-          # Add the Hugging Face Space as a remote
-          git remote add hf https://mfscpayload-690:$HF_TOKEN@huggingface.co/spaces/mfscpayload-690/moviemonk-backend
+          # Add the Hugging Face Space as a remote without credentials in the URL
+          git remote add hf https://huggingface.co/spaces/mfscpayload-690/moviemonk-backend
+          
+          # Securely inject the token via HTTP extraheader to avoid leaking in config or logs
+          git config --local http.https://huggingface.co/.extraheader "Authorization: Bearer $HF_TOKEN"
           
           # Force push the 'server' directory to the 'main' branch of the Space
           git subtree push --prefix server hf main --force

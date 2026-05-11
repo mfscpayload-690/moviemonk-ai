@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@e2a7746817296b1c676233d45f317b2031a29369 # v6.0.0
         with:
           node-version: 22
           cache: npm
@@ -28,10 +28,7 @@ jobs:
       - name: Build app
         run: npm run build
         env:
-          # CI only needs placeholders to satisfy build-time checks.
-          GROQ_API_KEY: test-key
-          TMDB_API_KEY: test-key
-          TMDB_READ_TOKEN: test-token
+          # CI uses secrets to satisfy build checks without leaking placeholders in the workflow file.
           VITE_API_BASE_URL: ${{ secrets['VITE_API_BASE_URL'] }}
 
       - name: Start preview server
@@ -129,7 +126,7 @@ jobs:
 
       - name: Upload smoke screenshot
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46e10756770951a8f9364966d9203ca9b78 # v4.6.0
         with:
           name: ui-smoke-home
           path: ui-smoke-home.png
