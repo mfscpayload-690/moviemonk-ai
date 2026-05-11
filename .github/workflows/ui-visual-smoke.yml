@@ -32,7 +32,7 @@ jobs:
           GROQ_API_KEY: test-key
           TMDB_API_KEY: test-key
           TMDB_READ_TOKEN: test-token
-          VITE_API_BASE_URL: https://test-api.hf.space
+          VITE_API_BASE_URL: ${{ secrets['VITE_API_BASE_URL'] }}
 
       - name: Start preview server
         run: |
