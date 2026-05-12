@@ -5,9 +5,7 @@ Ported from api/search.ts (969 lines) — the most complex endpoint.
 
 from __future__ import annotations
 
-import asyncio
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Query
 
@@ -17,9 +15,8 @@ from app.models.search import (
     AppliedFilters, PersonSearchCandidate, SearchPageResponse, SearchRequest, SearchResult, VibeInfo,
 )
 from app.services import tmdb
-from app.services.entity_resolver import resolve
 from app.services.person_intent import detect_person_intent
-from app.services.vibe_parser import local_vibe_fallback, parse_vibe_query
+from app.services.vibe_parser import parse_vibe_query
 
 logger = logging.getLogger("moviemonk.search")
 router = APIRouter()

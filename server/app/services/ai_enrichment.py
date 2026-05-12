@@ -136,9 +136,8 @@ async def generate_creative_fields(
             specs = parsed.get("technical_specs")
             if isinstance(specs, str):
                 try:
-                    import json
                     specs = json.loads(specs)
-                except:
+                except Exception:
                     specs = {}
             if not isinstance(specs, dict):
                 specs = {}

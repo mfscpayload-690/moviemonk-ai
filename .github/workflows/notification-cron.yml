@@ -37,7 +37,7 @@ jobs:
           esac
 
       - name: Dispatch daily digest
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 13 * * *'
+        if: github.event_name == 'workflow_dispatch'
         env:
           BASE_URL: ${{ secrets['NOTIFICATION_BASE_URL'] }}
           SHARED_SECRET: ${{ secrets['NOTIFICATION_DISPATCH_SECRET'] }}
@@ -47,7 +47,7 @@ jobs:
             -H "x-notification-secret: $SHARED_SECRET"
 
       - name: Dispatch weekly digest
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 13 * * 1'
+        if: github.event_name == 'workflow_dispatch'
         env:
           BASE_URL: ${{ secrets['NOTIFICATION_BASE_URL'] }}
           SHARED_SECRET: ${{ secrets['NOTIFICATION_DISPATCH_SECRET'] }}
@@ -57,7 +57,7 @@ jobs:
             -H "x-notification-secret: $SHARED_SECRET"
 
       - name: Process queued notifications
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
+        if: github.event_name == 'workflow_dispatch'
         env:
           BASE_URL: ${{ secrets['NOTIFICATION_BASE_URL'] }}
           SHARED_SECRET: ${{ secrets['NOTIFICATION_DISPATCH_SECRET'] }}

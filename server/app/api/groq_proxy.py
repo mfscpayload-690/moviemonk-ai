@@ -66,7 +66,7 @@ async def proxy_groq(req: GroqRequest):
             try:
                 return resp.json()
             except Exception as json_err:
-                logger.error(f"Failed to parse Groq JSON: {resp.text}")
+                logger.error(f"Failed to parse Groq JSON: {resp.text} | Error: {json_err}")
                 raise HTTPException(status_code=500, detail="Invalid JSON from AI provider")
 
     except httpx.HTTPStatusError as e:

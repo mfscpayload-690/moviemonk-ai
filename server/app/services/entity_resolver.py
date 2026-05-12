@@ -10,7 +10,7 @@ import logging
 from typing import Any
 
 from app.services import tmdb
-from app.utils.text import levenshtein, normalise_title, similarity_ratio
+from app.utils.text import normalise_title, similarity_ratio
 
 logger = logging.getLogger("moviemonk.resolver")
 

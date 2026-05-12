@@ -34,5 +34,8 @@ jobs:
           # Securely inject the token via HTTP extraheader to avoid leaking in config or logs
           git config --local http.https://huggingface.co/.extraheader "Authorization: Bearer $HF_TOKEN"
           
-          # Force push the 'server' directory to the 'main' branch of the Space
-          git subtree push --prefix server hf main --force
+          # Split the 'server' subtree into a temporary local branch to allow force pushing
+          git subtree split --prefix server -b deploy_tree
+          
+          # Force push the deploy_tree branch to the 'main' branch of the Space
+          git push hf deploy_tree:main --force
