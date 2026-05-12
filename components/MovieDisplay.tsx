@@ -981,8 +981,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                 </div>
                                 <div className="gallery-info text-xs text-accessible-muted mt-3 flex items-center gap-2">
                                     <span>{safeExtraImages.length} images</span>
-                                    <span className="hidden sm:inline">• Click to view</span>
-                                    <span className="sm:hidden">• Swipe to browse</span>
+                                    <span>• Click any to expand vertically downwards</span>
                                 </div>
                             </div>
                         ) : (
@@ -1474,79 +1473,67 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
 
             {selectedImage && modalRoot && ReactDOM.createPortal(
                 <div
-                    className="gallery-lightbox"
+                    className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-6 animate-fade-in"
                     onClick={() => setSelectedImage(null)}
                     onKeyDown={(e) => {
-                        if (e.key === 'ArrowLeft') {
-                            const idx = safeExtraImages.indexOf(selectedImage);
-                            const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
-                            setSelectedImage(safeExtraImages[prev]);
-                        } else if (e.key === 'ArrowRight') {
-                            const idx = safeExtraImages.indexOf(selectedImage);
-                            const next = (idx + 1) % safeExtraImages.length;
-                            setSelectedImage(safeExtraImages[next]);
-                        } else if (e.key === 'Escape') {
-                            setSelectedImage(null);
-                        }
+                        if (e.key === 'Escape') setSelectedImage(null);
                     }}
                     tabIndex={-1}
                     aria-modal="true"
                     role="dialog"
-                    aria-label="Image gallery viewer"
+                    aria-label="Vertical Cinematic Gallery"
                 >
                     <div
-                        className="gallery-lightbox-content"
+                        className="w-full max-w-5xl bg-[#0b0b12] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden relative"
+                        style={{ maxHeight: '90dvh', height: '100%' }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <img
-                            src={selectedImage}
-                            alt={`Gallery image ${safeExtraImages.indexOf(selectedImage) + 1}`}
-                            className="gallery-lightbox-image"
-                        />
-                        {safeExtraImages.length > 1 && (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        const idx = safeExtraImages.indexOf(selectedImage);
-                                        const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
-                                        setSelectedImage(safeExtraImages[prev]);
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 bg-black/60 flex-shrink-0">
+                            <div>
+                                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                    <ImageIcon className="w-5 h-5 text-violet-400" />
+                                    <span>Cinematic Stills Gallery</span>
+                                </h3>
+                                <p className="text-xs text-white/60 mt-0.5">Scroll downwards to view all {safeExtraImages.length} high-resolution scenes</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedImage(null)}
+                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                                aria-label="Close gallery"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Downwards Scrollable Images List */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 scroll-smooth custom-scrollbar">
+                            {safeExtraImages.map((img, idx) => (
+                                <div
+                                    key={idx}
+                                    ref={(el) => {
+                                        if (img === selectedImage && el && !el.dataset.scrolled) {
+                                            el.dataset.scrolled = 'true';
+                                            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                                        }
                                     }}
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    aria-label="Previous image"
-                                    className="gallery-lightbox-nav gallery-lightbox-prev"
-                                    title="Previous (← Arrow key)"
+                                    className="flex flex-col items-center bg-black/40 rounded-xl overflow-hidden border border-white/5 shadow-xl group"
                                 >
-                                    <ArrowLeftIcon className="w-6 h-6" />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        const idx = safeExtraImages.indexOf(selectedImage);
-                                        const next = (idx + 1) % safeExtraImages.length;
-                                        setSelectedImage(safeExtraImages[next]);
-                                    }}
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    aria-label="Next image"
-                                    className="gallery-lightbox-nav gallery-lightbox-next"
-                                    title="Next (→ Arrow key)"
-                                >
-                                    <ArrowRightIcon className="w-6 h-6" />
-                                </button>
-                                <div className="gallery-lightbox-counter">
-                                    <span>{safeExtraImages.indexOf(selectedImage) + 1}</span>
-                                    <span className="text-white/60">/</span>
-                                    <span>{safeExtraImages.length}</span>
+                                    <div className="w-full bg-black/60 px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
+                                        <span className="text-xs font-bold text-violet-400 uppercase tracking-wider">Scene {idx + 1}</span>
+                                        <span className="text-[10px] font-semibold text-white/40 bg-white/5 px-2 py-0.5 rounded">Still</span>
+                                    </div>
+                                    <div className="w-full relative flex items-center justify-center p-2 sm:p-4 bg-black/20">
+                                        <img
+                                            src={img}
+                                            alt={`Scene ${idx + 1}`}
+                                            className="max-w-full h-auto object-contain max-h-[75vh] rounded block"
+                                            loading="lazy"
+                                        />
+                                    </div>
                                 </div>
-                            </>
-                        )}
-                        <button
-                            onClick={() => setSelectedImage(null)}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            aria-label="Close gallery (Esc key)"
-                            className="gallery-lightbox-close"
-                            title="Close (Esc key)"
-                        >
-                            <XMarkIcon className="w-6 h-6" />
-                        </button>
+                            ))}
+                        </div>
                     </div>
                 </div>,
                 modalRoot
