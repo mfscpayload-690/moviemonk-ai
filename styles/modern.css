@@ -3725,10 +3725,6 @@ a:focus-visible {
         gap: 0.55rem;
     }
 
-    .discovery-page.is-compact .discovery-hero-dots-global {
-        bottom: 0.55rem;
-    }
-
     .discovery-hero {
         margin: 0 0.85rem;
         min-height: 22rem;
@@ -3744,18 +3740,22 @@ a:focus-visible {
             linear-gradient(90deg, rgba(0, 0, 0, 0.34) 18%, rgba(0, 0, 0, 0.1) 78%);
     }
 
-
-    .discovery-hero-dots-global {
+    .discovery-hero-dots-global,
+    .discovery-page.is-compact .discovery-hero-dots-global {
         left: 50%;
         right: auto;
         bottom: 0.75rem;
+        width: max-content;
         transform: translateX(-50%);
-        padding: 0.3rem 0.5rem;
+        padding: 0.35rem 0.6rem;
         border-radius: 999px;
         border: 1px solid rgba(255, 255, 255, 0.16);
         background: rgba(8, 8, 10, 0.52);
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
     .discovery-section-heading.genre-heading {
