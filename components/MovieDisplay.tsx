@@ -1297,7 +1297,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
 
             {showWatchlistModal && modalRoot && ReactDOM.createPortal(
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-                    <div className="w-full max-w-md bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-5 space-y-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full max-w-md md:max-w-[520px] bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-4 md:p-6 space-y-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-white">Save to Watch Later</h3>
                             <button onClick={() => setShowWatchlistModal(false)} className="p-2 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary" aria-label="Close watchlist modal">
@@ -1320,7 +1320,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                 <p className="text-sm font-semibold text-white">Choose folder</p>
                                 <span className="text-xs text-brand-text-dark">{watchlists.length || 0} folders</span>
                             </div>
-                            <div className="max-h-40 overflow-y-auto space-y-2">
+                            <div className="max-h-[136px] overflow-y-auto space-y-2 custom-scrollbar pr-1">
                                 {watchlists.length === 0 && (
                                     <p className="text-sm text-brand-text-dark">No folders yet. Create one below.</p>
                                 )}

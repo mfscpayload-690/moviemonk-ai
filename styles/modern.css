@@ -802,11 +802,11 @@ button:active,
 .mm-mobile-action-bar::before {
     content: "";
     position: absolute;
-    left: -0.85rem;
-    right: -0.85rem;
-    bottom: calc(-0.85rem - env(safe-area-inset-bottom, 0px));
-    height: 130px;
-    background: linear-gradient(to top, rgba(3, 3, 5, 0.92) 0%, rgba(3, 3, 5, 0.7) 40%, transparent 100%);
+    left: -1.5rem;
+    right: -1.5rem;
+    bottom: calc(-2rem - env(safe-area-inset-bottom, 0px));
+    height: 180px;
+    background: linear-gradient(to top, rgba(3, 3, 5, 0.98) 0%, rgba(3, 3, 5, 0.92) 30%, rgba(3, 3, 5, 0.6) 65%, transparent 100%);
     pointer-events: none;
     z-index: -1;
 }
