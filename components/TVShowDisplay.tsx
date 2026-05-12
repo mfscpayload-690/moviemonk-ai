@@ -322,11 +322,10 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                         )}
 
                         {/* Watched button */}
-                        <div style={{ marginTop: '1rem' }}>
+                        <div className="mt-4 hidden sm:block">
                             <button
                                 onClick={onToggleWatched}
                                 style={{
-                                    display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '0.5rem',
                                     padding: '0.6rem 1.2rem',
@@ -339,6 +338,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                                     cursor: 'pointer',
                                     transition: 'all 0.25s ease',
                                 }}
+                                className="inline-flex"
                                 aria-label={isWatched ? 'Mark as unwatched' : 'Mark as watched'}
                             >
                                 <WatchedIcon className="icon-small" filled={isWatched} />
