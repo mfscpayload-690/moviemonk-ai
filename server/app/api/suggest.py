@@ -5,6 +5,8 @@ Ported from api/suggest.ts.
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Query
 
 from app.core.cache import build_cache_key, get_cache, set_cache
