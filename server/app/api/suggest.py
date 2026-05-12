@@ -20,7 +20,7 @@ _CACHE_TTL = 45  # seconds
 
 
 @router.get("/suggest")
-async def suggest(q: str = Query(..., min_length=1)) -> SuggestResponse:
+async def suggest(q: str = Query(..., min_length=1)) -> Any:
     """Return type-ahead suggestions for a query."""
     query = q.strip()
     if len(query) < 1:

@@ -84,7 +84,7 @@ async def search(
     ratingMin: float | None = Query(None, alias="ratingMin"),
     sortBy: str = Query("popularity.desc", alias="sortBy"),
     body: SearchRequest | None = None,
-) -> SearchPageResponse:
+) -> Any:
     # Use body if provided (POST), otherwise use query params
     if body:
         q = body.q

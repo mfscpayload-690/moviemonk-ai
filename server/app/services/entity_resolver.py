@@ -57,9 +57,12 @@ async def resolve(
     tv_task = tmdb.search_tv(query)
     person_task = tmdb.search_person(query)
 
-    movie_res, tv_res, person_res = await asyncio.gather(
+    res_list: list[Any] = await asyncio.gather(
         movie_task, tv_task, person_task, return_exceptions=True,
     )
+    movie_res: Any = res_list[0]
+    tv_res: Any = res_list[1]
+    person_res: Any = res_list[2]
 
     candidates: list[dict[str, Any]] = []
 

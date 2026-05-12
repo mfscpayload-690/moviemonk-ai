@@ -32,14 +32,14 @@ async def handle_query(req: QueryRequest):
 
     try:
         resolved = await resolve(query)
-        if not resolved or not resolved.id:
+        if not resolved or not resolved.get("id"):
             raise HTTPException(status_code=404, detail="Entity not found")
 
         summary = {"summary_short": "", "summary_long": ""}
         data: Any = {}
 
-        if resolved.type == "person":
-            person_data = await tmdb.get_person(resolved.id)
+        if resolved.get("type") == "person":
+            person_data = await tmdb.get_person(resolved["id"])
             if not person_data:
                 raise HTTPException(status_code=404, detail="Person not found")
             
@@ -57,8 +57,8 @@ async def handle_query(req: QueryRequest):
                 summary["summary_long"] = bio
         else:
             # Movie or TV
-            media_type = resolved.media_type or "movie"
-            movie_data = await tmdb.get_details(media_type, resolved.id)
+            media_type = resolved.get("type") or "movie"
+            movie_data = await tmdb.get_details(media_type, resolved["id"])
             if not movie_data:
                 raise HTTPException(status_code=404, detail="Title not found")
                 
@@ -92,7 +92,7 @@ async def handle_query(req: QueryRequest):
                 summary["summary_long"] = enriched.get("summary_medium", "")
 
         result = {
-            "type": resolved.type,
+            "type": resolved.get("type"),
             "data": data,
             "summary": summary,
         }

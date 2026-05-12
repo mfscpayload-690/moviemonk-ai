@@ -28,11 +28,8 @@ jobs:
           git config --global user.email "bot@moviemonk.ai"
           git config --global user.name "MovieMonk CI"
           
-          # Add the Hugging Face Space as a remote without credentials in the URL
-          git remote add hf https://huggingface.co/spaces/mfscpayload-690/moviemonk-backend
-          
-          # Securely inject the token via HTTP extraheader to avoid leaking in config or logs
-          git config --local http.https://huggingface.co/.extraheader "Authorization: Bearer $HF_TOKEN"
+          # Add the Hugging Face Space remote using the runtime token for seamless authentication
+          git remote add hf https://__token__:$HF_TOKEN@huggingface.co/spaces/mfscpayload-690/moviemonk-backend
           
           # Split the 'server' subtree into a temporary local branch to allow force pushing
           git subtree split --prefix server -b deploy_tree

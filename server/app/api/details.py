@@ -90,7 +90,7 @@ def _format_currency(amount: int | None) -> str | None:
 async def get_details(
     media_type: str = Path(..., description="movie or tv"),
     tmdb_id: int = Path(..., description="TMDB ID"),
-):
+) -> Any:
     if media_type not in ("movie", "tv"):
         return api_error(400, "invalid_type", "media_type must be 'movie' or 'tv'")
 
@@ -109,12 +109,18 @@ async def get_details(
         ext_ids_task = tmdb.get_external_ids(media_type, tmdb_id)
         similar_task = tmdb.get_similar(media_type, tmdb_id)
 
-        (details, credits, images, videos,
-         providers, ext_ids, similar_raw) = await asyncio.gather(
+        res_list: list[Any] = await asyncio.gather(
             details_task, credits_task, images_task, videos_task,
             providers_task, ext_ids_task, similar_task,
             return_exceptions=True,
         )
+        details: Any = res_list[0]
+        credits: Any = res_list[1]
+        images: Any = res_list[2]
+        videos: Any = res_list[3]
+        providers: Any = res_list[4]
+        ext_ids: Any = res_list[5]
+        similar_raw: Any = res_list[6]
 
         if isinstance(details, Exception):
             return api_error(502, "tmdb_error", f"TMDB details failed: {details}")
@@ -194,10 +200,14 @@ async def get_details(
         wikimedia_task = wikimedia.get_movie_images(title, year)
         ai_task = ai_enrichment.generate_creative_fields(title, year, genres, overview, media_type)
 
-        ratings_raw, wiki_data, wiki_images, ai_fields = await asyncio.gather(
+        phase2_list: list[Any] = await asyncio.gather(
             omdb_task, wiki_task, wikimedia_task, ai_task,
             return_exceptions=True,
         )
+        ratings_raw: Any = phase2_list[0]
+        wiki_data: Any = phase2_list[1]
+        wiki_images: Any = phase2_list[2]
+        ai_fields: Any = phase2_list[3]
 
         # Ratings
         ratings: list[Rating] = ratings_raw if isinstance(ratings_raw, list) else []
