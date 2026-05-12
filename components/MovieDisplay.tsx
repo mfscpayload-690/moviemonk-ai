@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
@@ -238,6 +238,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     useRenderCounter('MovieDisplay');
     const { triggerFeedback, isFeedbackActive } = useActionFeedback();
     const activeTmdbIdRef = useRef<string | null>(null);
+    const touchStartXRef = useRef<number | null>(null);
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
@@ -245,6 +246,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     const [isPosterPreviewing, setIsPosterPreviewing] = useState(false);
     const [showAllCast, setShowAllCast] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
     const [isLoadingFullPlot, setIsLoadingFullPlot] = useState(false);
     const [fullPlotContent, setFullPlotContent] = useState<string>('');
     const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
@@ -956,33 +958,47 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
 
                     <Section title="Gallery">
                         {safeExtraImages.length > 0 ? (
-                            <div className="gallery-container horizontal-scroll-fade-right">
-                                <div className="gallery-filmstrip">
-                                    {safeExtraImages.map((img, i) => (
+                            <div className="flex flex-col gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                                    {(isGalleryExpanded ? safeExtraImages : safeExtraImages.slice(0, 3)).map((img, i) => (
                                         <button
                                             key={i}
                                             onClick={() => setSelectedImage(img)}
-                                            className="gallery-thumb touch-target"
-                                            aria-label={`Gallery image ${i + 1} of ${safeExtraImages.length}`}
-                                            title={`Scene ${i + 1}`}
+                                            className={`w-full aspect-video rounded-xl overflow-hidden bg-black/40 border border-white/10 relative group transition-all duration-300 hover:border-violet-500/50 hover:shadow-lg hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-violet-500 ${!isGalleryExpanded && i === 2 ? 'hidden md:block' : 'block'}`}
+                                            aria-label={`View full size gallery image ${i + 1}`}
+                                            title="Click to view full size"
                                         >
                                             <ImageWithFallback
                                                 src={img}
                                                 alt={`Gallery image ${i + 1}`}
-                                                className="gallery-thumb-img"
+                                                className="w-full h-full object-cover block"
                                                 loading="lazy"
-                                                sizes="(max-width: 640px) 44vw, 280px"
+                                                sizes="(max-width: 768px) 50vw, 33vw"
                                             />
-                                            <div className="gallery-thumb-overlay">
-                                                <span className="gallery-thumb-number">{i + 1}</span>
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-[2px]">
+                                                <span className="text-[11px] font-bold text-white bg-violet-600/90 px-2 py-1 rounded shadow">View Full</span>
                                             </div>
                                         </button>
                                     ))}
                                 </div>
-                                <div className="gallery-info text-xs text-accessible-muted mt-3 flex items-center gap-2">
-                                    <span>{safeExtraImages.length} images</span>
-                                    <span>• Click any to expand vertically downwards</span>
-                                </div>
+
+                                {safeExtraImages.length > 2 && (
+                                    <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                                        <span className="text-xs text-brand-text-dark">{safeExtraImages.length} images total</span>
+                                        <button
+                                            onClick={() => setIsGalleryExpanded(!isGalleryExpanded)}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/80 hover:text-white transition-all duration-200 group"
+                                            aria-expanded={isGalleryExpanded}
+                                        >
+                                            <span>{isGalleryExpanded ? 'Show less' : 'View more'}</span>
+                                            {isGalleryExpanded ? (
+                                                <ChevronUpIcon className="w-3.5 h-3.5 text-violet-400" />
+                                            ) : (
+                                                <ChevronDownIcon className="w-3.5 h-3.5 text-violet-400 animate-bounce" />
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="empty-state">
@@ -1473,67 +1489,110 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
 
             {selectedImage && modalRoot && ReactDOM.createPortal(
                 <div
-                    className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-6 animate-fade-in"
+                    className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-6 animate-fade-in select-none"
                     onClick={() => setSelectedImage(null)}
                     onKeyDown={(e) => {
-                        if (e.key === 'Escape') setSelectedImage(null);
+                        if (e.key === 'Escape') {
+                            setSelectedImage(null);
+                        } else if (e.key === 'ArrowLeft') {
+                            const idx = safeExtraImages.indexOf(selectedImage);
+                            if (idx !== -1 && safeExtraImages.length > 1) {
+                                const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
+                                setSelectedImage(safeExtraImages[prev]);
+                            }
+                        } else if (e.key === 'ArrowRight') {
+                            const idx = safeExtraImages.indexOf(selectedImage);
+                            if (idx !== -1 && safeExtraImages.length > 1) {
+                                const next = (idx + 1) % safeExtraImages.length;
+                                setSelectedImage(safeExtraImages[next]);
+                            }
+                        }
+                    }}
+                    onTouchStart={(e) => {
+                        touchStartXRef.current = e.touches[0].clientX;
+                    }}
+                    onTouchEnd={(e) => {
+                        if (touchStartXRef.current === null) return;
+                        const diffX = touchStartXRef.current - e.changedTouches[0].clientX;
+                        if (Math.abs(diffX) > 40) {
+                            const idx = safeExtraImages.indexOf(selectedImage);
+                            if (idx !== -1 && safeExtraImages.length > 1) {
+                                if (diffX > 0) {
+                                    // Swipe left -> next image
+                                    const next = (idx + 1) % safeExtraImages.length;
+                                    setSelectedImage(safeExtraImages[next]);
+                                } else {
+                                    // Swipe right -> prev image
+                                    const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
+                                    setSelectedImage(safeExtraImages[prev]);
+                                }
+                            }
+                        }
+                        touchStartXRef.current = null;
                     }}
                     tabIndex={-1}
                     aria-modal="true"
                     role="dialog"
-                    aria-label="Vertical Cinematic Gallery"
+                    aria-label="Full size image viewer"
                 >
                     <div
-                        className="w-full max-w-5xl bg-[#0b0b12] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden relative"
-                        style={{ maxHeight: '90dvh', height: '100%' }}
+                        className="relative w-full h-full max-w-7xl flex items-center justify-center p-2"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 bg-black/60 flex-shrink-0">
-                            <div>
-                                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                                    <ImageIcon className="w-5 h-5 text-violet-400" />
-                                    <span>Cinematic Stills Gallery</span>
-                                </h3>
-                                <p className="text-xs text-white/60 mt-0.5">Scroll downwards to view all {safeExtraImages.length} high-resolution scenes</p>
-                            </div>
-                            <button
-                                onClick={() => setSelectedImage(null)}
-                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
-                                aria-label="Close gallery"
-                            >
-                                <XMarkIcon className="w-5 h-5" />
-                            </button>
-                        </div>
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 p-2 sm:p-2.5 rounded-full bg-black/60 hover:bg-black text-white/80 hover:text-white border border-white/10 transition-all duration-200 shadow-xl"
+                            aria-label="Close image view"
+                        >
+                            <XMarkIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
 
-                        {/* Downwards Scrollable Images List */}
-                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8 scroll-smooth custom-scrollbar">
-                            {safeExtraImages.map((img, idx) => (
-                                <div
-                                    key={idx}
-                                    ref={(el) => {
-                                        if (img === selectedImage && el && !el.dataset.scrolled) {
-                                            el.dataset.scrolled = 'true';
-                                            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-                                        }
-                                    }}
-                                    className="flex flex-col items-center bg-black/40 rounded-xl overflow-hidden border border-white/5 shadow-xl group"
-                                >
-                                    <div className="w-full bg-black/60 px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
-                                        <span className="text-xs font-bold text-violet-400 uppercase tracking-wider">Scene {idx + 1}</span>
-                                        <span className="text-[10px] font-semibold text-white/40 bg-white/5 px-2 py-0.5 rounded">Still</span>
-                                    </div>
-                                    <div className="w-full relative flex items-center justify-center p-2 sm:p-4 bg-black/20">
-                                        <img
-                                            src={img}
-                                            alt={`Scene ${idx + 1}`}
-                                            className="max-w-full h-auto object-contain max-h-[75vh] rounded block"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        {/* Image Counter Badge */}
+                        {safeExtraImages.length > 1 && (
+                            <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-20 px-3 py-1 rounded-full bg-black/60 border border-white/10 text-xs font-semibold text-white/80 backdrop-blur-sm shadow-xl">
+                                {safeExtraImages.indexOf(selectedImage) + 1} / {safeExtraImages.length}
+                            </div>
+                        )}
+
+                        {/* Desktop Left Arrow Button */}
+                        {safeExtraImages.length > 1 && (
+                            <button
+                                onClick={() => {
+                                    const idx = safeExtraImages.indexOf(selectedImage);
+                                    const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
+                                    setSelectedImage(safeExtraImages[prev]);
+                                }}
+                                className="absolute left-2 sm:left-4 z-20 hidden md:flex items-center justify-center p-3 rounded-full bg-black/60 hover:bg-black text-white/80 hover:text-white border border-white/10 transition-all duration-200 shadow-xl group"
+                                aria-label="Previous image"
+                                title="Previous (← Key)"
+                            >
+                                <ArrowLeftIcon className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
+                            </button>
+                        )}
+
+                        {/* Centered Image */}
+                        <img
+                            src={selectedImage}
+                            alt="Full size cinematic still"
+                            className="max-w-full max-h-[90dvh] object-contain rounded-lg block shadow-2xl transition-all duration-200"
+                        />
+
+                        {/* Desktop Right Arrow Button */}
+                        {safeExtraImages.length > 1 && (
+                            <button
+                                onClick={() => {
+                                    const idx = safeExtraImages.indexOf(selectedImage);
+                                    const next = (idx + 1) % safeExtraImages.length;
+                                    setSelectedImage(safeExtraImages[next]);
+                                }}
+                                className="absolute right-2 sm:right-4 z-20 hidden md:flex items-center justify-center p-3 rounded-full bg-black/60 hover:bg-black text-white/80 hover:text-white border border-white/10 transition-all duration-200 shadow-xl group"
+                                aria-label="Next image"
+                                title="Next (→ Key)"
+                            >
+                                <ArrowRightIcon className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+                            </button>
+                        )}
                     </div>
                 </div>,
                 modalRoot
