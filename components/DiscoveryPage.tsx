@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { track } from '@vercel/analytics/react';
-import { Pin, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
@@ -214,21 +214,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
     saveRailOrder(nextOrder);
   }, []);
 
-  const moveRailToTop = useCallback((key: string) => {
-    const next = [key, ...railOrder.filter((entry) => entry !== key)];
-    updateRailOrder(next);
-  }, [railOrder, updateRailOrder]);
-
-  const moveRail = useCallback((key: string, direction: -1 | 1) => {
-    const currentIndex = railOrder.indexOf(key);
-    if (currentIndex === -1) return;
-    const nextIndex = Math.max(0, Math.min(railOrder.length - 1, currentIndex + direction));
-    if (nextIndex === currentIndex) return;
-    const next = [...railOrder];
-    const [rail] = next.splice(currentIndex, 1);
-    next.splice(nextIndex, 0, rail);
-    updateRailOrder(next);
-  }, [railOrder, updateRailOrder]);
 
   const resetStrictFilters = useCallback(() => {
     const current = loadPreferenceSettings();
@@ -291,19 +276,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
           title={rail.title}
           items={rail.items}
           isLoading={rail.isLoading}
-          headerActions={(
-            <>
-              <button type="button" className="mm-icon-button" onClick={() => moveRailToTop(rail.key)} aria-label={`Pin ${rail.title} to top`}>
-                <Pin className="w-4 h-4" />
-              </button>
-              <button type="button" className="mm-icon-button" onClick={() => moveRail(rail.key, -1)} aria-label="Move up">
-                <ChevronUp className="w-4 h-4" />
-              </button>
-              <button type="button" className="mm-icon-button" onClick={() => moveRail(rail.key, 1)} aria-label="Move down">
-                <ChevronDown className="w-4 h-4" />
-              </button>
-            </>
-          )}
           onSectionVisible={handleSectionVisible}
           onSectionSkipped={handleSectionSkipped}
           onCardView={handleCardView}
