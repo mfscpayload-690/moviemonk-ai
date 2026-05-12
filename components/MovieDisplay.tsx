@@ -1555,6 +1555,30 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             </div>
                         )}
 
+                        {/* Mobile Swipe Hint Banner */}
+                        {safeExtraImages.length > 1 && (
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex md:hidden items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 border border-white/10 text-[11px] font-medium text-white/70 backdrop-blur-sm pointer-events-none animate-pulse">
+                                <ArrowLeftIcon className="w-3 h-3 text-violet-400" />
+                                <span>Swipe left or right</span>
+                                <ArrowRightIcon className="w-3 h-3 text-violet-400" />
+                            </div>
+                        )}
+
+                        {/* Mobile Left Arrow Side Hint */}
+                        {safeExtraImages.length > 1 && (
+                            <button
+                                onClick={() => {
+                                    const idx = safeExtraImages.indexOf(selectedImage);
+                                    const prev = (idx - 1 + safeExtraImages.length) % safeExtraImages.length;
+                                    setSelectedImage(safeExtraImages[prev]);
+                                }}
+                                className="absolute left-1.5 z-20 flex md:hidden items-center justify-center p-2 rounded-full bg-black/40 text-white/50 border border-white/5 backdrop-blur-xs active:scale-95 transition-all"
+                                aria-label="Previous image"
+                            >
+                                <ArrowLeftIcon className="w-4 h-4" />
+                            </button>
+                        )}
+
                         {/* Desktop Left Arrow Button */}
                         {safeExtraImages.length > 1 && (
                             <button
@@ -1577,6 +1601,21 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             alt="Full size cinematic still"
                             className="max-w-full max-h-[90dvh] object-contain rounded-lg block shadow-2xl transition-all duration-200"
                         />
+
+                        {/* Mobile Right Arrow Side Hint */}
+                        {safeExtraImages.length > 1 && (
+                            <button
+                                onClick={() => {
+                                    const idx = safeExtraImages.indexOf(selectedImage);
+                                    const next = (idx + 1) % safeExtraImages.length;
+                                    setSelectedImage(safeExtraImages[next]);
+                                }}
+                                className="absolute right-1.5 z-20 flex md:hidden items-center justify-center p-2 rounded-full bg-black/40 text-white/50 border border-white/5 backdrop-blur-xs active:scale-95 transition-all"
+                                aria-label="Next image"
+                            >
+                                <ArrowRightIcon className="w-4 h-4" />
+                            </button>
+                        )}
 
                         {/* Desktop Right Arrow Button */}
                         {safeExtraImages.length > 1 && (
