@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@e2a7746817296b1c676233d45f317b2031a29369 # v6.0.0
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload smoke screenshot
         if: always()
-        uses: actions/upload-artifact@043fb46e10756770951a8f9364966d9203ca9b78 # v4.6.0
+        uses: actions/upload-artifact@v4
         with:
           name: ui-smoke-home
           path: ui-smoke-home.png

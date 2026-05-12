@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@e2a7746817296b1c676233d45f317b2031a29369 # v6.0.0
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
@@ -48,10 +48,10 @@ jobs:
         working-directory: server
     steps:
       - name: Checkout
-        uses: actions/checkout@07f59d58564f8494630739c9f400799863861214 # v6.0.0
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@c8813ba6b4859a0f44917539031c26b8017c6993 # v5.5.0
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 

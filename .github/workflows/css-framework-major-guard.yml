@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Block unapproved major CSS framework upgrades
-        uses: actions/github-script@6062f68903c733610996c5e13589b91e92d77d71 # v9.0.0
+        uses: actions/github-script@v7
         with:
           script: |
             const owner = context.repo.owner;
