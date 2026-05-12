@@ -155,12 +155,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
     };
   }, [deferredSections.length, isLoading]);
 
-  const radarCheckedLabel = useMemo(() => {
-    if (!radarCheckedAt) return '';
-    const timestamp = Date.parse(radarCheckedAt);
-    if (!Number.isFinite(timestamp)) return '';
-    return `Last checked ${new Date(timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
-  }, [radarCheckedAt]);
 
   const discoveryRails = useMemo<DiscoveryRail[]>(() => {
     const rails: DiscoveryRail[] = [];
@@ -251,7 +245,7 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
         data-reveal-variant="fade"
         style={buildRevealStyle(0, 420)}
       >
-        {radarCheckedLabel && <p className="discovery-genre-caption mb-2">{radarCheckedLabel}</p>}
+
 
         {radarError && !radarLoading && (
           <div className="mm-empty-state" role="status">
