@@ -601,34 +601,6 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                 }
             }
 
-            // Only fetch recommendations reviews if we still have almost nothing
-            if (merged.length < 2) {
-                try {
-                    const recEndpoint = `${mediaType}/${currentId}/recommendations`;
-                    const recData = await apiGet<any>('/api/tmdb', { endpoint: recEndpoint, language: 'en-US', page: 1 });
-                    if (!isStillActive()) return;
-
-                    const recIds: number[] = Array.isArray(recData?.results)
-                        ? recData.results.slice(0, 4).map((entry: any) => entry?.id).filter(Boolean)
-                        : [];
-
-                    if (recIds.length > 0) sourceLabel = 'TMDB + Similar Titles';
-
-                    for (const recId of recIds) {
-                        if (merged.length >= 8) break;
-                        try {
-                            const related = await fetchTmdbReviewsPage(mediaType, String(recId), 1, 'en-US');
-                            if (!isStillActive()) return;
-                            merged = dedupeReviews([...merged, ...related.reviews]);
-                        } catch {
-                            // Ignore
-                        }
-                    }
-                } catch {
-                    // Ignore
-                }
-            }
-
             if (isStillActive()) {
                 setReviews(merged);
                 setRevTotal(primary.totalPages);
