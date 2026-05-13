@@ -172,34 +172,6 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                 }
             }
 
-            if (merged.length < 2) {
-                try {
-                    const recParams = new URLSearchParams({
-                        endpoint: `tv/${movie.tmdb_id}/recommendations`,
-                        language: 'en-US',
-                        page: '1'
-                    });
-                    const recData = await apiGet<any>('/api/tmdb', Object.fromEntries(recParams.entries()));
-                    const recIds: number[] = Array.isArray(recData?.results)
-                        ? recData.results.slice(0, 4).map((entry: any) => entry?.id).filter(Boolean)
-                        : [];
-
-                    if (recIds.length > 0) sourceLabel = 'TMDB + Similar Titles';
-
-                    for (const recId of recIds) {
-                        if (merged.length >= 8) break;
-                        try {
-                            const related = await fetchTvReviewsPage(String(recId), 'en-US');
-                            merged = dedupeReviews([...merged, ...related]);
-                        } catch {
-                            // Ignore individual related title failures.
-                        }
-                    }
-                } catch {
-                    // Ignore recommendation fallback failures.
-                }
-            }
-
             setReviews(merged);
             setReviewsSourceLabel(sourceLabel);
         } catch {
