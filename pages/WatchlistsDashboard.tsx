@@ -17,12 +17,12 @@ import {
 import { Share2, Copy, Check, GripVertical, Square, CheckSquare, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
-import {
-  canNotifyWatchlistReminders,
-  deriveWatchlistReminders,
-  dismissReminder,
-  notifyReminder
-} from '../services/watchlistReminders';
+// import {
+//   canNotifyWatchlistReminders,
+//   deriveWatchlistReminders,
+//   dismissReminder,
+//   notifyReminder
+// } from '../services/watchlistReminders';
 import { emitClientEvent } from '../services/clientObservability';
 import { apiPost } from '../lib/apiClient';
 
@@ -111,7 +111,7 @@ export function WatchlistsDashboard() {
   const [folderDropTargetId, setFolderDropTargetId] = useState<string | null>(null);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const [itemDropTargetId, setItemDropTargetId] = useState<string | null>(null);
-  const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
+  // const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
   const [mobileActionFolder, setMobileActionFolder] = useState<WatchlistFolder | null>(null);
@@ -250,40 +250,40 @@ export function WatchlistsDashboard() {
     };
   }, [folders]);
 
-  const watchlistReminders = useMemo(
-    () => deriveWatchlistReminders(folders, watched, 2),
-    [folders, watched, reminderRefreshToken]
-  );
+  // const watchlistReminders = useMemo(
+  //   () => deriveWatchlistReminders(folders, watched, 2),
+  //   [folders, watched, reminderRefreshToken]
+  // );
 
-  const handleDismissReminder = (reminderId: string) => {
-    dismissReminder(reminderId);
-    setReminderRefreshToken((value) => value + 1);
-    emitClientEvent({
-      event: 'watchlist_reminder_dismissed',
-      data: { reminder_id: reminderId }
-    });
-    setActionToast({ message: 'Reminder dismissed', kind: 'watchlist' });
-  };
+  // const handleDismissReminder = (reminderId: string) => {
+  //   dismissReminder(reminderId);
+  //   setReminderRefreshToken((value) => value + 1);
+  //   emitClientEvent({
+  //     event: 'watchlist_reminder_dismissed',
+  //     data: { reminder_id: reminderId }
+  //   });
+  //   setActionToast({ message: 'Reminder dismissed', kind: 'watchlist' });
+  // };
 
-  const handleNotifyReminder = async (reminder: (typeof watchlistReminders)[number]) => {
-    const delivered = await notifyReminder(reminder);
-    emitClientEvent({
-      event: 'watchlist_reminder_notify_attempted',
-      data: {
-        reminder_id: reminder.id,
-        delivered
-      }
-    });
-    if (!delivered) {
-      setNotice({
-        title: 'Browser notifications are off',
-        description: 'Enable notifications for this site to receive watchlist reminders.',
-        tone: 'destructive'
-      });
-      return;
-    }
-    setActionToast({ message: 'Reminder sent', kind: 'watchlist' });
-  };
+  // const handleNotifyReminder = async (reminder: (typeof watchlistReminders)[number]) => {
+  //   const delivered = await notifyReminder(reminder);
+  //   emitClientEvent({
+  //     event: 'watchlist_reminder_notify_attempted',
+  //     data: {
+  //       reminder_id: reminder.id,
+  //       delivered
+  //     }
+  //   });
+  //   if (!delivered) {
+  //     setNotice({
+  //       title: 'Browser notifications are off',
+  //       description: 'Enable notifications for this site to receive watchlist reminders.',
+  //       tone: 'destructive'
+  //     });
+  //     return;
+  //   }
+  //   setActionToast({ message: 'Reminder sent', kind: 'watchlist' });
+  // };
 
   const startEditFolder = (folder: WatchlistFolder) => {
     setEditingFolderId(folder.id);
@@ -608,7 +608,8 @@ export function WatchlistsDashboard() {
         </div>
       )}
 
-      {!activeFolderId && !showWatchedView && watchlistReminders.length > 0 && (
+      {/* Watchlist reminders hidden for now */}
+      {/* {!activeFolderId && !showWatchedView && watchlistReminders.length > 0 && (
         <section className="mm-reminders-panel glass-panel mb-10">
           <div className="mm-reminders-panel-header">
             <div>
@@ -651,7 +652,7 @@ export function WatchlistsDashboard() {
             ))}
           </div>
         </section>
-      )}
+      )} */}
 
       {/* 3. Watched List View */}
       {showWatchedView && !activeFolderId ? (
