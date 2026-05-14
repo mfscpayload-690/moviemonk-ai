@@ -750,126 +750,130 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 <SendIcon className="w-4 h-4" />
               </button>
             )}
-            {isSuggesting && !isLoading && <div className="suggest-loading">Searching...</div>}
+          </div>
 
-            {showTrending && query.trim().length < 2 && (
-              <div className="suggest-dropdown trending-dropdown" role="listbox" aria-label="Daily trending searches">
-                <div className="trending-header">
-                  <span className="trending-title">Trending Searches</span>
+          {showTrending && query.trim().length < 2 && (
+            <div className="suggest-dropdown trending-dropdown" role="listbox" aria-label="Daily trending searches">
+              <div className="trending-header">
+                <span className="trending-title">Trending Searches</span>
+              </div>
+              {isTrendingLoading && (
+                <div className="trending-loading-row">Loading daily picks...</div>
+              )}
+              {!isTrendingLoading && trendingLoadError && (
+                <div className="trending-error-row">
+                  <span>{trendingLoadError}</span>
+                  <button
+                    type="button"
+                    className="trending-retry-btn"
+                    onClick={() => void loadDailyTrending(true)}
+                  >
+                    Retry
+                  </button>
                 </div>
-                {isTrendingLoading && (
-                  <div className="trending-loading-row">Loading daily picks...</div>
-                )}
-                {!isTrendingLoading && trendingLoadError && (
-                  <div className="trending-error-row">
-                    <span>{trendingLoadError}</span>
-                    <button
-                      type="button"
-                      className="trending-retry-btn"
-                      onClick={() => void loadDailyTrending(true)}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-                {!isTrendingLoading && dailyTrending.map((suggestion) => {
-                  const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                  return (
-                    <button
-                      type="button"
-                      key={`trending-${suggestion.id}`}
-                      role="option"
-                      className="suggest-row trending-row"
-                      onClick={() => handleSuggestionSelect(suggestion)}
-                    >
-                      <div className="suggest-poster-wrap is-title">
-                        {suggestion.banner_url ? (
-                          <img src={suggestion.banner_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                        ) : suggestion.poster_url ? (
-                          <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+              )}
+              {!isTrendingLoading && dailyTrending.map((suggestion) => {
+                const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                return (
+                  <button
+                    type="button"
+                    key={`trending-${suggestion.id}`}
+                    role="option"
+                    className="suggest-row trending-row"
+                    onClick={() => handleSuggestionSelect(suggestion)}
+                  >
+                    <div className="suggest-poster-wrap is-title">
+                      {suggestion.banner_url ? (
+                        <img src={suggestion.banner_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      ) : suggestion.poster_url ? (
+                        <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      ) : (
+                        <div className="suggest-poster placeholder">
+                          <IconComponent size={24} className="poster-icon" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="suggest-meta">
+                      <div className="suggest-title-row">
+                        <span className="suggest-title">{suggestion.title}</span>
+                      </div>
+                      <div className="suggest-subtitle">
+                        {suggestion.year && <span>{suggestion.year}</span>}
+                        <span>•</span>
+                        <span className="capitalize">movie</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Suggestions Dropdown with Icons */}
+          {(isSuggesting || (showSuggestions && suggestions.length > 0)) && query.trim().length >= 2 && (
+            <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
+              {isSuggesting && !isLoading && (
+                <div className="trending-loading-row animate-pulse" style={{ textAlign: 'center' }}>
+                  Searching...
+                </div>
+              )}
+              {showSuggestions && suggestions.length > 0 && suggestions.map((suggestion, index) => {
+                const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                const personCard = suggestion.type === 'person'
+                  ? buildPersonCardPresentation({
+                      name: suggestion.title,
+                      profile_url: suggestion.poster_url,
+                      known_for_department: suggestion.known_for_department,
+                      known_for_titles: suggestion.known_for_titles
+                    })
+                  : null;
+                return (
+                  <button
+                    type="button"
+                    key={`${suggestion.media_type}-${suggestion.id}`}
+                    id={`search-suggestion-${index}`}
+                    role="option"
+                    aria-selected={highlightedIndex === index}
+                    className={`suggest-row ${highlightedIndex === index ? 'active' : ''}`}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    onClick={() => handleSuggestionSelect(suggestion)}
+                  >
+                    {/* Poster */}
+                    <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : 'is-title'}`}>
+                      {suggestion.poster_url ? (
+                        <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      ) : (
+                        <div className="suggest-poster placeholder">
+                          <IconComponent size={24} className="poster-icon" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Title and Metadata */}
+                    <div className="suggest-meta">
+                      <div className="suggest-title-row">
+                        <span className="suggest-title">{suggestion.title}</span>
+                        {suggestion.type === 'person' && personCard ? (
+                          <span className="suggest-role-chip">{personCard.roleChip}</span>
                         ) : (
-                          <div className="suggest-poster placeholder">
-                            <IconComponent size={24} className="poster-icon" />
-                          </div>
+                          <IconComponent size={18} className="suggest-icon-tag" />
                         )}
                       </div>
-                      <div className="suggest-meta">
-                        <div className="suggest-title-row">
-                          <span className="suggest-title">{suggestion.title}</span>
-                        </div>
+                      {suggestion.type === 'person' && personCard ? (
+                        <div className="suggest-person-snippet">{personCard.snippet}</div>
+                      ) : (
                         <div className="suggest-subtitle">
                           {suggestion.year && <span>{suggestion.year}</span>}
-                          <span>•</span>
-                          <span className="capitalize">movie</span>
+                          {suggestion.type && <span>•</span>}
+                          <span className="capitalize">{suggestion.type}</span>
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Suggestions Dropdown with Icons */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
-                {suggestions.map((suggestion, index) => {
-                  const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                  const personCard = suggestion.type === 'person'
-                    ? buildPersonCardPresentation({
-                        name: suggestion.title,
-                        profile_url: suggestion.poster_url,
-                        known_for_department: suggestion.known_for_department,
-                        known_for_titles: suggestion.known_for_titles
-                      })
-                    : null;
-                  return (
-                    <button
-                      type="button"
-                      key={`${suggestion.media_type}-${suggestion.id}`}
-                      id={`search-suggestion-${index}`}
-                      role="option"
-                      aria-selected={highlightedIndex === index}
-                      className={`suggest-row ${highlightedIndex === index ? 'active' : ''}`}
-                      onMouseEnter={() => setHighlightedIndex(index)}
-                      onClick={() => handleSuggestionSelect(suggestion)}
-                    >
-                      {/* Poster */}
-                      <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : 'is-title'}`}>
-                        {suggestion.poster_url ? (
-                          <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                        ) : (
-                          <div className="suggest-poster placeholder">
-                            <IconComponent size={24} className="poster-icon" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Title and Metadata */}
-                      <div className="suggest-meta">
-                        <div className="suggest-title-row">
-                          <span className="suggest-title">{suggestion.title}</span>
-                          {suggestion.type === 'person' && personCard ? (
-                            <span className="suggest-role-chip">{personCard.roleChip}</span>
-                          ) : (
-                            <IconComponent size={18} className="suggest-icon-tag" />
-                          )}
-                        </div>
-                        {suggestion.type === 'person' && personCard ? (
-                          <div className="suggest-person-snippet">{personCard.snippet}</div>
-                        ) : (
-                          <div className="suggest-subtitle">
-                            {suggestion.year && <span>{suggestion.year}</span>}
-                            {suggestion.type && <span>•</span>}
-                            <span className="capitalize">{suggestion.type}</span>
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {inlinePrompt && (
             <div className="suggest-inline-hint">
