@@ -163,6 +163,7 @@ export interface ConfirmDialogProps {
   tone?: DialogTone;
   mobileSheet?: boolean;
   busy?: boolean;
+  children?: React.ReactNode;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -176,6 +177,7 @@ export function ConfirmDialog({
   tone = 'default',
   mobileSheet,
   busy = false,
+  children,
   onConfirm,
   onClose
 }: ConfirmDialogProps) {
@@ -202,7 +204,9 @@ export function ConfirmDialog({
           </button>
         </>
       )}
-    />
+    >
+      {children}
+    </DialogShell>
   );
 }
 
