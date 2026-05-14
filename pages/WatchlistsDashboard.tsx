@@ -53,7 +53,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 }
 
 export function WatchlistsDashboard() {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const navigate = useNavigate();
   const { folderName: folderNameParam } = useParams<{ folderName?: string }>();
   const {
@@ -391,11 +391,16 @@ export function WatchlistsDashboard() {
       setShareLink(null);
 
       const data = await apiPost<any>('/api/watchlists/share', {
-        folderName: folder.name,
-        folderIcon: folder.icon,
-        items: folder.items,
-        created_by: displayName || 'MovieMonk User'
-      });
+        folder_name: folder.name,
+        folder_icon: folder.icon || null,
+        items: folder.items.map(item => ({
+          id: item.id,
+          saved_title: item.saved_title,
+          movie: item.movie,
+          added_at: item.added_at
+        })),
+        visibility: 'public'
+      }, undefined, session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {});
       setShareLink(data.share_url);
     } catch (err) {
       console.error('Share error:', err);
