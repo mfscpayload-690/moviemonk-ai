@@ -112,6 +112,7 @@ export function WatchlistsDashboard() {
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const [itemDropTargetId, setItemDropTargetId] = useState<string | null>(null);
   // const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
+  const [privacyPromptFolder, setPrivacyPromptFolder] = useState<WatchlistFolder | null>(null);
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
   const [mobileActionFolder, setMobileActionFolder] = useState<WatchlistFolder | null>(null);
@@ -967,41 +968,28 @@ export function WatchlistsDashboard() {
                       <p className="wl-folder-meta">{heroItem ? `Last added: ${heroItem.movie?.title || 'Untitled'}` : 'Empty folder'}</p>
                       <div className="wl-folder-actions hidden sm:flex">
                         <button
-                          type="button"
-                          className="wl-folder-action-btn"
-                          title="Move Up"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (index > 0) {
-                              reorderFolders(folder.id, folders[index - 1].id);
-                            }
-                          }}
-                          aria-label="Move folder up"
-                        >
-                          <ChevronUpIcon className="w-4 h-4" />
-                        </button>
-                        <button
                           onClick={(event) => {
                             event.stopPropagation();
                             startEditFolder(folder);
                           }}
                           className="wl-folder-action-btn"
+                          title="Edit Folder"
                         >
                           <EditIcon className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          type="button"
-                          className="wl-folder-action-btn"
-                          title="Move Down"
                           onClick={(event) => {
                             event.stopPropagation();
-                            if (index < folders.length - 1) {
-                              reorderFolders(folder.id, folders[index + 1].id);
+                            if (folder.is_public) {
+                              handleShareFolder(folder);
+                            } else {
+                              setPrivacyPromptFolder(folder);
                             }
                           }}
-                          aria-label="Move folder down"
+                          className="wl-folder-action-btn"
+                          title="Share Folder"
                         >
-                          <ChevronDownIcon className="w-4 h-4" />
+                          <Share2 size={14} />
                         </button>
                         <button
                           onClick={(event) => {
@@ -1009,6 +997,7 @@ export function WatchlistsDashboard() {
                             handleDeleteFolder(folder.id, folder.name, folder.items.length);
                           }}
                           className="wl-folder-action-btn danger"
+                          title="Delete Folder"
                         >
                           <TrashIcon className="w-3.5 h-3.5" />
                         </button>
@@ -1309,8 +1298,15 @@ export function WatchlistsDashboard() {
             </button>
             <button
               onClick={() => {
-                setMobileActionFolder(null);
-                handleShareFolder(mobileActionFolder);
+                if (mobileActionFolder) {
+                  const folder = mobileActionFolder;
+                  setMobileActionFolder(null);
+                  if (folder.is_public) {
+                    handleShareFolder(folder);
+                  } else {
+                    setPrivacyPromptFolder(folder);
+                  }
+                }
               }}
               className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-white/5 text-brand-text-light hover:text-white transition-colors text-left"
             >
@@ -1330,6 +1326,32 @@ export function WatchlistsDashboard() {
             </button>
           </div>
         </div>
+      )}
+
+      {privacyPromptFolder && (
+        <ConfirmDialog
+          open={!!privacyPromptFolder}
+          title="Share Private Watchlist"
+          description={`"${privacyPromptFolder.name}" is currently private. You need to make it public before you can share it with others.`}
+          confirmLabel="Make Public & Share"
+          onConfirm={async () => {
+            const folder = privacyPromptFolder;
+            setPrivacyPromptFolder(null);
+            await setFolderPrivacy(folder.id, true);
+            handleShareFolder(folder);
+          }}
+          onClose={() => setPrivacyPromptFolder(null)}
+        >
+          <div className="mt-4 p-4 rounded-xl bg-brand-primary/5 border border-brand-primary/20 flex items-start gap-3">
+            <div className="mt-0.5">
+              <CheckSquare size={18} className="text-brand-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Switch to Public</p>
+              <p className="text-xs text-brand-text-dark mt-1">This will make the folder visible to anyone with the link.</p>
+            </div>
+          </div>
+        </ConfirmDialog>
       )}
 
     </DashboardLayout>
