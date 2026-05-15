@@ -1,21 +1,29 @@
 # Contributing to MovieMonk
 
-Thanks for helping improve the project! Please follow the steps below to keep changes smooth and reviewable.
+Thank you for your interest in contributing to MovieMonk! This document outlines the process for submitting improvements and maintaining the project's engineering standards.
 
-## How to contribute
-1. **Fork and branch**: create a feature branch from `main` (e.g., `feature/search-copy-update` or `fix/cache-key`).
-2. **Set up locally**: install dependencies (`npm install`) and configure `.env.local` with the required API keys.
-3. **Make focused changes**: keep PRs small and scoped to one concern.
-4. **Validate**:
-   - Tests: `npm test -- --runInBand`
-   - Type check: `npm run lint`
-   - Build: `npm run build`
-5. **Submit a PR**: describe the change, risks, and any configuration updates. Include screenshots when UI changes are visible.
+## Contribution Workflow
 
-## Coding expectations
-- Keep TypeScript types up to date and prefer typed helpers over `any`.
-- Preserve shared utilities in `api/_utils` (CORS, observability, error helpers) when touching API routes.
-- Avoid committing secrets or `.env` files; environment variables belong in deployment settings.
+1.  **Fork & Branch**: Create a descriptive feature branch from `main` (e.g., `feat/search-optimization` or `fix/auth-callback`).
+2.  **Environment Setup**: Install dependencies via `npm install` and configure your local `.env.local` using the provided `.env.example`.
+3.  **Atomic Changes**: Keep Pull Requests focused and scoped to a single concern to facilitate efficient code review.
+4.  **Verification**:
+    *   **Unit Tests**: `npm test -- --runInBand`
+    *   **Static Analysis**: `npm run lint`
+    *   **Build Validation**: `npm run build`
+5.  **Submission**: Submit a PR with a comprehensive description of the changes, potential risks, and any necessary configuration updates. Include visual evidence (screenshots/recordings) for UI-facing changes.
 
-## Reporting issues
-Open an issue with a clear description, steps to reproduce, and expected vs. actual behavior. For security concerns, follow `SECURITY.md`.
+## Engineering Standards
+
+- **Type Safety**: Maintain rigorous TypeScript definitions. Avoid the use of `any` and prefer interface-driven development.
+- **Architectural Integrity**: Adhere to the decoupled architecture. Ensure server-side logic remains in the `server/` directory and shared utilities are utilized correctly.
+- **Security**: Never commit secrets or sensitive environment variables. Follow the guidelines in `SECURITY.md`.
+- **Code Quality**: Ensure all new code adheres to the project's linting rules and formatting standards.
+
+## Good First Issues
+
+If you are new to the repository, we recommend starting with our curated list of [Good First Issues](GOOD_FIRST_ISSUES.md). These tasks are designed to provide a low-friction entry point into the codebase.
+
+## Reporting Vulnerabilities
+
+For security-related issues, please refer to our [SECURITY.md](SECURITY.md) for the responsible disclosure process. For general bugs, open a GitHub issue with clear reproduction steps.
