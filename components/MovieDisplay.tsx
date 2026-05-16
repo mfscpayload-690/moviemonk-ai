@@ -917,8 +917,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                 </button>
                                 {showFullPlot && fullPlotContent && (
                                     <div id="spoiler-content" className="pt-3 border-t border-brand-primary/20 animate-fade-in">
-                                        <p className="text-sm font-bold text-red-400 mb-2">{fullPlotContent.startsWith('SPOILER WARNING') ? fullPlotContent.split('—')[0] : 'SPOILER WARNING'}</p>
-                                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">{fullPlotContent.replace(/^SPOILER WARNING — Full plot explained below\.\n*/, '')}</p>
+                                        <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
+                                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
+                                            {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
+                                        </p>
                                     </div>
                                 )}
                                 {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
