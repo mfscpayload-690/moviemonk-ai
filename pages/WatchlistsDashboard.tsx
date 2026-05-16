@@ -840,7 +840,7 @@ export function WatchlistsDashboard() {
                           {item.movie.title}
                         </div>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 mm-scrim-bottom p-3 pt-12 z-20 pointer-events-none">
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-12 z-20 pointer-events-none">
                         <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md text-depth">{item.movie.title}</h4>
                         <span className="text-xs text-brand-text-light block mt-0.5">{item.movie.year || 'Unknown'}</span>
                       </div>
@@ -865,7 +865,7 @@ export function WatchlistsDashboard() {
                         <GripVertical size={14} />
                       </div>
 
-                      <div className="absolute top-12 left-2 flex gap-1 z-20">
+                      <div className="absolute top-2.5 left-2.5 flex gap-1 z-20">
                         <div className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white/90 text-[10px] font-bold tracking-wider uppercase">
                           {item.movie.type === 'show' ? 'Series' : 'Movie'}
                         </div>
