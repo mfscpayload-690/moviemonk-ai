@@ -856,7 +856,7 @@ export function WatchlistsDashboard() {
                             setActionToast({ message: '1 item deleted', kind: 'watchlist' });
                           }, 300);
                         }}
-                        className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                        className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                         title="Remove from folder"
                       >
                         <TrashIcon className="w-4 h-4" />
