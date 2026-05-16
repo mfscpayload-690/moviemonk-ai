@@ -494,27 +494,28 @@ export function WatchlistsDashboard() {
   return (
     <DashboardLayout>
       {/* 1. User Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-6 glass-panel p-6 sm:p-8 rounded-3xl border border-white/5 relative overflow-hidden">
+      {!activeFolderId && !showWatchedView && (
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
         {/* Subtle background glow */}
         <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="flex items-center gap-5 relative z-10">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-2xl transition-transform hover:scale-105 duration-300">
+        <div className="flex items-center gap-4 sm:gap-6 relative z-10">
+          <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
             {avatarUrl && !avatarFailed ? (
               <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
+              <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
                 {displayName[0]?.toUpperCase() || '?'}
               </div>
             )}
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Welcome, {displayName}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight truncate">Welcome, {displayName}</h1>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <p className="text-brand-text-light">Your Cinematic Collection</p>
+              <p className="text-xs sm:text-base text-brand-text-light">Your Cinematic Collection</p>
               {isCloud ? (
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${isSyncing || syncBadgeVisible
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide ${isSyncing || syncBadgeVisible
                       ? 'border-brand-primary/40 bg-brand-primary/10 text-brand-primary'
                       : justSynced
                         ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
@@ -523,29 +524,31 @@ export function WatchlistsDashboard() {
                 >
                   {isSyncing || syncBadgeVisible ? (
                     <>
-                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
                         <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                       </svg>
-                      Syncing changes
+                      <span className="hidden xs:inline">Syncing changes</span>
+                      <span className="xs:hidden">Syncing</span>
                     </>
                   ) : justSynced ? (
                     <>
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M5 12.5 9.2 17 19 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       Synced
                     </>
                   ) : (
                     <>
-                      <span className="h-2 w-2 rounded-full bg-brand-text-light/60" />
-                      Cloud connected
+                      <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-brand-text-light/60" />
+                      <span className="hidden xs:inline">Cloud connected</span>
+                      <span className="xs:hidden">Connected</span>
                     </>
                   )}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-brand-text-light">
-                  <span className="h-2 w-2 rounded-full bg-amber-300/90" />
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide text-brand-text-light">
+                  <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-300/90" />
                   Local only
                 </span>
               )}
@@ -553,6 +556,7 @@ export function WatchlistsDashboard() {
           </div>
         </div>
       </div>
+    )}
 
       {/* 2. Metric Cards */}
       {!activeFolderId && (
