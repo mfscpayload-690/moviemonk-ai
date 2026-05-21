@@ -38,7 +38,7 @@ export function buildHeaderUtilityMenuItems({
   const items: HeaderUtilityMenuItem[] = [
     {
       key: 'watchlists',
-      label: user ? 'Cloud Lists' : 'Watchlist',
+      label: user ? 'Watchlist' : 'Watchlist',
       description: isSyncing
         ? 'Syncing across your devices'
         : isCloud
@@ -170,9 +170,8 @@ export default function HeaderUtilityMenu({
         {/* Standalone Share button — always visible in header */}
         <button
           type="button"
-          className={`auth-btn auth-btn-avatar header-more-btn ${
-            canShare ? 'text-white hover:text-brand-primary' : 'opacity-40 cursor-not-allowed'
-          }`}
+          className={`auth-btn auth-btn-avatar header-more-btn ${canShare ? 'text-white hover:text-brand-primary' : 'opacity-40 cursor-not-allowed'
+            }`}
           onClick={canShare ? () => { onShare(); } : undefined}
           aria-label="Share current page"
           title={canShare ? 'Copy shareable link' : 'Open a result to share'}
