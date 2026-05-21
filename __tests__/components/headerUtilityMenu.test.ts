@@ -27,7 +27,7 @@ describe('HeaderUtilityMenu', () => {
 
     // Share has moved to a standalone header button — only 2 items in dropdown
     expect(items.map((item) => item.label)).toEqual([
-      'Cloud Lists',
+      'Watchlist',
       'Settings'
     ]);
     // Share is no longer a dropdown item
@@ -65,7 +65,7 @@ describe('HeaderUtilityMenu', () => {
       )
     );
 
-    expect(html).toContain('Cloud Lists');
+    expect(html).toContain('Watchlist');
     expect(html).toContain('Settings');
     // Share is now a standalone button - its title attribute contains this text
     expect(html).toContain('Open a result to share');
