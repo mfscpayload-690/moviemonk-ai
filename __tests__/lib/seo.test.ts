@@ -24,6 +24,8 @@ describe('safeImgUrl', () => {
     expect(safeImgUrl('https://static.tvmaze.com/uploads/images/medium_portrait/1/3.jpg')).toBe('https://static.tvmaze.com/uploads/images/medium_portrait/1/3.jpg');
     expect(safeImgUrl('https://images.unsplash.com/photo-123456')).toBe('https://images.unsplash.com/photo-123456');
     expect(safeImgUrl('https://lh3.googleusercontent.com/a/ACg8ocL3')).toBe('https://lh3.googleusercontent.com/a/ACg8ocL3');
+    expect(safeImgUrl('https://sub.lh3.googleusercontent.com/a/ACg8ocL3')).toBe('https://sub.lh3.googleusercontent.com/a/ACg8ocL3');
+    expect(safeImgUrl('https://foo.googleusercontent.com/avatar')).toBe('https://foo.googleusercontent.com/avatar');
     expect(safeImgUrl('https://avatars.githubusercontent.com/u/9919')).toBe('https://avatars.githubusercontent.com/u/9919');
     expect(safeImgUrl('https://projectref.supabase.co/storage/v1/object/public/avatars/avatar.jpg')).toBe('https://projectref.supabase.co/storage/v1/object/public/avatars/avatar.jpg');
     expect(safeImgUrl('https://moviemonk-ai.vercel.app/logo.png')).toBe('https://moviemonk-ai.vercel.app/logo.png');
