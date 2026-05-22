@@ -19,7 +19,7 @@ import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import { apiGet } from '../lib/apiClient';
-import { safeImgUrl } from '../lib/seo';
+import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
 
 
@@ -780,6 +780,18 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 const displayBanner = safeImgUrl(suggestion.banner_url);
                 const displayPoster = safeImgUrl(suggestion.poster_url);
 
+                const safeBanner = displayBanner && (
+                  SAFE_URL_PATTERN.test(displayBanner) ||
+                  SAFE_DATA_URL_PATTERN.test(displayBanner) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayBanner))
+                ) ? displayBanner : '';
+
+                const safePoster = displayPoster && (
+                  SAFE_URL_PATTERN.test(displayPoster) ||
+                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
+                ) ? displayPoster : '';
+
                 return (
                   <button
                     type="button"
@@ -789,10 +801,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                     onClick={() => handleSuggestionSelect(suggestion)}
                   >
                     <div className="suggest-poster-wrap is-title">
-                      {displayBanner ? (
-                        <img src={displayBanner} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                      ) : displayPoster ? (
-                        <img src={displayPoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      {safeBanner ? (
+                        <img src={safeBanner} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      ) : safePoster ? (
+                        <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : (
                         <div className="suggest-poster placeholder">
                           <IconComponent size={24} className="poster-icon" />
@@ -835,6 +847,12 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   : null;
                 const displayPoster = safeImgUrl(suggestion.poster_url);
 
+                const safePoster = displayPoster && (
+                  SAFE_URL_PATTERN.test(displayPoster) ||
+                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
+                ) ? displayPoster : '';
+
                 return (
                   <button
                     type="button"
@@ -848,8 +866,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   >
                     {/* Poster */}
                     <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : 'is-title'}`}>
-                      {displayPoster ? (
-                        <img src={displayPoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      {safePoster ? (
+                        <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : (
                         <div className="suggest-poster placeholder">
                           <IconComponent size={24} className="poster-icon" />

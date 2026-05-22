@@ -25,7 +25,7 @@ import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 // } from '../services/watchlistReminders';
 import { emitClientEvent } from '../services/clientObservability';
 import { apiPost } from '../lib/apiClient';
-import { safeImgUrl } from '../lib/seo';
+import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
 
 
 

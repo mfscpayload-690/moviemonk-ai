@@ -23,7 +23,7 @@ import {
   upsertProfileSettings
 } from '../services/userSettingsService';
 import { getAuthAvatarUrl, getAuthDisplayName, getAuthProviderLabel } from '../lib/authIdentity';
-import { safeImgUrl } from '../lib/seo';
+import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
 
 /* ────────────────────────────────────────────
    Constants
@@ -213,11 +213,17 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
 
   const displayUrl = safeImgUrl(url);
 
-  if (displayUrl && !imageFailed) {
+  const safeUrl = displayUrl && (
+    SAFE_URL_PATTERN.test(displayUrl) ||
+    SAFE_DATA_URL_PATTERN.test(displayUrl) ||
+    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayUrl))
+  ) ? displayUrl : '';
+
+  if (safeUrl && !imageFailed) {
     return (
       <div className={cls} style={{ padding: 0, overflow: 'hidden' }}>
         <img
-          src={displayUrl}
+          src={safeUrl}
           alt=""
           onError={() => setImageFailed(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}

@@ -174,11 +174,11 @@ export function buildPersonJsonLd(data: SeoPersonPayload): Record<string, unknow
 export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
 export const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
 
-const IS_DEV = typeof process !== 'undefined'
+export const IS_DEV = typeof process !== 'undefined'
   ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
   : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
 
-const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
+export const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
 
 export function safeImgUrl(url: string | null | undefined, fallback = ''): string {
   if (!url) return fallback;
