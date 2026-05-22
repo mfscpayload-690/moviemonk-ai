@@ -166,3 +166,20 @@ export function buildPersonJsonLd(data: SeoPersonPayload): Record<string, unknow
     notableWork: notableWork.length > 0 ? notableWork : undefined
   };
 }
+
+/**
+ * Sanitizes an image URL to prevent XSS (e.g. javascript: URLs)
+ * and client-side unvalidated URL redirection by allowing only safe protocols.
+ */
+export function safeImgUrl(url: string | null | undefined, fallback = ''): string {
+  if (!url) return fallback;
+  const trimmed = url.trim();
+  
+  // Allow only http, https, relative paths, or base64 data images
+  if (/^(https?:\/\/|\/|data:image\/)/i.test(trimmed)) {
+    return trimmed;
+  }
+  
+  return fallback;
+}
+
