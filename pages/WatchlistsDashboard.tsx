@@ -493,16 +493,32 @@ export function WatchlistsDashboard() {
   }
 
   const cleanAvatarUrl = safeImgUrl(avatarUrl);
-  const displayAvatarUrl = (cleanAvatarUrl.startsWith('/') && !cleanAvatarUrl.startsWith('//')) ||
-    cleanAvatarUrl.startsWith('https://lh3.googleusercontent.com/') ||
-    cleanAvatarUrl.startsWith('https://graph.facebook.com/') ||
-    cleanAvatarUrl.startsWith('https://avatars.githubusercontent.com/') ||
-    cleanAvatarUrl.startsWith('https://moviemonk-ai.vercel.app/') ||
-    cleanAvatarUrl.startsWith('http://localhost:') ||
-    cleanAvatarUrl.startsWith('data:image/') ||
-    (cleanAvatarUrl.startsWith('https://') && cleanAvatarUrl.includes('.supabase.co/'))
-    ? cleanAvatarUrl
-    : '';
+  let isAvatarSafe = false;
+  if (cleanAvatarUrl) {
+    if (cleanAvatarUrl.startsWith('/') && !cleanAvatarUrl.startsWith('//')) {
+      isAvatarSafe = true;
+    } else if (cleanAvatarUrl.startsWith('data:image/')) {
+      isAvatarSafe = true;
+    } else {
+      try {
+        const parsed = new URL(cleanAvatarUrl);
+        const host = parsed.hostname.toLowerCase();
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          isAvatarSafe = [
+            'image.tmdb.org',
+            'static.tvmaze.com',
+            'images.unsplash.com',
+            'lh3.googleusercontent.com',
+            'graph.facebook.com',
+            'avatars.githubusercontent.com',
+            'moviemonk-ai.vercel.app',
+            'localhost'
+          ].includes(host) || host.endsWith('.supabase.co');
+        }
+      } catch {}
+    }
+  }
+  const displayAvatarUrl = isAvatarSafe ? cleanAvatarUrl : '';
 
   return (
     <DashboardLayout>
@@ -514,7 +530,7 @@ export function WatchlistsDashboard() {
 
         <div className="flex items-center gap-4 sm:gap-6 relative z-10">
           <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
-            {avatarUrl && !avatarFailed ? (
+            {displayAvatarUrl && !avatarFailed ? (
               <img src={displayAvatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
@@ -720,7 +736,7 @@ export function WatchlistsDashboard() {
                   <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
                     <Link to={`/${item.media_type}/${item.tmdb_id}`} className="absolute inset-0 z-10" />
                     {/* Poster */}
-                    {item.poster_url ? (
+                    {displayPosterUrl ? (
                       <img src={displayPosterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40 text-sm">
@@ -866,7 +882,7 @@ export function WatchlistsDashboard() {
                       }}
                     >
                       <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />
-                      {item.movie.poster_url ? (
+                      {displayPosterUrl ? (
                         <img src={displayPosterUrl} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40">
