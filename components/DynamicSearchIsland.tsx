@@ -19,6 +19,7 @@ import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import { apiGet } from '../lib/apiClient';
+import { safeImgUrl } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
 
 // Helper to get icon component by suggestion type
@@ -784,9 +785,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   >
                     <div className="suggest-poster-wrap is-title">
                       {suggestion.banner_url ? (
-                        <img src={suggestion.banner_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                        <img src={safeImgUrl(suggestion.banner_url)} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : suggestion.poster_url ? (
-                        <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                        <img src={safeImgUrl(suggestion.poster_url)} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : (
                         <div className="suggest-poster placeholder">
                           <IconComponent size={24} className="poster-icon" />
