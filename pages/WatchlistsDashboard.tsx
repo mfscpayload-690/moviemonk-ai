@@ -25,6 +25,7 @@ import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 // } from '../services/watchlistReminders';
 import { emitClientEvent } from '../services/clientObservability';
 import { apiPost } from '../lib/apiClient';
+import { safeImgUrl } from '../lib/seo';
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -502,7 +503,7 @@ export function WatchlistsDashboard() {
         <div className="flex items-center gap-4 sm:gap-6 relative z-10">
           <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
             {avatarUrl && !avatarFailed ? (
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
+              <img src={safeImgUrl(avatarUrl)} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
                 {displayName[0]?.toUpperCase() || '?'}
@@ -700,7 +701,7 @@ export function WatchlistsDashboard() {
                   <Link to={`/${item.media_type}/${item.tmdb_id}`} className="absolute inset-0 z-10" />
                   {/* Poster */}
                   {item.poster_url ? (
-                    <img src={item.poster_url} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    <img src={safeImgUrl(item.poster_url)} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40 text-sm">
                       {item.title}
@@ -838,7 +839,7 @@ export function WatchlistsDashboard() {
                     >
                       <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />
                       {item.movie.poster_url ? (
-                        <img src={item.movie.poster_url} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        <img src={safeImgUrl(item.movie.poster_url)} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40">
                           {item.movie.title}
