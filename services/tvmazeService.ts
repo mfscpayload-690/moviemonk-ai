@@ -199,12 +199,14 @@ export function stripHTML(html: string | null): string {
     if (!html) return '';
     // Strip HTML tags using robust sanitizer
     const stripped = stripHtmlTags(html);
-    // Decode only safe entities, avoiding brackets that could form tags
-    return stripped
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'")
-        .replace(/&apos;/g, "'");
+    // Decode only safe entities in a single pass to prevent double escaping/unescaping
+    const entityMap: Record<string, string> = {
+        '&quot;': '"',
+        '&#039;': "'",
+        '&apos;': "'",
+        '&amp;': '&'
+    };
+    return stripped.replace(/&(quot|#039|apos|amp);/g, (match) => entityMap[match] || match);
 }
 
 /**
