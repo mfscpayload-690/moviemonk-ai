@@ -171,44 +171,30 @@ export function buildPersonJsonLd(data: SeoPersonPayload): Record<string, unknow
  * Sanitizes an image URL to prevent XSS (e.g. javascript: URLs)
  * and client-side unvalidated URL redirection by allowing only safe protocols.
  */
+export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
+export const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
+
+const IS_DEV = typeof process !== 'undefined'
+  ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
+  : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+
+const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
+
 export function safeImgUrl(url: string | null | undefined, fallback = ''): string {
   if (!url) return fallback;
   const trimmed = url.trim();
   
-  // 1. Safe relative URLs (must start with / but not //)
-  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+  if (SAFE_URL_PATTERN.test(trimmed)) {
     return trimmed;
   }
   
-  // 2. Safe inline data images
-  if (trimmed.startsWith('data:image/')) {
-    if (/^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i.test(trimmed)) {
-      return trimmed;
-    }
+  if (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(trimmed)) {
+    return trimmed;
   }
   
-  // 3. Absolute URLs: validate using URL constructor and exact hostname matches
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-      const host = parsed.hostname.toLowerCase();
-      const isAllowedHost = 
-        host === 'image.tmdb.org' ||
-        host === 'static.tvmaze.com' ||
-        host === 'images.unsplash.com' ||
-        host === 'lh3.googleusercontent.com' ||
-        host === 'graph.facebook.com' ||
-        host === 'avatars.githubusercontent.com' ||
-        host === 'moviemonk-ai.vercel.app' ||
-        host === 'localhost' ||
-        host.endsWith('.googleusercontent.com') ||
-        host.endsWith('.supabase.co');
-        
-      if (isAllowedHost) {
-        return trimmed;
-      }
-    }
-  } catch {}
+  if (SAFE_DATA_URL_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
   
   return fallback;
 }
