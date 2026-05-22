@@ -1,3 +1,5 @@
+import { stripHtmlTags } from '../lib/seo';
+
 /**
  * TVMaze API Service
  * FREE API with comprehensive TV show data (no API key needed!)
@@ -195,13 +197,14 @@ export async function getEpisode(
  */
 export function stripHTML(html: string | null): string {
     if (!html) return '';
-    return html
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
+    // Strip HTML tags using robust sanitizer
+    const stripped = stripHtmlTags(html);
+    // Decode only safe entities, avoiding brackets that could form tags
+    return stripped
         .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
-        .trim();
+        .replace(/&#039;/g, "'")
+        .replace(/&apos;/g, "'");
 }
 
 /**
