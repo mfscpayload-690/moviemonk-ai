@@ -27,6 +27,14 @@ import { emitClientEvent } from '../services/clientObservability';
 import { apiPost } from '../lib/apiClient';
 import { safeImgUrl } from '../lib/seo';
 
+const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
+const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
+const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
+
+const IS_DEV = typeof process !== 'undefined'
+  ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
+  : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   return (
@@ -493,31 +501,11 @@ export function WatchlistsDashboard() {
   }
 
   const cleanAvatarUrl = safeImgUrl(avatarUrl);
-  let isAvatarSafe = false;
-  if (cleanAvatarUrl) {
-    if (cleanAvatarUrl.startsWith('/') && !cleanAvatarUrl.startsWith('//')) {
-      isAvatarSafe = true;
-    } else if (cleanAvatarUrl.startsWith('data:image/')) {
-      isAvatarSafe = true;
-    } else {
-      try {
-        const parsed = new URL(cleanAvatarUrl);
-        const host = parsed.hostname.toLowerCase();
-        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-          isAvatarSafe = [
-            'image.tmdb.org',
-            'static.tvmaze.com',
-            'images.unsplash.com',
-            'lh3.googleusercontent.com',
-            'graph.facebook.com',
-            'avatars.githubusercontent.com',
-            'moviemonk-ai.vercel.app',
-            'localhost'
-          ].includes(host) || host.endsWith('.supabase.co');
-        }
-      } catch {}
-    }
-  }
+  const isAvatarSafe = typeof cleanAvatarUrl === 'string' && (
+    SAFE_URL_PATTERN.test(cleanAvatarUrl) || 
+    SAFE_DATA_URL_PATTERN.test(cleanAvatarUrl) ||
+    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanAvatarUrl))
+  );
   const displayAvatarUrl = isAvatarSafe ? cleanAvatarUrl : '';
 
   return (
@@ -726,11 +714,11 @@ export function WatchlistsDashboard() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {watched.map((item) => {
                 const cleanPosterUrl = safeImgUrl(item.poster_url);
-                const displayPosterUrl = (cleanPosterUrl.startsWith('/') && !cleanPosterUrl.startsWith('//')) ||
-                  cleanPosterUrl.startsWith('https://image.tmdb.org/') ||
-                  cleanPosterUrl.startsWith('https://static.tvmaze.com/') ||
-                  cleanPosterUrl.startsWith('https://images.unsplash.com/') ||
-                  cleanPosterUrl.startsWith('data:image/') ? cleanPosterUrl : '';
+                const displayPosterUrl = typeof cleanPosterUrl === 'string' && (
+                  SAFE_URL_PATTERN.test(cleanPosterUrl) || 
+                  SAFE_DATA_URL_PATTERN.test(cleanPosterUrl) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPosterUrl))
+                ) ? cleanPosterUrl : '';
 
                 return (
                   <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
@@ -849,11 +837,11 @@ export function WatchlistsDashboard() {
                 {activeFolder.items.map(item => {
                   const isWatched = watched.some((w) => w.tmdb_id === String(item.movie.tmdb_id || '') && w.media_type === (item.movie.type === 'show' ? 'tv' : 'movie'));
                   const cleanPosterUrl = safeImgUrl(item.movie.poster_url);
-                  const displayPosterUrl = (cleanPosterUrl.startsWith('/') && !cleanPosterUrl.startsWith('//')) ||
-                    cleanPosterUrl.startsWith('https://image.tmdb.org/') ||
-                    cleanPosterUrl.startsWith('https://static.tvmaze.com/') ||
-                    cleanPosterUrl.startsWith('https://images.unsplash.com/') ||
-                    cleanPosterUrl.startsWith('data:image/') ? cleanPosterUrl : '';
+                  const displayPosterUrl = typeof cleanPosterUrl === 'string' && (
+                    SAFE_URL_PATTERN.test(cleanPosterUrl) || 
+                    SAFE_DATA_URL_PATTERN.test(cleanPosterUrl) ||
+                    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPosterUrl))
+                  ) ? cleanPosterUrl : '';
 
                   return (
                     <div
@@ -965,11 +953,11 @@ export function WatchlistsDashboard() {
                 const heroItem = folder.items[0];
                 const topPosters = folder.items.slice(0, 3).map(item => {
                   const cleanPoster = safeImgUrl(item.movie?.poster_url);
-                  return (cleanPoster.startsWith('/') && !cleanPoster.startsWith('//')) ||
-                    cleanPoster.startsWith('https://image.tmdb.org/') ||
-                    cleanPoster.startsWith('https://static.tvmaze.com/') ||
-                    cleanPoster.startsWith('https://images.unsplash.com/') ||
-                    cleanPoster.startsWith('data:image/') ? cleanPoster : '';
+                  return typeof cleanPoster === 'string' && (
+                    SAFE_URL_PATTERN.test(cleanPoster) || 
+                    SAFE_DATA_URL_PATTERN.test(cleanPoster) ||
+                    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPoster))
+                  ) ? cleanPoster : '';
                 }).filter(Boolean) as string[];
                 return (
                   <div
