@@ -197,16 +197,17 @@ export async function getEpisode(
  */
 export function stripHTML(html: string | null): string {
     if (!html) return '';
-    // Strip HTML tags using robust sanitizer
-    const stripped = stripHtmlTags(html);
-    // Decode only safe entities in a single pass to prevent double escaping/unescaping
-    const entityMap: Record<string, string> = {
-        '&quot;': '"',
-        '&#039;': "'",
-        '&apos;': "'",
-        '&amp;': '&'
-    };
-    return stripped.replace(/&(quot|#039|apos|amp);/g, (match) => entityMap[match] || match);
+    // Decode common entities first
+    const decoded = html
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+    // Then strip HTML tags using robust sanitizer
+    return stripHtmlTags(decoded);
 }
 
 /**
