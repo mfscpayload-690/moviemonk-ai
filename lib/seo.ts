@@ -176,22 +176,39 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
   const trimmed = url.trim();
   
   // 1. Safe relative URLs (must start with / but not //)
-  // We use a regex match starting with / to satisfy CodeQL's path sanitizer detection
-  if (/^\/[^/]/ .test(trimmed)) {
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed;
   }
   
   // 2. Safe inline data images
-  // We use a regex match starting with data:image/ to satisfy CodeQL's data URL sanitizer detection
-  if (/^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i.test(trimmed)) {
-    return trimmed;
+  if (trimmed.startsWith('data:image/')) {
+    if (/^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i.test(trimmed)) {
+      return trimmed;
+    }
   }
   
-  // 3. Absolute URLs: validate protocol and restrict to safe whitelisted hostnames
-  // We use an explicit regex matching the whitelisted domains to satisfy CodeQL's hostname sanitizer detection
-  if (/^https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|lh3\.googleusercontent\.com|[a-z0-9.-]+\.googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|[a-z0-9.-]+\.supabase\.co|moviemonk-ai\.vercel\.app|localhost(?::\d+)?)(?:\/|$)/i.test(trimmed)) {
-    return trimmed;
-  }
+  // 3. Absolute URLs: validate using URL constructor and exact hostname matches
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const host = parsed.hostname.toLowerCase();
+      const isAllowedHost = 
+        host === 'image.tmdb.org' ||
+        host === 'static.tvmaze.com' ||
+        host === 'images.unsplash.com' ||
+        host === 'lh3.googleusercontent.com' ||
+        host === 'graph.facebook.com' ||
+        host === 'avatars.githubusercontent.com' ||
+        host === 'moviemonk-ai.vercel.app' ||
+        host === 'localhost' ||
+        host.endsWith('.googleusercontent.com') ||
+        host.endsWith('.supabase.co');
+        
+      if (isAllowedHost) {
+        return trimmed;
+      }
+    }
+  } catch {}
   
   return fallback;
 }
