@@ -184,16 +184,49 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
   if (!url) return fallback;
   const trimmed = url.trim();
   
-  if (SAFE_URL_PATTERN.test(trimmed)) {
+  // 1. Allow single-root relative paths (e.g., /assets/logo.png), but block protocol-relative ones (e.g. //evil.com)
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed;
   }
   
-  if (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(trimmed)) {
-    return trimmed;
+  // 2. Allow safe data URI patterns (base64 images only)
+  if (trimmed.startsWith('data:image/')) {
+    if (SAFE_DATA_URL_PATTERN.test(trimmed)) {
+      return trimmed;
+    }
+    return fallback;
   }
   
-  if (SAFE_DATA_URL_PATTERN.test(trimmed)) {
-    return trimmed;
+  // 3. For absolute URLs, parse and validate host and protocol
+  try {
+    const parsed = new URL(trimmed);
+    const protocol = parsed.protocol.toLowerCase();
+    
+    // Prevent javascript: or other non-http schemes
+    if (protocol !== 'http:' && protocol !== 'https:') {
+      return fallback;
+    }
+    
+    const host = parsed.hostname.toLowerCase();
+    
+    // Check if host matches allowed patterns
+    const isAllowedHost = 
+      host === 'image.tmdb.org' ||
+      host === 'static.tvmaze.com' ||
+      host === 'images.unsplash.com' ||
+      host === 'graph.facebook.com' ||
+      host === 'avatars.githubusercontent.com' ||
+      host === 'moviemonk-ai.vercel.app' ||
+      host === 'googleusercontent.com' ||
+      host.endsWith('.googleusercontent.com') ||
+      host.endsWith('.supabase.co') ||
+      (IS_DEV && (host === 'localhost' || host === '127.0.0.1'));
+      
+    if (isAllowedHost) {
+      return trimmed;
+    }
+  } catch (e) {
+    // Parsing failed, not a valid absolute URL
   }
   
   return fallback;

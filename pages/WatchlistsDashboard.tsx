@@ -27,13 +27,7 @@ import { emitClientEvent } from '../services/clientObservability';
 import { apiPost } from '../lib/apiClient';
 import { safeImgUrl } from '../lib/seo';
 
-const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
-const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
-const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
 
-const IS_DEV = typeof process !== 'undefined'
-  ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
-  : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -500,13 +494,7 @@ export function WatchlistsDashboard() {
     );
   }
 
-  const cleanAvatarUrl = safeImgUrl(avatarUrl);
-  const isAvatarSafe = typeof cleanAvatarUrl === 'string' && (
-    SAFE_URL_PATTERN.test(cleanAvatarUrl) || 
-    SAFE_DATA_URL_PATTERN.test(cleanAvatarUrl) ||
-    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanAvatarUrl))
-  );
-  const displayAvatarUrl = isAvatarSafe ? cleanAvatarUrl : '';
+  const displayAvatarUrl = safeImgUrl(avatarUrl);
 
   return (
     <DashboardLayout>
@@ -713,12 +701,7 @@ export function WatchlistsDashboard() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {watched.map((item) => {
-                const cleanPosterUrl = safeImgUrl(item.poster_url);
-                const displayPosterUrl = typeof cleanPosterUrl === 'string' && (
-                  SAFE_URL_PATTERN.test(cleanPosterUrl) || 
-                  SAFE_DATA_URL_PATTERN.test(cleanPosterUrl) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPosterUrl))
-                ) ? cleanPosterUrl : '';
+                const displayPosterUrl = safeImgUrl(item.poster_url);
 
                 return (
                   <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
@@ -836,12 +819,7 @@ export function WatchlistsDashboard() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
                 {activeFolder.items.map(item => {
                   const isWatched = watched.some((w) => w.tmdb_id === String(item.movie.tmdb_id || '') && w.media_type === (item.movie.type === 'show' ? 'tv' : 'movie'));
-                  const cleanPosterUrl = safeImgUrl(item.movie.poster_url);
-                  const displayPosterUrl = typeof cleanPosterUrl === 'string' && (
-                    SAFE_URL_PATTERN.test(cleanPosterUrl) || 
-                    SAFE_DATA_URL_PATTERN.test(cleanPosterUrl) ||
-                    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPosterUrl))
-                  ) ? cleanPosterUrl : '';
+                  const displayPosterUrl = safeImgUrl(item.movie.poster_url);
 
                   return (
                     <div
@@ -951,14 +929,7 @@ export function WatchlistsDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {folders.map((folder, index) => {
                 const heroItem = folder.items[0];
-                const topPosters = folder.items.slice(0, 3).map(item => {
-                  const cleanPoster = safeImgUrl(item.movie?.poster_url);
-                  return typeof cleanPoster === 'string' && (
-                    SAFE_URL_PATTERN.test(cleanPoster) || 
-                    SAFE_DATA_URL_PATTERN.test(cleanPoster) ||
-                    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPoster))
-                  ) ? cleanPoster : '';
-                }).filter(Boolean) as string[];
+                const topPosters = folder.items.slice(0, 3).map(item => safeImgUrl(item.movie?.poster_url)).filter(Boolean) as string[];
                 return (
                   <div
                     key={folder.id}

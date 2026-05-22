@@ -200,14 +200,6 @@ function getInitial(name?: string, email?: string): string {
   return '?';
 }
 
-const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
-const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
-const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
-
-const IS_DEV = typeof process !== 'undefined'
-  ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
-  : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
-
 function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSettings; size?: 'lg' }) {
   const url = getAuthAvatarUrl(user, profile?.avatarUrl);
   const name = getAuthDisplayName(user, profile?.fullName);
@@ -219,13 +211,7 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     setImageFailed(false);
   }, [url]);
 
-  const cleanUrl = safeImgUrl(url);
-  const isSafe = typeof cleanUrl === 'string' && (
-    SAFE_URL_PATTERN.test(cleanUrl) || 
-    SAFE_DATA_URL_PATTERN.test(cleanUrl) ||
-    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanUrl))
-  );
-  const displayUrl = isSafe ? cleanUrl : '';
+  const displayUrl = safeImgUrl(url);
 
   if (displayUrl && !imageFailed) {
     return (

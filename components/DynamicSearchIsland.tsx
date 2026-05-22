@@ -22,13 +22,7 @@ import { apiGet } from '../lib/apiClient';
 import { safeImgUrl } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
 
-const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
-const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
-const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
 
-const IS_DEV = typeof process !== 'undefined'
-  ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
-  : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
 
 // Helper to get icon component by suggestion type
 const getSuggestionIconComponent = (type: string, media_type?: string) => {
@@ -783,18 +777,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
               )}
               {!isTrendingLoading && dailyTrending.map((suggestion) => {
                 const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                const bannerUrl = safeImgUrl(suggestion.banner_url);
-                const posterUrl = safeImgUrl(suggestion.poster_url);
-                const displayBanner = typeof bannerUrl === 'string' && (
-                  SAFE_URL_PATTERN.test(bannerUrl) || 
-                  SAFE_DATA_URL_PATTERN.test(bannerUrl) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(bannerUrl))
-                ) ? bannerUrl : '';
-                const displayPoster = typeof posterUrl === 'string' && (
-                  SAFE_URL_PATTERN.test(posterUrl) || 
-                  SAFE_DATA_URL_PATTERN.test(posterUrl) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(posterUrl))
-                ) ? posterUrl : '';
+                const displayBanner = safeImgUrl(suggestion.banner_url);
+                const displayPoster = safeImgUrl(suggestion.poster_url);
 
                 return (
                   <button
@@ -849,12 +833,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                       known_for_titles: suggestion.known_for_titles
                     })
                   : null;
-                const cleanPoster = safeImgUrl(suggestion.poster_url);
-                const displayPoster = typeof cleanPoster === 'string' && (
-                  SAFE_URL_PATTERN.test(cleanPoster) || 
-                  SAFE_DATA_URL_PATTERN.test(cleanPoster) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPoster))
-                ) ? cleanPoster : '';
+                const displayPoster = safeImgUrl(suggestion.poster_url);
 
                 return (
                   <button
