@@ -212,16 +212,32 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
   }, [url]);
 
   const cleanUrl = safeImgUrl(url);
-  const displayUrl = (cleanUrl.startsWith('/') && !cleanUrl.startsWith('//')) ||
-    cleanUrl.startsWith('https://lh3.googleusercontent.com/') ||
-    cleanUrl.startsWith('https://graph.facebook.com/') ||
-    cleanUrl.startsWith('https://avatars.githubusercontent.com/') ||
-    cleanUrl.startsWith('https://moviemonk-ai.vercel.app/') ||
-    cleanUrl.startsWith('http://localhost:') ||
-    cleanUrl.startsWith('data:image/') ||
-    (cleanUrl.startsWith('https://') && cleanUrl.includes('.supabase.co/'))
-    ? cleanUrl
-    : '';
+  let isSafe = false;
+  if (cleanUrl) {
+    if (cleanUrl.startsWith('/') && !cleanUrl.startsWith('//')) {
+      isSafe = true;
+    } else if (cleanUrl.startsWith('data:image/')) {
+      isSafe = true;
+    } else {
+      try {
+        const parsed = new URL(cleanUrl);
+        const host = parsed.hostname.toLowerCase();
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          isSafe = [
+            'image.tmdb.org',
+            'static.tvmaze.com',
+            'images.unsplash.com',
+            'lh3.googleusercontent.com',
+            'graph.facebook.com',
+            'avatars.githubusercontent.com',
+            'moviemonk-ai.vercel.app',
+            'localhost'
+          ].includes(host) || host.endsWith('.supabase.co');
+        }
+      } catch {}
+    }
+  }
+  const displayUrl = isSafe ? cleanUrl : '';
 
   if (displayUrl && !imageFailed) {
     return (
