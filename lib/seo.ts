@@ -182,33 +182,33 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
   
   // 2. Safe inline data images
   if (trimmed.startsWith('data:image/')) {
-    return trimmed;
+    if (/^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i.test(trimmed)) {
+      return trimmed;
+    }
   }
   
-  // 3. Absolute URLs: validate protocol and restrict to safe whitelisted hostnames
-  if (/^https?:\/\//i.test(trimmed)) {
-    try {
-      const parsed = new URL(trimmed);
+  // 3. Absolute URLs: validate using URL constructor and exact hostname matches
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
       const host = parsed.hostname.toLowerCase();
-      const isWhitelisted =
+      const isAllowedHost = 
         host === 'image.tmdb.org' ||
         host === 'static.tvmaze.com' ||
         host === 'images.unsplash.com' ||
         host === 'lh3.googleusercontent.com' ||
-        host.endsWith('.googleusercontent.com') ||
         host === 'graph.facebook.com' ||
         host === 'avatars.githubusercontent.com' ||
-        host.endsWith('.supabase.co') ||
         host === 'moviemonk-ai.vercel.app' ||
-        host === 'localhost';
-
-      if (isWhitelisted) {
+        host === 'localhost' ||
+        host.endsWith('.googleusercontent.com') ||
+        host.endsWith('.supabase.co');
+        
+      if (isAllowedHost) {
         return trimmed;
       }
-    } catch {
-      // Return fallback on malformed URL parsing
     }
-  }
+  } catch {}
   
   return fallback;
 }

@@ -492,6 +492,18 @@ export function WatchlistsDashboard() {
     );
   }
 
+  const cleanAvatarUrl = safeImgUrl(avatarUrl);
+  const displayAvatarUrl = (cleanAvatarUrl.startsWith('/') && !cleanAvatarUrl.startsWith('//')) ||
+    cleanAvatarUrl.startsWith('https://lh3.googleusercontent.com/') ||
+    cleanAvatarUrl.startsWith('https://graph.facebook.com/') ||
+    cleanAvatarUrl.startsWith('https://avatars.githubusercontent.com/') ||
+    cleanAvatarUrl.startsWith('https://moviemonk-ai.vercel.app/') ||
+    cleanAvatarUrl.startsWith('http://localhost:') ||
+    cleanAvatarUrl.startsWith('data:image/') ||
+    (cleanAvatarUrl.startsWith('https://') && cleanAvatarUrl.includes('.supabase.co/'))
+    ? cleanAvatarUrl
+    : '';
+
   return (
     <DashboardLayout>
       {/* 1. User Header */}
@@ -503,7 +515,7 @@ export function WatchlistsDashboard() {
         <div className="flex items-center gap-4 sm:gap-6 relative z-10">
           <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
             {avatarUrl && !avatarFailed ? (
-              <img src={safeImgUrl(avatarUrl)} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
+              <img src={displayAvatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
                 {displayName[0]?.toUpperCase() || '?'}
@@ -696,46 +708,55 @@ export function WatchlistsDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-              {watched.map((item) => (
-                <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
-                  <Link to={`/${item.media_type}/${item.tmdb_id}`} className="absolute inset-0 z-10" />
-                  {/* Poster */}
-                  {item.poster_url ? (
-                    <img src={safeImgUrl(item.poster_url)} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40 text-sm">
-                      {item.title}
+              {watched.map((item) => {
+                const cleanPosterUrl = safeImgUrl(item.poster_url);
+                const displayPosterUrl = (cleanPosterUrl.startsWith('/') && !cleanPosterUrl.startsWith('//')) ||
+                  cleanPosterUrl.startsWith('https://image.tmdb.org/') ||
+                  cleanPosterUrl.startsWith('https://static.tvmaze.com/') ||
+                  cleanPosterUrl.startsWith('https://images.unsplash.com/') ||
+                  cleanPosterUrl.startsWith('data:image/') ? cleanPosterUrl : '';
+
+                return (
+                  <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
+                    <Link to={`/${item.media_type}/${item.tmdb_id}`} className="absolute inset-0 z-10" />
+                    {/* Poster */}
+                    {item.poster_url ? (
+                      <img src={displayPosterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40 text-sm">
+                        {item.title}
+                      </div>
+                    )}
+
+                    {/* Gradient info bar */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-12 z-20 pointer-events-none">
+                      <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md">{item.title}</h4>
+                      <span className="text-xs text-brand-text-light block mt-0.5">{item.year || 'Unknown'}</span>
                     </div>
-                  )}
 
-                  {/* Gradient info bar */}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 pt-12 z-20 pointer-events-none">
-                    <h4 className="text-white font-semibold text-sm line-clamp-2 drop-shadow-md">{item.title}</h4>
-                    <span className="text-xs text-brand-text-light block mt-0.5">{item.year || 'Unknown'}</span>
+                    {/* Watched badge */}
+                    <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-md bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" /></svg>
+                      {item.media_type === 'tv' ? 'Series' : 'Movie'}
+                    </div>
+
+                    {/* Unwatch button */}
+                    <button
+                      onClick={() => toggleWatched({
+                        tmdb_id: item.tmdb_id,
+                        media_type: item.media_type,
+                        title: item.title,
+                        poster_url: item.poster_url,
+                        year: item.year,
+                      })}
+                      className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-emerald-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/80 hover:text-white"
+                      title="Remove from watched"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                   </div>
-
-                  {/* Watched badge */}
-                  <div className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-md bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" /></svg>
-                    {item.media_type === 'tv' ? 'Series' : 'Movie'}
-                  </div>
-
-                  {/* Unwatch button */}
-                  <button
-                    onClick={() => toggleWatched({
-                      tmdb_id: item.tmdb_id,
-                      media_type: item.media_type,
-                      title: item.title,
-                      poster_url: item.poster_url,
-                      year: item.year,
-                    })}
-                    className="absolute top-2 right-2 z-30 p-2 rounded-full bg-black/60 backdrop-blur-md text-emerald-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/80 hover:text-white"
-                    title="Remove from watched"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -811,6 +832,13 @@ export function WatchlistsDashboard() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
                 {activeFolder.items.map(item => {
                   const isWatched = watched.some((w) => w.tmdb_id === String(item.movie.tmdb_id || '') && w.media_type === (item.movie.type === 'show' ? 'tv' : 'movie'));
+                  const cleanPosterUrl = safeImgUrl(item.movie.poster_url);
+                  const displayPosterUrl = (cleanPosterUrl.startsWith('/') && !cleanPosterUrl.startsWith('//')) ||
+                    cleanPosterUrl.startsWith('https://image.tmdb.org/') ||
+                    cleanPosterUrl.startsWith('https://static.tvmaze.com/') ||
+                    cleanPosterUrl.startsWith('https://images.unsplash.com/') ||
+                    cleanPosterUrl.startsWith('data:image/') ? cleanPosterUrl : '';
+
                   return (
                     <div
                       key={item.id}
@@ -839,7 +867,7 @@ export function WatchlistsDashboard() {
                     >
                       <Link to={`/${item.movie.type === 'show' ? 'tv' : 'movie'}/${item.movie.tmdb_id}`} className="absolute inset-0 z-10" />
                       {item.movie.poster_url ? (
-                        <img src={safeImgUrl(item.movie.poster_url)} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        <img src={displayPosterUrl} alt={item.movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center p-4 text-center text-brand-text-dark bg-gradient-to-br from-brand-surface to-black/40">
                           {item.movie.title}
@@ -919,7 +947,14 @@ export function WatchlistsDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {folders.map((folder, index) => {
                 const heroItem = folder.items[0];
-                const topPosters = folder.items.slice(0, 3).map(item => item.movie?.poster_url).filter(Boolean) as string[];
+                const topPosters = folder.items.slice(0, 3).map(item => {
+                  const cleanPoster = safeImgUrl(item.movie?.poster_url);
+                  return (cleanPoster.startsWith('/') && !cleanPoster.startsWith('//')) ||
+                    cleanPoster.startsWith('https://image.tmdb.org/') ||
+                    cleanPoster.startsWith('https://static.tvmaze.com/') ||
+                    cleanPoster.startsWith('https://images.unsplash.com/') ||
+                    cleanPoster.startsWith('data:image/') ? cleanPoster : '';
+                }).filter(Boolean) as string[];
                 return (
                   <div
                     key={folder.id}

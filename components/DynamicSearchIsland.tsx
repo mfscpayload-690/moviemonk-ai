@@ -775,6 +775,19 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
               )}
               {!isTrendingLoading && dailyTrending.map((suggestion) => {
                 const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                const bannerUrl = safeImgUrl(suggestion.banner_url);
+                const posterUrl = safeImgUrl(suggestion.poster_url);
+                const displayBanner = (bannerUrl.startsWith('/') && !bannerUrl.startsWith('//')) ||
+                  bannerUrl.startsWith('https://image.tmdb.org/') ||
+                  bannerUrl.startsWith('https://static.tvmaze.com/') ||
+                  bannerUrl.startsWith('https://images.unsplash.com/') ||
+                  bannerUrl.startsWith('data:image/') ? bannerUrl : '';
+                const displayPoster = (posterUrl.startsWith('/') && !posterUrl.startsWith('//')) ||
+                  posterUrl.startsWith('https://image.tmdb.org/') ||
+                  posterUrl.startsWith('https://static.tvmaze.com/') ||
+                  posterUrl.startsWith('https://images.unsplash.com/') ||
+                  posterUrl.startsWith('data:image/') ? posterUrl : '';
+
                 return (
                   <button
                     type="button"
@@ -785,9 +798,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   >
                     <div className="suggest-poster-wrap is-title">
                       {suggestion.banner_url ? (
-                        <img src={safeImgUrl(suggestion.banner_url)} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                        <img src={displayBanner} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : suggestion.poster_url ? (
-                        <img src={safeImgUrl(suggestion.poster_url)} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                        <img src={displayPoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : (
                         <div className="suggest-poster placeholder">
                           <IconComponent size={24} className="poster-icon" />
