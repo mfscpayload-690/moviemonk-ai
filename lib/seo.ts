@@ -175,9 +175,39 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
   if (!url) return fallback;
   const trimmed = url.trim();
   
-  // Allow only http, https, relative paths, or base64 data images
-  if (/^(https?:\/\/|\/|data:image\/)/i.test(trimmed)) {
+  // 1. Safe relative URLs (must start with / but not //)
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed;
+  }
+  
+  // 2. Safe inline data images
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+  
+  // 3. Absolute URLs: validate protocol and restrict to safe whitelisted hostnames
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      const host = parsed.hostname.toLowerCase();
+      const isWhitelisted =
+        host === 'image.tmdb.org' ||
+        host === 'static.tvmaze.com' ||
+        host === 'images.unsplash.com' ||
+        host === 'lh3.googleusercontent.com' ||
+        host.endsWith('.googleusercontent.com') ||
+        host === 'graph.facebook.com' ||
+        host === 'avatars.githubusercontent.com' ||
+        host.endsWith('.supabase.co') ||
+        host === 'moviemonk-ai.vercel.app' ||
+        host === 'localhost';
+
+      if (isWhitelisted) {
+        return trimmed;
+      }
+    } catch {
+      // Return fallback on malformed URL parsing
+    }
   }
   
   return fallback;
