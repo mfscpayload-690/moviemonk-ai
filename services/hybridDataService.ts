@@ -11,6 +11,7 @@
  */
 
 import { MovieData } from '../types';
+import { stripHtmlTags } from '../lib/seo';
 import { ParsedQuery } from './queryParser';
 import { getFromTMDB } from './tmdbService';
 import {
@@ -81,7 +82,7 @@ export async function fetchFromBestSource(
                                 runtime: e.runtime,
                                 rating: e.rating.average,
                                 image: e.image?.original || null,
-                                summary: e.summary ? e.summary.replace(/<[^>]*>/g, '') : null
+                                summary: e.summary ? stripHtmlTags(e.summary) : null
                             }));
                         }
 
@@ -92,7 +93,7 @@ export async function fetchFromBestSource(
                                 // Focus on this specific episode
                                 movieData.title = `${tvmazeShow.name} - S${String(parsed.season).padStart(2, '0')}E${String(parsed.episode).padStart(2, '0')}: ${episodeData.name}`;
                                 movieData.summary_short = episodeData.summary ?
-                                    episodeData.summary.replace(/<[^>]*>/g, '').substring(0, 200) + '...' :
+                                    stripHtmlTags(episodeData.summary).substring(0, 200) + '...' :
                                     movieData.summary_short;
                             }
                         }
