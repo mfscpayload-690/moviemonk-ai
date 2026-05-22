@@ -22,6 +22,14 @@ import { apiGet } from '../lib/apiClient';
 import { safeImgUrl } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
 
+const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
+const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
+const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
+
+const IS_DEV = typeof process !== 'undefined'
+  ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
+  : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+
 // Helper to get icon component by suggestion type
 const getSuggestionIconComponent = (type: string, media_type?: string) => {
   if (type === 'movie' || media_type === 'movie') return Film;
@@ -777,16 +785,16 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
                 const bannerUrl = safeImgUrl(suggestion.banner_url);
                 const posterUrl = safeImgUrl(suggestion.poster_url);
-                const displayBanner = (bannerUrl.startsWith('/') && !bannerUrl.startsWith('//')) ||
-                  bannerUrl.startsWith('https://image.tmdb.org/') ||
-                  bannerUrl.startsWith('https://static.tvmaze.com/') ||
-                  bannerUrl.startsWith('https://images.unsplash.com/') ||
-                  bannerUrl.startsWith('data:image/') ? bannerUrl : '';
-                const displayPoster = (posterUrl.startsWith('/') && !posterUrl.startsWith('//')) ||
-                  posterUrl.startsWith('https://image.tmdb.org/') ||
-                  posterUrl.startsWith('https://static.tvmaze.com/') ||
-                  posterUrl.startsWith('https://images.unsplash.com/') ||
-                  posterUrl.startsWith('data:image/') ? posterUrl : '';
+                const displayBanner = typeof bannerUrl === 'string' && (
+                  SAFE_URL_PATTERN.test(bannerUrl) || 
+                  SAFE_DATA_URL_PATTERN.test(bannerUrl) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(bannerUrl))
+                ) ? bannerUrl : '';
+                const displayPoster = typeof posterUrl === 'string' && (
+                  SAFE_URL_PATTERN.test(posterUrl) || 
+                  SAFE_DATA_URL_PATTERN.test(posterUrl) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(posterUrl))
+                ) ? posterUrl : '';
 
                 return (
                   <button
@@ -842,11 +850,11 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                     })
                   : null;
                 const cleanPoster = safeImgUrl(suggestion.poster_url);
-                const displayPoster = (cleanPoster.startsWith('/') && !cleanPoster.startsWith('//')) ||
-                  cleanPoster.startsWith('https://image.tmdb.org/') ||
-                  cleanPoster.startsWith('https://static.tvmaze.com/') ||
-                  cleanPoster.startsWith('https://images.unsplash.com/') ||
-                  cleanPoster.startsWith('data:image/') ? cleanPoster : '';
+                const displayPoster = typeof cleanPoster === 'string' && (
+                  SAFE_URL_PATTERN.test(cleanPoster) || 
+                  SAFE_DATA_URL_PATTERN.test(cleanPoster) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(cleanPoster))
+                ) ? cleanPoster : '';
 
                 return (
                   <button
