@@ -211,11 +211,23 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     setImageFailed(false);
   }, [url]);
 
-  if (url && !imageFailed) {
+  const cleanUrl = safeImgUrl(url);
+  const displayUrl = (cleanUrl.startsWith('/') && !cleanUrl.startsWith('//')) ||
+    cleanUrl.startsWith('https://lh3.googleusercontent.com/') ||
+    cleanUrl.startsWith('https://graph.facebook.com/') ||
+    cleanUrl.startsWith('https://avatars.githubusercontent.com/') ||
+    cleanUrl.startsWith('https://moviemonk-ai.vercel.app/') ||
+    cleanUrl.startsWith('http://localhost:') ||
+    cleanUrl.startsWith('data:image/') ||
+    (cleanUrl.startsWith('https://') && cleanUrl.includes('.supabase.co/'))
+    ? cleanUrl
+    : '';
+
+  if (displayUrl && !imageFailed) {
     return (
       <div className={cls} style={{ padding: 0, overflow: 'hidden' }}>
         <img
-          src={safeImgUrl(url)}
+          src={displayUrl}
           alt=""
           onError={() => setImageFailed(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
