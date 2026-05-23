@@ -1,3 +1,5 @@
+import { stripHtmlTags } from '../lib/seo';
+
 /**
  * TVMaze API Service
  * FREE API with comprehensive TV show data (no API key needed!)
@@ -195,13 +197,19 @@ export async function getEpisode(
  */
 export function stripHTML(html: string | null): string {
     if (!html) return '';
-    return html
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .trim();
+    const entityMap: Record<string, string> = {
+        amp: '&',
+        lt: '<',
+        gt: '>',
+        quot: '"',
+        '#039': "'",
+        apos: "'",
+        nbsp: ' '
+    };
+    // Decode common entities in a single pass using a regex to prevent double-unescaping
+    const decoded = html.replace(/&(amp|lt|gt|quot|#039|apos|nbsp);/g, (match, entity) => entityMap[entity] || match);
+    // Then strip HTML tags using robust sanitizer
+    return stripHtmlTags(decoded);
 }
 
 /**

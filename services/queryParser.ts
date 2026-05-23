@@ -570,7 +570,7 @@ export function parseQuery(query: string): ParsedQuery {
   // Clean up common noise and action words
   const noiseRegex = /\b(movie|moive|film|movies|show|series|serees|seris|tv|tv\s+show|tv\s+series|watch|online|free|download|hd|1080p|4k)\b/gi;
   remaining = remaining
-    .replace(noiseRegex, '')
+    .replace(noiseRegex, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 

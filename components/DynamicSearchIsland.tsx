@@ -19,7 +19,10 @@ import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import { apiGet } from '../lib/apiClient';
+import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
+
+
 
 // Helper to get icon component by suggestion type
 const getSuggestionIconComponent = (type: string, media_type?: string) => {
@@ -774,6 +777,21 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
               )}
               {!isTrendingLoading && dailyTrending.map((suggestion) => {
                 const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                const displayBanner = safeImgUrl(suggestion.banner_url);
+                const displayPoster = safeImgUrl(suggestion.poster_url);
+
+                const safeBanner = displayBanner && (
+                  SAFE_URL_PATTERN.test(displayBanner) ||
+                  SAFE_DATA_URL_PATTERN.test(displayBanner) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayBanner))
+                ) ? displayBanner : '';
+
+                const safePoster = displayPoster && (
+                  SAFE_URL_PATTERN.test(displayPoster) ||
+                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
+                ) ? displayPoster : '';
+
                 return (
                   <button
                     type="button"
@@ -783,10 +801,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                     onClick={() => handleSuggestionSelect(suggestion)}
                   >
                     <div className="suggest-poster-wrap is-title">
-                      {suggestion.banner_url ? (
-                        <img src={suggestion.banner_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                      ) : suggestion.poster_url ? (
-                        <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      {safeBanner ? (
+                        <img src={safeBanner} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      ) : safePoster ? (
+                        <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : (
                         <div className="suggest-poster placeholder">
                           <IconComponent size={24} className="poster-icon" />
@@ -827,6 +845,14 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                       known_for_titles: suggestion.known_for_titles
                     })
                   : null;
+                const displayPoster = safeImgUrl(suggestion.poster_url);
+
+                const safePoster = displayPoster && (
+                  SAFE_URL_PATTERN.test(displayPoster) ||
+                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
+                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
+                ) ? displayPoster : '';
+
                 return (
                   <button
                     type="button"
@@ -840,8 +866,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   >
                     {/* Poster */}
                     <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : 'is-title'}`}>
-                      {suggestion.poster_url ? (
-                        <img src={suggestion.poster_url} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                      {safePoster ? (
+                        <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
                       ) : (
                         <div className="suggest-poster placeholder">
                           <IconComponent size={24} className="poster-icon" />

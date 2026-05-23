@@ -473,7 +473,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
 
                                         {expandedEpisode === episode.id && episode.summary && (
                                             <div className="episode-summary-enhanced">
-                                                <p>{episode.summary.replace(/<[^>]*>/g, '')}</p>
+                                                <p>{stripHtmlTags(episode.summary)}</p>
                                             </div>
                                         )}
                                     </div>
