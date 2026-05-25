@@ -18,7 +18,7 @@
     "@supabase/supabase-js": "^2.105.3",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "framer-motion": "^12.38.0",
+    "framer-motion": "^12.40.0",
     "fuse.js": "^7.3.0",
     "lucide-react": "^1.16.0",
     "react": "^19.2.1",
