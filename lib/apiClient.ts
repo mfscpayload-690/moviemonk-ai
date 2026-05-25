@@ -71,6 +71,9 @@ async function fetchWithHandler<T>(url: string, options: RequestInit): Promise<T
     if (error instanceof ApiError) {
       throw error;
     }
+    if (error && typeof error === 'object' && (error as any).name === 'AbortError') {
+      throw error;
+    }
     // Handle network errors (CORS, offline, etc.)
     throw new ApiError(
       0,
