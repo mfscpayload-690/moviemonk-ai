@@ -280,6 +280,16 @@ Rejected premiere wordmark variant:
     }
 }
 
+:root {
+    --header-height: 104px;
+}
+
+@media (min-width: 640px) {
+    :root {
+        --header-height: 64px;
+    }
+}
+
 /* Layout Containers */
 .app-container {
     display: flex;
@@ -287,6 +297,21 @@ Rejected premiere wordmark variant:
     height: 100dvh;
     position: relative;
     overflow: hidden;
+}
+
+.has-overlay-header .app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: rgba(8, 8, 8, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.has-overlay-header .main-content {
+    padding-top: var(--header-height);
 }
 
 .main-content {
