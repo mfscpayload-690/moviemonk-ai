@@ -280,6 +280,16 @@ Rejected premiere wordmark variant:
     }
 }
 
+:root {
+    --header-height: 60px;
+}
+
+@media (min-width: 640px) {
+    :root {
+        --header-height: 64px;
+    }
+}
+
 /* Layout Containers */
 .app-container {
     display: flex;
@@ -287,6 +297,28 @@ Rejected premiere wordmark variant:
     height: 100dvh;
     position: relative;
     overflow: hidden;
+}
+
+.has-overlay-header .app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: rgba(8, 8, 8, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.has-overlay-header .main-content {
+    margin-top: calc(-1 * var(--header-height));
+    padding-top: var(--header-height);
+}
+
+.main-content > .discovery-page,
+.main-content > .movie-details-page,
+.main-content > .tv-show-display {
+    padding-top: 0 !important;
 }
 
 .main-content {
@@ -3160,7 +3192,7 @@ a:focus-visible {
 
 .discovery-hero-nav {
     position: absolute;
-    top: 1rem;
+    top: calc(var(--header-height) + 1rem);
     right: 1rem;
     z-index: 8;
     display: inline-flex;
