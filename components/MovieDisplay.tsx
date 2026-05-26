@@ -701,7 +701,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     const movieDescription = toMetaDescription(movie.summary_short || stripHtmlTags(movie.summary_medium));
 
     return (
-        <div className="relative min-h-full">
+        <div className="relative min-h-full movie-details-page">
             <SeoHead
                 title={`${movie.title}${movie.year ? ` (${movie.year})` : ''}`}
                 description={movieDescription}
