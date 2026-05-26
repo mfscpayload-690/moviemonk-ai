@@ -768,35 +768,42 @@ export function WatchlistsDashboard() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setFolderPrivacy(activeFolder.id, !activeFolder.is_public)}
-                className={`px-3 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-all ${activeFolder.is_public
+                className={`p-2.5 sm:px-3 sm:py-2 rounded-lg flex items-center gap-2 text-xs sm:text-sm font-medium transition-all ${activeFolder.is_public
                     ? 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20'
                     : 'bg-white/5 text-brand-text-dark hover:bg-white/10 hover:text-brand-text-light'
                   }`}
                 title={activeFolder.is_public ? 'Make Private' : 'Make Public'}
               >
                 {activeFolder.is_public ? <CheckSquare size={16} /> : <Square size={16} />}
-                {activeFolder.is_public ? 'Public' : 'Private'}
+                <span>{activeFolder.is_public ? 'Public' : 'Private'}</span>
               </button>
               <button
                 onClick={() => handleShareFolder(activeFolder)}
                 disabled={shareLoading}
-                className="px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
+                className="p-2.5 sm:px-3 sm:py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
+                title="Share folder"
               >
-                <Share2 size={16} /> {shareLoading ? 'Creating link...' : 'Share'}
+                <Share2 size={16} />
+                <span className="hidden sm:inline">{shareLoading ? 'Creating link...' : 'Share'}</span>
+                {shareLoading && <span className="sm:hidden">...</span>}
               </button>
               <button
                 onClick={() => startEditFolder(activeFolder)}
-                className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-2 text-sm font-medium transition-colors"
+                className="p-2.5 sm:px-3 sm:py-2 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center justify-center gap-2 text-xs sm:text-sm font-medium transition-colors"
+                title="Edit folder"
               >
-                <EditIcon className="w-4 h-4" /> Edit Folder
+                <EditIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Edit Folder</span>
               </button>
               <button
                 onClick={() => {
                   handleDeleteFolder(activeFolder.id, activeFolder.name, activeFolder.items.length);
                 }}
-                className="px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 flex items-center gap-2 text-sm font-medium transition-colors"
+                className="p-2.5 sm:px-3 sm:py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium transition-colors"
+                title="Delete folder"
               >
-                <TrashIcon className="w-4 h-4" /> Delete
+                <TrashIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Delete</span>
               </button>
             </div>
           </div>
