@@ -281,7 +281,7 @@ Rejected premiere wordmark variant:
 }
 
 :root {
-    --header-height: 60px;
+    --header-height: 104px;
 }
 
 @media (min-width: 640px) {
