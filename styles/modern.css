@@ -305,20 +305,13 @@ Rejected premiere wordmark variant:
     left: 0;
     right: 0;
     z-index: 50;
-    background: rgba(8, 8, 8, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(8, 8, 8, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .has-overlay-header .main-content {
-    margin-top: calc(-1 * var(--header-height));
     padding-top: var(--header-height);
-}
-
-.main-content > .discovery-page,
-.main-content > .movie-details-page,
-.main-content > .tv-show-display {
-    padding-top: 0 !important;
 }
 
 .main-content {
@@ -3192,7 +3185,7 @@ a:focus-visible {
 
 .discovery-hero-nav {
     position: absolute;
-    top: calc(var(--header-height) + 1rem);
+    top: 1rem;
     right: 1rem;
     z-index: 8;
     display: inline-flex;
