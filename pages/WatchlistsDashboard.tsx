@@ -25,7 +25,40 @@ import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 // } from '../services/watchlistReminders';
 import { emitClientEvent } from '../services/clientObservability';
 import { apiPost } from '../lib/apiClient';
-import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
+import { safeImgUrl } from '../lib/seo';
+
+// Local sanitizer to satisfy CodeQL taint tracker
+const sanitizeImgUrl = (url: string | null | undefined): string => {
+  const safe = safeImgUrl(url);
+  if (!safe) return '';
+  if (safe.startsWith('/') && !safe.startsWith('//')) return safe;
+  if (safe.startsWith('data:image/')) return safe;
+  try {
+    const parsed = new URL(safe);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const host = parsed.hostname.toLowerCase();
+      if (
+        host === 'image.tmdb.org' ||
+        host === 'static.tvmaze.com' ||
+        host === 'images.unsplash.com' ||
+        host === 'graph.facebook.com' ||
+        host === 'avatars.githubusercontent.com' ||
+        host === 'moviemonk-ai.vercel.app' ||
+        host === 'googleusercontent.com' ||
+        host === 'lh3.googleusercontent.com' ||
+        host.endsWith('.googleusercontent.com') ||
+        host.endsWith('.supabase.co') ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
+      ) {
+        return parsed.toString();
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return '';
+};
 
 
 
@@ -494,7 +527,7 @@ export function WatchlistsDashboard() {
     );
   }
 
-  const displayAvatarUrl = safeImgUrl(avatarUrl);
+  const displayAvatarUrl = sanitizeImgUrl(avatarUrl);
 
   return (
     <DashboardLayout>
@@ -701,7 +734,7 @@ export function WatchlistsDashboard() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {watched.map((item) => {
-                const displayPosterUrl = safeImgUrl(item.poster_url);
+                const displayPosterUrl = sanitizeImgUrl(item.poster_url);
 
                 return (
                   <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
@@ -826,7 +859,7 @@ export function WatchlistsDashboard() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
                 {activeFolder.items.map(item => {
                   const isWatched = watched.some((w) => w.tmdb_id === String(item.movie.tmdb_id || '') && w.media_type === (item.movie.type === 'show' ? 'tv' : 'movie'));
-                  const displayPosterUrl = safeImgUrl(item.movie.poster_url);
+                  const displayPosterUrl = sanitizeImgUrl(item.movie.poster_url);
 
                   return (
                     <div
@@ -936,7 +969,7 @@ export function WatchlistsDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {folders.map((folder, index) => {
                 const heroItem = folder.items[0];
-                const topPosters = folder.items.slice(0, 3).map(item => safeImgUrl(item.movie?.poster_url)).filter(Boolean) as string[];
+                const topPosters = folder.items.slice(0, 3).map(item => sanitizeImgUrl(item.movie?.poster_url)).filter(Boolean) as string[];
                 return (
                   <div
                     key={folder.id}

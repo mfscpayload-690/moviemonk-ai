@@ -19,8 +19,41 @@ import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import { apiGet } from '../lib/apiClient';
-import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
+import { safeImgUrl } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
+
+// Local sanitizer to satisfy CodeQL taint tracker
+const sanitizeImgUrl = (url: string | null | undefined): string => {
+  const safe = safeImgUrl(url);
+  if (!safe) return '';
+  if (safe.startsWith('/') && !safe.startsWith('//')) return safe;
+  if (safe.startsWith('data:image/')) return safe;
+  try {
+    const parsed = new URL(safe);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const host = parsed.hostname.toLowerCase();
+      if (
+        host === 'image.tmdb.org' ||
+        host === 'static.tvmaze.com' ||
+        host === 'images.unsplash.com' ||
+        host === 'graph.facebook.com' ||
+        host === 'avatars.githubusercontent.com' ||
+        host === 'moviemonk-ai.vercel.app' ||
+        host === 'googleusercontent.com' ||
+        host === 'lh3.googleusercontent.com' ||
+        host.endsWith('.googleusercontent.com') ||
+        host.endsWith('.supabase.co') ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
+      ) {
+        return parsed.toString();
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return '';
+};
 
 
 
@@ -777,20 +810,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
               )}
               {!isTrendingLoading && dailyTrending.map((suggestion) => {
                 const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                const displayBanner = safeImgUrl(suggestion.banner_url);
-                const displayPoster = safeImgUrl(suggestion.poster_url);
-
-                const safeBanner = displayBanner && (
-                  SAFE_URL_PATTERN.test(displayBanner) ||
-                  SAFE_DATA_URL_PATTERN.test(displayBanner) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayBanner))
-                ) ? displayBanner : '';
-
-                const safePoster = displayPoster && (
-                  SAFE_URL_PATTERN.test(displayPoster) ||
-                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
-                ) ? displayPoster : '';
+                const safeBanner = sanitizeImgUrl(suggestion.banner_url);
+                const safePoster = sanitizeImgUrl(suggestion.poster_url);
 
                 return (
                   <button
@@ -845,13 +866,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                       known_for_titles: suggestion.known_for_titles
                     })
                   : null;
-                const displayPoster = safeImgUrl(suggestion.poster_url);
-
-                const safePoster = displayPoster && (
-                  SAFE_URL_PATTERN.test(displayPoster) ||
-                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
-                ) ? displayPoster : '';
+                const safePoster = sanitizeImgUrl(suggestion.poster_url);
 
                 return (
                   <button
