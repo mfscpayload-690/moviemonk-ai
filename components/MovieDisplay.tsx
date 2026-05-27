@@ -882,19 +882,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
             <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 <div className="lg:col-span-2 space-y-8">
                     <Section title="Synopsis">
-                        {/* Synopsis with Read More for long text */}
                         <div className="relative">
-                            <p className={`text-brand-text-dark text-accessible-muted leading-relaxed ${synopsisNeedsTruncation && !synopsisExpanded ? 'synopsis-truncated' : ''}`}>
+                            <p className="text-brand-text-dark text-accessible-muted leading-relaxed">
                                 {movie.summary_medium}
                             </p>
-                            {synopsisNeedsTruncation && (
-                                <button
-                                    onClick={() => setSynopsisExpanded(!synopsisExpanded)}
-                                    className="mt-2 text-sm font-semibold text-brand-primary hover:text-brand-accent transition-colors touch-target"
-                                >
-                                    {synopsisExpanded ? 'Show less' : 'Read more'}
-                                </button>
-                            )}
                         </div>
 
                         <div className="mt-6">
