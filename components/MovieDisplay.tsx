@@ -790,7 +790,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                                            rating.source.toLowerCase().includes('rotten') || 
                                                            rating.source.toLowerCase().includes('metacritic');
                                         return (
-                                            <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
+                                            <div key={`${rating.source}-${rating.score}`} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
                                                 {(rating.source.toLowerCase().includes('rotten') || 
                                                   rating.source.toLowerCase().includes('imdb') || 
                                                   rating.source.toLowerCase().includes('metacritic') || 
@@ -811,7 +811,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                                     </div>
                                                 )}
                                                 <div className="flex flex-col gap-0.5">
-                                                    {!isLogoOnly && (
+                                                    {isLogoOnly ? (
+                                                        <span className="sr-only">{rating.source}</span>
+                                                    ) : (
                                                         <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
                                                     )}
                                                     <RatingDisplay score={rating.score} size="md" compact={true} />
