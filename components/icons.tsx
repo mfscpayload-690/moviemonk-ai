@@ -180,8 +180,13 @@ export const DollarIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 export const RottenTomatoesIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className={className}>
-        <path d="M416 160c-26.51 0-48-21.49-48-48s21.49-48 48-48 48 21.49 48 48-21.49 48-48 48zM96 160c-26.51 0-48-21.49-48-48s21.49-48 48-48 48 21.49 48 48-21.49 48-48 48zM256 32C114.6 32 0 146.6 0 288c0 74.52 32.2 142 85.39 189.37 25.1 22.62 57.04 34.63 90.61 34.63h180c57.53 0 110.6-30.83 140.4-80.52C496.5 407.7 512 350.3 512 288c0-141.4-114.6-256-256-256zm-96 288c-17.67 0-32-14.33-32-32s14.33-32 32-32 32 14.33 32 32-14.33 32-32 32zm192 0c-17.67 0-32-14.33-32-32s14.33-32 32-32 32 14.33 32 32-14.33 32-32 32z" />
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...baseIconProps}>
+        {/* Green leaves/stem */}
+        <path d="M12 2.5c.3 1.2 1.3 2 2.5 1.8-.8.6-1.8.4-2.5 1-.4-.6-1.3-.4-2-.7.8-.1 1.7-.9 2-2.1Z" fill="#4ade80" />
+        {/* Red tomato body */}
+        <ellipse cx="12" cy="13.5" rx="9" ry="7.5" fill="#F93C00" />
+        {/* Small green leaf details */}
+        <path d="M10.5 5.5l1.5-1.5 1.5 1.5-1.5.5z" fill="#22c55e" />
     </svg>
 );
 
@@ -334,8 +339,23 @@ export const ImdbIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 export const MetacriticIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...baseIconProps}>
-        <rect width="16" height="16" rx="3" fill="#000000" stroke="rgba(255,255,255,0.15)" strokeWidth="0.5" />
-        <text x="8" y="12" fill="#F5C518" fontSize="10px" fontWeight="900" fontFamily="system-ui, -apple-system, sans-serif" textAnchor="middle">m</text>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...baseIconProps}>
+        {/* Outer yellow/orange circle */}
+        <circle cx="12" cy="12" r="11" fill="#FFBC00" />
+        {/* Inner black circle */}
+        <circle cx="12" cy="12" r="8.5" fill="#000000" />
+        {/* White lowercase m, bold and tilted */}
+        <text 
+            x="11.5" 
+            y="15" 
+            fill="#FFFFFF" 
+            fontSize="11.5px" 
+            fontWeight="900" 
+            fontFamily="system-ui, -apple-system, sans-serif" 
+            textAnchor="middle"
+            transform="rotate(-38 11.5 12)"
+        >
+            m
+        </text>
     </svg>
 );
