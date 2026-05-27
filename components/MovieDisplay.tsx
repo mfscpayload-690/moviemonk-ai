@@ -921,17 +921,23 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                     )}
                                     {fullPlotContent ? (showFullPlot ? 'Hide Spoiler Plot' : 'Show Spoiler Plot') : 'Load Full Plot (Spoilers)'}
                                 </button>
-                                {showFullPlot && fullPlotContent && (
-                                    <div id="spoiler-content" className="pt-3 border-t border-brand-primary/20 animate-fade-in">
-                                        <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
-                                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
-                                            {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
-                                        </p>
-                                    </div>
-                                )}
-                                {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
-                                    <p className="text-sm text-brand-text-dark italic">No spoiler plot available yet.</p>
-                                )}
+                                {fullPlotContent && (
+                                     <div 
+                                         id="spoiler-content" 
+                                         className={`spoiler-reveal-container pt-3 border-t border-brand-primary/20 ${showFullPlot ? 'is-expanded' : ''}`}
+                                     >
+                                         <div className="cinematic-lens-flare" />
+                                         <div className="projector-text">
+                                             <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
+                                             <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
+                                                 {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
+                                             </p>
+                                         </div>
+                                     </div>
+                                 )}
+                                 {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
+                                     <p className="text-sm text-brand-text-dark italic animate-fade-in">No spoiler plot available yet.</p>
+                                 )}
                             </div>
                         </div>
                     </Section>
