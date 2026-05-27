@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, ImdbIcon, MetacriticIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
@@ -787,10 +787,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                 {safeRatings.length > 0 && (
                                     safeRatings.map(rating => (
                                         <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
-                                            {(rating.source.toLowerCase().includes('rotten') || rating.source.toLowerCase().includes('tmdb')) && (
+                                            {(rating.source.toLowerCase().includes('rotten') || 
+                                              rating.source.toLowerCase().includes('imdb') || 
+                                              rating.source.toLowerCase().includes('metacritic') || 
+                                              rating.source.toLowerCase().includes('tmdb')) && (
                                                 <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
                                                     {rating.source.toLowerCase().includes('rotten') && (
                                                         <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 text-red-500 flex-shrink-0" />
+                                                    )}
+                                                    {rating.source.toLowerCase().includes('imdb') && (
+                                                        <ImdbIcon className="w-10 h-5 md:w-12 md:h-6 flex-shrink-0" />
+                                                    )}
+                                                    {rating.source.toLowerCase().includes('metacritic') && (
+                                                        <MetacriticIcon className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
                                                     )}
                                                     {rating.source.toLowerCase().includes('tmdb') && (
                                                         <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
