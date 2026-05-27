@@ -785,33 +785,40 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             <div className="mt-3 md:mt-6 flex flex-wrap justify-center sm:justify-start gap-2 md:gap-4 items-center animate-slide-up" style={{ animationDelay: '0.45s', animationFillMode: 'forwards' }}>
                                 {/* Ratings Grid - With hover effects and improved touch targets */}
                                 {safeRatings.length > 0 && (
-                                    safeRatings.map(rating => (
-                                        <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
-                                            {(rating.source.toLowerCase().includes('rotten') || 
-                                              rating.source.toLowerCase().includes('imdb') || 
-                                              rating.source.toLowerCase().includes('metacritic') || 
-                                              rating.source.toLowerCase().includes('tmdb')) && (
-                                                <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
-                                                    {rating.source.toLowerCase().includes('rotten') && (
-                                                        <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 text-red-500 flex-shrink-0" />
+                                    safeRatings.map(rating => {
+                                        const isLogoOnly = rating.source.toLowerCase().includes('imdb') || 
+                                                           rating.source.toLowerCase().includes('rotten') || 
+                                                           rating.source.toLowerCase().includes('metacritic');
+                                        return (
+                                            <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
+                                                {(rating.source.toLowerCase().includes('rotten') || 
+                                                  rating.source.toLowerCase().includes('imdb') || 
+                                                  rating.source.toLowerCase().includes('metacritic') || 
+                                                  rating.source.toLowerCase().includes('tmdb')) && (
+                                                    <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
+                                                        {rating.source.toLowerCase().includes('rotten') && (
+                                                            <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
+                                                        )}
+                                                        {rating.source.toLowerCase().includes('imdb') && (
+                                                            <ImdbIcon className="w-10 h-5 md:w-12 md:h-6 flex-shrink-0" />
+                                                        )}
+                                                        {rating.source.toLowerCase().includes('metacritic') && (
+                                                            <MetacriticIcon className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
+                                                        )}
+                                                        {rating.source.toLowerCase().includes('tmdb') && (
+                                                            <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col gap-0.5">
+                                                    {!isLogoOnly && (
+                                                        <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
                                                     )}
-                                                    {rating.source.toLowerCase().includes('imdb') && (
-                                                        <ImdbIcon className="w-10 h-5 md:w-12 md:h-6 flex-shrink-0" />
-                                                    )}
-                                                    {rating.source.toLowerCase().includes('metacritic') && (
-                                                        <MetacriticIcon className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
-                                                    )}
-                                                    {rating.source.toLowerCase().includes('tmdb') && (
-                                                        <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
-                                                    )}
+                                                    <RatingDisplay score={rating.score} size="md" compact={true} />
                                                 </div>
-                                            )}
-                                            <div className="flex flex-col gap-0.5">
-                                                <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
-                                                <RatingDisplay score={rating.score} size="md" compact={true} />
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
 
