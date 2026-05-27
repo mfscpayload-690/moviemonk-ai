@@ -787,17 +787,16 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                 {safeRatings.length > 0 && (
                                     safeRatings.map(rating => (
                                         <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
-                                            <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
-                                                {rating.source.toLowerCase().includes('rotten') && (
-                                                    <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 text-red-500 flex-shrink-0" />
-                                                )}
-                                                {rating.source.toLowerCase().includes('imdb') && (
-                                                    <StarIcon className="w-5 h-5 md:w-6 md:h-6 text-yellow-400 flex-shrink-0" />
-                                                )}
-                                                {rating.source.toLowerCase().includes('tmdb') && (
-                                                    <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
-                                                )}
-                                            </div>
+                                            {(rating.source.toLowerCase().includes('rotten') || rating.source.toLowerCase().includes('tmdb')) && (
+                                                <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
+                                                    {rating.source.toLowerCase().includes('rotten') && (
+                                                        <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 text-red-500 flex-shrink-0" />
+                                                    )}
+                                                    {rating.source.toLowerCase().includes('tmdb') && (
+                                                        <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
+                                                    )}
+                                                </div>
+                                            )}
                                             <div className="flex flex-col gap-0.5">
                                                 <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
                                                 <RatingDisplay score={rating.score} size="md" compact={true} />
