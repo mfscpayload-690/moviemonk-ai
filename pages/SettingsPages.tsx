@@ -23,7 +23,7 @@ import {
   upsertProfileSettings
 } from '../services/userSettingsService';
 import { getAuthAvatarUrl, getAuthDisplayName, getAuthProviderLabel } from '../lib/authIdentity';
-import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
+import { safeImgUrl, sanitizeImgUrl } from '../lib/seo';
 
 /* ────────────────────────────────────────────
    Constants
@@ -211,13 +211,7 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     setImageFailed(false);
   }, [url]);
 
-  const displayUrl = safeImgUrl(url);
-
-  const safeUrl = displayUrl && (
-    SAFE_URL_PATTERN.test(displayUrl) ||
-    SAFE_DATA_URL_PATTERN.test(displayUrl) ||
-    (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayUrl))
-  ) ? displayUrl : '';
+  const safeUrl = sanitizeImgUrl(url);
 
   if (safeUrl && !imageFailed) {
     return (

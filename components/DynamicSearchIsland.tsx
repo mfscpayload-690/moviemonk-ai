@@ -19,7 +19,7 @@ import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import { apiGet } from '../lib/apiClient';
-import { safeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN, SAFE_LOCAL_URL_PATTERN, IS_DEV } from '../lib/seo';
+import { safeImgUrl, sanitizeImgUrl } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
 
 
@@ -777,20 +777,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
               )}
               {!isTrendingLoading && dailyTrending.map((suggestion) => {
                 const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                const displayBanner = safeImgUrl(suggestion.banner_url);
-                const displayPoster = safeImgUrl(suggestion.poster_url);
-
-                const safeBanner = displayBanner && (
-                  SAFE_URL_PATTERN.test(displayBanner) ||
-                  SAFE_DATA_URL_PATTERN.test(displayBanner) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayBanner))
-                ) ? displayBanner : '';
-
-                const safePoster = displayPoster && (
-                  SAFE_URL_PATTERN.test(displayPoster) ||
-                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
-                ) ? displayPoster : '';
+                const safeBanner = sanitizeImgUrl(suggestion.banner_url);
+                const safePoster = sanitizeImgUrl(suggestion.poster_url);
 
                 return (
                   <button
@@ -845,13 +833,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                       known_for_titles: suggestion.known_for_titles
                     })
                   : null;
-                const displayPoster = safeImgUrl(suggestion.poster_url);
-
-                const safePoster = displayPoster && (
-                  SAFE_URL_PATTERN.test(displayPoster) ||
-                  SAFE_DATA_URL_PATTERN.test(displayPoster) ||
-                  (IS_DEV && SAFE_LOCAL_URL_PATTERN.test(displayPoster))
-                ) ? displayPoster : '';
+                const safePoster = sanitizeImgUrl(suggestion.poster_url);
 
                 return (
                   <button

@@ -1,4 +1,4 @@
-import { safeImgUrl } from '../../lib/seo';
+import { safeImgUrl, sanitizeImgUrl } from '../../lib/seo';
 
 describe('safeImgUrl', () => {
   it('should allow safe relative paths and reject protocol-relative paths', () => {
@@ -13,7 +13,7 @@ describe('safeImgUrl', () => {
     expect(safeImgUrl('data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==')).toBe('');
   });
 
-  it('should reject dangerous protocols like javascript:', () => {
+  it('should reject unsafe active protocols', () => {
     expect(safeImgUrl('javascript:alert(1)')).toBe('');
     expect(safeImgUrl('javascript://alert(1)')).toBe('');
     expect(safeImgUrl('vbscript:msgbox(1)')).toBe('');
@@ -42,5 +42,18 @@ describe('safeImgUrl', () => {
     expect(safeImgUrl(null, 'fallback.png')).toBe('fallback.png');
     expect(safeImgUrl(undefined, 'fallback.png')).toBe('fallback.png');
     expect(safeImgUrl('', 'fallback.png')).toBe('fallback.png');
+  });
+});
+
+describe('sanitizeImgUrl', () => {
+  it('should allow relative paths and data URLs just like safeImgUrl', () => {
+    expect(sanitizeImgUrl('/assets/logo.png')).toBe('/assets/logo.png');
+    const validDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    expect(sanitizeImgUrl(validDataUrl)).toBe(validDataUrl);
+  });
+
+  it('should allow whitelisted external domains and return parsed URL string', () => {
+    expect(sanitizeImgUrl('https://image.tmdb.org/t/p/w500/abc.jpg')).toBe('https://image.tmdb.org/t/p/w500/abc.jpg');
+    expect(sanitizeImgUrl('https://evil.com/avatar.png', 'fallback.png')).toBe('fallback.png');
   });
 });

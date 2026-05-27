@@ -232,3 +232,43 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
   return fallback;
 }
 
+/**
+ * Sanitizes and validates an image URL locally for CodeQL taint analysis.
+ * Returns a serialized string representation from a verified URL object.
+ */
+export function sanitizeImgUrl(url: string | null | undefined, fallback = ''): string {
+  const safe = safeImgUrl(url, fallback);
+  if (!safe) return fallback;
+  if (safe.startsWith('/') && !safe.startsWith('//')) {
+    return safe;
+  }
+  if (safe.startsWith('data:image/')) {
+    return safe;
+  }
+  try {
+    const parsed = new URL(safe);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const host = parsed.hostname.toLowerCase();
+      if (
+        host === 'image.tmdb.org' ||
+        host === 'static.tvmaze.com' ||
+        host === 'images.unsplash.com' ||
+        host === 'graph.facebook.com' ||
+        host === 'avatars.githubusercontent.com' ||
+        host === 'moviemonk-ai.vercel.app' ||
+        host === 'googleusercontent.com' ||
+        host === 'lh3.googleusercontent.com' ||
+        host.endsWith('.googleusercontent.com') ||
+        host.endsWith('.supabase.co') ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
+      ) {
+        return parsed.toString();
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return fallback;
+}
+
