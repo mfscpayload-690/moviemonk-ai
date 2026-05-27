@@ -47,7 +47,33 @@ describe('HeaderUtilityMenu', () => {
     expect(items[0].description).toContain('Saved on this device');
   });
 
-  it('renders signed-in menu content and standalone share button when open', () => {
+  it('renders signed-in menu content and standalone share button when open and canShare is true', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(
+        MemoryRouter,
+        null,
+        React.createElement(HeaderUtilityMenu, {
+          user: { id: 'user-1' } as any,
+          isCloud: true,
+          isSyncing: true,
+          canShare: true,
+          onOpenWatchlists: () => undefined,
+          onOpenSettings: () => undefined,
+          onShare: () => undefined,
+          defaultOpen: true
+        })
+      )
+    );
+
+    expect(html).toContain('Watchlist');
+    expect(html).toContain('Settings');
+    // Share is now a standalone button - its title attribute contains this text
+    expect(html).toContain('Copy shareable link');
+    // The standalone share button is enabled when canShare=true
+    expect(html).not.toContain('disabled=""');
+  });
+
+  it('does not render standalone share button when canShare is false', () => {
     const html = renderToStaticMarkup(
       React.createElement(
         MemoryRouter,
@@ -67,10 +93,9 @@ describe('HeaderUtilityMenu', () => {
 
     expect(html).toContain('Watchlist');
     expect(html).toContain('Settings');
-    // Share is now a standalone button - its title attribute contains this text
-    expect(html).toContain('Open a result to share');
-    // The standalone share button is disabled when canShare=false
-    expect(html).toContain('disabled=""');
+    // Standalone share button is not rendered at all
+    expect(html).not.toContain('Copy shareable link');
+    expect(html).not.toContain('share');
   });
 
   it('closes before running the selected action', () => {
