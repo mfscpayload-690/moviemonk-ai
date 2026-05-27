@@ -924,7 +924,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                 {fullPlotContent && (
                                      <div 
                                          id="spoiler-content" 
-                                         className={`spoiler-reveal-container pt-3 border-t border-brand-primary/20 ${showFullPlot ? 'is-expanded' : ''}`}
+                                         className={`spoiler-reveal-container ${showFullPlot ? 'is-expanded' : ''}`}
                                      >
                                          <div className="cinematic-lens-flare" />
                                          <div className="projector-text">
