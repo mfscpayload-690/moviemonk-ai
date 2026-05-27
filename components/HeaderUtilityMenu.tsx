@@ -167,18 +167,18 @@ export default function HeaderUtilityMenu({
   return (
     <>
       <div className="header-utility-menu flex items-center gap-1" ref={containerRef}>
-        {/* Standalone Share button — always visible in header */}
-        <button
-          type="button"
-          className={`auth-btn auth-btn-avatar header-more-btn ${canShare ? 'text-white hover:text-brand-primary' : 'opacity-40 cursor-not-allowed'
-            }`}
-          onClick={canShare ? () => { onShare(); } : undefined}
-          aria-label="Share current page"
-          title={canShare ? 'Copy shareable link' : 'Open a result to share'}
-          disabled={!canShare}
-        >
-          <ShareIcon className="w-[18px] h-[18px]" />
-        </button>
+        {/* Standalone Share button — only visible when sharing is available (movie/tv/series/actor pages) */}
+        {canShare && (
+          <button
+            type="button"
+            className="auth-btn auth-btn-avatar header-more-btn text-white hover:text-brand-primary"
+            onClick={onShare}
+            aria-label="Share current page"
+            title="Copy shareable link"
+          >
+            <ShareIcon className="w-[18px] h-[18px]" />
+          </button>
+        )}
 
         {/* More (...) button */}
         <button

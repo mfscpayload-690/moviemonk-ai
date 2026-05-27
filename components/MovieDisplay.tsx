@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, ImdbIcon, MetacriticIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
 import type { AIProvider } from '../types';
 import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
 import { VirtualizedList } from './VirtualizedList';
@@ -785,24 +785,42 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             <div className="mt-3 md:mt-6 flex flex-wrap justify-center sm:justify-start gap-2 md:gap-4 items-center animate-slide-up" style={{ animationDelay: '0.45s', animationFillMode: 'forwards' }}>
                                 {/* Ratings Grid - With hover effects and improved touch targets */}
                                 {safeRatings.length > 0 && (
-                                    safeRatings.map(rating => (
-                                        <div key={rating.source} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
-                                            {(rating.source.toLowerCase().includes('rotten') || rating.source.toLowerCase().includes('tmdb')) && (
-                                                <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
-                                                    {rating.source.toLowerCase().includes('rotten') && (
-                                                        <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 text-red-500 flex-shrink-0" />
+                                    safeRatings.map(rating => {
+                                        const isLogoOnly = rating.source.toLowerCase().includes('imdb') || 
+                                                           rating.source.toLowerCase().includes('rotten') || 
+                                                           rating.source.toLowerCase().includes('metacritic');
+                                        return (
+                                            <div key={`${rating.source}-${rating.score}`} className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-md px-3 py-2.5 md:px-4 md:py-3 rounded-lg border border-white/15 rating-card-hover touch-target">
+                                                {(rating.source.toLowerCase().includes('rotten') || 
+                                                  rating.source.toLowerCase().includes('imdb') || 
+                                                  rating.source.toLowerCase().includes('metacritic') || 
+                                                  rating.source.toLowerCase().includes('tmdb')) && (
+                                                    <div className="flex items-center gap-1.5 md:gap-2 min-w-fit">
+                                                        {rating.source.toLowerCase().includes('rotten') && (
+                                                            <RottenTomatoesIcon className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
+                                                        )}
+                                                        {rating.source.toLowerCase().includes('imdb') && (
+                                                            <ImdbIcon className="w-10 h-5 md:w-12 md:h-6 flex-shrink-0" />
+                                                        )}
+                                                        {rating.source.toLowerCase().includes('metacritic') && (
+                                                            <MetacriticIcon className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
+                                                        )}
+                                                        {rating.source.toLowerCase().includes('tmdb') && (
+                                                            <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <div className="flex flex-col gap-0.5">
+                                                    {isLogoOnly ? (
+                                                        <span className="sr-only">{rating.source}</span>
+                                                    ) : (
+                                                        <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
                                                     )}
-                                                    {rating.source.toLowerCase().includes('tmdb') && (
-                                                        <FilmIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-400 flex-shrink-0" />
-                                                    )}
+                                                    <RatingDisplay score={rating.score} size="md" compact={true} />
                                                 </div>
-                                            )}
-                                            <div className="flex flex-col gap-0.5">
-                                                <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
-                                                <RatingDisplay score={rating.score} size="md" compact={true} />
                                             </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
 
@@ -866,19 +884,10 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
             <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 <div className="lg:col-span-2 space-y-8">
                     <Section title="Synopsis">
-                        {/* Synopsis with Read More for long text */}
                         <div className="relative">
-                            <p className={`text-brand-text-dark text-accessible-muted leading-relaxed ${synopsisNeedsTruncation && !synopsisExpanded ? 'synopsis-truncated' : ''}`}>
+                            <p className="text-brand-text-dark text-accessible-muted leading-relaxed">
                                 {movie.summary_medium}
                             </p>
-                            {synopsisNeedsTruncation && (
-                                <button
-                                    onClick={() => setSynopsisExpanded(!synopsisExpanded)}
-                                    className="mt-2 text-sm font-semibold text-brand-primary hover:text-brand-accent transition-colors touch-target"
-                                >
-                                    {synopsisExpanded ? 'Show less' : 'Read more'}
-                                </button>
-                            )}
                         </div>
 
                         <div className="mt-6">
@@ -914,17 +923,23 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                     )}
                                     {fullPlotContent ? (showFullPlot ? 'Hide Spoiler Plot' : 'Show Spoiler Plot') : 'Load Full Plot (Spoilers)'}
                                 </button>
-                                {showFullPlot && fullPlotContent && (
-                                    <div id="spoiler-content" className="pt-3 border-t border-brand-primary/20 animate-fade-in">
-                                        <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
-                                        <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
-                                            {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
-                                        </p>
-                                    </div>
-                                )}
-                                {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
-                                    <p className="text-sm text-brand-text-dark italic">No spoiler plot available yet.</p>
-                                )}
+                                {fullPlotContent && (
+                                     <div 
+                                         id="spoiler-content" 
+                                         className={`spoiler-reveal-container ${showFullPlot ? 'is-expanded' : ''}`}
+                                     >
+                                         <div className="cinematic-lens-flare" />
+                                         <div className="projector-text">
+                                             <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
+                                             <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
+                                                 {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
+                                             </p>
+                                         </div>
+                                     </div>
+                                 )}
+                                 {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
+                                     <p className="text-sm text-brand-text-dark italic animate-fade-in">No spoiler plot available yet.</p>
+                                 )}
                             </div>
                         </div>
                     </Section>
