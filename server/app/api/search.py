@@ -133,7 +133,7 @@ async def search(
                 )
 
         # Build TMDB search/discover in parallel
-        tasks = []
+        tasks: list[Any] = []
         movie_idx, tv_idx, person_idx = -1, -1, -1
 
         if person_intent["is_person_focused"] or type == "all":
