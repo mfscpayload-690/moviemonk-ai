@@ -22,6 +22,7 @@ interface MovieDisplayProps {
     selectedProvider: AIProvider;
     onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
     onQuickSearch: (title: string) => void;
+    onOpenPerson?: (id: number, name: string) => void;
     onOpenTitle?: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
     watchlists: WatchlistFolder[];
     onCreateWatchlist: (name: string, color: string, icon?: string, isPublic?: boolean) => string | null;
@@ -225,6 +226,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     selectedProvider,
     onFetchFullPlot,
     onQuickSearch,
+    onOpenPerson,
     onOpenTitle,
     watchlists,
     onCreateWatchlist,
@@ -625,9 +627,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
 
     const renderCastItem = useCallback((member: CastMember) => (
         <div className="px-1 py-1">
-            <CastCard key={member.name} member={member} onClick={() => onQuickSearch(member.name)} />
+            <CastCard
+                key={member.name}
+                member={member}
+                onClick={() => {
+                    if (member.id && onOpenPerson) {
+                        onOpenPerson(member.id, member.name);
+                    } else {
+                        onQuickSearch(member.name);
+                    }
+                }}
+            />
         </div>
-    ), [onQuickSearch]);
+    ), [onQuickSearch, onOpenPerson]);
 
 
     useEffect(() => {
@@ -1013,7 +1025,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {displayedCast.map(member => <CastCard key={member.name} member={member} onClick={() => onQuickSearch(member.name)} />)}
+                                {displayedCast.map(member => (
+                                    <CastCard
+                                        key={member.name}
+                                        member={member}
+                                        onClick={() => {
+                                            if (member.id && onOpenPerson) {
+                                                onOpenPerson(member.id, member.name);
+                                            } else {
+                                                onQuickSearch(member.name);
+                                            }
+                                        }}
+                                    />
+                                ))}
                             </div>
                         )}
                         {safeCast.length > 8 && (
