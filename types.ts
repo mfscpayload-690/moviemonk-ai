@@ -21,7 +21,7 @@ export interface TmdbReview {
 }
 
 export interface CastMember {
-
+  id?: number;
   name: string;
   role: string;
   known_for: string;
