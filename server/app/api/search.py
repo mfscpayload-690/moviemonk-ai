@@ -150,6 +150,19 @@ async def search(
 
         res_list = await asyncio.gather(*tasks, return_exceptions=True)
 
+        # Propagate exceptions raised during search queries
+        for idx, entry in enumerate(res_list):
+            if isinstance(entry, Exception):
+                task_name = "unknown"
+                if idx == person_idx:
+                    task_name = "tmdb.search_person"
+                elif idx == movie_idx:
+                    task_name = "tmdb.search_movie"
+                elif idx == tv_idx:
+                    task_name = "tmdb.search_tv"
+                logger.error("Search task %s failed: %s", task_name, entry)
+                raise entry
+
         people: list[PersonSearchCandidate] = []
         results: list[SearchResult] = []
         total_results = 0
