@@ -928,12 +928,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                          id="spoiler-content" 
                                          className={`spoiler-reveal-container ${showFullPlot ? 'is-expanded' : ''}`}
                                      >
-                                         <div className="cinematic-lens-flare" />
-                                         <div className="projector-text">
-                                             <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
-                                             <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
-                                                 {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
-                                             </p>
+                                         <div className="min-h-0 overflow-hidden w-full">
+                                             <div className="cinematic-lens-flare" />
+                                             <div className="projector-text">
+                                                 <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
+                                                 <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
+                                                     {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
+                                                 </p>
+                                             </div>
                                          </div>
                                      </div>
                                  )}
