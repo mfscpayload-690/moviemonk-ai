@@ -22,14 +22,16 @@ const normalizeWatchType = (value: unknown): WatchOption['type'] => {
 const sanitizeCast = (value: unknown): CastMember[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((item) => {
+    .map((item): CastMember | null => {
       if (!item || typeof item !== 'object') return null;
       const data = item as Record<string, unknown>;
       const name = toStringSafe(data.name).trim();
       const role = toStringSafe(data.role).trim();
       const known_for = toStringSafe(data.known_for).trim();
       if (!name && !role) return null;
-      return { name, role, known_for };
+      const id = typeof data.id === 'number' ? data.id : typeof data.id === 'string' && !isNaN(Number(data.id)) ? Number(data.id) : undefined;
+      const profile_url = data.profile_url ? toStringSafe(data.profile_url).trim() : undefined;
+      return { id, name, role, known_for, profile_url };
     })
     .filter((item): item is CastMember => item !== null)
     .slice(0, 40);
