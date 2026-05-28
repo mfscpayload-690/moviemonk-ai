@@ -1006,6 +1006,9 @@ const App: React.FC = () => {
                 onQuickSearch={handleQuickSearch}
                 onBriefMe={handleBriefMe}
                 onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
+                onOpenPerson={(personId, name) => {
+                  void openPersonById(personId, name, { manageLoading: true });
+                }}
               />
             ) : (
               <MovieDisplay
@@ -1018,6 +1021,9 @@ const App: React.FC = () => {
                   return res?.summary?.summary_long || "Plot details unavailable";
                 }}
                 onQuickSearch={handleQuickSearch}
+                onOpenPerson={(personId, name) => {
+                  void openPersonById(personId, name, { manageLoading: true });
+                }}
                 onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
                 watchlists={watchlists}
                 onCreateWatchlist={addFolder}
