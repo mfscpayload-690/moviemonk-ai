@@ -628,7 +628,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     const renderCastItem = useCallback((member: CastMember) => (
         <div className="px-1 py-1">
             <CastCard
-                key={member.name}
+                key={member.id || member.name}
                 member={member}
                 onClick={() => {
                     if (member.id && onOpenPerson) {
@@ -1027,7 +1027,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {displayedCast.map(member => (
                                     <CastCard
-                                        key={member.name}
+                                        key={member.id || member.name}
                                         member={member}
                                         onClick={() => {
                                             if (member.id && onOpenPerson) {
