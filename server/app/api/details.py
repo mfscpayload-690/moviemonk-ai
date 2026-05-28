@@ -95,7 +95,7 @@ async def get_details(
     if media_type not in ("movie", "tv"):
         return api_error(400, "invalid_type", "media_type must be 'movie' or 'tv'")
 
-    cache_key = build_cache_key("details_v3", {"mt": media_type, "id": tmdb_id})
+    cache_key = build_cache_key("details_v4", {"mt": media_type, "id": tmdb_id})
     cached = await get_cache(cache_key)
     if cached:
         return {**cached, "cached": True}
@@ -145,6 +145,7 @@ async def get_details(
             for actor in (credits.get("cast") or [])[:15]:
                 if actor.get("name") and actor.get("character"):
                     cast.append(CastMember(
+                        id=actor.get("id"),
                         name=actor["name"],
                         role=actor["character"],
                         known_for=actor.get("known_for_department", "Acting"),

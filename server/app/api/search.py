@@ -5,6 +5,7 @@ Ported from api/search.ts (969 lines) — the most complex endpoint.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -104,7 +105,7 @@ async def search(
 
     await _ensure_genre_map()
 
-    cache_key = build_cache_key("search", {
+    cache_key = build_cache_key("search_v2", {
         "q": query.lower(), "page": page, "type": type,
         "genres": genres or "", "yearMin": yearMin or "",
         "yearMax": yearMax or "", "ratingMin": ratingMin or "",
@@ -131,49 +132,80 @@ async def search(
                     signals=vibe_result.get("soft_preferences", {}).get("tone_tags", []),
                 )
 
-        # Build TMDB search/discover
+        # Build TMDB search/discover in parallel
+        tasks: list[Any] = []
+        movie_idx, tv_idx, person_idx = -1, -1, -1
+
+        if person_intent["is_person_focused"] or type == "all":
+            person_idx = len(tasks)
+            tasks.append(tmdb.search_person(search_query))
+
+        if type == "movie" or type == "all":
+            movie_idx = len(tasks)
+            tasks.append(tmdb.search_movie(search_query, page=page))
+
+        if type == "tv" or type == "all":
+            tv_idx = len(tasks)
+            tasks.append(tmdb.search_tv(search_query, page=page))
+
+        res_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Propagate exceptions raised during search queries
+        for idx, entry in enumerate(res_list):
+            if isinstance(entry, Exception):
+                task_name = "unknown"
+                if idx == person_idx:
+                    task_name = "tmdb.search_person"
+                elif idx == movie_idx:
+                    task_name = "tmdb.search_movie"
+                elif idx == tv_idx:
+                    task_name = "tmdb.search_tv"
+                logger.error("Search task %s failed: %s", task_name, entry)
+                raise entry
+
         people: list[PersonSearchCandidate] = []
         results: list[SearchResult] = []
         total_results = 0
         total_pages = 1
 
-        # Person search
-        if person_intent["is_person_focused"]:
-            person_data = await tmdb.search_person(search_query)
-            for p in (person_data.get("results") or [])[:5]:
-                known_for = [
-                    kf.get("title") or kf.get("name", "")
-                    for kf in (p.get("known_for") or [])[:3]
-                ]
-                people.append(PersonSearchCandidate(
-                    id=p["id"],
-                    name=p.get("name", ""),
-                    score=p.get("popularity", 0),
-                    confidence=min(p.get("popularity", 0) / 50, 1.0),
-                    popularity=p.get("popularity"),
-                    known_for_department=p.get("known_for_department"),
-                    known_for_titles=known_for,
-                    profile_url=tmdb.build_image_url(p.get("profile_path"), "w185"),
-                ))
+        if person_idx != -1:
+            person_res = res_list[person_idx]
+            if isinstance(person_res, dict):
+                for p in (person_res.get("results") or [])[:5]:
+                    known_for = [
+                        kf.get("title") or kf.get("name", "")
+                        for kf in (p.get("known_for") or [])[:3]
+                    ]
+                    people.append(PersonSearchCandidate(
+                        id=p["id"],
+                        name=p.get("name", ""),
+                        score=p.get("popularity", 0),
+                        confidence=min(p.get("popularity", 0) / 50, 1.0),
+                        popularity=p.get("popularity"),
+                        known_for_department=p.get("known_for_department"),
+                        known_for_titles=known_for,
+                        profile_url=tmdb.build_image_url(p.get("profile_path"), "w185"),
+                    ))
 
-        # Title search
-        if type == "movie" or type == "all":
-            movie_data = await tmdb.search_movie(search_query, page=page)
-            total_results += movie_data.get("total_results", 0)
-            total_pages = max(total_pages, movie_data.get("total_pages", 1))
-            for item in movie_data.get("results", []):
-                r = _normalise_result(item, "movie")
-                if r:
-                    results.append(r)
+        if movie_idx != -1:
+            movie_res = res_list[movie_idx]
+            if isinstance(movie_res, dict):
+                total_results += movie_res.get("total_results", 0)
+                total_pages = max(total_pages, movie_res.get("total_pages", 1))
+                for item in movie_res.get("results", []):
+                    r = _normalise_result(item, "movie")
+                    if r:
+                        results.append(r)
 
-        if type == "tv" or type == "all":
-            tv_data = await tmdb.search_tv(search_query, page=page)
-            total_results += tv_data.get("total_results", 0)
-            total_pages = max(total_pages, tv_data.get("total_pages", 1))
-            for item in tv_data.get("results", []):
-                r = _normalise_result(item, "tv")
-                if r:
-                    results.append(r)
+        if tv_idx != -1:
+            tv_res = res_list[tv_idx]
+            if isinstance(tv_res, dict):
+                total_results += tv_res.get("total_results", 0)
+                total_pages = max(total_pages, tv_res.get("total_pages", 1))
+                for item in tv_res.get("results", []):
+                    r = _normalise_result(item, "tv")
+                    if r:
+                        results.append(r)
 
         # Apply filters
         if genres:

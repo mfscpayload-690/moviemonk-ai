@@ -18,6 +18,7 @@ class BaseResponseModel(BaseModel):
 
 
 class CastMember(BaseResponseModel):
+    id: int | None = None
     name: str
     role: str
     known_for: str = ""

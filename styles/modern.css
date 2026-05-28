@@ -6080,6 +6080,10 @@ a:focus-visible {
     grid-template-rows: 1fr;
 }
 
+.spoiler-reveal-container:not(.is-expanded) {
+    margin-top: 0 !important;
+}
+
 /* Lens flare sweep styling */
 .cinematic-lens-flare {
     position: absolute;

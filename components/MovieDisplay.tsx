@@ -22,6 +22,7 @@ interface MovieDisplayProps {
     selectedProvider: AIProvider;
     onFetchFullPlot: (title: string, year: string, type: string, provider: AIProvider) => Promise<string>;
     onQuickSearch: (title: string) => void;
+    onOpenPerson?: (id: number, name: string) => void;
     onOpenTitle?: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
     watchlists: WatchlistFolder[];
     onCreateWatchlist: (name: string, color: string, icon?: string, isPublic?: boolean) => string | null;
@@ -225,6 +226,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     selectedProvider,
     onFetchFullPlot,
     onQuickSearch,
+    onOpenPerson,
     onOpenTitle,
     watchlists,
     onCreateWatchlist,
@@ -625,9 +627,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
 
     const renderCastItem = useCallback((member: CastMember) => (
         <div className="px-1 py-1">
-            <CastCard key={member.name} member={member} onClick={() => onQuickSearch(member.name)} />
+            <CastCard
+                key={member.id || member.name}
+                member={member}
+                onClick={() => {
+                    if (member.id && onOpenPerson) {
+                        onOpenPerson(member.id, member.name);
+                    } else {
+                        onQuickSearch(member.name);
+                    }
+                }}
+            />
         </div>
-    ), [onQuickSearch]);
+    ), [onQuickSearch, onOpenPerson]);
 
 
     useEffect(() => {
@@ -816,7 +828,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                                     ) : (
                                                         <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
                                                     )}
-                                                    <RatingDisplay score={rating.score} size="md" compact={true} />
+                                                    <RatingDisplay score={rating.score} size="md" compact={true} hideIcon={isLogoOnly} />
                                                 </div>
                                             </div>
                                         );
@@ -928,12 +940,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                          id="spoiler-content" 
                                          className={`spoiler-reveal-container ${showFullPlot ? 'is-expanded' : ''}`}
                                      >
-                                         <div className="cinematic-lens-flare" />
-                                         <div className="projector-text">
-                                             <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
-                                             <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
-                                                 {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
-                                             </p>
+                                         <div className="min-h-0 overflow-hidden w-full">
+                                             <div className="cinematic-lens-flare" />
+                                             <div className="projector-text">
+                                                 <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
+                                                 <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
+                                                     {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
+                                                 </p>
+                                             </div>
                                          </div>
                                      </div>
                                  )}
@@ -1011,7 +1025,19 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {displayedCast.map(member => <CastCard key={member.name} member={member} onClick={() => onQuickSearch(member.name)} />)}
+                                {displayedCast.map(member => (
+                                    <CastCard
+                                        key={member.id || member.name}
+                                        member={member}
+                                        onClick={() => {
+                                            if (member.id && onOpenPerson) {
+                                                onOpenPerson(member.id, member.name);
+                                            } else {
+                                                onQuickSearch(member.name);
+                                            }
+                                        }}
+                                    />
+                                ))}
                             </div>
                         )}
                         {safeCast.length > 8 && (
