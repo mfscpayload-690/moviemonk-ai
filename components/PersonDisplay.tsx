@@ -123,7 +123,8 @@ const PersonDisplay: React.FC<{
   onQuickSearch?: (q: string) => void;
   onBriefMe?: (name: string) => void;
   onOpenTitle?: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
-}> = ({ data, isLoading, onQuickSearch, onBriefMe, onOpenTitle }) => {
+  onOpenPerson?: (id: number, name: string) => void;
+}> = ({ data, isLoading, onQuickSearch, onBriefMe, onOpenTitle, onOpenPerson }) => {
   const [bioExpanded, setBioExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<PersonRoleBucket>('all');
   useRenderCounter('PersonDisplay');
@@ -410,7 +411,11 @@ const PersonDisplay: React.FC<{
                   className="person-related-card"
                   onClick={() => {
                     track('related_tile_click', { type: 'person', id: relatedPerson.id, name: relatedPerson.name });
-                    if (onQuickSearch) onQuickSearch(relatedPerson.name);
+                    if (onOpenPerson && relatedPerson.id) {
+                      onOpenPerson(relatedPerson.id, relatedPerson.name);
+                    } else if (onQuickSearch) {
+                      onQuickSearch(relatedPerson.name);
+                    }
                   }}
                   aria-label={`Open ${relatedPerson.name}`}
                 >
