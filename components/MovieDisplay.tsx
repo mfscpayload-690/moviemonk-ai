@@ -10,6 +10,7 @@ import { useRenderCounter } from '../lib/perfDebug';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './WatchlistIconPicker';
+import { CustomVideoPlayer } from './CustomVideoPlayer';
 import { useActionFeedback } from '../hooks/useActionFeedback';
 import SeoHead from './SeoHead';
 import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
@@ -816,7 +817,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                                     ) : (
                                                         <p className="font-bold text-white text-xs md:text-sm leading-tight uppercase tracking-wide">{rating.source}</p>
                                                     )}
-                                                    <RatingDisplay score={rating.score} size="md" compact={true} />
+                                                    <RatingDisplay score={rating.score} size="md" compact={true} hideIcon={isLogoOnly} />
                                                 </div>
                                             </div>
                                         );
@@ -1417,24 +1418,15 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                     role="dialog"
                 >
                     <div
-                        className="relative w-full max-w-4xl aspect-video bg-black rounded-lg shadow-2xl"
+                        className="relative w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <iframe
-                            src={embedUrl}
-                            title={`${movie.title} Trailer`}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="w-full h-full rounded-lg"
-                        ></iframe>
-                        <button
-                            onClick={() => setIsTrailerOpen(false)}
-                            aria-label="Close trailer"
-                            className="absolute -top-3 -right-3 md:-top-4 md:-right-4 p-2 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-colors shadow-lg"
-                        >
-                            <XMarkIcon className="w-6 h-6" />
-                        </button>
+                        <CustomVideoPlayer
+                            url={movie.trailer_url}
+                            onClose={() => setIsTrailerOpen(false)}
+                            title={movie.title}
+                            autoplay={autoplayTrailers}
+                        />
                     </div>
                 </div>,
                 modalRoot

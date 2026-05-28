@@ -5,6 +5,7 @@ interface RatingDisplayProps {
   score: number | string | null;
   size?: 'sm' | 'md' | 'lg';
   compact?: boolean;
+  hideIcon?: boolean;
 }
 
 /**
@@ -35,7 +36,7 @@ const getBadgeColor = (score: number): string => {
   return 'bg-emerald-950';
 };
 
-const RatingDisplay: React.FC<RatingDisplayProps> = ({ score, size = 'md', compact = false }) => {
+const RatingDisplay: React.FC<RatingDisplayProps> = ({ score, size = 'md', compact = false, hideIcon = false }) => {
   const numScore = typeof score === 'string' ? parseFloat(score) : score;
   const isValid = typeof numScore === 'number' && Number.isFinite(numScore);
   
@@ -70,7 +71,7 @@ const RatingDisplay: React.FC<RatingDisplayProps> = ({ score, size = 'md', compa
   if (compact) {
     return (
       <div className={config.container}>
-        <StarIcon className={`${config.icon} ${starColorClass} flex-shrink-0`} />
+        {!hideIcon && <StarIcon className={`${config.icon} ${starColorClass} flex-shrink-0`} />}
         <span className={`${config.text} font-bold text-white`}>{displayScore}</span>
       </div>
     );
@@ -78,7 +79,7 @@ const RatingDisplay: React.FC<RatingDisplayProps> = ({ score, size = 'md', compa
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${badgeColorClass}`}>
-      <StarIcon className={`${config.icon} ${starColorClass} flex-shrink-0`} />
+      {!hideIcon && <StarIcon className={`${config.icon} ${starColorClass} flex-shrink-0`} />}
       <span className={`${config.text} font-bold text-white`}>{displayScore}</span>
     </div>
   );
