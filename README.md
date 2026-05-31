@@ -70,7 +70,7 @@ cd server
 pip install -r requirements.txt
 cp .env.example .env
 # Configure TMDB_API_KEY and GROQ_API_KEY
-python main.py
+python -m app.main  # or: uvicorn app.main:app --port 8000 --reload
 ```
 *Backend listens on `http://localhost:8000`*
 
