@@ -372,6 +372,23 @@ const CareerStats: React.FC<{
   </section>
 );
 
+function formatBirthDate(birthdayStr: string): string {
+  const birthDate = new Date(birthdayStr);
+  if (isNaN(birthDate.getTime())) return birthdayStr;
+
+  // Calculate age
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+  const formattedDate = birthDate.toLocaleDateString('en-US', options);
+  return `${formattedDate} (age ${age})`;
+}
+
 const PersonHero: React.FC<{
   person: PersonPayload['person'];
   tags: string[];
@@ -381,12 +398,9 @@ const PersonHero: React.FC<{
   hasBiography: boolean;
   onOpenBiography: () => void;
   actions: PersonActionHandlers;
-}> = ({ person, tags, careerSpan, topWork, biographyExcerpt, hasBiography, onOpenBiography, actions }) => {
-  const metadata = [
-    person.birthday ? { icon: Calendar, label: person.birthday } : null,
-    person.place_of_birth ? { icon: MapPin, label: person.place_of_birth } : null,
-    person.known_for_department ? { icon: UserRound, label: person.known_for_department } : null
-  ].filter(Boolean) as Array<{ icon: typeof Calendar; label: string }>;
+  onOpenCredit?: (credit: PersonCredit) => void;
+}> = ({ person, tags, careerSpan, topWork, biographyExcerpt, hasBiography, onOpenBiography, actions, onOpenCredit }) => {
+  const birthDateAndAge = person.birthday ? formatBirthDate(person.birthday) : null;
 
   return (
     <section className="person-editorial-hero" aria-labelledby="person-profile-title">
@@ -401,7 +415,7 @@ const PersonHero: React.FC<{
             className="person-editorial-avatar"
             loading="eager"
             decoding="async"
-            sizes="(min-width: 768px) 210px, 136px"
+            sizes="(min-width: 768px) 190px, 132px"
           />
         ) : (
           <div className="person-editorial-avatar person-editorial-avatar-fallback" aria-label={`${person.name} profile image unavailable`}>
@@ -413,59 +427,79 @@ const PersonHero: React.FC<{
           <div className="person-hero-kicker">Person Profile</div>
           <h2 id="person-profile-title" className="person-editorial-name">{person.name}</h2>
 
-          {metadata.length > 0 && (
-            <div className="person-editorial-meta-line" aria-label="Person details">
-              {metadata.map(({ icon: Icon, label }) => (
-                <span key={label} className="person-meta-item">
-                  <Icon size={14} aria-hidden="true" />
-                  {label}
+          {(birthDateAndAge || person.place_of_birth || person.known_for_department) && (
+            <div className="person-hero-meta-row" aria-label="Person details">
+              {birthDateAndAge && (
+                <span className="person-hero-meta-item">
+                  <Calendar size={14} aria-hidden="true" />
+                  <span>{birthDateAndAge}</span>
                 </span>
-              ))}
+              )}
+              {person.place_of_birth && (
+                <span className="person-hero-meta-item">
+                  <MapPin size={14} aria-hidden="true" />
+                  <span>{person.place_of_birth}</span>
+                </span>
+              )}
+              {person.known_for_department && (
+                <span className="person-hero-meta-item">
+                  <UserRound size={14} aria-hidden="true" />
+                  <span>{person.known_for_department}</span>
+                </span>
+              )}
             </div>
           )}
 
           {tags.length > 0 && (
-            <div className="person-editorial-tags" aria-label="Known for">
+            <div className="person-hero-tags-row" aria-label="Department tags">
               {tags.slice(0, 5).map((tag) => (
-                <span key={tag}>{tag}</span>
+                <span key={tag} className="person-hero-tag-badge">{tag}</span>
               ))}
             </div>
           )}
 
           {biographyExcerpt ? (
-            <div className="person-hero-bio-block">
-              <p className="person-hero-bio">{biographyExcerpt}</p>
-              {hasBiography && (
-                <button
-                  type="button"
-                  className="person-hero-read-more"
-                  onClick={onOpenBiography}
-                  aria-haspopup="dialog"
-                >
-                  Read full biography
-                </button>
-              )}
+            <div className="person-hero-bio-container">
+              <p className="person-hero-bio">
+                {biographyExcerpt}
+                {hasBiography && (
+                  <button
+                    type="button"
+                    className="person-hero-bio-more"
+                    onClick={onOpenBiography}
+                    aria-haspopup="dialog"
+                  >
+                    Read full biography
+                  </button>
+                )}
+              </p>
             </div>
           ) : (
             <p className="person-hero-bio person-hero-bio-empty">Biography unavailable.</p>
           )}
 
           <div className="person-hero-known-row" aria-label="Top known works">
-            <span>Known for</span>
-            {topWork.slice(0, 5).map((credit) => (
-              <strong key={`${credit.media_type}-${credit.id}`}>{credit.title}</strong>
-            ))}
-            {topWork.length === 0 && <strong>No top works yet</strong>}
+            <span className="person-hero-known-label">Known for</span>
+            <div className="person-hero-known-list">
+              {topWork.slice(0, 5).map((credit, index) => (
+                <React.Fragment key={`${credit.media_type}-${credit.id}`}>
+                  {index > 0 && <span className="person-hero-known-divider">•</span>}
+                  <button
+                    type="button"
+                    className="person-hero-known-link"
+                    onClick={() => onOpenCredit?.(credit)}
+                    aria-label={`Open ${credit.title}`}
+                  >
+                    {credit.title}
+                  </button>
+                </React.Fragment>
+              ))}
+              {topWork.length === 0 && <span className="person-hero-known-empty">No top works yet</span>}
+            </div>
           </div>
 
           <PersonActions {...actions} />
         </div>
-
-        <aside className="person-hero-summary" aria-label="Career summary">
-          <p>Career span</p>
-          <strong>{formatCareerSpan(careerSpan)}</strong>
-          <span>{person.known_for_department || 'Entertainment'} profile</span>
-        </aside>
       </div>
     </section>
   );
@@ -907,7 +941,10 @@ const PersonDisplay: React.FC<{
     [dedupedAllCredits]
   );
   const normalizedBiography = String(person.biography || '').replace(/\s+/g, ' ').trim();
-  const heroBiography = useMemo(() => truncateBiography(normalizedBiography, 360).text, [normalizedBiography]);
+  const { text: heroBiography, isTruncated: isBioTruncated } = useMemo(
+    () => truncateBiography(normalizedBiography, 360),
+    [normalizedBiography]
+  );
 
   const handleOpenCredit = (credit: PersonCredit) => {
     const openPayload = toOpenTitlePayload(credit);
@@ -964,9 +1001,10 @@ const PersonDisplay: React.FC<{
         careerSpan={careerSpan}
         topWork={topWork}
         biographyExcerpt={heroBiography}
-        hasBiography={Boolean(normalizedBiography)}
+        hasBiography={isBioTruncated}
         onOpenBiography={() => setIsBiographyOpen(true)}
         actions={actions}
+        onOpenCredit={handleOpenCredit}
       />
 
       <CareerStats roleDistribution={roleDistribution} careerSpan={careerSpan} allCount={dedupedAllCredits.length} />
