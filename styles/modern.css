@@ -4085,23 +4085,6 @@ a:focus-visible {
     color: #b9bdc7;
     line-height: 1.62;
     font-size: 0.93rem;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: var(--person-mobile-lines, 6);
-    line-clamp: var(--person-mobile-lines, 6);
-}
-
-.person-biography-text.is-expanded {
-    display: block;
-    overflow: visible;
-}
-
-.person-biography-toggle {
-    margin-top: 0.6rem;
-    color: #c4b5fd;
-    font-size: 0.82rem;
-    font-weight: 600;
 }
 
 .person-credit-rail,
@@ -4412,10 +4395,7 @@ a:focus-visible {
         display: none;
     }
 
-    .person-biography-text {
-        -webkit-line-clamp: var(--person-desktop-lines, 5);
-        line-clamp: var(--person-desktop-lines, 5);
-    }
+
 
     .person-filmography-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));

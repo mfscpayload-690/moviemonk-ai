@@ -51,9 +51,6 @@ type PersonCreditBuckets = {
   tags: string[];
 };
 
-const BIOGRAPHY_MOBILE_LINES = 6;
-const BIOGRAPHY_DESKTOP_LINES = 5;
-
 export function derivePersonCreditBuckets(data: PersonPayload): PersonCreditBuckets {
   const normalizedFallback = (data.filmography || []).map((item) => ({
     ...item,
@@ -125,7 +122,7 @@ const PersonDisplay: React.FC<{
   onOpenTitle?: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
   onOpenPerson?: (id: number, name: string) => void;
 }> = ({ data, isLoading, onQuickSearch, onBriefMe, onOpenTitle, onOpenPerson }) => {
-  const [bioExpanded, setBioExpanded] = useState(false);
+
   const [activeTab, setActiveTab] = useState<PersonRoleBucket>('all');
   useRenderCounter('PersonDisplay');
 
@@ -267,22 +264,9 @@ const PersonDisplay: React.FC<{
           <header>
             <h3>Biography</h3>
           </header>
-          <p
-            className={`person-biography-text ${bioExpanded ? 'is-expanded' : ''}`}
-            style={
-              bioExpanded
-                ? undefined
-                : ({
-                    ['--person-mobile-lines' as string]: String(BIOGRAPHY_MOBILE_LINES),
-                    ['--person-desktop-lines' as string]: String(BIOGRAPHY_DESKTOP_LINES)
-                  } as React.CSSProperties)
-            }
-          >
+          <p className="person-biography-text">
             {person.biography}
           </p>
-          <button type="button" className="person-biography-toggle" onClick={() => setBioExpanded((value) => !value)}>
-            {bioExpanded ? 'Show less' : 'Read more'}
-          </button>
         </section>
       )}
 
