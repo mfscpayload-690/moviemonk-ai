@@ -57,7 +57,7 @@ MovieMonk employs a decoupled architecture designed for security, high-concurren
 - **Type Safety**: End-to-end TypeScript implementation ensures rigorous interface adherence and reduces runtime regressions.
 - **Automated Quality Checks**: Custom CI scripts (`check:no-emoji`, `security-check`) enforce project-specific coding standards and security audits.
 
-## 🛠 Development Setup
+## ⚙️ Development Setup
 
 ### Prerequisites
 - Node.js 22.x
