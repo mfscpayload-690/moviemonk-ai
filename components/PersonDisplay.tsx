@@ -3,7 +3,6 @@ import { track } from '@vercel/analytics/react';
 import {
   Calendar,
   Bookmark,
-  Clapperboard,
   ExternalLink,
   Film,
   MapPin,
@@ -350,15 +349,12 @@ function formatBirthDate(birthdayStr: string): string {
 const PersonHero: React.FC<{
   person: PersonPayload['person'];
   tags: string[];
-  careerSpan: PersonCreditBuckets['careerSpan'];
   topWork: DisplayCredit[];
   biographyExcerpt: string;
   hasBiography: boolean;
   onOpenBiography: () => void;
   onOpenCredit?: (credit: PersonCredit) => void;
-  roleDistribution: PersonCreditBuckets['roleDistribution'];
-  allCount: number;
-}> = ({ person, tags, careerSpan, topWork, biographyExcerpt, hasBiography, onOpenBiography, onOpenCredit, roleDistribution, allCount }) => {
+}> = ({ person, tags, topWork, biographyExcerpt, hasBiography, onOpenBiography, onOpenCredit }) => {
   const birthDateAndAge = person.birthday ? formatBirthDate(person.birthday) : null;
 
   return (
@@ -455,25 +451,6 @@ const PersonHero: React.FC<{
               ))}
               {topWork.length === 0 && <span className="person-hero-known-empty">No top works yet</span>}
             </div>
-          </div>
-        </div>
-
-        <div className="person-hero-stats" aria-label="Career stats">
-          <div className="person-hero-stat-card">
-            <span className="person-hero-stat-label">All credits</span>
-            <strong className="person-hero-stat-value">{allCount}</strong>
-          </div>
-          <div className="person-hero-stat-card">
-            <span className="person-hero-stat-label">Acting</span>
-            <strong className="person-hero-stat-value">{roleDistribution.acting}</strong>
-          </div>
-          <div className="person-hero-stat-card">
-            <span className="person-hero-stat-label">Directing</span>
-            <strong className="person-hero-stat-value">{roleDistribution.directing}</strong>
-          </div>
-          <div className="person-hero-stat-card">
-            <span className="person-hero-stat-label">Career span</span>
-            <strong className="person-hero-stat-value">{formatCareerSpan(careerSpan)}</strong>
           </div>
         </div>
       </div>
@@ -603,19 +580,15 @@ const CreditsExplorer: React.FC<{
   watchlists = []
 }) => {
   const [activeTab, setActiveTab] = useState<PersonRoleBucket>('all');
-  const [mediaFilter, setMediaFilter] = useState<PersonMediaFilter>('all');
-  const [sort, setSort] = useState<PersonCreditSort>('newest');
 
   const baseCredits = useMemo(
     () => selectVisibleCredits(activeTab, { allCredits, actingCredits, directingCredits, otherCredits }),
     [activeTab, allCredits, actingCredits, directingCredits, otherCredits]
   );
-  const availableMediaFilters = useMemo(() => getAvailableMediaFilters(baseCredits), [baseCredits]);
   const visibleCredits = useMemo(
-    () => sortPersonCredits(filterPersonCredits(dedupePersonCredits(baseCredits), mediaFilter), sort),
-    [baseCredits, mediaFilter, sort]
+    () => sortPersonCredits(dedupePersonCredits(baseCredits), 'newest'),
+    [baseCredits]
   );
-  const decadeGroups = useMemo(() => groupCreditsByDecade(visibleCredits), [visibleCredits]);
 
   const tabCounts = {
     all: dedupePersonCredits(allCredits).length,
@@ -629,7 +602,7 @@ const CreditsExplorer: React.FC<{
       <header className="person-filmography-header">
         <div>
           <h3 id="person-filmography-title">Filmography</h3>
-          <p>Explore credits by role, format, and release order.</p>
+          <p>Explore credits by role in release order.</p>
         </div>
         <div className="person-credit-count">{visibleCredits.length} shown</div>
       </header>
@@ -640,10 +613,7 @@ const CreditsExplorer: React.FC<{
             <button
               key={tab}
               type="button"
-              onClick={() => {
-                setActiveTab(tab);
-                setMediaFilter('all');
-              }}
+              onClick={() => setActiveTab(tab)}
               className={activeTab === tab ? 'is-active' : ''}
               aria-pressed={activeTab === tab}
             >
@@ -652,33 +622,6 @@ const CreditsExplorer: React.FC<{
             </button>
           ))}
         </div>
-
-        <div className="person-filter-row">
-          <div className="person-media-filters" aria-label="Media type filters">
-            {availableMediaFilters.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                onClick={() => setMediaFilter(filter)}
-                className={mediaFilter === filter ? 'is-active' : ''}
-                aria-pressed={mediaFilter === filter}
-              >
-                {filter === 'all' ? <Clapperboard size={15} aria-hidden="true" /> : filter === 'movie' ? <Film size={15} aria-hidden="true" /> : <Tv size={15} aria-hidden="true" />}
-                <span>{filter === 'all' ? 'All media' : filter === 'movie' ? 'Movies' : 'TV'}</span>
-              </button>
-            ))}
-          </div>
-
-          <label className="person-sort-control">
-            <span>Sort</span>
-            <select value={sort} onChange={(event) => setSort(event.target.value as PersonCreditSort)}>
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="popular">Popularity</option>
-              <option value="title">Title</option>
-            </select>
-          </label>
-        </div>
       </div>
 
       {isLoading && visibleCredits.length === 0 ? (
@@ -686,89 +629,82 @@ const CreditsExplorer: React.FC<{
           {Array.from({ length: 8 }).map((_, index) => <SkeletonCard key={index} />)}
         </div>
       ) : visibleCredits.length > 0 ? (
-        <div className="person-filmography-timeline">
-          {decadeGroups.map((group) => (
-            <div className="person-decade-group" key={group.label}>
-              <div className="person-decade-label">{group.label}</div>
-              <div className="person-filmography-list">
-                {group.credits.map((credit) => (
-                  <article
-                    key={`${credit.media_type || 'movie'}-${credit.id}`}
-                    className="person-filmography-card group"
-                    onClick={() => onOpenCredit(credit)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key !== 'Enter' && event.key !== ' ') return;
-                      event.preventDefault();
-                      onOpenCredit(credit);
+        <div className="person-filmography-list">
+          {visibleCredits.map((credit) => (
+            <article
+              key={`${credit.media_type || 'movie'}-${credit.id}`}
+              className="person-filmography-card group"
+              onClick={() => onOpenCredit(credit)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                onOpenCredit(credit);
+              }}
+              aria-label={`Open ${credit.title}`}
+            >
+              <div className="person-filmography-poster-wrapper relative">
+                <PosterFrame credit={credit} compact={false} />
+                {onQuickSaveToWatchlist && (
+                  <button
+                    type="button"
+                    className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
+                      isCreditSavedToWatchlist(credit, watchlists)
+                        ? 'bg-violet-500 text-white scale-100 border border-violet-400/30'
+                        : 'bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20'
+                    }`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onQuickSaveToWatchlist(toQuickSaveTitle(credit));
                     }}
-                    aria-label={`Open ${credit.title}`}
+                    aria-label={isCreditSavedToWatchlist(credit, watchlists) ? `${credit.title} is saved. Open save dialog` : `Save ${credit.title} to watchlist`}
+                    aria-pressed={isCreditSavedToWatchlist(credit, watchlists)}
+                    title={isCreditSavedToWatchlist(credit, watchlists) ? 'Saved' : 'Save'}
                   >
-                    <div className="person-filmography-poster-wrapper relative">
-                      <PosterFrame credit={credit} compact={false} />
-                      {onQuickSaveToWatchlist && (
-                        <button
-                          type="button"
-                          className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
-                            isCreditSavedToWatchlist(credit, watchlists)
-                              ? 'bg-violet-500 text-white scale-100 border border-violet-400/30'
-                              : 'bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20'
-                          }`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onQuickSaveToWatchlist(toQuickSaveTitle(credit));
-                          }}
-                          aria-label={isCreditSavedToWatchlist(credit, watchlists) ? `${credit.title} is saved. Open save dialog` : `Save ${credit.title} to watchlist`}
-                          aria-pressed={isCreditSavedToWatchlist(credit, watchlists)}
-                          title={isCreditSavedToWatchlist(credit, watchlists) ? 'Saved' : 'Save'}
-                        >
-                          <TagIcon className="w-3.5 h-3.5" />
-                          <span className="sr-only">Save</span>
-                        </button>
-                      )}
-                      {onToggleWatched && (
-                        <button
-                          type="button"
-                          className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
-                            isWatched?.(credit.id, credit.media_type)
-                              ? 'bg-green-500 text-white scale-100'
-                              : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
-                          }`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onToggleWatched(toQuickSaveTitle(credit));
-                          }}
-                          aria-label={isWatched?.(credit.id, credit.media_type) ? `Mark ${credit.title} as unwatched` : `Mark ${credit.title} as watched`}
-                          aria-pressed={Boolean(isWatched?.(credit.id, credit.media_type))}
-                          title={isWatched?.(credit.id, credit.media_type) ? 'Watched' : 'Mark watched'}
-                        >
-                          <WatchedIcon className="w-3.5 h-3.5" filled={isWatched?.(credit.id, credit.media_type)} />
-                          <span className="sr-only">Watched</span>
-                        </button>
-                      )}
-                    </div>
-                    <div className="person-filmography-body">
-                      <div className="person-title-row-heading">
-                        <p className="person-filmography-title">{credit.title}</p>
-                        <span className={`person-media-chip is-${credit.media_type === 'tv' ? 'tv' : 'movie'}`}>
-                          {credit.media_type === 'tv' ? 'TV' : 'Movie'}
-                        </span>
-                      </div>
-                      <div className="person-title-row-meta">
-                        <span>{credit.year || 'Unknown year'}</span>
-                        <span>{formatPrimaryRole(credit)}</span>
-                        <span>{formatSecondaryRole(credit)}</span>
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                    <TagIcon className="w-3.5 h-3.5" />
+                    <span className="sr-only">Save</span>
+                  </button>
+                )}
+                {onToggleWatched && (
+                  <button
+                    type="button"
+                    className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
+                      isWatched?.(credit.id, credit.media_type)
+                        ? 'bg-green-500 text-white scale-100'
+                        : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
+                    }`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleWatched(toQuickSaveTitle(credit));
+                    }}
+                    aria-label={isWatched?.(credit.id, credit.media_type) ? `Mark ${credit.title} as unwatched` : `Mark ${credit.title} as watched`}
+                    aria-pressed={Boolean(isWatched?.(credit.id, credit.media_type))}
+                    title={isWatched?.(credit.id, credit.media_type) ? 'Watched' : 'Mark watched'}
+                  >
+                    <WatchedIcon className="w-3.5 h-3.5" filled={isWatched?.(credit.id, credit.media_type)} />
+                    <span className="sr-only">Watched</span>
+                  </button>
+                )}
               </div>
-            </div>
+              <div className="person-filmography-body">
+                <div className="person-title-row-heading">
+                  <p className="person-filmography-title">{credit.title}</p>
+                  <span className={`person-media-chip is-${credit.media_type === 'tv' ? 'tv' : 'movie'}`}>
+                    {credit.media_type === 'tv' ? 'TV' : 'Movie'}
+                  </span>
+                </div>
+                <div className="person-title-row-meta">
+                  <span>{credit.year || 'Unknown year'}</span>
+                  <span>{formatPrimaryRole(credit)}</span>
+                  <span>{formatSecondaryRole(credit)}</span>
+                </div>
+              </div>
+            </article>
           ))}
         </div>
       ) : (
-        <EmptyState title="No credits match these filters" body="Try a different role, media type, or sort option." />
+        <EmptyState title="No credits match these filters" body="Try a different role option." />
       )}
     </section>
   );
@@ -950,14 +886,11 @@ const PersonDisplay: React.FC<{
       <PersonHero
         person={person}
         tags={tags}
-        careerSpan={careerSpan}
         topWork={topWork}
         biographyExcerpt={heroBiography}
         hasBiography={isBioTruncated}
         onOpenBiography={() => setIsBiographyOpen(true)}
         onOpenCredit={handleOpenCredit}
-        roleDistribution={roleDistribution}
-        allCount={dedupedAllCredits.length}
       />
 
       <div className="person-editorial-main-grid">
