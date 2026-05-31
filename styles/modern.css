@@ -60,7 +60,7 @@ body {
     width: 100%;
     background-color: var(--color-bg);
     color: var(--color-text-main);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', 'Meiryo', 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', system-ui, -apple-system, sans-serif;
     overflow: hidden;
     /* App handles scrolling */
     -webkit-font-smoothing: antialiased;
@@ -107,7 +107,7 @@ h6 {
 }
 
 .title-font {
-    font-family: 'outline-offset', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'outline-offset', 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', 'Meiryo', 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 800;
     letter-spacing: -0.04em;
 }
@@ -4907,12 +4907,12 @@ a:focus-visible {
     }
 
     .person-editorial-identity {
-        grid-template-columns: 190px minmax(0, 1fr);
+        grid-template-columns: 220px minmax(0, 1fr);
         gap: 2rem;
     }
 
     .person-editorial-avatar {
-        width: 190px;
+        width: 220px;
     }
 
     .person-career-snapshot {
