@@ -607,6 +607,7 @@ const CreditsExplorer: React.FC<{
         <div className="person-credit-count">{visibleCredits.length} shown</div>
       </header>
 
+      {/*
       <div className="person-explorer-controls">
         <div className="person-filmography-tabs" aria-label="Credit role filters">
           {(['all', 'acting', 'directing', 'other'] as PersonRoleBucket[]).map((tab) => (
@@ -623,6 +624,7 @@ const CreditsExplorer: React.FC<{
           ))}
         </div>
       </div>
+      */}
 
       {isLoading && visibleCredits.length === 0 ? (
         <div className="person-filmography-list">
