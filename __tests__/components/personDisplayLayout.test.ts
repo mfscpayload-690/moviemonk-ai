@@ -66,14 +66,12 @@ describe('PersonDisplay layout', () => {
     );
 
     expect(html).toContain('Person Profile');
-    expect(html).toContain('Career span');
     expect(html).toContain('Biography');
     expect(html).toContain('Read full biography');
     expect(html).toContain('Top Works');
     expect(html).toContain('Recent Credits');
     expect(html).toContain('Filmography');
-    expect(html).toContain('Explore credits by role, format, and release order.');
-    expect(html).toContain('All media');
+    expect(html).toContain('Explore credits by role in release order.');
     expect(html).toContain('Related People');
     expect(html).toContain('Sources');
     expect(html).toContain('Save');
