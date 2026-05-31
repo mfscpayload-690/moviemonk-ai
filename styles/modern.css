@@ -60,7 +60,7 @@ body {
     width: 100%;
     background-color: var(--color-bg);
     color: var(--color-text-main);
-    font-family: 'Inter', 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', 'Meiryo', 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', system-ui, -apple-system, sans-serif;
+    font-family: Inter, 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', Meiryo, 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', system-ui, -apple-system, sans-serif;
     overflow: hidden;
     /* App handles scrolling */
     -webkit-font-smoothing: antialiased;
@@ -107,7 +107,7 @@ h6 {
 }
 
 .title-font {
-    font-family: 'outline-offset', 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', 'Meiryo', 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', Meiryo, 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 800;
     letter-spacing: -0.04em;
 }
@@ -5064,8 +5064,10 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
     .person-editorial-page,
     .person-loading-spinner,
-    .person-credit-skeleton-poster {
+    .person-credit-skeleton-poster,
+    .person-credit-skeleton-lines div {
         animation: none;
+        background: rgba(255, 255, 255, 0.05);
     }
 
     .person-editorial-primary-btn,
