@@ -1,438 +1,167 @@
-# Development Guide
+# MovieMonk Development Guide
 
-How to work on MovieMonk locally with the current toolchain.
+Welcome to the MovieMonk development guide! This document outlines local setup instructions, repository structure, common development workflows, and testing guidelines.
 
 ---
 
-## Prerequisites
-- Node.js 22.x (matches `package.json` engines)
-- npm (installed with Node)
-- Access to required API keys (see environment list below)
+## 1. Prerequisites & Toolchain
 
-## Setup
-1. Clone your fork and install dependencies:
-   ```bash
-   git clone https://github.com/mfscpayload-690/moviemonk-ai.git
-   cd moviemonk-ai
-   npm install
-   ```
-2. Create `.env.local` with the keys you need:
-   ```env
-   TMDB_API_KEY=...
-   TMDB_READ_TOKEN=...
-   OMDB_API_KEY=...
-   GROQ_API_KEY=...
-   OPENROUTER_API_KEY=...
-   PERPLEXITY_API_KEY=...
-   SERPAPI_KEY=...
-   REDIS_URL=...        # optional for server cache
-   ALLOWED_ORIGINS=...  # optional CORS allowlist
-   APP_ORIGIN=...       # optional origin for CORS headers
-   ```
-3. Start the dev server:
-   ```bash
-   npm run dev
-   ```
-   Vite serves the app at http://localhost:3000 with hot reload.
+Ensure your system has the following toolchain installed:
+- **Node.js**: `22.x` (verified in `package.json` engines)
+- **npm**: Standard package manager bundled with Node
+- **Python**: `3.11+` (required for running the FastAPI backend proxy locally)
+- **API Keys**: Access keys for TMDB, OMDB, and Groq (see environment reference below)
 
-## Project layout
-- `App-Responsive.tsx` — main UI shell that wires the search island and result views.
-- `components/` — UI components (search island, displays, icons).
-- `services/` — API integrations, AI provider orchestration, caching helpers.
-- `api/` — Vercel-style serverless routes for TMDB/OMDB, AI providers, and search endpoints.
-- `lib/` — shared utilities (e.g., Redis cache wrapper).
-- `styles/` — global styles and component-specific CSS.
-- `__tests__/` — Jest tests covering APIs and core services.
+---
 
-## Common workflows
-- **Feature work**: create a branch, implement changes, `npm run dev` for manual verification, then `npm test -- --runInBand` and `npm run build`.
-- **Bug fixes**: reproduce in dev, add or update tests alongside the fix, ensure `npm run lint` passes.
-- **API changes**: update handlers under `api/`, keep observability/cors helpers intact, and refresh related docs in `docs/API.md`.
+## 2. Local Environment Setup
 
-## Testing and quality
-- Unit/integration tests: `npm test -- --runInBand`
-- Type check: `npm run lint`
-- Production build: `npm run build`
-
-## Troubleshooting
-- **Invalid API key**: confirm values in `.env.local` and ensure Vite picked up changes (restart dev server).
-- **CORS issues**: set `ALLOWED_ORIGINS` or `APP_ORIGIN` when calling APIs from different origins.
-- **Slow responses**: verify `REDIS_URL` is reachable if server caching is enabled; otherwise caching falls back to browser storage only.
-
-## Contributing
-See `../CONTRIBUTING.md` for branching, review, and PR expectations.
-
-Branch protection and required checks setup is documented in `BRANCH_PROTECTION.md`.
-
-4. **Build** to ensure no errors:
-   ```bash
-   npm run build
-   ```
-
-5. **Commit** with descriptive message:
-   ```bash
-   git add .
-   git commit -m "feat: Add [feature description]"
-   ```
-
-6. **Push** and create Pull Request:
-   ```bash
-   git push origin feature/my-new-feature
-   ```
-
-### Modifying AI Prompts
-
-**Location**: `constants.ts` → `INITIAL_PROMPT`
-
-**Guidelines:**
-- Be explicit about expected output format
-- Include examples for complex fields
-- Update `MOVIE_DATA_SCHEMA` if adding/removing fields
-- Sync changes with `types.ts`
-
-**Testing prompts:**
+### 2.1 Clone & Dependency Setup
+Clone your fork of the repository and install the frontend dependencies:
 ```bash
-npm run dev
-# Try various queries: simple, complex, edge cases
-# Check console logs for AI provider responses
-# Verify all providers return consistent format
-```
-
-### Changing Data Schema
-
-**Steps:**
-1. Update `types.ts` → Add/modify interface
-2. Update `constants.ts` → `MOVIE_DATA_SCHEMA`
-3. Update `constants.ts` → `INITIAL_PROMPT` (describe new field)
-4. Update UI → `MovieDisplay.tsx` to render new field
-5. Test end-to-end
-
-**Example** - Adding a `budget` field:
-
-```typescript
-// types.ts
-export interface MovieData {
-  // ...existing fields
-  budget: string;
-}
-
-// constants.ts - MOVIE_DATA_SCHEMA
-budget: { 
-  type: Type.STRING, 
-  description: "Production budget in USD (e.g., '$200 million')" 
-}
-
-// constants.ts - INITIAL_PROMPT
-// Add instruction to fetch budget
-
-// MovieDisplay.tsx
-<p className="text-sm">
-  <span className="font-semibold">Budget:</span> {movie.budget}
-</p>
-```
-
-### Adding TMDB Features
-
-**Location**: `services/tmdbService.ts`
-
-**Available endpoints** (extend as needed):
-- `/movie/{id}` - Movie details
-- `/tv/{id}` - TV show details
-- `/person/{id}` - Actor/director info
-- `/discover/movie` - Browse movies
-- `/trending/{media_type}/{time_window}` - Trending content
-
-**Example** - Fetch similar movies:
-
-```typescript
-async function fetchSimilarMovies(mediaType: 'movie'|'tv', id: number): Promise<MovieData[]> {
-  try {
-    const data = await tmdbFetch(`/${mediaType}/${id}/similar`);
-    return data.results.slice(0, 5).map(/* transform to MovieData */);
-  } catch (e) {
-    console.warn('Similar movies error:', e);
-    return [];
-  }
-}
-```
-
-### Modifying AI Service Behavior
-
-**Location**: `services/aiService.ts`, `services/groqService.ts`, `services/mistralService.ts`
-
-**Provider fallback chain:**
-1. Groq (primary)
-2. Mistral (backup)
-3. OpenRouter (fallback)
-
-**Testing provider changes:**
-```bash
-npm run dev
-# Try various queries in different complexity modes
-# Check browser console for which provider was used
-# Verify fallback works by temporarily disabling providers
-```
-
----
-
-## Debugging
-
-### Browser DevTools
-
-**Browser DevTools:**
-
-**Console logs:**
-- AI services log provider selection and errors
-- TMDB service logs search/image errors
-- Check for parsing failures
-- Monitor which AI provider is being used
-
-**Network tab:**
-- Monitor API calls to `/api/*` endpoints
-- Check request/response payloads
-- Verify 200 status codes
-- Watch for rate limiting errors
-
-**React DevTools:**
-- Install extension: [React DevTools](https://react.dev/learn/react-developer-tools)
-- Inspect component state/props
-- Profile performance
-
-### Common Issues
-
-**Issue: "API key not valid"**
-- Check `.env.local` has correct key
-- Restart dev server after env changes: `Ctrl+C` then `npm run dev`
-- Verify no extra spaces or newlines in keys
-
-**Issue: Images not loading**
-- Verify TMDB credentials (prefer Read Access Token)
-- Check console for 401 errors
-- Ensure `enrichWithTMDB` is called in data flow
-
-**Issue: JSON parsing fails**
-- Log raw response in AI service files
-- Check if AI returned unexpected format
-- Verify schema matches `types.ts`
-
-**Issue: Slow queries**
-- Use Simple mode for testing
-- Complex mode has longer processing time
-- Check network throttling in DevTools
-- Verify caching is working
-
-**Issue: AI provider failures**
-- Check provider status pages
-- Verify all API keys are valid
-- System should automatically fallback to next provider
-- Check console logs for fallback messages
-
----
-
-## Testing
-
-**Manual testing checklist:**
-- [ ] Search for a movie (e.g., "Inception")
-- [ ] Toggle Simple vs Complex mode
-- [ ] Verify all data fields populate
-- [ ] Click spoiler sections
-- [ ] Play trailer
-- [ ] Check gallery images
-- [ ] Test on mobile viewport
-- [ ] Try edge cases (typos, non-existent titles)
-
-**Future: Automated tests**
-- Unit tests for services (Jest/Vitest)
-- Component tests (React Testing Library)
-- E2E tests (Playwright)
-
----
-
-## Build & Preview
-
-```bash
-# Production build
-npm run build
-
-# Preview build locally
-npm run preview
-```
-
-**Build output**: `dist/` directory
-
-**Optimization:**
-- Vite bundles and minifies
-- Code splitting automatic
-- Assets hashed for caching
-
----
-
-## Environment Variables
-
-**Development** (`.env.local`):
-```env
-# AI Providers
-GROQ_API_KEY=your_key
-MISTRAL_API_KEY=your_key
-OPENROUTER_API_KEY=your_key
-
-# Movie Data APIs
-TMDB_READ_TOKEN=your_token
-TMDB_API_KEY=your_key
-OMDB_API_KEY=your_key
-
-# Optional
-PERPLEXITY_API_KEY=your_key
-```
-
-**Production** (Vercel Environment Variables):
-- Add same variables in Vercel dashboard
-- Go to Project Settings → Environment Variables
-- Keys are injected at runtime via serverless functions
-
-**Accessing in code:**
-```typescript
-const apiKey = process.env.GROQ_API_KEY;
-```
-
-**Security note:** With the current architecture, API keys for AI providers are accessed via Vercel serverless functions (`/api/*`), keeping them secure and never exposed to the browser.
-
----
-
-## Git Workflow
-
-### Branching Strategy
-
-- `main` - production-ready code
-- `feature/*` - new features
-- `fix/*` - bug fixes
-- `docs/*` - documentation updates
-
-### Commit Messages
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat: Add actor search functionality
-fix: Resolve image loading issue
-docs: Update API integration guide
-style: Format code with Prettier
-refactor: Simplify TMDB service
-```
-
-### Pull Requests
-
-**PR Template:**
-```markdown
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] New feature
-- [ ] Bug fix
-- [ ] Documentation
-- [ ] Refactor
-
-## Testing
-- [ ] Tested locally
-- [ ] Build passes
-- [ ] No console errors
-
-## Screenshots (if UI changes)
-[Attach screenshots]
-```
-
----
-
-## Code Quality
-
-### Linting (Future)
-
-**Recommended setup:**
-```bash
-npm install -D eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
-npm install -D prettier eslint-config-prettier
-```
-
-**Run:**
-```bash
-npm run lint
-npm run format
-```
-
-### Type Checking
-
-```bash
-npx tsc --noEmit
-```
-
----
-
-## Performance Tips
-
-**Optimization strategies:**
-- Lazy load images: `loading="lazy"`
-- Debounce search input
-- Cache TMDB responses (localStorage)
-- Use React.memo for expensive components
-- Code split routes (if adding navigation)
-
----
-
-## Troubleshooting Dev Environment
-
-**Node version issues:**
-```bash
-node -v  # Should be 22.x
-nvm use 22  # If using nvm
-```
-
-**Dependency issues:**
-```bash
-rm -rf node_modules package-lock.json
+git clone https://github.com/YOUR_USERNAME/moviemonk-ai.git
+cd moviemonk-ai
 npm install
 ```
 
-**Port already in use:**
-```bash
-# Kill process on port 3000 (Windows)
-netstat -ano | findstr :3000
-taskkill /PID <PID> /F
+### 2.2 Configure Local Variables
+Create a `.env.local` file in the project root:
+```env
+# Base URL for the FastAPI backend proxy (default local port)
+VITE_API_BASE_URL=http://localhost:8000
 
-# Or change port in vite.config.ts
+# Metadata Providers
+TMDB_API_KEY=your_tmdb_v3_api_key
+TMDB_READ_TOKEN=your_tmdb_v4_read_token
+OMDB_API_KEY=your_omdb_api_key
+
+# AI Providers
+GROQ_API_KEY=your_groq_api_key
+MISTRAL_API_KEY=your_mistral_key_optional
+OPENROUTER_API_KEY=your_openrouter_key_optional
+PERPLEXITY_API_KEY=your_perplexity_key_optional
 ```
 
----
+### 2.3 Starting Dev Servers
 
-## Resources
+1. **Start the Backend Service**:
+   ```bash
+   cd server
+   pip install -r requirements.txt
+   cp .env.example .env
+   # Configure TMDB_API_KEY and GROQ_API_KEY in server/.env
+   python main.py
+   ```
+   *The backend listens on `http://localhost:8000` (or `http://localhost:7860` if using Hugging Face settings).*
 
-- [Vite Documentation](https://vitejs.dev/)
-- [React Documentation](https://react.dev/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
-- [Groq API Docs](https://console.groq.com/docs)
-- [Mistral AI Docs](https://docs.mistral.ai)
-- [OpenRouter Docs](https://openrouter.ai/docs)
-- [TMDB API Docs](https://developer.themoviedb.org/docs)
-
----
-
-## Getting Help
-
-- **Issues**: [GitHub Issues](https://github.com/mfscpayload-690/moviemonk-ai/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/mfscpayload-690/moviemonk-ai/discussions)
-- **Email**: Check README for contact info
+2. **Start the Frontend Service**:
+   ```bash
+   # Return to the root directory
+   npm run dev
+   ```
+   *Vite serves the UI at `http://localhost:3000` with hot-reloading.*
 
 ---
 
-## Contributing
+## 3. Project Directory Structure
 
-We welcome contributions! Please:
+- `components/` — UI components (Search Island, displays, carousels, layouts)
+- `pages/` — Page shells (Discovery page, Search results, Settings panel)
+- `services/` — AI adapters, TMDB fetches, caching layers, synchronization
+- `styles/` — Global styling and modern CSS files
+- `lib/` — Shared utilities (cache wrappers, Redis connections, SEO helpers)
+- `server/` — Python FastAPI backend code
+- `__tests__/` — Jest tests for components, services, and integration flows
+- `types.ts` — Shared TypeScript interface definitions (e.g., `MovieData`)
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+---
 
-See [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) for detailed workflow.
+## 4. Key Development Workflows
+
+### 4.1 Modifying AI Prompts
+- **Location**: [constants.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/constants.ts) -> `INITIAL_PROMPT`
+- **Rules**:
+  - Always specify the exact schema formatting rules.
+  - Sync prompt requirements with the schema in `MOVIE_DATA_SCHEMA`.
+  - Check compatibility by performing searches in Simple and Complex modes.
+
+### 4.2 Changing the Data Schema
+To introduce a new property (e.g., `budget`):
+1. **Define in types**: Add `budget: string` in [types.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/types.ts).
+2. **Update JSON Schema**: Document the field format in the `MOVIE_DATA_SCHEMA` object in `constants.ts`.
+3. **Instruct LLM**: Add matching extraction logic to the `INITIAL_PROMPT` in `constants.ts`.
+4. **Update Render UI**: Modify components (e.g., `components/MovieDisplay.tsx`) to display the new field.
+
+### 4.3 Adding TMDB Features
+- **Location**: [tmdbService.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/services/tmdbService.ts)
+- Add or modify endpoints from the TMDB v3 API. Ensure you normalize payloads into standard frontend interfaces to avoid UI layout breakages.
+
+---
+
+## 5. Debugging & Diagnostic Tools
+
+### 5.1 Browser Developer Tools
+- **Console Log Monitoring**: Check for AI fallback cascades, serialization warnings, or TMDB image path exceptions.
+- **Network Inspections**: Track requests sent to backend API routes (`/api/*`). Verify status codes (e.g., `200 OK`, `429 Too Many Requests`).
+- **React DevTools**: Inspect React hooks state, component props, and verify correct memoization.
+
+### 5.2 Performance Profiling
+- To debug rendering performance and identify long tasks, launch the dev server with performance debugging enabled:
+  ```bash
+  VITE_PERF_DEBUG=true npm run dev
+  ```
+- With this flag set, the console logs long tasks via the `PerformanceObserver` and outputs rendering statistics for heavy components.
+
+---
+
+## 6. Testing & Quality Assurance
+
+All changes must pass automated and manual quality checks before merging.
+
+### 6.1 Running Tests
+- **Type Checking**:
+  ```bash
+  npm run lint
+  ```
+- **Jest Unit & Integration Tests**:
+  ```bash
+  npm test -- --runInBand
+  ```
+- **Production Build Check**:
+  ```bash
+  npm run build
+  ```
+
+### 6.2 Manual Verification Checklist
+- [ ] Confirm search resolution functions correctly in both Simple and Complex modes.
+- [ ] Verify image poster, backdrop, and cast galleries render without layout jank.
+- [ ] Test viewport responsive designs (mobile bottom-sheet layouts and desktop centered viewports).
+- [ ] Confirm watchlist and watchlist sync works, falling back to guest mode when database sync is disabled.
+
+---
+
+## 7. Git & Contribution Workflow
+
+### 7.1 Branch Naming Conventions
+- `feature/*` — New features (e.g., `feature/actor-biography`)
+- `bugfix/*` — Bug fixes (e.g., `bugfix/image-fallback`)
+- `docs/*` — Documentation changes
+
+### 7.2 Commit Standards
+Follow the [Conventional Commits](https://www.conventionalcommits.org/) standards. Avoid using emojis in commit messages:
+- `feat: Add actor shortlist search`
+- `fix: Resolve layout jank on Safari`
+- `docs: Update API references`
+
+### 7.3 Pull Request Template
+Fill out the PR details in the `.github/pull_request_template.md` file. Always attach screenshots or screen recordings showing UI/UX modifications.
+
+---
+
+## 8. Resources Directory
+
+- [React 19 Docs](https://react.dev/)
+- [Vite Bundler Guide](https://vitejs.dev/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [TMDB API Reference](https://developer.themoviedb.org/)
+- [Groq status page](https://status.groq.com)
