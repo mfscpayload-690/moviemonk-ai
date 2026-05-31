@@ -3839,11 +3839,12 @@ a:focus-visible {
     }
 }
 
-/* Person Experience v2 */
+/* Person Experience v3 */
 .person-editorial-page {
     min-height: 100%;
     color: #f5f5f5;
     padding: 1rem;
+    padding-bottom: calc(6.25rem + env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -3854,296 +3855,481 @@ a:focus-visible {
 .person-editorial-section,
 .person-career-snapshot {
     border: 1px solid rgba(255, 255, 255, 0.09);
-    background: linear-gradient(165deg, rgba(14, 14, 16, 0.95), rgba(9, 9, 10, 0.95));
-    border-radius: 14px;
+    background: rgba(13, 13, 15, 0.92);
+    border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18);
 }
 
 .person-editorial-hero {
+    position: relative;
+    overflow: hidden;
     padding: 1rem;
+    background: linear-gradient(135deg, rgba(17, 18, 24, 0.96), rgba(8, 8, 10, 0.98));
+}
+
+.person-hero-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+}
+
+.person-hero-backdrop img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(22px) saturate(0.85);
+    transform: scale(1.08);
+}
+
+.person-hero-backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(8, 8, 10, 0.94), rgba(8, 8, 10, 0.72));
 }
 
 .person-editorial-identity {
+    position: relative;
     display: grid;
-    grid-template-columns: 120px minmax(0, 1fr);
-    gap: 1.2rem;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 1rem;
     align-items: start;
 }
 
 .person-editorial-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 14px;
+    width: 132px;
+    aspect-ratio: 3 / 4;
+    height: auto;
+    border-radius: 12px;
     object-fit: cover;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
 }
 
 .person-editorial-avatar-fallback {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.72rem;
-    color: #9ca3af;
-    background: rgba(255, 255, 255, 0.05);
+    color: #f4f4f5;
+    background: linear-gradient(135deg, rgba(66, 66, 78, 0.9), rgba(24, 24, 30, 0.96));
+}
+
+.person-editorial-avatar-fallback span {
+    font-size: 2.1rem;
+    font-weight: 800;
 }
 
 .person-editorial-header {
     min-width: 0;
 }
 
-.person-editorial-name {
-    font-size: clamp(1.5rem, 6vw, 2.3rem);
-    line-height: 1.08;
-    letter-spacing: -0.02em;
-    font-weight: 700;
-    margin-bottom: 0.42rem;
+.person-hero-kicker {
+    margin-bottom: 0.3rem;
+    color: #aeb5c3;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    font-weight: 750;
 }
 
-.person-editorial-meta-line {
+.person-editorial-name {
+    font-size: clamp(1.8rem, 5vw, 3.5rem);
+    line-height: 0.98;
+    font-weight: 800;
+    margin-bottom: 0.65rem;
+    max-width: 15ch;
+}
+
+.person-editorial-meta-line,
+.person-editorial-tags,
+.person-editorial-actions,
+.person-hero-known-row,
+.person-filter-row,
+.person-media-filters,
+.person-section-header,
+.person-sources-section a {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
     align-items: center;
-    color: #b5b7bf;
-    font-size: 0.78rem;
+}
+
+.person-editorial-meta-line,
+.person-editorial-tags {
+    flex-wrap: wrap;
+    gap: 0.42rem;
+}
+
+.person-meta-item,
+.person-editorial-tags span,
+.person-rail-media {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.055);
+    border-radius: 999px;
 }
 
 .person-meta-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    padding: 0.2rem 0.52rem;
-}
-
-.person-meta-role-chip {
-    display: inline-flex;
-    align-items: center;
-    color: #ddd6fe;
-    font-size: 0.73rem;
-    background: rgba(124, 58, 237, 0.24);
-    border: 1px solid rgba(167, 139, 250, 0.35);
-    border-radius: 999px;
-    padding: 0.2rem 0.52rem;
+    gap: 0.32rem;
+    color: #c7ccd6;
+    font-size: 0.76rem;
+    padding: 0.28rem 0.56rem;
 }
 
 .person-editorial-tags {
-    margin-top: 0.52rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
+    margin-top: 0.62rem;
 }
 
 .person-editorial-tags span {
-    color: #c8ccd5;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #d4d8e1;
+    padding: 0.18rem 0.56rem;
+    font-size: 0.72rem;
+}
+
+.person-hero-bio {
+    margin-top: 0.75rem;
+    max-width: 72ch;
+    color: #d3d6dd;
+    line-height: 1.55;
+    font-size: 0.94rem;
+}
+
+.person-hero-bio-block {
+    margin-top: 0.75rem;
+    max-width: 76ch;
+}
+
+.person-hero-bio-block .person-hero-bio {
+    margin-top: 0;
+}
+
+.person-hero-bio-empty {
+    color: #9ca3af;
+}
+
+.person-hero-read-more {
+    margin-top: 0.62rem;
+    min-height: 2.25rem;
     border-radius: 999px;
-    padding: 0.12rem 0.52rem;
-    font-size: 0.69rem;
+    padding: 0.42rem 0.78rem;
+    color: #f4f0ff;
+    font-size: 0.78rem;
+    font-weight: 760;
+    background: rgba(124, 58, 237, 0.18);
+    border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.person-hero-read-more:hover {
+    border-color: rgba(196, 181, 253, 0.58);
+    background: rgba(124, 58, 237, 0.25);
+}
+
+.person-hero-known-row {
+    margin-top: 0.85rem;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.person-hero-known-row span {
+    color: #9ca3af;
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 750;
+}
+
+.person-hero-known-row strong {
+    color: #f2f3f5;
+    font-size: 0.78rem;
+    font-weight: 650;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
 }
 
 .person-editorial-actions {
-    margin-top: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    position: relative;
+    margin-top: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.person-editorial-primary-btn,
+.person-editorial-more-btn,
+.person-editorial-secondary-btn,
+.person-inline-control,
+.person-media-filters button,
+.person-filmography-tabs button {
+    min-height: 2.5rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, color 150ms ease;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .person-editorial-primary-btn,
 .person-editorial-more-btn,
 .person-editorial-secondary-btn {
-    border-radius: 999px;
-    border: 1px solid transparent;
-    transition: all 150ms ease;
-    font-size: 0.79rem;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.42rem;
+    padding: 0.55rem 0.9rem;
 }
 
 .person-editorial-primary-btn {
     color: #111;
     background: #fff;
     border-color: rgba(255, 255, 255, 0.9);
-    padding: 0.42rem 0.85rem;
 }
 
-.person-editorial-primary-btn:hover {
+.person-editorial-secondary-btn,
+.person-editorial-more-btn {
+    color: #d9dde6;
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.13);
+}
+
+.person-editorial-primary-btn:hover,
+.person-editorial-secondary-btn:hover,
+.person-editorial-more-btn:hover,
+.person-rail-card:hover,
+.person-related-card:hover,
+.person-filmography-card:hover {
     transform: translateY(-1px);
-}
-
-.person-editorial-secondary-desktop {
-    display: none;
-}
-
-.person-editorial-secondary-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    color: #d1d5db;
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.14);
-    padding: 0.38rem 0.78rem;
 }
 
 .person-editorial-secondary-btn:hover,
 .person-editorial-more-btn:hover {
-    border-color: rgba(167, 139, 250, 0.45);
-    color: #f5f3ff;
+    border-color: rgba(167, 139, 250, 0.48);
+    color: #fff;
 }
 
-.person-editorial-secondary-mobile {
-    position: relative;
-}
-
-.person-editorial-more-btn {
-    color: #d1d5db;
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.14);
-    padding: 0.38rem 0.78rem;
-}
-
-.person-editorial-more-sheet {
-    position: absolute;
-    top: calc(100% + 0.4rem);
-    right: 0;
-    min-width: 190px;
-    width: min(22rem, calc(100vw - 2rem));
-    max-width: calc(100vw - 2rem);
+.person-hero-summary {
+    display: none;
+    align-self: stretch;
+    min-width: 12rem;
+    padding: 1rem;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(8, 8, 10, 0.98);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
-    padding: 0.35rem;
-    z-index: 20;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.055);
 }
 
-.person-editorial-more-sheet button {
-    width: 100%;
-    text-align: left;
-    color: #d7d9df;
-    font-size: 0.79rem;
-    padding: 0.48rem 0.55rem;
-    border-radius: 8px;
-    display: inline-flex;
-    gap: 0.35rem;
-    align-items: center;
-    white-space: normal;
-    overflow-wrap: anywhere;
+.person-hero-summary p,
+.person-career-snapshot p,
+.person-filmography-header p {
+    color: #9ca3af;
 }
 
-.person-editorial-more-sheet button:hover {
-    background: rgba(255, 255, 255, 0.07);
+.person-hero-summary p,
+.person-career-snapshot p {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    font-weight: 760;
+}
+
+.person-hero-summary strong {
+    display: block;
+    margin-top: 0.42rem;
+    color: #fff;
+    font-size: 1.45rem;
+    line-height: 1.05;
+}
+
+.person-hero-summary span {
+    display: block;
+    margin-top: 0.52rem;
+    color: #b8bdc8;
+    font-size: 0.82rem;
 }
 
 .person-career-snapshot {
-    padding: 0.72rem;
+    padding: 0.6rem;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
 }
 
 .person-career-snapshot article {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 0.5rem 0.42rem;
-}
-
-.person-career-snapshot p {
-    color: #9ca3af;
-    text-transform: uppercase;
-    font-size: 0.62rem;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.2rem;
+    background: rgba(255, 255, 255, 0.035);
+    padding: 0.7rem;
 }
 
 .person-career-snapshot strong {
-    font-size: 0.94rem;
-    font-weight: 640;
+    display: block;
+    margin-top: 0.24rem;
+    font-size: 1.08rem;
+    font-weight: 780;
     color: #f5f5f5;
+}
+
+.person-editorial-main-grid,
+.person-editorial-primary-column,
+.person-editorial-side-column {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.person-editorial-main-grid {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.person-editorial-primary-column,
+.person-editorial-side-column,
+.person-editorial-section,
+.person-credits-explorer,
+.person-filmography-timeline,
+.person-decade-group,
+.person-filmography-list {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .person-editorial-section {
-    padding: 0.9rem;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.person-section-header {
+    justify-content: space-between;
+    gap: 1rem;
 }
 
 .person-editorial-section header {
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.75rem;
 }
 
 .person-editorial-section h3 {
-    font-size: 1.08rem;
+    font-size: 1.06rem;
     line-height: 1.2;
-    font-weight: 650;
+    font-weight: 760;
     color: #f5f5f5;
 }
 
+.person-section-header span,
+.person-credit-count {
+    color: #9ca3af;
+    font-size: 0.75rem;
+}
+
 .person-biography-text {
-    color: #b9bdc7;
-    line-height: 1.62;
+    color: #c4c8d2;
+    line-height: 1.65;
     font-size: 0.93rem;
+}
+
+.person-inline-control {
+    margin-top: 0.85rem;
+    color: #f4f0ff;
+    background: rgba(124, 58, 237, 0.18);
+    border-color: rgba(167, 139, 250, 0.35);
+    padding: 0.45rem 0.85rem;
 }
 
 .person-credit-rail,
 .person-related-rail {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(138px, 138px);
-    gap: 0.66rem;
+    grid-auto-columns: minmax(142px, 142px);
+    gap: 0.7rem;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 0.3rem;
+    padding-bottom: 0.35rem;
     scrollbar-width: thin;
     touch-action: pan-x pan-y;
     -webkit-overflow-scrolling: touch;
 }
 
-.person-rail-card {
+.person-rail-card,
+.person-related-card,
+.person-filmography-card {
     text-align: left;
     color: inherit;
-    border-radius: 10px;
-    padding: 0.22rem;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    transition: all 160ms ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.035);
+    transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 
-.person-rail-card:hover {
-    border-color: rgba(167, 139, 250, 0.45);
+.person-rail-card {
+    position: relative;
+    border-radius: 10px;
+    padding: 0.28rem;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.person-rail-card:hover,
+.person-related-card:hover,
+.person-filmography-card:hover {
+    border-color: rgba(167, 139, 250, 0.42);
+    background: rgba(255, 255, 255, 0.055);
+}
+
+.person-rail-poster,
+.person-credit-thumb {
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .person-rail-poster {
     border-radius: 9px;
-    overflow: hidden;
     aspect-ratio: 2 / 3;
-    background: rgba(255, 255, 255, 0.05);
 }
 
-.person-rail-poster img {
+.person-credit-thumb {
+    width: 58px;
+    aspect-ratio: 2 / 3;
+    border-radius: 8px;
+    flex: 0 0 auto;
+}
+
+.person-rail-poster img,
+.person-credit-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.person-rail-poster-fallback {
+.person-poster-fallback {
     width: 100%;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.66rem;
-    color: #9ca3af;
+    color: rgba(255, 255, 255, 0.22);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%);
+    transition: color 180ms ease, background 180ms ease;
+}
+
+.person-filmography-card:hover .person-poster-fallback,
+.person-rail-card:hover .person-poster-fallback {
+    color: rgba(167, 139, 250, 0.48);
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.07) 0%, rgba(124, 58, 237, 0.02) 100%);
+}
+
+.person-rail-media {
+    position: absolute;
+    top: 0.55rem;
+    left: 0.55rem;
+    padding: 0.18rem 0.42rem;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 760;
+    background: rgba(5, 5, 8, 0.72);
+    backdrop-filter: blur(8px);
 }
 
 .person-rail-title {
-    margin-top: 0.4rem;
-    font-size: 0.81rem;
+    margin-top: 0.44rem;
+    font-size: 0.82rem;
     color: #f3f4f6;
-    font-weight: 600;
-    line-height: 1.2;
+    font-weight: 720;
+    line-height: 1.18;
     min-height: 2rem;
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -4152,167 +4338,459 @@ a:focus-visible {
     overflow: hidden;
 }
 
-.person-rail-meta {
-    margin-top: 0.18rem;
-    font-size: 0.71rem;
-    color: #9aa1af;
-}
-
-
-.person-filmography-header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.7rem;
-}
-
-.person-filmography-tabs {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 999px;
-    padding: 0.2rem;
-    display: inline-flex;
-    gap: 0.2rem;
-    width: fit-content;
-    max-width: 100%;
-    overflow-x: auto;
-    touch-action: pan-x pan-y;
-}
-
-.person-filmography-tabs button {
-    font-size: 0.75rem;
-    color: #a5acb7;
-    border-radius: 999px;
-    padding: 0.32rem 0.58rem;
-    white-space: nowrap;
-}
-
-.person-filmography-tabs button.is-active {
-    color: #fff;
-    background: rgba(124, 58, 237, 0.24);
-    border: 1px solid rgba(167, 139, 250, 0.4);
-}
-
-.person-filmography-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.56rem;
-}
-
-.person-filmography-card {
-    text-align: left;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.02);
-    overflow: hidden;
-    transition: all 160ms ease;
-}
-
-.person-filmography-card:hover {
-    border-color: rgba(167, 139, 250, 0.4);
-    transform: translateY(-1px);
-}
-
-.person-filmography-poster {
-    aspect-ratio: 2 / 3;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.person-filmography-poster img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.person-filmography-body {
-    padding: 0.42rem;
-}
-
-.person-filmography-title {
-    font-size: 0.81rem;
-    color: #f9fafb;
-    font-weight: 620;
-    line-height: 1.2;
-    min-height: 2rem;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-}
-
+.person-rail-meta,
+.person-rail-role,
 .person-filmography-meta,
-.person-filmography-role {
-    font-size: 0.69rem;
+.person-filmography-role,
+.person-filmography-detail {
     color: #9ca3af;
+    font-size: 0.7rem;
+}
+
+.person-rail-meta,
+.person-rail-role {
     margin-top: 0.18rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.person-related-card {
-    text-align: left;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 10px;
-    padding: 0.55rem;
+.person-filmography-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
 }
 
-.person-related-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    margin-bottom: 0.45rem;
-    background: rgba(255, 255, 255, 0.06);
+.person-filmography-header p {
+    margin-top: 0.18rem;
+    font-size: 0.82rem;
 }
 
-.person-related-avatar img,
-.person-related-avatar-fallback {
+.person-explorer-controls {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+}
+
+.person-filmography-tabs,
+.person-media-filters {
     width: 100%;
-    height: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    touch-action: pan-x pan-y;
+    scrollbar-width: thin;
 }
 
-.person-related-avatar-fallback {
-    display: flex;
+.person-filmography-tabs {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.22rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.person-filmography-tabs button {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    color: #d1d5db;
-    font-size: 0.78rem;
+    gap: 0.42rem;
+    color: #aeb5c3;
+    padding: 0.38rem 0.68rem;
+    white-space: nowrap;
 }
 
-.person-related-name {
-    font-size: 0.78rem;
-    color: #f5f5f5;
-    font-weight: 620;
-    line-height: 1.2;
-}
-
-.person-related-snippet {
-    margin-top: 0.2rem;
-    color: #9ca3af;
+.person-filmography-tabs button span {
+    color: #d7dbe4;
     font-size: 0.68rem;
-    line-height: 1.3;
-    min-height: 1.7rem;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
+    padding: 0.08rem 0.34rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
 }
 
-.person-sources-section ul {
-    display: flex;
+.person-filmography-tabs button.is-active,
+.person-media-filters button.is-active {
+    color: #fff;
+    background: rgba(124, 58, 237, 0.24);
+    border-color: rgba(167, 139, 250, 0.42);
+}
+
+.person-filter-row {
+    justify-content: space-between;
+    align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
 }
 
+.person-media-filters {
+    gap: 0.4rem;
+}
+
+.person-media-filters button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #b8beca;
+    background: rgba(255, 255, 255, 0.045);
+    border-color: rgba(255, 255, 255, 0.08);
+    padding: 0.42rem 0.72rem;
+    white-space: nowrap;
+}
+
+.person-sort-control {
+    min-height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #aeb5c3;
+    font-size: 0.76rem;
+}
+
+.person-sort-control select {
+    min-height: 2.5rem;
+    color: #f5f5f5;
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 0 2rem 0 0.85rem;
+}
+
+.person-filmography-timeline {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.person-decade-group {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.person-decade-label {
+    color: #b8beca;
+    font-size: 0.74rem;
+    font-weight: 780;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.person-filmography-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 1rem;
+}
+
+.person-filmography-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    height: 100%;
+    position: relative;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+}
+
+.person-filmography-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(167, 139, 250, 0.45);
+    background: rgba(255, 255, 255, 0.055);
+    box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.6);
+}
+
+.person-filmography-poster-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    flex: 0 0 auto;
+}
+
+.person-filmography-poster-wrapper .person-rail-poster {
+    border-radius: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    aspect-ratio: auto;
+}
+
+.person-filmography-poster-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.25s ease;
+}
+
+.person-filmography-card:hover .person-filmography-poster-wrapper img {
+    transform: scale(1.04);
+}
+
+.person-filmography-body {
+    padding: 0.8rem;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.person-title-row-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.person-filmography-title {
+    color: #f9fafb;
+    font-size: 0.92rem;
+    font-weight: 760;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+
+.person-media-chip {
+    flex: 0 0 auto;
+    border-radius: 4px;
+    padding: 0.12rem 0.38rem;
+    color: #e9ddff;
+    font-size: 0.64rem;
+    font-weight: 780;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    background: rgba(124, 58, 237, 0.16);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.person-media-chip.is-tv {
+    color: #d8f3ff;
+    border-color: rgba(56, 189, 248, 0.28);
+    background: rgba(14, 165, 233, 0.13);
+}
+
+.person-title-row-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    margin-top: 0.2rem;
+    color: #9ca3af;
+    font-size: 0.72rem;
+}
+
+.person-title-row-meta span {
+    min-width: 0;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.person-title-row-meta span+span::before {
+    display: none; /* Stacked vertically, so hide the bullet dot */
+}
+
+.person-related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.85rem;
+}
+
+.person-related-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center !important;
+    padding: 0.95rem 0.65rem;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.person-related-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(167, 139, 250, 0.45) !important;
+    background: rgba(255, 255, 255, 0.055) !important;
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+}
+
+.person-related-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    margin-bottom: 0.65rem;
+    background: rgba(255, 255, 255, 0.05);
+    transition: border-color 160ms ease;
+    flex-shrink: 0;
+}
+
+.person-related-card:hover .person-related-avatar {
+    border-color: rgba(167, 139, 250, 0.6);
+}
+
+.person-related-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.person-related-avatar-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d1d5db;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.person-related-name {
+    font-size: 0.82rem;
+    color: #f5f5f5;
+    font-weight: 720;
+    line-height: 1.25;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.person-related-snippet {
+    margin-top: 0.24rem;
+    color: #9ca3af;
+    font-size: 0.7rem;
+    line-height: 1.35;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.person-sources-section ul {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
 .person-sources-section a {
-    color: #c4b5fd;
+    gap: 0.3rem;
+    color: #d6c8ff;
     font-size: 0.8rem;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration: none;
+    padding: 0.42rem 0.62rem;
+    border-radius: 999px;
+    border: 1px solid rgba(167, 139, 250, 0.22);
+    background: rgba(124, 58, 237, 0.12);
+}
+
+.person-empty-state {
+    min-height: 6rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.28rem;
+    color: #9ca3af;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.person-empty-state strong {
+    color: #f4f4f5;
+    font-size: 0.9rem;
+}
+
+.person-empty-state span {
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.person-biography-modal-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 2200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(2, 2, 5, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.person-biography-modal {
+    width: min(42rem, 100%);
+    max-height: min(78dvh, 42rem);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(12, 12, 15, 0.98);
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
+}
+
+.person-biography-modal header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1rem 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.person-biography-modal header p {
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.68rem;
+    font-weight: 760;
+}
+
+.person-biography-modal h3 {
+    margin-top: 0.2rem;
+    color: #f5f5f5;
+    font-size: 1.35rem;
+    line-height: 1.18;
+}
+
+.person-biography-modal header button {
+    width: 2.35rem;
+    height: 2.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    color: #e5e7eb;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.person-biography-modal-body {
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.person-biography-modal-body p {
+    color: #d4d7df;
+    font-size: 0.98rem;
+    line-height: 1.72;
 }
 
 .person-loading-note {
@@ -4334,31 +4812,38 @@ a:focus-visible {
 }
 
 .person-credit-skeleton {
+    min-height: 5.4rem;
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.45rem;
 }
 
 .person-credit-skeleton-poster {
+    width: 58px;
     aspect-ratio: 2 / 3;
+    border-radius: 8px;
     background: linear-gradient(90deg, #161616 25%, #262626 50%, #161616 75%);
     background-size: 220% 100%;
     animation: discoveryPulse 1.4s ease-in-out infinite;
 }
 
 .person-credit-skeleton-lines {
-    padding: 0.45rem;
+    flex: 1;
 }
 
 .person-credit-skeleton-lines div {
-    height: 0.6rem;
+    height: 0.65rem;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.1);
 }
 
 .person-credit-skeleton-lines div+div {
-    margin-top: 0.36rem;
+    margin-top: 0.42rem;
     width: 70%;
 }
 
@@ -4369,42 +4854,150 @@ a:focus-visible {
 @media (min-width: 768px) {
     .person-editorial-page {
         padding: 1.25rem;
-        gap: 1.2rem;
+        padding-bottom: 1.25rem;
+        gap: 1.15rem;
     }
 
     .person-editorial-hero {
-        padding: 1.3rem;
+        padding: 1.35rem;
     }
 
     .person-editorial-identity {
-        grid-template-columns: 160px minmax(0, 1fr);
-        gap: 1.4rem;
+        grid-template-columns: 190px minmax(0, 1fr) 14rem;
+        gap: 1.35rem;
     }
 
     .person-editorial-avatar {
-        width: 160px;
-        height: 160px;
+        width: 190px;
     }
 
-    .person-editorial-secondary-desktop {
-        display: inline-flex;
-        gap: 0.42rem;
+    .person-hero-summary {
+        display: block;
     }
 
-    .person-editorial-secondary-mobile {
-        display: none;
-    }
-
-
-
-    .person-filmography-grid {
+    .person-career-snapshot {
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.72rem;
     }
 
     .person-credit-rail,
     .person-related-rail {
-        grid-auto-columns: minmax(150px, 150px);
+        grid-auto-columns: minmax(156px, 156px);
+    }
+
+}
+
+@media (min-width: 1180px) {
+    .person-editorial-main-grid {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+    }
+}
+
+@media (max-width: 640px) {
+    .person-editorial-page {
+        padding: 0.75rem;
+        padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+        gap: 0.85rem;
+    }
+
+    .person-editorial-hero {
+        padding: 0.85rem;
+    }
+
+    .person-editorial-identity {
+        grid-template-columns: 108px minmax(0, 1fr);
+        gap: 0.85rem;
+    }
+
+    .person-editorial-avatar {
+        width: 108px;
+        border-radius: 10px;
+    }
+
+    .person-editorial-name {
+        font-size: 1.75rem;
+    }
+
+    .person-hero-bio-block,
+    .person-hero-bio,
+    .person-hero-known-row {
+        grid-column: 1 / -1;
+    }
+
+    .person-editorial-actions {
+        display: none;
+    }
+
+    .person-career-snapshot {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .person-filmography-header,
+    .person-filter-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .person-filmography-list {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .person-filmography-body {
+        padding: 0.6rem;
+        gap: 0.25rem;
+    }
+
+    .person-filmography-title {
+        font-size: 0.82rem;
+    }
+
+    .person-title-row-meta {
+        font-size: 0.66rem;
+        gap: 0.2rem;
+    }
+
+    .person-title-row-meta span {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
+
+    .person-sort-control {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .person-sort-control select {
+        flex: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .person-editorial-page,
+    .person-loading-spinner,
+    .person-credit-skeleton-poster {
+        animation: none;
+    }
+
+    .person-editorial-primary-btn,
+    .person-editorial-secondary-btn,
+    .person-editorial-more-btn,
+    .person-rail-card,
+    .person-related-card,
+    .person-filmography-card {
+        transition: none;
+    }
+
+    .person-editorial-primary-btn:hover,
+    .person-editorial-secondary-btn:hover,
+    .person-editorial-more-btn:hover,
+    .person-rail-card:hover,
+    .person-related-card:hover,
+    .person-filmography-card:hover {
+        transform: none;
     }
 }
 
@@ -6155,4 +6748,3 @@ a:focus-visible {
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 }
-
