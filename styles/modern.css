@@ -4046,31 +4046,40 @@ a:focus-visible {
     gap: 0.4rem;
 }
 
-.person-hero-known-divider {
-    color: #4b5563;
-    user-select: none;
+.person-hero-known-chip {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.35rem 0.65rem;
+    color: #cbd5e1;
     font-size: 0.8rem;
-}
-
-.person-hero-known-link {
-    background: none;
-    border: none;
-    padding: 0 0.25rem;
-    color: #a78bfa;
-    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    border-radius: 4px;
-    transition: color 150ms ease, background 150ms ease;
+    border-radius: 8px;
+    transition: all 150ms ease;
     display: inline-flex;
     align-items: center;
+    gap: 0.35rem;
 }
 
-.person-hero-known-link:hover,
-.person-hero-known-link:focus-visible {
+.person-hero-known-chip-icon {
+    color: #a78bfa;
+    opacity: 0.85;
+    transition: opacity 150ms ease, color 150ms ease;
+}
+
+.person-hero-known-chip:hover,
+.person-hero-known-chip:focus-visible {
     color: #fff;
-    background: rgba(167, 139, 250, 0.15);
+    background: rgba(167, 139, 250, 0.1);
+    border-color: rgba(167, 139, 250, 0.4);
     outline: none;
+    box-shadow: 0 4px 12px rgba(167, 139, 250, 0.1);
+}
+
+.person-hero-known-chip:hover .person-hero-known-chip-icon,
+.person-hero-known-chip:focus-visible .person-hero-known-chip-icon {
+    color: #fff;
+    opacity: 1;
 }
 
 .person-hero-known-empty {
