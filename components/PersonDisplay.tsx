@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics/react';
 import {
   Calendar,
@@ -74,11 +74,31 @@ export type DisplayCredit = PersonCredit & {
 };
 
 export function derivePersonCreditBuckets(data: PersonPayload): PersonCreditBuckets {
-  const normalizedFallback = (data.filmography || []).map((item) => ({
-    ...item,
-    media_type: item.media_type || 'movie',
-    role_bucket: item.role_bucket || (String(item.role || '').toLowerCase().includes('director') ? 'directing' : 'acting')
-  })) as PersonCredit[];
+  const normalizedFallback = (data.filmography || []).map((item) => {
+    const roleLower = String(item.role || item.job || '').toLowerCase();
+    let bucket: PersonRoleBucket = 'other';
+    if (roleLower.includes('director')) {
+      bucket = 'directing';
+    } else if (
+      roleLower.includes('actor') ||
+      roleLower.includes('actress') ||
+      roleLower.includes('cast') ||
+      roleLower.includes('self') ||
+      roleLower.includes('voice') ||
+      roleLower.includes('host') ||
+      roleLower.includes('guest') ||
+      roleLower.includes('narrator') ||
+      roleLower.includes('performer') ||
+      roleLower.includes('player')
+    ) {
+      bucket = 'acting';
+    }
+    return {
+      ...item,
+      media_type: item.media_type || 'movie',
+      role_bucket: item.role_bucket || bucket
+    };
+  }) as PersonCredit[];
 
   const allCredits = (data.credits_all && data.credits_all.length > 0 ? data.credits_all : normalizedFallback) as PersonCredit[];
   const actingCredits = (data.credits_acting && data.credits_acting.length > 0
@@ -90,9 +110,12 @@ export function derivePersonCreditBuckets(data: PersonPayload): PersonCreditBuck
   const otherCredits = (data.credits_other && data.credits_other.length > 0
     ? data.credits_other
     : allCredits.filter((item) => item.role_bucket === 'other')) as PersonCredit[];
-  const topWork = dedupePersonCredits(data.top_work && data.top_work.length > 0 ? data.top_work as PersonCredit[] : [...allCredits]
+  
+  const dedupedSource = dedupePersonCredits(data.top_work && data.top_work.length > 0 ? data.top_work as PersonCredit[] : allCredits);
+  const topWork = [...dedupedSource]
     .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-    .slice(0, 12));
+    .slice(0, 12);
+
   const tags = Array.isArray(data.known_for_tags) ? data.known_for_tags : [];
   const roleDistribution = data.role_distribution || {
     acting: actingCredits.length,
@@ -330,7 +353,17 @@ const SkeletonCard: React.FC = () => (
 // CareerStats component removed
 
 function formatBirthDate(birthdayStr: string): string {
-  const birthDate = new Date(birthdayStr);
+  let birthDate: Date;
+  const match = birthdayStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    birthDate = new Date(year, month, day);
+  } else {
+    birthDate = new Date(birthdayStr);
+  }
+
   if (isNaN(birthDate.getTime())) return birthdayStr;
 
   // Calculate age
@@ -490,16 +523,8 @@ const CreditRail: React.FC<{
         {credits.map((credit) => (
           <article
             key={`${title}-${credit.media_type}-${credit.id}`}
-            className="person-rail-card group"
+            className="person-rail-card group cursor-pointer"
             onClick={() => onOpenCredit(credit)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter' && event.key !== ' ') return;
-              event.preventDefault();
-              onOpenCredit(credit);
-            }}
-            aria-label={`Open ${credit.title}`}
           >
             <div className="person-rail-poster-wrapper relative">
               <PosterFrame credit={credit} />
@@ -545,7 +570,16 @@ const CreditRail: React.FC<{
               )}
             </div>
             <span className="person-rail-media">{credit.media_type === 'tv' ? 'TV' : 'Movie'}</span>
-            <p className="person-rail-title">{credit.title}</p>
+            <button
+              type="button"
+              className="person-rail-title text-left w-full bg-transparent border-none p-0 cursor-pointer font-sans focus:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCredit(credit);
+              }}
+            >
+              {credit.title}
+            </button>
             <p className="person-rail-meta">{formatCreditMeta(credit)}</p>
             <p className="person-rail-role">{formatPrimaryRole(credit)}</p>
           </article>
@@ -636,16 +670,8 @@ const CreditsExplorer: React.FC<{
           {visibleCredits.map((credit) => (
             <article
               key={`${credit.media_type || 'movie'}-${credit.id}`}
-              className="person-filmography-card group"
+              className="person-filmography-card group cursor-pointer"
               onClick={() => onOpenCredit(credit)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                event.preventDefault();
-                onOpenCredit(credit);
-              }}
-              aria-label={`Open ${credit.title}`}
             >
               <div className="person-filmography-poster-wrapper relative">
                 <PosterFrame credit={credit} compact={false} />
@@ -692,7 +718,16 @@ const CreditsExplorer: React.FC<{
               </div>
               <div className="person-filmography-body">
                 <div className="person-title-row-heading">
-                  <p className="person-filmography-title">{credit.title}</p>
+                  <button
+                    type="button"
+                    className="person-filmography-title text-left bg-transparent border-none p-0 cursor-pointer font-sans focus:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenCredit(credit);
+                    }}
+                  >
+                    {credit.title}
+                  </button>
                   <span className={`person-media-chip is-${credit.media_type === 'tv' ? 'tv' : 'movie'}`}>
                     {credit.media_type === 'tv' ? 'TV' : 'Movie'}
                   </span>
@@ -785,30 +820,61 @@ const SourcesSection: React.FC<{ sources?: PersonPayload['sources'] }> = ({ sour
   </section>
 );
 
-const BiographyModal: React.FC<{ personName: string; biography: string; onClose: () => void }> = ({ personName, biography, onClose }) => (
-  <div className="person-biography-modal-shell" role="presentation" onMouseDown={onClose}>
-    <section
-      className="person-biography-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="person-biography-modal-title"
-      onMouseDown={(event) => event.stopPropagation()}
-    >
-      <header>
-        <div>
-          <p>Biography</p>
-          <h3 id="person-biography-modal-title">{personName}</h3>
+const BiographyModal: React.FC<{ personName: string; biography: string; onClose: () => void }> = ({ personName, biography, onClose }) => {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement as HTMLElement;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        closeButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div className="person-biography-modal-shell" role="presentation" onMouseDown={onClose}>
+      <section
+        className="person-biography-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="person-biography-modal-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <p>Biography</p>
+            <h3 id="person-biography-modal-title">{personName}</h3>
+          </div>
+          <button
+            type="button"
+            ref={closeButtonRef}
+            onClick={onClose}
+            aria-label="Close biography"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </header>
+        <div className="person-biography-modal-body">
+          <p>{biography}</p>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close biography">
-          <X size={18} aria-hidden="true" />
-        </button>
-      </header>
-      <div className="person-biography-modal-body">
-        <p>{biography}</p>
-      </div>
-    </section>
-  </div>
-);
+      </section>
+    </div>
+  );
+};
 
 const PersonDisplay: React.FC<{
   data: PersonPayload;
