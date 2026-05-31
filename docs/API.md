@@ -1,371 +1,155 @@
-# API Guide
+# MovieMonk API & Integration Guide
 
-How MovieMonk uses AI and movie data APIs.
-
----
-
-## AI Providers
-
-We use free AI APIs to generate summaries:
-
-- **Groq** (primary) - Fast and free, uses llama-3.3-70b-versatile model
-- **Mistral** (backup) - Also free, uses mistral-large-latest model
-- **OpenRouter** (fallback) - Last resort for when other providers are unavailable
-
-### Getting API Keys
-
-1. **Groq**: Sign up at [console.groq.com](https://console.groq.com)
-2. **Mistral**: Sign up at [console.mistral.ai](https://console.mistral.ai)
-3. **OpenRouter**: Sign up at [openrouter.ai/keys](https://openrouter.ai/keys)
-4. **TMDB**: Get key at [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
-5. **OMDB**: Get key at [omdbapi.com/apikey.aspx](http://www.omdbapi.com/apikey.aspx)
-
-### Query Modes
-
-- **Simple Mode**: Quick responses, faster AI processing
-- **Complex Mode**: Detailed analysis with extended thinking time
+This guide documents the API providers, integration patterns, and security practices of the MovieMonk-AI discovery platform. It serves as the authoritative reference for backend data orchestration and frontend query resolution.
 
 ---
 
-## TMDB API
+## 1. System Integration Flow
 
-We use TMDB for accurate movie data (cast, crew, images, ratings).
+MovieMonk-AI uses a decoupled data pipeline to combine factual entertainment database records with qualitative LLM analysis.
 
-### Authentication
-
-Add these to your `.env.local`:
-
-```env
-TMDB_API_KEY=your_key_here
-TMDB_READ_TOKEN=your_token_here
+```
+[User Query] ──> [Cache Check] (IndexedDB/localStorage)
+                      │
+            ┌─────────┴─────────┐
+       (Cache Miss)        (Cache Hit)
+            │                   │
+  [AI Provider Chain]           ▼
+  1. Groq (Llama 3.3)      [Render UI]
+  2. Mistral (Large)
+  3. OpenRouter (Fallback)
+            │
+            ▼
+  [TMDB API Enrichment] (Posters, Backdrops, Cast, Crew)
+            │
+            ▼
+  [OMDB API Integration] (IMDB Ratings)
+            │
+            ▼
+  [Cache Update] ──> [Render UI]
 ```
 
-### What We Get From TMDB
+### Decoupled Data Pipeline Sequence
 
-- Movie/show posters and backdrops
-- Cast and crew info
-- IMDB ratings (via OMDB integration)
-- Gallery images
-- Streaming availability
-- Release dates and runtime
-
-### Image URLs
-
-TMDB provides images like this:
-```
-https://image.tmdb.org/t/p/w500/path-to-image.jpg
-```
-
-Sizes: `w300`, `w500`, `w780`, `original`
+1. **Client Request**: The frontend initiates search or detail fetch via the custom query parser.
+2. **Local Cache Lookup**: The system checks browser storage (IndexedDB and `localStorage`) for cached results.
+3. **AI Inference & Fallback**: If uncached, the backend queries the prioritized AI provider chain to generate narrative context (summaries, reviews, watch options).
+4. **Factual Metadata Enrichment**: The returned AI payload is matched against TMDB endpoints to append high-resolution image assets, cast/crew hierarchies, and runtime specifications.
+5. **Third-Party Scoring**: The pipeline queries the OMDB API to fetch live IMDB ratings.
+6. **Persistence & Presentation**: The normalized payload is written to the cache and rendered.
 
 ---
 
-## How It All Works Together
+## 2. AI Provider Architecture
 
-1. **You search** for a movie
-2. **TMDB finds** the movie data (cast, ratings, images)
-3. **AI writes** summaries and trivia using Groq/Mistral/OpenRouter
-4. **We merge** TMDB facts + AI-generated content
-5. **You see** the complete result with accurate data and engaging summaries
+MovieMonk integrates multiple LLM endpoints with automatic, client-side fallback triggers to ensure high availability.
 
----
+### 2.1 Provider Hierarchy
 
-## Error Handling
+| Priority | Provider | Model | Tier / Role | Rate Limits |
+| :--- | :--- | :--- | :--- | :--- |
+| **1 (Primary)** | Groq | `llama-3.3-70b-versatile` | Ultra-low latency inference | 30 requests/minute |
+| **2 (Backup)** | Mistral | `mistral-large-latest` | Context-rich qualitative backup | 2M tokens/month (free) |
+| **3 (Fallback)** | OpenRouter | Dynamic Selection | General backup endpoint | Varies by target model |
+| **4 (Real-time)**| Perplexity | `sonar-reasoning` | Optional web search resolver | Varies by query complexity |
 
-Common issues and fixes:
+### 2.2 Query Complexity Modes
 
-**"Invalid API key"**
-- Check your `.env.local` file
-- Make sure keys are correct
-- Verify you've set all required keys (Groq, TMDB, OMDB)
+- **Simple Mode**: Optimizes for quick, low-token responses. Ideal for rapid entity lookup.
+- **Complex Mode**: Prompts the LLM for deep analysis, critical trivia, and spoiler-guarded qualitative descriptions.
 
-**"Too many requests"**
-- Wait a moment and try again
-- We cache results to avoid this
-- System automatically falls back to alternate AI providers
+### 2.3 Provider Fallback Logic
 
-**"No results found"**
-- Try different search terms
-- Check spelling
-- Try just the movie title without year
-- For recent releases, ensure Perplexity API key is configured
+The core service coordinates the provider cascade. If the primary provider times out or throws an error (e.g. HTTP 429 / rate limit), the pipeline catches the exception and routes to the next tier:
 
----
-
-## Rate Limits
-
-- **Groq**: 30 requests/minute (free tier), unlimited daily
-- **Mistral**: 2M tokens/month (free tier)
-- **OpenRouter**: Varies by model, used as fallback
-- **TMDB**: 40 requests/10 seconds
-- **OMDB**: 1000 requests/day (free tier)
-
-We cache responses to stay within limits and improve performance.
-
----
-
-## Need Help?
-
-Check the main [README](../README.md) or open an issue on GitHub.
-
----
-
-## AI Service Architecture
-
-MovieMonk uses a robust multi-provider AI architecture with automatic fallback:
-
-### Provider Priority
-
-1. **Groq (Primary)** - `groqService.ts`
-   - Model: `llama-3.3-70b-versatile`
-   - Fast inference, free tier with generous limits
-   - 30 requests/minute
-
-2. **Mistral (Backup)** - `mistralService.ts`
-   - Model: `mistral-large-latest`
-   - 2M tokens/month free tier
-   - Activated when Groq is unavailable
-
-3. **OpenRouter (Fallback)** - `openrouterService.ts`
-   - Multiple models available
-   - Used as last resort
-   - Proxied through Vercel serverless function
-
-### How AI Integration Works
-
-**1. Query Processing:**
 ```typescript
-// User query is sent to AI service with complexity mode
-const result = await aiService.fetchMovieData(query, complexity);
-```
-
-**2. AI Provider Selection:**
-```typescript
-// Services/aiService.ts automatically tries providers in order:
+// services/aiService.ts (Cascading Resolver)
 try {
   return await groqService.fetchMovieData(query, complexity);
 } catch (error) {
+  console.warn("Groq failed, attempting Mistral fallback...", error);
   try {
     return await mistralService.fetchMovieData(query, complexity);
-  } catch (error) {
+  } catch (err) {
+    console.warn("Mistral failed, routing to OpenRouter...", err);
     return await openrouterService.fetchMovieData(query, complexity);
   }
 }
 ```
 
-**3. Response Format:**
-All AI providers return structured JSON with movie data:
-```typescript
-{
-  title: string;
-  year: number;
-  plot: string;
-  genres: string[];
-  cast: Array<{name: string, character: string}>;
-  // ... additional fields
-}
-```
-
 ---
 
-## Authentication & Setup
+## 3. TMDB API Integration
 
-### Required Environment Variables
+The Movie Database (TMDB) API provides the factual baseline for MovieMonk.
 
-```env
-# AI Providers
-GROQ_API_KEY=your_groq_key
-MISTRAL_API_KEY=your_mistral_key
-OPENROUTER_API_KEY=your_openrouter_key
+### 3.1 Authentication
 
-# Movie Data
-TMDB_API_KEY=your_tmdb_key
-TMDB_READ_TOKEN=your_tmdb_token
-OMDB_API_KEY=your_omdb_key
+The application supports two methods of authentication, configured in your `.env.local` file:
 
-# Optional
-PERPLEXITY_API_KEY=your_perplexity_key
-```
-
-### Getting API Keys
-
-- **Groq**: [console.groq.com](https://console.groq.com)
-- **Mistral**: [console.mistral.ai](https://console.mistral.ai)
-- **OpenRouter**: [openrouter.ai/keys](https://openrouter.ai/keys)
-- **TMDB**: [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
-- **OMDB**: [omdbapi.com/apikey.aspx](http://www.omdbapi.com/apikey.aspx)
-
----
-
-## TMDB API
-
-### Authentication
-
-**Two authentication methods:**
-
-1. **API Key (v3):**
-   ```typescript
-   const params = new URLSearchParams({
-     api_key: process.env.TMDB_API_KEY!
-   });
-   ```
-
-2. **Read Access Token (v4 - Recommended):**
-   ```typescript
-   const headers = {
-     Authorization: `Bearer ${process.env.TMDB_READ_TOKEN}`,
-     'Content-Type': 'application/json'
-   };
-   ```
-
-**Get credentials:**
-- [Sign up at TMDB](https://www.themoviedb.org/signup)
-- Go to Settings → API
-- Copy **API Key (v3 auth)** and **Read Access Token (v4 auth)**
-
-**Add to `.env.local`:**
-```env
-TMDB_API_KEY=your_v3_key
-TMDB_READ_TOKEN=your_v4_token
-```
-
----
-
-### Endpoints
-
-**Base URL:**
-```typescript
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-```
-
-**Key endpoints used in MovieMonk:**
-
-| Endpoint | Purpose | Parameters |
-|----------|---------|------------|
-| `/search/movie` | Search movies | `query`, `year` (optional) |
-| `/search/tv` | Search TV shows | `query`, `first_air_date_year` (optional) |
-| `/search/multi` | Search all media | `query` |
-| `/movie/{id}` | Movie details | Movie ID |
-| `/tv/{id}` | TV show details | Show ID |
-| `/movie/{id}/images` | Movie images | Movie ID |
-| `/tv/{id}/images` | TV show images | Show ID |
-
-**Example implementations:**
+- **API Key (v3 Auth)**: Appended as query parameters.
+- **Read Access Token (v4 Auth - Recommended)**: Passed as a bearer token in the headers for increased security.
 
 ```typescript
-async function tmdbFetch(endpoint: string, params?: URLSearchParams) {
-  const url = `${TMDB_BASE_URL}${endpoint}?${params || ''}`;
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${process.env.TMDB_READ_TOKEN}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  return response.json();
-}
+// API client header configuration
+const headers = {
+  Authorization: `Bearer ${process.env.TMDB_READ_TOKEN}`,
+  'Content-Type': 'application/json'
+};
 ```
 
----
+### 3.2 Key Endpoints
 
-### Image URLs
+| Endpoint | Method | Purpose | Parameters |
+| :--- | :--- | :--- | :--- |
+| `https://api.themoviedb.org/3/search/movie` | GET | Locates movie matches | `query`, `year` |
+| `https://api.themoviedb.org/3/search/tv` | GET | Locates TV matches | `query`, `first_air_date_year` |
+| `https://api.themoviedb.org/3/search/multi` | GET | Unified multi-entity fallback | `query` |
+| `https://api.themoviedb.org/3/movie/{id}` | GET | Fetch movie details | `id` |
+| `https://api.themoviedb.org/3/tv/{id}` | GET | Fetch TV details | `id` |
+| `https://api.themoviedb.org/3/movie/{id}/images` | GET | Fetch high-res artwork | `id` |
+| `https://api.themoviedb.org/3/movie/{id}/external_ids`| GET | Resolves IMDB ID for ratings | `id` |
 
-**TMDB Image CDN:**
-```
-https://image.tmdb.org/t/p/{size}{file_path}
-```
-
-**Available sizes:**
-
-| Type | Sizes |
-|------|-------|
-| Poster | `w92`, `w154`, `w185`, `w342`, `w500`, `w780`, `original` |
-| Backdrop | `w300`, `w780`, `w1280`, `original` |
-| Logo | `w45`, `w92`, `w154`, `w185`, `w300`, `w500`, `original` |
-
-**Implementation:**
-
-```typescript
-function buildImageUrl(path: string, size: string = 'w500'): string {
-  return `https://image.tmdb.org/t/p/${size}${path}`;
-}
-
-// Usage
-const posterUrl = buildImageUrl(movie.poster_path, 'w500');
-const backdropUrl = buildImageUrl(movie.backdrop_path, 'original');
-```
-
-**Responsive sizes in MovieMonk:**
-- Posters: `w500` (default), `w780` (high-res)
-- Backdrops: `original` (hero image), `w1280` (gallery)
-- Gallery: `w780` for balance between quality and load time
-
----
-
-### Search & Enrichment
-
-**Search Strategy:**
-
-MovieMonk uses a multi-step search:
-
-1. **Extract title and year** from query
-2. **Try movie search** with year filter
-3. **Try TV search** if no movie found
-4. **Fallback to multi-search** without year
-5. **Return first result** (best match)
-
-**Implementation:**
+### 3.3 Search & Disambiguation Strategy
 
 ```typescript
 async function searchMovieOrShow(title: string, year?: number) {
-  // Try movie with year
+  // 1. Try movie search with specific year filter
   if (year) {
     const movieResults = await tmdbFetch('/search/movie', 
       new URLSearchParams({ query: title, year: year.toString() })
     );
     if (movieResults.results?.length > 0) {
-      return { 
-        result: movieResults.results[0], 
-        mediaType: 'movie' as const 
-      };
+      return { result: movieResults.results[0], mediaType: 'movie' as const };
     }
   }
 
-  // Try movie without year
-  const movieResults = await tmdbFetch('/search/movie',
-    new URLSearchParams({ query: title })
-  );
+  // 2. Fall back to movie search without year
+  const movieResults = await tmdbFetch('/search/movie', new URLSearchParams({ query: title }));
   if (movieResults.results?.length > 0) {
-    return { 
-      result: movieResults.results[0], 
-      mediaType: 'movie' as const 
-    };
+    return { result: movieResults.results[0], mediaType: 'movie' as const };
   }
 
-  // Try TV
-  const tvResults = await tmdbFetch('/search/tv',
-    new URLSearchParams({ query: title })
-  );
+  // 3. Fall back to TV series search
+  const tvResults = await tmdbFetch('/search/tv', new URLSearchParams({ query: title }));
   if (tvResults.results?.length > 0) {
-    return { 
-      result: tvResults.results[0], 
-      mediaType: 'tv' as const 
-    };
+    return { result: tvResults.results[0], mediaType: 'tv' as const };
   }
 
   return null;
 }
 ```
 
-**Image Enrichment:**
+### 3.4 Image Enrichment Flow
 
-Always prefer TMDB images over AI-provided URLs:
+To keep posters and backdrop galleries reliable and high-resolution, MovieMonk overrides AI-guessed image paths with verified TMDB URLs:
 
 ```typescript
 async function enrichWithTMDB(data: MovieData): Promise<MovieData> {
-  const { result, mediaType } = await searchMovieOrShow(data.title, data.year);
+  const searchResult = await searchMovieOrShow(data.title, data.year);
+  if (!searchResult) return data;
 
-  if (!result) return data;
-
+  const { result, mediaType } = searchResult;
   const imagesData = await tmdbFetch(`/${mediaType}/${result.id}/images`);
 
   return {
@@ -382,179 +166,30 @@ async function enrichWithTMDB(data: MovieData): Promise<MovieData> {
 
 ---
 
-### Error Handling
+## 4. OMDB Ratings Integration
 
-**1. Network Errors:**
-```typescript
-try {
-  const data = await tmdbFetch('/search/movie', params);
-} catch (error) {
-  console.warn('TMDB fetch failed:', error);
-  return null; // Graceful fallback
-}
-```
+Since TMDB ratings are community-based, MovieMonk leverages the OMDB API to fetch official IMDB scores and critics' reviews (Rotten Tomatoes, Metacritic).
 
-**2. Invalid Credentials:**
-```typescript
-if (response.status === 401) {
-  throw new Error('Invalid TMDB credentials. Check .env.local');
-}
-```
-
-**3. Rate Limiting:**
-```typescript
-if (response.status === 429) {
-  console.warn('TMDB rate limit hit. Retrying in 1s...');
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  // Retry logic
-}
-```
-
-**4. Missing Images:**
-```typescript
-function isValidImagePath(path: string | null): boolean {
-  return path !== null && path !== undefined && path.startsWith('/');
-}
-
-const posterUrl = isValidImagePath(result.poster_path)
-  ? buildImageUrl(result.poster_path)
-  : 'fallback.png';
-```
+- **Authentication**: Requires `OMDB_API_KEY` set in the environment.
+- **Data flow**: The system uses the TMDB external ID resolver to get the `imdb_id` (e.g. `tt1375666`), and queries OMDB:
+  ```
+  http://www.omdbapi.com/?apikey=OMDB_API_KEY&i=imdb_id
+  ```
 
 ---
 
-### Example Requests
+## 5. Caching & Performance Best Practices
 
-**Search for a movie:**
+To control operating costs and respect external rate limits, data is cached at multiple levels.
 
-```bash
-curl -X GET "https://api.themoviedb.org/3/search/movie?query=Inception&year=2010" \
-  -H "Authorization: Bearer YOUR_READ_TOKEN"
-```
+### 5.1 Caching Layers
 
-**Response:**
-```json
-{
-  "results": [{
-    "id": 27205,
-    "title": "Inception",
-    "poster_path": "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
-    "backdrop_path": "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
-    "release_date": "2010-07-16",
-    "vote_average": 8.369
-  }]
-}
-```
+1. **Client-side IndexedDB**: Stores fully normalized metadata payloads (facts + AI summaries) for long-term offline-first recall.
+2. **Client-side localStorage**: Used for short-term search history index lists.
+3. **Server-side Redis (Optional)**: If `REDIS_URL` is set in the backend environment, queries are cached in a shared Redis cache layer. The application gracefully skips Redis if the connection times out.
 
-**Fetch movie images:**
+### 5.2 Client Caching Implementation
 
-```bash
-curl -X GET "https://api.themoviedb.org/3/movie/27205/images" \
-  -H "Authorization: Bearer YOUR_READ_TOKEN"
-```
-
-**Response:**
-```json
-{
-  "backdrops": [
-    { "file_path": "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg", "width": 1920, "height": 1080 }
-  ],
-  "posters": [
-    { "file_path": "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg", "width": 2000, "height": 3000 }
-  ]
-}
-```
-
----
-
-## Integration Patterns
-
-### AI + TMDB Data Flow
-
-**Complete request flow:**
-
-1. **User sends query** → ChatInterface component
-2. **AI service processes** → Tries Groq → Falls back to Mistral → Falls back to OpenRouter
-3. **TMDB enrichment** → Adds accurate images, cast, ratings
-4. **OMDB integration** → Fetches IMDB ratings
-5. **Cache storage** → Saves to localStorage and IndexedDB
-6. **Display result** → MovieDisplay renders complete data
-
-**Implementation example:**
-
-```typescript
-async function fetchMovieData(query: string, complexity: QueryComplexity) {
-  // Step 1: Check cache first
-  const cached = await cacheService.get(query);
-  if (cached) return cached;
-
-  // Step 2: Get AI-generated content (with fallback)
-  const aiResult = await aiService.fetchMovieData(query, complexity);
-  
-  // Step 3: Enrich with TMDB data
-  const enrichedData = await tmdbService.enrichWithTMDB(aiResult.data);
-  
-  // Step 4: Add IMDB ratings via OMDB
-  const withRatings = await omdbService.addRatings(enrichedData);
-  
-  // Step 5: Cache the result
-  await cacheService.set(query, withRatings);
-  
-  return withRatings;
-}
-```
-
-### When to Use Which Service
-
-| Data Type | Primary Source | Fallback | Reason |
-|-----------|---------------|----------|--------|
-| Plot, themes, trivia | **Groq/Mistral** | OpenRouter | Fast, free, natural language |
-| Images (poster, backdrop) | **TMDB** | AI placeholder | Reliable, high-quality URLs |
-| IMDB ratings | **OMDB** | None | Official IMDB data |
-| Cast & crew | **TMDB** | AI data | 100% accurate from database |
-| Where to watch | **AI providers** | Perplexity | Real-time info |
-| Gallery images | **TMDB** | None | High-resolution gallery |
-
----
-
-## Rate Limits & Best Practices
-
-### AI Provider Limits
-
-**Groq:**
-- **Limits**: 30 requests/minute, unlimited daily (free tier)
-- **Best practices**:
-  - Primary provider due to speed and generous limits
-  - Cache responses aggressively
-  - Use for both simple and complex queries
-
-**Mistral:**
-- **Limits**: 2M tokens/month (free tier)
-- **Best practices**:
-  - Backup provider when Groq unavailable
-  - Monitor token usage
-  - Good for detailed responses
-
-**OpenRouter:**
-- **Limits**: Varies by model, pay-per-use
-- **Best practices**:
-  - Use only as last resort
-  - Consider cost implications
-  - Proxied through Vercel serverless function for security
-
-### TMDB API
-
-**Limits:**
-- ~40 requests per 10 seconds
-- No daily cap
-
-**Best practices:**
-- Cache search results (localStorage + IndexedDB)
-- Batch image requests
-- Use appropriate image sizes (not always `original`)
-- Prefer v4 Read Access Token over v3 API key
-
-**Caching example:**
 ```typescript
 const cacheKey = `tmdb_movie_${title}_${year}`;
 const cached = localStorage.getItem(cacheKey);
@@ -563,187 +198,43 @@ if (cached) {
 }
 
 const result = await searchMovieOrShow(title, year);
-localStorage.setItem(cacheKey, JSON.stringify(result), { 
-  expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-});
-```
-
-### Optimization Strategies
-
-**Client-side optimizations:**
-```typescript
-// Debounce search input
-const debouncedSearch = debounce((query: string) => {
-  fetchMovieData(query, complexity);
-}, 500);
-
-// Lazy load images
-<img loading="lazy" src={posterUrl} />
-
-// Use React.memo for expensive components
-const MovieCard = React.memo(({ movie }) => {
-  // Expensive rendering logic
-});
+localStorage.setItem(cacheKey, JSON.stringify(result));
 ```
 
 ---
 
-## Security & Best Practices
+## 6. Security & Key Protection
 
-### API Key Protection
+### 6.1 Serverless Proxy Isolation
+All credentials (`GROQ_API_KEY`, `TMDB_READ_TOKEN`, etc.) are kept strictly in server-side environments (Vercel serverless functions / Hugging Face Space runtime). No client-side component calls external APIs directly; requests are proxied via `/api/*` routes.
 
-**Environment Variables:**
-- Never commit `.env.local` to Git (already in `.gitignore`)
-- Use GitHub Secrets or Vercel Environment Variables for deployment
-- Rotate keys immediately if exposed
+### 6.2 Key Verification
+- Avoid using the `VITE_` prefix for AI provider secrets to prevent Vite from bundling them into the client build assets.
+- Rotate credentials immediately if commits are leaked.
+- Enforce secure headers (CORS and CSP policies) on backend proxy endpoints to restrict third-party access.
 
-**Vercel Serverless Functions:**
-- All API keys stored server-side only
-- OpenRouter API proxied through `/api/openrouter` to hide key
-- Keys never exposed to client-side code
-- CORS protection on serverless endpoints
-
-**Key Security Checklist:**
 ```bash
 # ✅ Good: Server-side environment variables
-GROQ_API_KEY=sk-...
-MISTRAL_API_KEY=...
+GROQ_API_KEY=sk-proj-...
+MISTRAL_API_KEY=mistral-...
 
-# ❌ Bad: Client-side exposed variables (don't use VITE_ prefix for keys)
-# VITE_GROQ_API_KEY=sk-...
-```
-
-**Monitoring:**
-- Monitor API usage in provider dashboards
-- Set up usage alerts
-- Review logs for unusual patterns
-- Implement rate limiting on your endpoints
-
----
-
-## TMDB API Reference
-
-### Endpoints Used
-
-**Base URL:** `https://api.themoviedb.org/3`
-
-| Endpoint | Purpose | Parameters |
-|----------|---------|------------|
-| `/search/movie` | Search movies | `query`, `year` (optional) |
-| `/search/tv` | Search TV shows | `query`, `first_air_date_year` (optional) |
-| `/search/multi` | Search all media | `query` |
-| `/movie/{id}` | Movie details | Movie ID |
-| `/tv/{id}` | TV show details | Show ID |
-| `/movie/{id}/images` | Movie images | Movie ID |
-| `/tv/{id}/images` | TV show images | Show ID |
-| `/movie/{id}/external_ids` | Get external IDs (IMDB) | Movie ID |
-
-### Image URLs
-
-**Format:** `https://image.tmdb.org/t/p/{size}{file_path}`
-
-**Available sizes:**
-- **Poster**: `w92`, `w154`, `w185`, `w342`, `w500`, `w780`, `original`
-- **Backdrop**: `w300`, `w780`, `w1280`, `original`
-- **Logo**: `w45`, `w92`, `w154`, `w185`, `w300`, `w500`, `original`
-
-**Implementation:**
-```typescript
-function buildImageUrl(path: string, size: string = 'w500'): string {
-  if (!path || !path.startsWith('/')) return '';
-  return `https://image.tmdb.org/t/p/${size}${path}`;
-}
+# ❌ Bad: Client-side exposed variables
+VITE_GROQ_API_KEY=sk-proj-...
 ```
 
 ---
 
-## Troubleshooting
+## 7. Troubleshooting & API Errors
 
-### AI Service Issues
+### 7.1 Common Scenarios
 
-**Issue: "API key not valid" or "Unauthorized"**
-- Verify API keys in `.env.local`
-- Check for extra spaces or newlines in keys
-- Restart dev server after updating environment variables
-- For Vercel deployment, check environment variables in dashboard
+- **HTTP 401 Unauthorized**: Invalid credentials. Confirm that `.env.local` is loaded and Vite/Server services are restarted.
+- **HTTP 429 Rate Limit**: Too many requests sent. The service logs the error and triggers the fallback chain.
+- **Images Fail to Load**: Verify the image path returned from TMDB. The helper `buildImageUrl` filters invalid null paths and defaults to a local asset.
 
-**Issue: All AI providers failing**
-- Check API key validity for all providers
-- Verify internet connectivity
-- Check provider status pages:
-  - Groq: [status.groq.com](https://status.groq.com)
-  - Mistral: [status.mistral.ai](https://status.mistral.ai)
-  - OpenRouter: [status.openrouter.ai](https://status.openrouter.ai)
+### 7.2 API Resources Directory
 
-**Issue: Slow responses**
-- Use Simple mode for faster processing
-- Check network throttling in DevTools
-- Verify caching is working (check localStorage)
-- Consider proximity to provider servers
-
-### TMDB Issues
-
-**Issue: Images not loading**
-- Verify TMDB credentials (prefer Read Access Token)
-- Check console for 401/404 errors
-- Ensure `enrichWithTMDB` is being called
-- Validate image URLs start with `https://image.tmdb.org/`
-
-**Issue: Search returns no results**
-- Try without year filter
-- Check for typos in title
-- Use multi-search endpoint as fallback
-- Verify movie exists in TMDB database
-
-### General Debugging
-
-**Browser Console:**
-- Check for error messages
-- Look for failed network requests (F12 → Network tab)
-- Verify API responses are valid JSON
-
-**Service Logs:**
-- AI services log errors to console
-- TMDB service warns on image fetch failures
-- Cache service logs hits/misses in development
-
----
-
-## Resources & Documentation
-
-### AI Providers
-- [Groq Documentation](https://console.groq.com/docs)
-- [Mistral AI Docs](https://docs.mistral.ai)
-- [OpenRouter API Docs](https://openrouter.ai/docs)
-
-### Movie Data APIs
-- [TMDB API Documentation](https://developer.themoviedb.org/docs)
-- [TMDB API Reference](https://developer.themoviedb.org/reference/intro/getting-started)
-- [OMDB API Documentation](http://www.omdbapi.com/)
-
-### Development Tools
-- [Vite Documentation](https://vitejs.dev/)
-- [React Documentation](https://react.dev/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
-
-### Deployment
-- [Vercel Documentation](https://vercel.com/docs)
-- [Vercel Serverless Functions](https://vercel.com/docs/functions)
-- [Environment Variables Guide](https://vercel.com/docs/environment-variables)
-
----
-
-## Future Enhancements
-
-**Potential additions:**
-- WebSocket support for real-time updates
-- GraphQL API wrapper
-- Additional AI providers (Anthropic Claude, etc.)
-- Redis caching layer for production
-- Webhook integration for TMDB updates
-- Batch processing for multiple queries
-- User authentication and personalization
-- Recommendation engine based on viewing history
-
----
+- **Groq Console**: [console.groq.com](https://console.groq.com)
+- **Mistral Portal**: [console.mistral.ai](https://console.mistral.ai)
+- **TMDB Documentation**: [developer.themoviedb.org](https://developer.themoviedb.org/docs)
+- **OMDB Endpoint Registration**: [omdbapi.com](http://www.omdbapi.com)
