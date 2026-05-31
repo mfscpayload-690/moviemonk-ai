@@ -14,7 +14,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Inter-fallback', 'sans-serif'],
+        sans: ['Inter', 'Inter-fallback', 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', 'Meiryo', 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', 'sans-serif'],
       },
       colors: {
         'brand-bg': '#121212',
