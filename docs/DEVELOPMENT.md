@@ -50,7 +50,7 @@ PERPLEXITY_API_KEY=your_perplexity_key_optional
    pip install -r requirements.txt
    cp .env.example .env
    # Configure TMDB_API_KEY and GROQ_API_KEY in server/.env
-   python main.py
+   python -m app.main  # or: uvicorn app.main:app --port 8000 --reload
    ```
    *The backend listens on `http://localhost:8000` (or `http://localhost:7860` if using Hugging Face settings).*
 
