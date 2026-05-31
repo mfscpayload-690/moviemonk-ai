@@ -7,9 +7,6 @@ import {
   ExternalLink,
   Film,
   MapPin,
-  Search,
-  Share2,
-  Sparkles,
   Tv,
   UserRound,
   X
@@ -320,32 +317,7 @@ const SkeletonCard: React.FC = () => (
   </div>
 );
 
-type PersonActionHandlers = {
-  onSearch?: () => void;
-  onBrief?: () => void;
-  onShare: () => void;
-};
-
-const PersonActions: React.FC<PersonActionHandlers & { className?: string }> = ({ onSearch, onBrief, onShare, className }) => (
-  <div className={className || 'person-editorial-actions'}>
-    {onSearch && (
-      <button type="button" className="person-editorial-primary-btn" onClick={onSearch} aria-label="Search credits for this person">
-        <Search size={16} aria-hidden="true" />
-        <span>Search Credits</span>
-      </button>
-    )}
-    {onBrief && (
-      <button type="button" className="person-editorial-secondary-btn" onClick={onBrief} aria-label="Get a brief summary for this person">
-        <Sparkles size={16} aria-hidden="true" />
-        <span>Brief Me</span>
-      </button>
-    )}
-    <button type="button" className="person-editorial-more-btn" onClick={onShare} aria-label="Share this person page">
-      <Share2 size={16} aria-hidden="true" />
-      <span>Share</span>
-    </button>
-  </div>
-);
+// Action handlers removed
 
 const CareerStats: React.FC<{
   roleDistribution: PersonCreditBuckets['roleDistribution'];
@@ -397,9 +369,8 @@ const PersonHero: React.FC<{
   biographyExcerpt: string;
   hasBiography: boolean;
   onOpenBiography: () => void;
-  actions: PersonActionHandlers;
   onOpenCredit?: (credit: PersonCredit) => void;
-}> = ({ person, tags, careerSpan, topWork, biographyExcerpt, hasBiography, onOpenBiography, actions, onOpenCredit }) => {
+}> = ({ person, tags, careerSpan, topWork, biographyExcerpt, hasBiography, onOpenBiography, onOpenCredit }) => {
   const birthDateAndAge = person.birthday ? formatBirthDate(person.birthday) : null;
 
   return (
@@ -497,8 +468,6 @@ const PersonHero: React.FC<{
               {topWork.length === 0 && <span className="person-hero-known-empty">No top works yet</span>}
             </div>
           </div>
-
-          <PersonActions {...actions} />
         </div>
       </div>
     </section>
@@ -958,31 +927,7 @@ const PersonDisplay: React.FC<{
     }
   };
 
-  const handleSharePerson = async () => {
-    const shareUrl = `${window.location.origin}/person/${person.id}`;
-    const shareTitle = `${person.name} on MovieMonk`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: shareTitle, url: shareUrl });
-        return;
-      } catch {
-        // fall back to clipboard copy below
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-    } catch {
-      // best-effort share affordance
-    }
-  };
-
-  const actions = {
-    onSearch: onQuickSearch ? () => onQuickSearch(person.name) : undefined,
-    onBrief: onBriefMe ? () => onBriefMe(person.name) : undefined,
-    onShare: () => void handleSharePerson()
-  };
+  // Action handlers removed
 
   return (
     <div className="person-editorial-page">
@@ -1003,7 +948,6 @@ const PersonDisplay: React.FC<{
         biographyExcerpt={heroBiography}
         hasBiography={isBioTruncated}
         onOpenBiography={() => setIsBiographyOpen(true)}
-        actions={actions}
         onOpenCredit={handleOpenCredit}
       />
 
@@ -1063,39 +1007,6 @@ const PersonDisplay: React.FC<{
         </div>
       )}
 
-      <div className="mm-mobile-action-bar person-mobile-action-bar" aria-label="Person quick actions">
-        {onQuickSearch && (
-          <button
-            type="button"
-            className="mm-mobile-action is-primary"
-            onClick={() => onQuickSearch(person.name)}
-            aria-label="Search credits for this person"
-          >
-            <Search size={17} aria-hidden="true" />
-            <span>Search</span>
-          </button>
-        )}
-        {onBriefMe && (
-          <button
-            type="button"
-            className="mm-mobile-action"
-            onClick={() => onBriefMe(person.name)}
-            aria-label="Get a brief summary for this person"
-          >
-            <Sparkles size={17} aria-hidden="true" />
-            <span>Brief</span>
-          </button>
-        )}
-        <button
-          type="button"
-          className="mm-mobile-action"
-          onClick={() => void handleSharePerson()}
-          aria-label="Share this person page"
-        >
-          <Share2 size={17} aria-hidden="true" />
-          <span>Share</span>
-        </button>
-      </div>
     </div>
   );
 };
