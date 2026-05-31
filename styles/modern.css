@@ -4955,36 +4955,59 @@ a:focus-visible {
 
     .person-editorial-identity {
         grid-template-columns: 108px minmax(0, 1fr);
+        grid-template-rows: auto auto auto auto auto;
         gap: 1rem;
     }
 
     .person-editorial-avatar {
+        grid-column: 1;
+        grid-row: 1 / span 2;
         width: 108px;
         border-radius: 10px;
+        align-self: start;
     }
 
     .person-editorial-name {
+        grid-column: 2;
+        grid-row: 1;
         font-size: 1.75rem;
+        align-self: end;
+        margin-bottom: 0;
+    }
+
+    .person-hero-meta-row {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        align-self: start;
+        margin-top: 0.25rem;
     }
 
     .person-editorial-header {
         display: contents;
     }
 
-    .person-hero-kicker,
-    .person-editorial-name,
-    .person-hero-meta-row,
-    .person-hero-tags-row,
-    .person-editorial-actions {
-        grid-column: 2;
+    .person-hero-tags-row {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        margin-top: 0.5rem;
     }
 
     .person-hero-bio-container,
-    .person-hero-known-row {
+    .person-hero-bio,
+    .person-hero-bio-empty {
         grid-column: 1 / -1;
+        grid-row: 4;
+        margin-top: 0.25rem;
     }
 
-
+    .person-hero-known-row {
+        grid-column: 1 / -1;
+        grid-row: 5;
+        margin-top: 0.5rem;
+    }
 
     .person-editorial-actions {
         display: none;
