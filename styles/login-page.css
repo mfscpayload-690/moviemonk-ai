@@ -121,7 +121,7 @@
 }
 
 .login-headline {
-  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-family: Outfit, 'Plus Jakarta Sans', 'Noto Sans JP', 'Segoe UI', 'Microsoft YaHei', Meiryo, 'Apple SD Gothic Neo', 'PingFang SC', 'Hiragino Sans', system-ui, sans-serif;
   font-size: 1.45rem;
   font-weight: 700;
   color: #f8fafc;
