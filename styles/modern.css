@@ -431,11 +431,12 @@ Rejected premiere wordmark variant:
         --mm-reveal-delay: 0ms !important;
         --mm-reveal-duration: 250ms !important;
     }
-    
-    .animate-fade-in, .animate-slide-up {
+
+    .animate-fade-in,
+    .animate-slide-up {
         animation-duration: 0.25s !important;
     }
-    
+
     .animate-scale-up {
         animation-duration: 0.2s !important;
     }
@@ -974,13 +975,15 @@ button:active,
     transition: all 0.2s ease;
     cursor: pointer;
     z-index: 5;
-    opacity: 1; /* Always show for accessibility, or 0 and hover for group */
+    opacity: 1;
+    /* Always show for accessibility, or 0 and hover for group */
 }
 
 @media (min-width: 768px) {
     .mm-reminder-dismiss-icon {
         opacity: 0;
     }
+
     .mm-reminder-card:hover .mm-reminder-dismiss-icon {
         opacity: 1;
     }
@@ -2120,7 +2123,7 @@ button:active,
 .mm-scrim-bottom {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 40%, transparent 100%);
     pointer-events: none;
     z-index: 1;
 }
@@ -2128,7 +2131,7 @@ button:active,
 .mm-scrim-left {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to right, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 100%);
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 40%, transparent 100%);
     pointer-events: none;
     z-index: 1;
 }
@@ -4641,7 +4644,8 @@ a:focus-visible {
 }
 
 .person-title-row-meta span+span::before {
-    display: none; /* Stacked vertically, so hide the bullet dot */
+    display: none;
+    /* Stacked vertically, so hide the bullet dot */
 }
 
 .person-related-grid {
@@ -4844,6 +4848,21 @@ a:focus-visible {
     color: #d4d7df;
     font-size: 0.98rem;
     line-height: 1.72;
+    margin-bottom: 1.25rem;
+}
+
+.person-biography-modal-body p:last-child {
+    margin-bottom: 0;
+}
+
+.person-biography-modal-body strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.person-biography-modal-body em {
+    color: #9ca3af;
+    font-style: italic;
 }
 
 @media (max-width: 640px) {
@@ -5079,6 +5098,7 @@ a:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .person-editorial-page,
     .person-loading-spinner,
     .person-credit-skeleton-poster,
@@ -6477,8 +6497,8 @@ a:focus-visible {
     aspect-ratio: 2/3;
     object-fit: cover;
     border-radius: 0.4rem;
-    box-shadow: 0 12px 24px -6px rgba(0,0,0,0.6);
-    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Stack Positioning */
@@ -6690,7 +6710,7 @@ a:focus-visible {
     overflow: visible;
 }
 
-.watchlists-dashboard-layout > main {
+.watchlists-dashboard-layout>main {
     overflow: visible;
 }
 
@@ -6769,15 +6789,13 @@ a:focus-visible {
     right: 0;
     top: 0%;
     height: 3px;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(139, 92, 246, 0.3) 15%,
-        rgba(255, 255, 255, 0.95) 50%,
-        rgba(6, 182, 212, 0.3) 85%,
-        transparent 100%
-    );
-    box-shadow: 
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(139, 92, 246, 0.3) 15%,
+            rgba(255, 255, 255, 0.95) 50%,
+            rgba(6, 182, 212, 0.3) 85%,
+            transparent 100%);
+    box-shadow:
         0 0 10px 2px rgba(255, 255, 255, 0.8),
         0 0 25px 6px rgba(139, 92, 246, 0.7),
         0 0 50px 12px rgba(6, 182, 212, 0.5);
@@ -6796,14 +6814,17 @@ a:focus-visible {
         opacity: 0;
         transform: scaleX(0.2);
     }
+
     10% {
         opacity: 1;
         transform: scaleX(1);
     }
+
     90% {
         opacity: 1;
         transform: scaleX(1);
     }
+
     100% {
         top: 100%;
         opacity: 0;
@@ -6815,10 +6836,10 @@ a:focus-visible {
 .projector-text {
     filter: blur(12px);
     opacity: 0;
-    transition: 
-        filter 0.9s cubic-bezier(0.25, 1, 0.5, 1), 
+    transition:
+        filter 0.9s cubic-bezier(0.25, 1, 0.5, 1),
         opacity 0.7s cubic-bezier(0.25, 1, 0.5, 1);
-    min-height: 0; 
+    min-height: 0;
 
     /* Premium glassmorphic inset card styling */
     background-color: rgba(0, 0, 0, 0.25);
@@ -6832,7 +6853,7 @@ a:focus-visible {
 .spoiler-reveal-container.is-expanded .projector-text {
     filter: blur(0px);
     opacity: 1;
-    transition-delay: 0.15s; 
+    transition-delay: 0.15s;
 }
 
 /* Reduced motion support */
@@ -6841,10 +6862,12 @@ a:focus-visible {
         grid-template-rows: 1fr !important;
         transition: none !important;
     }
+
     .cinematic-lens-flare {
         display: none !important;
         animation: none !important;
     }
+
     .projector-text {
         filter: none !important;
         opacity: 1 !important;

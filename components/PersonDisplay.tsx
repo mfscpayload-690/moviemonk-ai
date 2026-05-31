@@ -833,6 +833,35 @@ const SourcesSection: React.FC<{ sources?: PersonPayload['sources'] }> = ({ sour
   </section>
 );
 
+const renderFormattedText = (text: string) => {
+  if (!text) return null;
+  const paragraphs = text
+    .split(/\r?\n\s*\r?\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  return paragraphs.map((para, pIdx) => {
+    const regex = /(\*\*.*?\*\*|\*.*?\*)/g;
+    const parts = para.split(regex);
+
+    const formattedParts = parts.map((part, partIdx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={partIdx}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <em key={partIdx}>{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
+
+    return (
+      <p key={pIdx} className="person-biography-paragraph">
+        {formattedParts}
+      </p>
+    );
+  });
+};
+
 const BiographyModal: React.FC<{ personName: string; biography: string; onClose: () => void }> = ({ personName, biography, onClose }) => {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
@@ -882,7 +911,7 @@ const BiographyModal: React.FC<{ personName: string; biography: string; onClose:
           </button>
         </header>
         <div className="person-biography-modal-body">
-          <p>{biography}</p>
+          {renderFormattedText(biography)}
         </div>
       </section>
     </div>
@@ -1013,10 +1042,10 @@ const PersonDisplay: React.FC<{
         <SourcesSection sources={sources} />
       </div>
 
-      {isBiographyOpen && normalizedBiography && (
+      {isBiographyOpen && person.biography && (
         <BiographyModal
           personName={person.name}
-          biography={normalizedBiography}
+          biography={person.biography}
           onClose={() => setIsBiographyOpen(false)}
         />
       )}
