@@ -147,21 +147,23 @@ server {
 
 ## Rollback Strategy
 
-### GitHub Pages
+When a deployment introduces regressions, roll back to a known stable version immediately.
 
-```bash
-# Revert to previous commit
-git revert HEAD
-git push origin main
+### 1. Vercel
+- **Dashboard**: Go to your Project -> **Deployments** tab. Locate the last stable deployment, click the three dots (`...`), and select **Rollback**.
+- **CLI**: Roll back to a specific deployment ID:
+  ```bash
+  vercel rollback <deployment-id>
+  ```
 
-# Or reset to specific commit
-git reset --hard <commit-hash>
-git push --force origin main
-```
+### 2. Railway
+- Go to your Railway project dashboard.
+- Select the active service, click on the **Deployments** tab, find the previous stable deployment, and click **Redeploy** or **Rollback**.
 
-### Other Platforms
-
-Most platforms (Railway, Vercel, Netlify) allow rollback to previous deployments via their dashboards.
+### 3. Netlify
+- Go to Project -> **Deploys**.
+- Select the previous successful deployment and click **Publish Deploy** to set it active.
+- Note: If auto-publishing is locked, you will need to unlock it first.
 
 ---
 
