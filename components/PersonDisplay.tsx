@@ -436,18 +436,21 @@ const PersonHero: React.FC<{
           <div className="person-hero-known-row" aria-label="Top known works">
             <span className="person-hero-known-label">Known for</span>
             <div className="person-hero-known-list">
-              {topWork.slice(0, 5).map((credit, index) => (
-                <React.Fragment key={`${credit.media_type}-${credit.id}`}>
-                  {index > 0 && <span className="person-hero-known-divider">•</span>}
-                  <button
-                    type="button"
-                    className="person-hero-known-link"
-                    onClick={() => onOpenCredit?.(credit)}
-                    aria-label={`Open ${credit.title}`}
-                  >
-                    {credit.title}
-                  </button>
-                </React.Fragment>
+              {topWork.slice(0, 5).map((credit) => (
+                <button
+                  key={`${credit.media_type}-${credit.id}`}
+                  type="button"
+                  className="person-hero-known-chip group/chip"
+                  onClick={() => onOpenCredit?.(credit)}
+                  aria-label={`Open ${credit.title}`}
+                >
+                  {credit.media_type === 'tv' ? (
+                    <Tv size={14} className="person-hero-known-chip-icon" aria-hidden="true" />
+                  ) : (
+                    <Film size={14} className="person-hero-known-chip-icon" aria-hidden="true" />
+                  )}
+                  <span className="person-hero-known-chip-title">{credit.title}</span>
+                </button>
               ))}
               {topWork.length === 0 && <span className="person-hero-known-empty">No top works yet</span>}
             </div>
