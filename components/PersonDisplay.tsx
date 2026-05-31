@@ -28,6 +28,8 @@ interface FilmItem {
   character?: string;
   poster_url?: string;
   popularity?: number;
+  job?: string;
+  department?: string;
 }
 
 export interface PersonPayload {
