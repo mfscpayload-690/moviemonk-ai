@@ -370,7 +370,7 @@ const PersonHero: React.FC<{
             className="person-editorial-avatar"
             loading="eager"
             decoding="async"
-            sizes="(min-width: 768px) 190px, 132px"
+            sizes="(min-width: 768px) 220px, 132px"
           />
         ) : (
           <div className="person-editorial-avatar person-editorial-avatar-fallback" aria-label={`${person.name} profile image unavailable`}>
