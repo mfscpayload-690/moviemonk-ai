@@ -4756,15 +4756,26 @@ a:focus-visible {
 }
 
 .person-sources-section a {
-    gap: 0.3rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     color: #d6c8ff;
     font-size: 0.8rem;
     text-decoration: none;
-    padding: 0.42rem 0.62rem;
+    padding: 0.42rem 0.75rem;
     border-radius: 999px;
     border: 1px solid rgba(167, 139, 250, 0.22);
     background: rgba(124, 58, 237, 0.12);
+    transition: background 150ms ease, border-color 150ms ease, transform 150ms ease, color 150ms ease;
 }
+
+.person-sources-section a:hover {
+    background: rgba(124, 58, 237, 0.22);
+    border-color: rgba(167, 139, 250, 0.45);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
 
 .person-empty-state {
     min-height: 6rem;
