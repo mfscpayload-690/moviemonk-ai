@@ -1009,6 +1009,16 @@ const App: React.FC = () => {
                 onOpenPerson={(personId, name) => {
                   void openPersonById(personId, name, { manageLoading: true });
                 }}
+                isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+                onToggleWatched={(item) => { void runWatchedToggle({
+                  tmdb_id: String(item.id),
+                  media_type: item.media_type,
+                  title: item.title,
+                  poster_url: item.poster_url ?? undefined,
+                  year: item.year ?? undefined,
+                }); }}
+                onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+                watchlists={watchlists}
               />
             ) : (
               <MovieDisplay
