@@ -100,7 +100,16 @@ export function derivePersonCreditBuckets(data: PersonPayload): PersonCreditBuck
     directing: directingCredits.length,
     other: otherCredits.length
   };
-  const careerSpan = data.career_span || {};
+  const birthYear = data.person?.birthday ? new Date(data.person.birthday).getFullYear() : null;
+  const creditYears = allCredits
+    .map((c) => c.year)
+    .filter((y): y is number => typeof y === 'number' && y > 1800 && (!birthYear || y >= birthYear));
+
+  const careerSpan = {
+    start_year: creditYears.length > 0 ? Math.min(...creditYears) : data.career_span?.start_year,
+    end_year: creditYears.length > 0 ? Math.max(...creditYears) : data.career_span?.end_year,
+    active_years: data.career_span?.active_years
+  };
 
   return {
     allCredits,
@@ -319,30 +328,7 @@ const SkeletonCard: React.FC = () => (
 
 // Action handlers removed
 
-const CareerStats: React.FC<{
-  roleDistribution: PersonCreditBuckets['roleDistribution'];
-  careerSpan: PersonCreditBuckets['careerSpan'];
-  allCount: number;
-}> = ({ roleDistribution, careerSpan, allCount }) => (
-  <section className="person-career-snapshot" aria-label="Career snapshot">
-    <article>
-      <p>All credits</p>
-      <strong>{allCount}</strong>
-    </article>
-    <article>
-      <p>Acting</p>
-      <strong>{roleDistribution.acting}</strong>
-    </article>
-    <article>
-      <p>Directing</p>
-      <strong>{roleDistribution.directing}</strong>
-    </article>
-    <article>
-      <p>Career span</p>
-      <strong>{formatCareerSpan(careerSpan)}</strong>
-    </article>
-  </section>
-);
+// CareerStats component removed
 
 function formatBirthDate(birthdayStr: string): string {
   const birthDate = new Date(birthdayStr);
@@ -370,7 +356,9 @@ const PersonHero: React.FC<{
   hasBiography: boolean;
   onOpenBiography: () => void;
   onOpenCredit?: (credit: PersonCredit) => void;
-}> = ({ person, tags, careerSpan, topWork, biographyExcerpt, hasBiography, onOpenBiography, onOpenCredit }) => {
+  roleDistribution: PersonCreditBuckets['roleDistribution'];
+  allCount: number;
+}> = ({ person, tags, careerSpan, topWork, biographyExcerpt, hasBiography, onOpenBiography, onOpenCredit, roleDistribution, allCount }) => {
   const birthDateAndAge = person.birthday ? formatBirthDate(person.birthday) : null;
 
   return (
@@ -467,6 +455,25 @@ const PersonHero: React.FC<{
               ))}
               {topWork.length === 0 && <span className="person-hero-known-empty">No top works yet</span>}
             </div>
+          </div>
+        </div>
+
+        <div className="person-hero-stats" aria-label="Career stats">
+          <div className="person-hero-stat-card">
+            <span className="person-hero-stat-label">All credits</span>
+            <strong className="person-hero-stat-value">{allCount}</strong>
+          </div>
+          <div className="person-hero-stat-card">
+            <span className="person-hero-stat-label">Acting</span>
+            <strong className="person-hero-stat-value">{roleDistribution.acting}</strong>
+          </div>
+          <div className="person-hero-stat-card">
+            <span className="person-hero-stat-label">Directing</span>
+            <strong className="person-hero-stat-value">{roleDistribution.directing}</strong>
+          </div>
+          <div className="person-hero-stat-card">
+            <span className="person-hero-stat-label">Career span</span>
+            <strong className="person-hero-stat-value">{formatCareerSpan(careerSpan)}</strong>
           </div>
         </div>
       </div>
@@ -949,9 +956,9 @@ const PersonDisplay: React.FC<{
         hasBiography={isBioTruncated}
         onOpenBiography={() => setIsBiographyOpen(true)}
         onOpenCredit={handleOpenCredit}
+        roleDistribution={roleDistribution}
+        allCount={dedupedAllCredits.length}
       />
-
-      <CareerStats roleDistribution={roleDistribution} careerSpan={careerSpan} allCount={dedupedAllCredits.length} />
 
       <div className="person-editorial-main-grid">
         <CreditRail
