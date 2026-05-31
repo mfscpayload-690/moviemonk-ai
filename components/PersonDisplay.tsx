@@ -124,7 +124,18 @@ export function derivePersonCreditBuckets(data: PersonPayload): PersonCreditBuck
     directing: directingCredits.length,
     other: otherCredits.length
   };
-  const birthYear = data.person?.birthday ? new Date(data.person.birthday).getFullYear() : null;
+  let birthYear = null;
+  if (data.person?.birthday) {
+    const match = data.person.birthday.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      birthYear = parseInt(match[1], 10);
+    } else {
+      const parsedDate = new Date(data.person.birthday);
+      if (!isNaN(parsedDate.getTime())) {
+        birthYear = parsedDate.getFullYear();
+      }
+    }
+  }
   const creditYears = allCredits
     .map((c) => c.year)
     .filter((y): y is number => typeof y === 'number' && y > 1800 && (!birthYear || y >= birthYear));
@@ -533,7 +544,7 @@ const CreditRail: React.FC<{
               {onQuickSaveToWatchlist && (
                 <button
                   type="button"
-                  className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
+                  className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100 mm-action-feedback ${
                     isCreditSavedToWatchlist(credit, watchlists)
                       ? 'bg-violet-500 text-white scale-100 border border-violet-400/30'
                       : 'bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20'
@@ -553,7 +564,7 @@ const CreditRail: React.FC<{
               {onToggleWatched && (
                 <button
                   type="button"
-                  className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
+                  className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100 mm-action-feedback ${
                     isWatched?.(credit.id, credit.media_type)
                       ? 'bg-green-500 text-white scale-100'
                       : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
@@ -680,7 +691,7 @@ const CreditsExplorer: React.FC<{
                 {onQuickSaveToWatchlist && (
                   <button
                     type="button"
-                    className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
+                    className={`absolute top-1.5 left-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100 mm-action-feedback ${
                       isCreditSavedToWatchlist(credit, watchlists)
                         ? 'bg-violet-500 text-white scale-100 border border-violet-400/30'
                         : 'bg-black/50 text-white/70 hover:bg-violet-500/90 hover:text-white hover:scale-110 border border-white/20'
@@ -700,7 +711,7 @@ const CreditsExplorer: React.FC<{
                 {onToggleWatched && (
                   <button
                     type="button"
-                    className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 mm-action-feedback ${
+                    className={`absolute top-1.5 right-1.5 z-10 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100 mm-action-feedback ${
                       isWatched?.(credit.id, credit.media_type)
                         ? 'bg-green-500 text-white scale-100'
                         : 'bg-black/50 text-white/60 hover:bg-green-500/90 hover:text-white hover:scale-110 border border-white/20'
