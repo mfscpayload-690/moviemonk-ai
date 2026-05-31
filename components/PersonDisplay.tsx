@@ -379,7 +379,6 @@ const PersonHero: React.FC<{
         )}
 
         <div className="person-editorial-header">
-          <div className="person-hero-kicker">Person Profile</div>
           <h2 id="person-profile-title" className="person-editorial-name">{person.name}</h2>
 
           {(birthDateAndAge || person.place_of_birth || person.known_for_department) && (
@@ -485,7 +484,6 @@ const CreditRail: React.FC<{
   <section className="person-editorial-section" aria-labelledby={`person-${title.toLowerCase().replace(/\s+/g, '-')}`}>
     <header className="person-section-header">
       <h3 id={`person-${title.toLowerCase().replace(/\s+/g, '-')}`}>{title}</h3>
-      {credits.length > 0 && <span>{credits.length} titles</span>}
     </header>
     {credits.length > 0 ? (
       <div className="person-credit-rail">
@@ -722,8 +720,7 @@ const RelatedPeopleRail: React.FC<{
 }> = ({ relatedPeople, onOpenPerson, onQuickSearch }) => (
   <section className="person-editorial-section" aria-labelledby="person-related-title">
     <header className="person-section-header">
-      <h3 id="person-related-title">Related People</h3>
-      {Array.isArray(relatedPeople) && relatedPeople.length > 0 && <span>{relatedPeople.length} collaborators</span>}
+      <h3 id="person-related-title">People Also Search For</h3>
     </header>
     {Array.isArray(relatedPeople) && relatedPeople.length > 0 ? (
       <div className="person-related-grid">
