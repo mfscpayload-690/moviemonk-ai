@@ -4980,6 +4980,7 @@ a:focus-visible {
         grid-row: 2;
         display: flex;
         flex-direction: column;
+        align-items: flex-start;
         gap: 0.35rem;
         align-self: start;
         margin-top: 0.25rem;
