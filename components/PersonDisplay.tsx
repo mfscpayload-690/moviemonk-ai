@@ -983,23 +983,23 @@ const PersonDisplay: React.FC<{
           onQuickSaveToWatchlist={onQuickSaveToWatchlist}
           watchlists={watchlists}
         />
-        <CreditsExplorer
-          allCredits={allCredits}
-          actingCredits={actingCredits}
-          directingCredits={directingCredits}
-          otherCredits={otherCredits}
-          isLoading={isLoading}
+        <CreditRail
+          title="Recent Credits"
+          credits={recentCredits}
+          emptyTitle="Recent credits unavailable"
+          emptyBody="Recent credits appear when filmography dates are available."
           onOpenCredit={handleOpenCredit}
           isWatched={isWatched}
           onToggleWatched={onToggleWatched}
           onQuickSaveToWatchlist={onQuickSaveToWatchlist}
           watchlists={watchlists}
         />
-        <CreditRail
-          title="Recent Credits"
-          credits={recentCredits}
-          emptyTitle="Recent credits unavailable"
-          emptyBody="Recent credits appear when filmography dates are available."
+        <CreditsExplorer
+          allCredits={allCredits}
+          actingCredits={actingCredits}
+          directingCredits={directingCredits}
+          otherCredits={otherCredits}
+          isLoading={isLoading}
           onOpenCredit={handleOpenCredit}
           isWatched={isWatched}
           onToggleWatched={onToggleWatched}
