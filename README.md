@@ -4,8 +4,13 @@ MovieMonk is a high-performance, AI-orchestrated entertainment discovery engine.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-ai.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React 19](https://img.shields.io/badge/Frontend-React%2019-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite 7](https://img.shields.io/badge/Bundler-Vite%207-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
 [![Supabase](https://img.shields.io/badge/Database-Supabase-blueviolet)](https://supabase.com)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)](https://fastapi.tiangolo.com)
+[![Groq LPU](https://img.shields.io/badge/Inference-Groq--LPU-orange)](https://groq.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 ---
 
