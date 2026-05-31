@@ -4846,6 +4846,23 @@ a:focus-visible {
     line-height: 1.72;
 }
 
+@media (max-width: 640px) {
+    .person-biography-modal-shell {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .person-biography-modal {
+        width: 100%;
+        max-height: 85dvh;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+    }
+}
+
 .person-loading-note {
     display: inline-flex;
     align-items: center;
