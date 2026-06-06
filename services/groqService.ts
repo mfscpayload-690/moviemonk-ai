@@ -4,6 +4,7 @@ import { enrichWithTMDB } from './tmdbService';
 import { sanitizeMovieData } from './movieDataValidation';
 
 import { apiPost, getApiUrl } from '../lib/apiClient';
+import { emitClientError } from './clientObservability';
 
 // Use backend for Groq calls (API key stays server-side)
 const GROQ_PROXY = getApiUrl('/api/groq');
@@ -51,7 +52,7 @@ const parseJsonResponse = (text: string): MovieData | null => {
       console.warn("Groq brace matching failed");
     }
     
-    console.error('All Groq JSON parsing strategies failed');
+    emitClientError(new Error('All Groq JSON parsing strategies failed'), { rawText: text });
     return null;
   }
 };
@@ -101,14 +102,14 @@ export async function fetchMovieData(
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.error('Groq returned empty content');
+      emitClientError(new Error('Groq returned empty content'));
       return { movieData: null, sources: null, error: 'Groq returned empty response' };
     }
 
     const movieData = sanitizeMovieData(parseJsonResponse(content));
 
     if (!movieData) {
-      console.error('Failed to parse Groq response:', content);
+      emitClientError(new Error('Failed to parse Groq response'), { rawContent: content });
       return { movieData: null, sources: null, error: 'Failed to parse Groq JSON response' };
     }
 
@@ -122,11 +123,11 @@ export async function fetchMovieData(
     };
 
   } catch (error: any) {
-    console.error('Groq service error:', error);
+    emitClientError(error, { service: 'groq' });
     return {
       movieData: null,
       sources: null,
-      error: `Groq error: ${error?.message || 'Unknown error'}`
+      error: 'An error occurred while communicating with the AI service'
     };
   }
 }
