@@ -124,7 +124,8 @@ async def get_details(
         similar_raw: Any = res_list[6]
 
         if isinstance(details, Exception):
-            return api_error(502, "tmdb_error", f"TMDB details failed: {details}")
+            logger.error("TMDB details fetch failed: %s", details)
+            return api_error(502, "tmdb_error", "Failed to retrieve details from movie database service")
 
         # Extract core fields
         title = details.get("title") or details.get("name") or ""
@@ -330,4 +331,4 @@ async def get_details(
 
     except Exception as exc:
         logger.exception("Details failed for %s/%d", media_type, tmdb_id)
-        return api_error(500, "details_failed", f"Failed to fetch details: {exc}")
+        return api_error(500, "details_failed", "Failed to fetch media details")
