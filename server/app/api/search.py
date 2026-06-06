@@ -256,6 +256,6 @@ async def search(
         await set_cache(cache_key, response.model_dump(), _CACHE_TTL)
         return response
 
-    except Exception as exc:
+    except Exception:
         logger.exception("Search failed for q=%s", query)
         return api_error(500, "search_failed", "Search operation failed")
