@@ -329,6 +329,6 @@ async def get_details(
         await set_cache(cache_key, response.model_dump(), _CACHE_TTL)
         return response
 
-    except Exception as exc:
+    except Exception:
         logger.exception("Details failed for %s/%d", media_type, tmdb_id)
         return api_error(500, "details_failed", "Failed to fetch media details")
