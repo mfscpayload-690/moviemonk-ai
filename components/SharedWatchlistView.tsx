@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Copy, Check } from 'lucide-react';
 import type { SharedWatchlistView, WatchlistItem } from '../types';
 import { apiGet } from '../lib/apiClient';
 import { useWatchlists } from '../hooks/useWatchlists';
+import { emitClientError } from '../services/clientObservability';
 import '../styles/shared-watchlist.css';
 
 export function SharedWatchlistView() {
@@ -23,9 +24,9 @@ export function SharedWatchlistView() {
 
   useEffect(() => {
     const loadShare = async () => {
+      const token = shareToken || searchParams.get('token');
       try {
         setLoading(true);
-        const token = shareToken || searchParams.get('token');
         
         if (!token) {
           setError('No share link provided');
@@ -39,8 +40,8 @@ export function SharedWatchlistView() {
         setShareData(data);
         setError(null);
       } catch (err) {
-        console.error('Failed to load shared watchlist:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load watchlist');
+        emitClientError(err, { context: 'load_shared_watchlist', token });
+        setError('Failed to load the shared watchlist. Please check the link or try again.');
       } finally {
         setLoading(false);
       }
@@ -63,7 +64,7 @@ export function SharedWatchlistView() {
       // Show success feedback
       setTimeout(() => setAddingToWatchlist(null), 500);
     } catch (err) {
-      console.error('Failed to add to watchlist:', err);
+      emitClientError(err, { context: 'add_to_watchlist', item });
       setAddingToWatchlist(null);
     }
   };
@@ -95,7 +96,7 @@ export function SharedWatchlistView() {
       // Navigate to the new watchlist
       navigate(`/watchlists/${encodeURIComponent(`${shareData.folderName} (shared)`)}`);
     } catch (err) {
-      console.error('Failed to import watchlist:', err);
+      emitClientError(err, { context: 'import_watchlist', folderName: shareData?.folderName });
     }
   };
 
