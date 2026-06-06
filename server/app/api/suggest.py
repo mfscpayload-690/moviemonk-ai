@@ -5,6 +5,7 @@ Ported from api/suggest.ts.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Query
@@ -16,6 +17,7 @@ from app.services import tmdb
 from app.services.person_intent import detect_person_intent
 from app.services.suggest_ranking import score_suggestion
 
+logger = logging.getLogger("moviemonk.suggest")
 router = APIRouter()
 
 _CACHE_TTL = 45  # seconds
@@ -89,4 +91,5 @@ async def suggest(q: str = Query(..., min_length=1)) -> Any:
         return SuggestResponse(ok=True, query=query, results=suggestions)
 
     except Exception as exc:
-        return api_error(500, "suggest_failed", f"Suggestion search failed: {exc}")
+        logger.exception("Suggestion search failed")
+        return api_error(500, "suggest_failed", "Failed to retrieve search suggestions")
