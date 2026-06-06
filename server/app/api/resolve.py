@@ -36,6 +36,6 @@ async def resolve_entity(
         await set_cache(cache_key, result, _CACHE_TTL)
         return {**result, "ok": True, "cached": False}
 
-    except Exception as exc:
+    except Exception:
         logger.exception("Entity resolution failed")
         return api_error(500, "resolve_failed", "Failed to resolve entity")
