@@ -5,6 +5,7 @@
  */
 
 import { FetchResult } from '../types';
+import { emitClientError } from './clientObservability';
 
 const SERPAPI_BASE_URL = 'https://serpapi.com/search.json';
 
@@ -45,7 +46,7 @@ export async function searchSerpApi(query: string, limit: number = 6): Promise<S
         const response = await fetch(url.toString());
 
         if (!response.ok) {
-            console.error(`[serpapi] request failed: ${response.status}`);
+            emitClientError(new Error(`SerpApi request failed with status ${response.status}`));
             return [];
         }
 
@@ -90,7 +91,7 @@ export async function searchSerpApi(query: string, limit: number = 6): Promise<S
         return results;
 
     } catch (error) {
-        console.error('[serpapi] search error:', error);
+        emitClientError(error, { service: 'serpapi' });
         return [];
     }
 }
