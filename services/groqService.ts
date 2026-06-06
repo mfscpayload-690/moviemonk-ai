@@ -52,7 +52,7 @@ const parseJsonResponse = (text: string): MovieData | null => {
       console.warn("Groq brace matching failed");
     }
     
-    emitClientError(new Error('All Groq JSON parsing strategies failed'), { rawText: text });
+    emitClientError(new Error('All Groq JSON parsing strategies failed'), { textLength: text.length });
     return null;
   }
 };
