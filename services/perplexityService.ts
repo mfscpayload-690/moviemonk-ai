@@ -8,6 +8,7 @@ import { MovieData, ChatMessage, QueryComplexity, FetchResult } from '../types';
 import { ParsedQuery, formatForAIPrompt, parseQuery } from './queryParser';
 import { sanitizeMovieData } from './movieDataValidation';
 import { apiGet } from '../lib/apiClient';
+import { emitClientError } from './clientObservability';
 
 const PERPLEXITY_API = 'https://api.perplexity.ai/chat/completions';
 
@@ -126,12 +127,12 @@ Return ONLY valid JSON with this structure:
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[perplexity] API error ${response.status}:`, errorText);
+      const errorText = await response.text().catch(() => '');
+      emitClientError(new Error(`Perplexity API error ${response.status}`), { errorTextLength: errorText.length });
       return {
         movieData: null,
         sources: null,
-        error: `Perplexity API error: ${response.status}`
+        error: 'AI search service request failed'
       };
     }
 
@@ -179,11 +180,11 @@ Return ONLY valid JSON with this structure:
     };
 
   } catch (error: any) {
-    console.error('[perplexity] error:', error);
+    emitClientError(error, { service: 'perplexity' });
     return {
       movieData: null,
       sources: null,
-      error: error?.message || 'Unknown Perplexity error'
+      error: 'An error occurred while fetching details from the search service'
     };
   }
 }
@@ -266,8 +267,8 @@ If not found, return: {"error": "not_found"}`;
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[perplexity] API error ${response.status}:`, errorText);
+      const errorText = await response.text().catch(() => '');
+      emitClientError(new Error(`Perplexity API search error ${response.status}`), { errorTextLength: errorText.length });
       return null;
     }
 
@@ -303,7 +304,7 @@ If not found, return: {"error": "not_found"}`;
     };
 
   } catch (error) {
-    console.error('[perplexity] search error:', error);
+    emitClientError(error, { service: 'perplexity', context: 'searchWithPerplexity' });
     return null;
   }
 }
@@ -331,8 +332,7 @@ function parsePerplexityResponse(content: string): any {
     parsed = JSON.parse(cleaned);
     return parsed;
   } catch (e) {
-    console.error('Failed to parse Perplexity response:', e);
-    console.error('Raw content:', content);
+    emitClientError(e, { service: 'perplexity', context: 'parsePerplexityResponse', contentLength: content.length });
     return null;
   }
 }
@@ -361,7 +361,7 @@ export async function searchPerplexity(query: string, limit: number = 6): Promis
       language: 'en'
     }];
   } catch (e) {
-    console.error('Wrapper searchPerplexity error:', e);
+    emitClientError(e, { service: 'perplexity', context: 'searchPerplexity', query });
     return [];
   }
 }

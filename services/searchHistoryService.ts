@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from '../lib/apiClient';
+import { emitClientError } from './clientObservability';
 
 /**
  * Search History & Autocomplete Service
@@ -119,7 +120,7 @@ export async function getAutocompleteSuggestions(
 
     return suggestions;
   } catch (err) {
-    console.error('Autocomplete fetch failed:', err);
+    emitClientError(err, { service: 'searchHistory', context: 'getAutocompleteSuggestions', query: normalized });
     // Fallback to history on error
     return getHistoryMatchesForQuery(normalized);
   }

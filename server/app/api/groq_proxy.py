@@ -73,6 +73,6 @@ async def proxy_groq(req: GroqRequest):
         # Detail might contain sensitive info, so we log it but return a generic error to frontend if needed
         logger.error(f"Groq HTTP status error: {e.response.status_code}")
         raise HTTPException(status_code=e.response.status_code, detail="AI provider error")
-    except Exception as e:
+    except Exception:
         logger.exception("Groq API proxy error")
-        raise HTTPException(status_code=500, detail=f"Groq Proxy Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

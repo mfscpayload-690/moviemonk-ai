@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DiscoveryGenre, DiscoveryItem } from '../types';
+import { emitClientError } from '../services/clientObservability';
 import {
   DEFAULT_PREFERENCE_SETTINGS,
   UserPreferenceSettings,
@@ -557,7 +558,8 @@ export function useDiscovery() {
       setSelectedGenreItems(snapshot.selectedGenreItems);
     } catch (err: any) {
       if (err?.name === 'AbortError') return;
-      setError(err?.message || 'Failed to load discovery.');
+      emitClientError(err, { context: 'load_discovery_snapshot' });
+      setError('Failed to load discovery content. Please try again.');
       setHeroItems([]);
       setSections([]);
       setMovieGenres([]);
@@ -628,7 +630,8 @@ export function useDiscovery() {
       setSelectedGenreItems(items);
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
-        setError(err?.message || 'Failed to load genre titles.');
+        emitClientError(err, { context: 'select_genre_discovery', genreId: genre.id, genreName: genre.name });
+        setError('Failed to load genre titles. Please try again.');
       }
     } finally {
       if (!controller.signal.aborted) {

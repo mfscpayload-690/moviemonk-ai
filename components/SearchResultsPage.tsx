@@ -357,7 +357,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         }
       } catch (err: any) {
         if (err?.name === 'AbortError') return;
-        setError(err?.message || 'Failed to load search results');
+        setError('Failed to load search results. Please try again.');
         setPayload(null);
         emitClientEvent({
           event: 'search_request_failed',

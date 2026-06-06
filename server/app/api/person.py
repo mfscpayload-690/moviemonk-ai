@@ -254,6 +254,6 @@ async def get_person(person_id: int = Path(...)):
         await set_cache(cache_key, response.model_dump(), _CACHE_TTL)
         return response
 
-    except Exception as exc:
+    except Exception:
         logger.exception("Person fetch failed for id=%d", person_id)
-        return api_error(500, "person_failed", f"Failed: {exc}")
+        return api_error(500, "person_failed", "Failed to fetch person details")

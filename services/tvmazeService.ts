@@ -1,4 +1,5 @@
 import { stripHtmlTags } from '../lib/seo';
+import { emitClientError } from './clientObservability';
 
 /**
  * TVMaze API Service
@@ -97,7 +98,7 @@ export async function searchTVShows(query: string): Promise<TVMazeShow[]> {
         // TVMaze returns array of {score, show} objects
         return data.map((item: any) => item.show);
     } catch (error) {
-        console.error('TVMaze search error:', error);
+        emitClientError(error, { service: 'tvmaze', context: 'searchTVShows', query });
         return [];
     }
 }
@@ -138,7 +139,7 @@ export async function getTVShowDetails(showId: number): Promise<TVMazeShow | nul
         const data = await response.json();
         return data;
     } catch (error) {
-        console.error('TVMaze details error:', error);
+        emitClientError(error, { service: 'tvmaze', context: 'getTVShowDetails', showId });
         return null;
     }
 }
@@ -163,7 +164,7 @@ export async function getSeasonEpisodes(showId: number, seasonNumber: number): P
             .filter((ep: TVMazeEpisode) => ep.season === seasonNumber)
             .sort((a: TVMazeEpisode, b: TVMazeEpisode) => a.number - b.number);
     } catch (error) {
-        console.error('TVMaze season episodes error:', error);
+        emitClientError(error, { service: 'tvmaze', context: 'getSeasonEpisodes', showId, seasonNumber });
         return [];
     }
 }
@@ -187,7 +188,7 @@ export async function getEpisode(
 
         return await response.json();
     } catch (error) {
-        console.error('TVMaze episode error:', error);
+        emitClientError(error, { service: 'tvmaze', context: 'getEpisode', showId, seasonNumber, episodeNumber });
         return null;
     }
 }

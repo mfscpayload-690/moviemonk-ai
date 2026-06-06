@@ -1,4 +1,5 @@
 import { apiPost, getApiUrl } from '../lib/apiClient';
+import { IS_DEV, ENABLE_OBSERVABILITY_API } from '../lib/config';
 
 type ObservabilityLevel = 'info' | 'warn' | 'error';
 
@@ -13,7 +14,7 @@ function toEndpoint(): string {
 }
 
 function observabilityApiEnabled(): boolean {
-  return typeof import.meta !== 'undefined' && import.meta.env?.VITE_ENABLE_OBSERVABILITY_API === 'true';
+  return ENABLE_OBSERVABILITY_API;
 }
 
 function nowIso(): string {
@@ -33,7 +34,7 @@ function canUseBeacon(): boolean {
 }
 
 function devLog(event: ClientObservabilityEvent): void {
-  if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+  if (IS_DEV) {
     const payload = {
       ts: nowIso(),
       source: 'client',
@@ -69,7 +70,7 @@ export function emitClientEvent(input: ClientObservabilityEvent): void {
   }
 
   void apiPost(toEndpoint(), JSON.parse(payload), undefined, { keepalive: 'true' } as any).catch((error) => {
-    if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+    if (IS_DEV) {
       console.warn('observability_transport_failed', error);
     }
   });

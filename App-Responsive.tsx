@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useCallback, useEffect, useRef, useState, startTransition } from 'react';
+import { emitClientError } from './services/clientObservability';
 import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
@@ -465,7 +466,7 @@ const App: React.FC = () => {
         title: movieData?.title || personData?.person?.name || personData?.name || ''
       });
     } catch (err) {
-      console.error('Failed to copy:', err);
+      emitClientError(err, { context: 'copy_share_link' });
       // Fallback for older browsers
       const textarea = document.createElement('textarea');
       textarea.value = shareUrl;
@@ -553,7 +554,8 @@ const App: React.FC = () => {
         setCurrentQuery(detailsData?.title || '');
       });
     } catch (err: any) {
-      setError(err?.message || 'Failed to open title');
+      emitClientError(err, { context: 'open_title', itemId: item.id });
+      setError('Failed to open title. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -584,16 +586,15 @@ const App: React.FC = () => {
     if (user?.id && isSupabaseConfigured && supabase && lastSearchQueryRef.current !== normalizedMessage) {
       lastSearchQueryRef.current = normalizedMessage;
       try {
-        console.log('Inserting search history entry into Supabase:', normalizedMessage);
         const { error } = await supabase.from('search_history').insert({
           user_id: user.id,
           query: normalizedMessage
         });
         if (error) {
-           console.error('Supabase search_history insert error:', error);
+           emitClientError(error, { context: 'supabase_insert_search_history', query: normalizedMessage });
         }
       } catch (err) {
-        console.error('Exception during search history insert:', err);
+        emitClientError(err, { context: 'search_history_insert_exception', query: normalizedMessage });
       }
     }
   }, [navigate, scrollMainContentToTop, user?.id]);
@@ -650,10 +651,12 @@ const App: React.FC = () => {
           setSummaryModal({ title: name, short: json?.summary?.summary_short, long: json?.summary?.summary_long });
         });
       } else {
-        setError(json?.error || 'Failed to summarize');
+        emitClientError(new Error(json?.error || 'Brief Me returned ok: false'), { context: 'brief_me', titleName: name });
+        setError('Failed to summarize title. Please try again.');
       }
     } catch (e: any) {
-      setError(e?.message || 'Failed to summarize');
+      emitClientError(e, { context: 'brief_me_exception', titleName: name });
+      setError('Failed to summarize title. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -672,8 +675,8 @@ const App: React.FC = () => {
         await handleOpenTitle({ id: suggestion.id, mediaType }, selectedProvider);
       }
     } catch (err: any) {
-      const errorMsg = err.message || 'Failed to load selected title';
-      setError(errorMsg);
+      emitClientError(err, { context: 'suggestion_select', suggestion });
+      setError('Failed to load the selected item. Please try again.');
     } finally {
       setIsLoading(false);
     }
