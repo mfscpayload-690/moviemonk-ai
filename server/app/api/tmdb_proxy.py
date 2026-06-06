@@ -39,6 +39,6 @@ async def tmdb_proxy(
     except ValueError as exc:
         logger.warning("Invalid TMDB endpoint requested: %s", exc)
         return api_error(400, "invalid_endpoint", "Invalid TMDB endpoint")
-    except Exception as exc:
+    except Exception:
         logger.exception("TMDB proxy request failed")
         return api_error(502, "tmdb_error", "Failed to retrieve data from movie database service")
