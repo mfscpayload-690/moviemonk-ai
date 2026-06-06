@@ -75,4 +75,4 @@ async def proxy_groq(req: GroqRequest):
         raise HTTPException(status_code=e.response.status_code, detail="AI provider error")
     except Exception as e:
         logger.exception("Groq API proxy error")
-        raise HTTPException(status_code=500, detail=f"Groq Proxy Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
