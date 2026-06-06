@@ -258,4 +258,4 @@ async def search(
 
     except Exception as exc:
         logger.exception("Search failed for q=%s", query)
-        return api_error(500, "search_failed", f"Search failed: {exc}")
+        return api_error(500, "search_failed", "Search operation failed")
