@@ -107,7 +107,7 @@ async def create_shared_watchlist(
         )
     except Exception as exc:
         logger.exception("Failed to create shared watchlist")
-        return api_error(500, "share_failed", f"Failed to create share: {exc}")
+        return api_error(500, "share_failed", "Failed to create shared watchlist")
 
 
 @router.get("/watchlists/share")
@@ -156,4 +156,4 @@ async def get_shared_watchlist(
         )
     except Exception as exc:
         logger.exception("Failed to fetch shared watchlist")
-        return api_error(500, "fetch_failed", f"Failed to retrieve watchlist: {exc}")
+        return api_error(500, "fetch_failed", "Failed to retrieve shared watchlist")
