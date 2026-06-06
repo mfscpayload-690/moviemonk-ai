@@ -128,7 +128,7 @@ Return ONLY valid JSON with this structure:
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
-      emitClientError(new Error(`Perplexity API error ${response.status}`), { errorText });
+      emitClientError(new Error(`Perplexity API error ${response.status}`), { errorTextLength: errorText.length });
       return {
         movieData: null,
         sources: null,
@@ -268,7 +268,7 @@ If not found, return: {"error": "not_found"}`;
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
-      emitClientError(new Error(`Perplexity API search error ${response.status}`), { errorText });
+      emitClientError(new Error(`Perplexity API search error ${response.status}`), { errorTextLength: errorText.length });
       return null;
     }
 
@@ -332,7 +332,7 @@ function parsePerplexityResponse(content: string): any {
     parsed = JSON.parse(cleaned);
     return parsed;
   } catch (e) {
-    emitClientError(e, { service: 'perplexity', context: 'parsePerplexityResponse', rawContent: content });
+    emitClientError(e, { service: 'perplexity', context: 'parsePerplexityResponse', contentLength: content.length });
     return null;
   }
 }
