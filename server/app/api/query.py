@@ -102,4 +102,4 @@ async def handle_query(req: QueryRequest):
         raise
     except Exception as e:
         logger.exception("Query endpoint error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
