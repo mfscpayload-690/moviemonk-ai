@@ -40,7 +40,7 @@ export function SharedWatchlistView() {
         setShareData(data);
         setError(null);
       } catch (err) {
-        emitClientError(err, { context: 'load_shared_watchlist', token });
+        emitClientError(err, { context: 'load_shared_watchlist', hasToken: !!token });
         setError('Failed to load the shared watchlist. Please check the link or try again.');
       } finally {
         setLoading(false);
