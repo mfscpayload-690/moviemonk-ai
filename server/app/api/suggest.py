@@ -90,6 +90,6 @@ async def suggest(q: str = Query(..., min_length=1)) -> Any:
 
         return SuggestResponse(ok=True, query=query, results=suggestions)
 
-    except Exception as exc:
+    except Exception:
         logger.exception("Suggestion search failed")
         return api_error(500, "suggest_failed", "Failed to retrieve search suggestions")
