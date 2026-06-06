@@ -256,4 +256,4 @@ async def get_person(person_id: int = Path(...)):
 
     except Exception as exc:
         logger.exception("Person fetch failed for id=%d", person_id)
-        return api_error(500, "person_failed", f"Failed: {exc}")
+        return api_error(500, "person_failed", "Failed to fetch person details")
