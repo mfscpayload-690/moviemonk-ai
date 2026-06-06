@@ -100,6 +100,6 @@ async def handle_query(req: QueryRequest):
         return {"ok": True, "cached": False, **result}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Query endpoint error")
         raise HTTPException(status_code=500, detail="Internal server error")
