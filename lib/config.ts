@@ -18,3 +18,4 @@ export const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY');
 export const IS_DEV = getEnv('DEV') === 'true' || getEnv('MODE') === 'development';
 export const IS_PROD = getEnv('PROD') === 'true' || getEnv('MODE') === 'production';
 export const PERF_DEBUG = getEnv('VITE_PERF_DEBUG') === 'true';
+export const ENABLE_OBSERVABILITY_API = getEnv('VITE_ENABLE_OBSERVABILITY_API') === 'true';
