@@ -105,7 +105,7 @@ async def create_shared_watchlist(
             item_count=len(body.items),
             created_at=now,
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("Failed to create shared watchlist")
         return api_error(500, "share_failed", "Failed to create shared watchlist")
 
@@ -154,6 +154,6 @@ async def get_shared_watchlist(
             item_count=len(row.get("items", [])),
             visibility="public",
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("Failed to fetch shared watchlist")
         return api_error(500, "fetch_failed", "Failed to retrieve shared watchlist")
