@@ -5,12 +5,14 @@ Ported from api/resolveEntity.ts.
 
 from __future__ import annotations
 
+import logging
 from fastapi import APIRouter, Query
 
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
 from app.services.entity_resolver import resolve
 
+logger = logging.getLogger("moviemonk.resolve")
 router = APIRouter()
 
 _CACHE_TTL = 3600  # 1 hour
@@ -35,4 +37,5 @@ async def resolve_entity(
         return {**result, "ok": True, "cached": False}
 
     except Exception as exc:
-        return api_error(500, "resolve_failed", f"Entity resolution failed: {exc}")
+        logger.exception("Entity resolution failed")
+        return api_error(500, "resolve_failed", "Failed to resolve entity")
