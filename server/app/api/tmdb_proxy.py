@@ -6,11 +6,13 @@ and this handler forwards the request to TMDB with auth.
 
 from __future__ import annotations
 
+import logging
 from fastapi import APIRouter, Query, Request
 
 from app.core.errors import api_error
 from app.services import tmdb
 
+logger = logging.getLogger("moviemonk.tmdb_proxy")
 router = APIRouter()
 
 
@@ -35,6 +37,8 @@ async def tmdb_proxy(
         data = await tmdb.generic_proxy(endpoint, extra_params or None)
         return data
     except ValueError as exc:
-        return api_error(400, "invalid_endpoint", str(exc))
+        logger.warning("Invalid TMDB endpoint requested: %s", exc)
+        return api_error(400, "invalid_endpoint", "Invalid TMDB endpoint")
     except Exception as exc:
-        return api_error(502, "tmdb_error", f"TMDB request failed: {exc}")
+        logger.exception("TMDB proxy request failed")
+        return api_error(502, "tmdb_error", "Failed to retrieve data from movie database service")
