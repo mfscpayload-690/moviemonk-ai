@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { emitClientError } from '../services/clientObservability';
 import { DEFAULT_PROFILE_SETTINGS, DEFAULT_PREFERENCE_SETTINGS, saveProfileSettings, savePreferenceSettings } from '../lib/userSettings';
 
 type AuthContextValue = {
@@ -44,7 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(data.session?.user ?? null);
       } catch (e: any) {
         if (!isMounted) return;
-        setError(e?.message || 'Failed to load auth session');
+        emitClientError(e, { context: 'hydrate_auth_session' });
+        setError('Failed to load authentication session');
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -120,7 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithGitHub = async () => {
     if (!isSupabaseConfigured || !supabase) {
       const configError = new Error('Supabase auth is not configured');
-      setError(configError.message);
+      emitClientError(configError, { context: 'github_signin_config' });
+      setError('GitHub sign-in failed. Authentication is not configured.');
       throw configError;
     }
 
@@ -129,7 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'github'
     });
     if (authError) {
-      setError(authError.message || 'GitHub sign-in failed');
+      emitClientError(authError, { context: 'github_signin_auth_error' });
+      setError('GitHub sign-in failed. Please try again.');
       throw authError;
     }
   };
@@ -137,7 +141,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithGoogle = async () => {
     if (!isSupabaseConfigured || !supabase) {
       const configError = new Error('Supabase auth is not configured');
-      setError(configError.message);
+      emitClientError(configError, { context: 'google_signin_config' });
+      setError('Google sign-in failed. Authentication is not configured.');
       throw configError;
     }
 
@@ -146,7 +151,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google'
     });
     if (authError) {
-      setError(authError.message || 'Google sign-in failed');
+      emitClientError(authError, { context: 'google_signin_auth_error' });
+      setError('Google sign-in failed. Please try again.');
       throw authError;
     }
   };
@@ -154,14 +160,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     if (!isSupabaseConfigured || !supabase) {
       const configError = new Error('Supabase auth is not configured');
-      setError(configError.message);
+      emitClientError(configError, { context: 'signout_config' });
+      setError('Sign-out failed. Authentication is not configured.');
       throw configError;
     }
 
     setError(null);
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
-      setError(signOutError.message || 'Sign-out failed');
+      emitClientError(signOutError, { context: 'signout_error' });
+      setError('Sign-out failed. Please try again.');
       throw signOutError;
     }
     
