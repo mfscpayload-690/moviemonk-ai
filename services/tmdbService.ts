@@ -1,5 +1,6 @@
 import { MovieData, CastMember, Crew, Rating, WatchOption, DiscoveryItem, DiscoveryGenre } from '../types';
 import { ParsedQuery } from './queryParser';
+import { emitClientError } from './clientObservability';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
@@ -349,7 +350,7 @@ async function fetchOMDBRatings(imdbId: string): Promise<Rating[]> {
     const data = await apiGet<Rating[]>('/api/omdb', { i: imdbId });
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('OMDB fetch failed:', error);
+    emitClientError(error, { service: 'tmdbService', context: 'fetchOMDBRatings', imdbId });
     return [];
   }
 }
