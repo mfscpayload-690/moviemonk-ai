@@ -229,8 +229,11 @@ export function WatchlistsDashboard() {
     const applyTransition = () => {
       if (folderId) {
         const folder = folders.find(f => f.id === folderId);
-        if (folder) {
-          navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
+        if (folder && folder.name) {
+          const sanitized = encodeURIComponent(folder.name).replace(/\./g, '%2E');
+          if (sanitized && !sanitized.includes('/') && !sanitized.includes('\\')) {
+            navigate(`/watchlists/${sanitized}`, { replace: false });
+          }
         }
       } else {
         navigate('/watchlists', { replace: false });
@@ -579,7 +582,12 @@ export function WatchlistsDashboard() {
     if (!avatarUrl) return '';
     try {
       const parsed = new URL(avatarUrl);
-      if (parsed.protocol === 'https:' && (parsed.hostname.endsWith('supabase.co') || parsed.hostname.endsWith('githubusercontent.com') || parsed.hostname.endsWith('googleusercontent.com'))) {
+      const host = parsed.hostname;
+      const isAllowedHost =
+        host === 'supabase.co' || host.endsWith('.supabase.co') ||
+        host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
+        host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
+      if (parsed.protocol === 'https:' && isAllowedHost) {
         return parsed.toString();
       }
     } catch {
@@ -785,9 +793,13 @@ export function WatchlistsDashboard() {
                   return '';
                 })();
 
+                const safeMediaType = item.media_type === 'tv' ? 'tv' : 'movie';
+                const safeTmdbId = String(item.tmdb_id).replace(/[^0-9]/g, '');
+                const safeLinkPath = `/${safeMediaType}/${safeTmdbId}`;
+
                 return (
                   <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
-                    <Link to={`/${item.media_type}/${item.tmdb_id}`} className="absolute inset-0 z-10" />
+                    <Link to={safeLinkPath} className="absolute inset-0 z-10" />
                     {/* Poster */}
                     {displayPosterUrl ? (
                       <img src={displayPosterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
