@@ -16,7 +16,7 @@ import {
 
 export function useWatchlists() {
   const [folders, setFolders] = useState<WatchlistFolder[]>([]);
-  const hydratedRef = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const loadFromStorage = useCallback((): WatchlistFolder[] => {
     try {
@@ -32,19 +32,19 @@ export function useWatchlists() {
   useEffect(() => {
     const initial = loadFromStorage();
     setFolders(initial);
-    hydratedRef.current = true;
+    setIsHydrated(true);
   }, [loadFromStorage]);
 
   // Persist to storage after hydration
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    if (!isHydrated) return;
     try {
       saveWatchlistsToStorage(localStorage, folders);
       saveWatchlistOrderState(localStorage, buildWatchlistOrderState(folders));
     } catch (e) {
       console.warn('Failed to save watchlists', e);
     }
-  }, [folders]);
+  }, [folders, isHydrated]);
 
   // Use functional updates so add + save in one tick do not clobber state
   const persist = (updater: (prev: WatchlistFolder[]) => WatchlistFolder[]) => {
@@ -144,6 +144,7 @@ export function useWatchlists() {
 
   return {
     folders,
+    isHydrated,
     addFolder,
     saveToFolder,
     rollbackSave,

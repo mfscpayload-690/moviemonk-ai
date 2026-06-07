@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
 import { useWatched } from '../hooks/useWatched';
@@ -58,6 +58,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 export function WatchlistsDashboard() {
   const { user, session, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { folderName: folderNameParam } = useParams<{ folderName?: string }>();
   const {
     addFolder,
@@ -71,7 +72,8 @@ export function WatchlistsDashboard() {
     reorderItems,
     setFolderPrivacy,
     isCloud,
-    isSyncing
+    isSyncing,
+    isHydrated
   } = useCloudWatchlists();
   const { watchedCount, watched, toggle: toggleWatched } = useWatched();
 
@@ -87,6 +89,7 @@ export function WatchlistsDashboard() {
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderIcon, setEditFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
   const [editFolderPublic, setEditFolderPublic] = useState(false);
+  const [editFolderError, setEditFolderError] = useState<string | null>(null);
   const [syncBadgeVisible, setSyncBadgeVisible] = useState(false);
   const [justSynced, setJustSynced] = useState(false);
   const syncHideTimerRef = useRef<number | null>(null);
@@ -150,12 +153,7 @@ export function WatchlistsDashboard() {
   }, [actionToast]);
 
   useEffect(() => {
-    if (!supabase) {
-      setSearchHistory([]);
-      return;
-    }
-
-    if (user?.id) {
+    if (user?.id && supabase) {
       supabase
         .from('search_history')
         .select('*')
@@ -166,44 +164,77 @@ export function WatchlistsDashboard() {
           if (data) setSearchHistory(data);
         });
     } else {
-      setSearchHistory([]);
+      try {
+        const raw = localStorage.getItem('moviemonk_search_history_v1');
+        const parsed = raw ? JSON.parse(raw) : [];
+        setSearchHistory(parsed.map((item: any, idx: number) => ({
+          id: `local-${idx}`,
+          query: item.query,
+          created_at: new Date(item.timestamp).toISOString()
+        })).slice(0, 8));
+      } catch {
+        setSearchHistory([]);
+      }
     }
   }, [user?.id]);
 
   const handleClearHistory = async () => {
-    if (!user?.id || !supabase) return;
-    try {
-      const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
-      if (error) throw error;
-      setSearchHistory([]);
-    } catch (err) {
-      console.error('Failed to clear history from dashboard:', err);
+    if (user?.id && supabase) {
+      try {
+        const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
+        if (error) throw error;
+        setSearchHistory([]);
+      } catch (err) {
+        console.error('Failed to clear history from dashboard:', err);
+      }
+    } else {
+      try {
+        localStorage.removeItem('moviemonk_search_history_v1');
+        localStorage.removeItem('moviemonk_autocomplete_cache_v1');
+        setSearchHistory([]);
+      } catch (err) {
+        console.error('Failed to clear local history:', err);
+      }
     }
   };
 
-  // Deep-link: resolve :folderName param → activeFolderId once folders are loaded
-  const [deepLinkResolved, setDeepLinkResolved] = useState(false);
+  // Deep-link & route synchronization: keep internal state in sync with URL pathname and params
   useEffect(() => {
-    if (deepLinkResolved || folders.length === 0) return;
-    if (folderNameParam) {
+    const pathname = location.pathname;
+    if (pathname === '/watchlists/watched' || folderNameParam?.toLowerCase() === 'watched') {
+      setShowWatchedView(true);
+      setActiveFolderId(null);
+    } else if (folderNameParam) {
+      if (!isHydrated) {
+        return;
+      }
       const decoded = decodeURIComponent(folderNameParam);
       const match = folders.find(
         f => f.name.toLowerCase() === decoded.toLowerCase()
       );
-      if (match) setActiveFolderId(match.id);
+      if (match) {
+        setActiveFolderId(match.id);
+        setShowWatchedView(false);
+      } else {
+        setActiveFolderId(null);
+        setShowWatchedView(false);
+      }
+    } else {
+      setActiveFolderId(null);
+      setShowWatchedView(false);
     }
-    setDeepLinkResolved(true);
-  }, [folderNameParam, folders, deepLinkResolved]);
+  }, [location.pathname, folderNameParam, folders, isHydrated]);
 
   // Sync URL when active folder changes
   const openFolder = (folderId: string | null) => {
     const applyTransition = () => {
-      setActiveFolderId(folderId);
       if (folderId) {
-        setShowWatchedView(false);
         const folder = folders.find(f => f.id === folderId);
-        if (folder) {
-          navigate(`/watchlists/${encodeURIComponent(folder.name)}`, { replace: false });
+        if (folder && folder.name) {
+          const sanitized = encodeURIComponent(folder.name).replace(/\./g, '%2E');
+          if (sanitized && !sanitized.includes('/') && !sanitized.includes('\\')) {
+            navigate(`/watchlists/${sanitized}`, { replace: false });
+          }
         }
       } else {
         navigate('/watchlists', { replace: false });
@@ -221,6 +252,10 @@ export function WatchlistsDashboard() {
 
   useEffect(() => {
     setProfile(loadProfileSettings());
+    document.title = 'MovieMonk | Watchlists';
+    return () => {
+      document.title = 'MovieMonk | Discover Movies & TV';
+    };
   }, []);
 
   useEffect(() => {
@@ -253,6 +288,23 @@ export function WatchlistsDashboard() {
       topFormat: totalItems > 0 ? topFormat : 'N/A'
     };
   }, [folders]);
+
+  const topWatchedPosters = useMemo(() => {
+    return watched.slice(0, 3).map(w => {
+      if (!w.poster_url) return '';
+      try {
+        const parsed = new URL(w.poster_url);
+        if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
+          return parsed.toString();
+        }
+      } catch {
+        if (w.poster_url.startsWith('/') && !w.poster_url.startsWith('//')) {
+          return w.poster_url;
+        }
+      }
+      return '';
+    }).filter(Boolean) as string[];
+  }, [watched]);
 
   // const watchlistReminders = useMemo(
   //   () => deriveWatchlistReminders(folders, watched, 2),
@@ -306,7 +358,24 @@ export function WatchlistsDashboard() {
     if (!folder) return;
 
     const trimmedName = editFolderName.trim();
-    if (trimmedName && trimmedName !== folder.name) {
+    if (!trimmedName) {
+      setEditFolderError('Give the folder a name.');
+      return;
+    }
+
+    const lower = trimmedName.toLowerCase();
+    if (lower === 'watched' || lower === 'share') {
+      setEditFolderError('That folder name is reserved for system features');
+      return;
+    }
+
+    // Check duplicate (excluding itself)
+    if (folders.some(f => f.id !== folder.id && f.name.toLowerCase() === lower)) {
+      setEditFolderError('A folder with that name already exists');
+      return;
+    }
+
+    if (trimmedName !== folder.name) {
       renameFolder(folder.id, trimmedName);
     }
     if ((editFolderIcon || WATCHLIST_ICON_DEFAULT) !== (folder.icon || WATCHLIST_ICON_DEFAULT)) {
@@ -442,7 +511,13 @@ export function WatchlistsDashboard() {
       return;
     }
 
-    if (folders.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
+    const lower = trimmed.toLowerCase();
+    if (lower === 'watched' || lower === 'share') {
+      setNewFolderError('That folder name is reserved for system features');
+      return;
+    }
+
+    if (folders.some(f => f.name.toLowerCase() === lower)) {
       setNewFolderError('A folder with that name already exists');
       return;
     }
@@ -453,7 +528,7 @@ export function WatchlistsDashboard() {
     setNewFolderError(null);
     setNewFolderPublic(false);
     setActionToast({ message: 'Watchlist created', kind: 'watchlist' });
-  }, [addFolder, newFolderName, folders]);
+  }, [addFolder, newFolderName, folders, newFolderPublic]);
 
 
   if (loading) {
@@ -462,20 +537,15 @@ export function WatchlistsDashboard() {
         <div className="w-full mt-4 sm:mt-8 animate-pulse">
           {/* 1. Header skeleton */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
-            <div className="flex items-center gap-4 sm:gap-6 w-full">
+            <div className="flex items-center gap-4 sm:gap-6 w-full md:w-auto flex-1">
               <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-white/5 shrink-0" />
               <div className="flex flex-col gap-2.5 flex-1">
                 <div className="h-7 w-48 sm:w-64 bg-white/5 rounded-lg" />
                 <div className="h-4 w-32 bg-white/5 rounded" />
               </div>
             </div>
-          </div>
-
-          {/* 2. Metric Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="wl-metric-card glass-panel h-[94px] bg-white/2" />
-            ))}
+            {/* Redesigned Watched Badge Skeleton */}
+            <div className="w-full md:w-auto min-w-[240px] h-[78px] rounded-2xl bg-white/5 border border-white/10" />
           </div>
 
           {/* 3. Folders Section Header */}
@@ -509,130 +579,123 @@ export function WatchlistsDashboard() {
     );
   }
 
-  const displayAvatarUrl = sanitizeImgUrl(avatarUrl);
+  const displayAvatarUrl = useMemo(() => {
+    if (!avatarUrl) return '';
+    try {
+      const parsed = new URL(avatarUrl);
+      const host = parsed.hostname;
+      const isAllowedHost =
+        host === 'supabase.co' || host.endsWith('.supabase.co') ||
+        host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
+        host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
+      if (parsed.protocol === 'https:' && isAllowedHost) {
+        return parsed.toString();
+      }
+    } catch {
+      if (avatarUrl.startsWith('/') && !avatarUrl.startsWith('//')) {
+        return avatarUrl;
+      }
+    }
+    return '';
+  }, [avatarUrl]);
 
   return (
     <DashboardLayout>
-      {/* 1. User Header */}
+      {/* 1. User Header & Watched Integration */}
       {!activeFolderId && !showWatchedView && (
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
+          {/* Subtle background glow */}
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="flex items-center gap-4 sm:gap-6 relative z-10">
-          <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
-            {displayAvatarUrl && !avatarFailed ? (
-              <img src={displayAvatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
-                {displayName[0]?.toUpperCase() || '?'}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight truncate">Welcome, {displayName}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <p className="text-xs sm:text-base text-brand-text-light">Your Cinematic Collection</p>
-              {isCloud ? (
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide ${isSyncing || syncBadgeVisible
-                      ? 'border-brand-primary/40 bg-brand-primary/10 text-brand-primary'
-                      : justSynced
-                        ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
-                        : 'border-white/15 bg-white/5 text-brand-text-light'
-                    }`}
-                >
-                  {isSyncing || syncBadgeVisible ? (
-                    <>
-                      <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
-                        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
-                      <span className="hidden xs:inline">Syncing changes</span>
-                      <span className="xs:hidden">Syncing</span>
-                    </>
-                  ) : justSynced ? (
-                    <>
-                      <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M5 12.5 9.2 17 19 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Synced
-                    </>
-                  ) : (
-                    <>
-                      <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-brand-text-light/60" />
-                      <span className="hidden xs:inline">Cloud connected</span>
-                      <span className="xs:hidden">Connected</span>
-                    </>
-                  )}
-                </span>
+          <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full md:w-auto flex-1">
+            <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
+              {displayAvatarUrl && !avatarFailed ? (
+                <img src={displayAvatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide text-brand-text-light">
-                  <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-300/90" />
-                  Local only
-                </span>
+                <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
+                  {displayName[0]?.toUpperCase() || '?'}
+                </div>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-    )}
-
-      {/* 2. Metric Cards */}
-      {!activeFolderId && (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12 animate-fade-in">
-          {/* Total Saved */}
-          <div className="wl-metric-card glass-panel">
-            <div className="wl-metric-stripe" style={{ background: 'var(--brand-primary, #a855f7)' }} />
-            <div>
-              <div className="wl-metric-label">Total Saved</div>
-              <div className="wl-metric-value">{stats.totalSaved}</div>
-            </div>
-            <div className="wl-metric-icon" style={{ background: 'rgba(168,85,247,0.12)' }}>
-              <svg className="w-6 h-6" style={{ color: '#a855f7' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" /></svg>
-            </div>
-          </div>
-
-          {/* Folders */}
-          <div className="wl-metric-card glass-panel">
-            <div className="wl-metric-stripe" style={{ background: 'var(--brand-secondary, #ec4899)' }} />
-            <div>
-              <div className="wl-metric-label">Folders</div>
-              <div className="wl-metric-value">{stats.totalFolders}</div>
-            </div>
-            <div className="wl-metric-icon" style={{ background: 'rgba(236,72,153,0.12)' }}>
-              <svg className="w-6 h-6" style={{ color: '#ec4899' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
-            </div>
-          </div>
-
-          {/* Top Format */}
-          <div className="wl-metric-card glass-panel">
-            <div className="wl-metric-stripe" style={{ background: '#3b82f6' }} />
-            <div>
-              <div className="wl-metric-label">Top Format</div>
-              <div className="wl-metric-value" style={{ fontSize: stats.topFormat.length > 6 ? '1.4rem' : undefined }}>{stats.topFormat}</div>
-            </div>
-            <div className="wl-metric-icon" style={{ background: 'rgba(59,130,246,0.12)' }}>
-              <svg className="w-6 h-6" style={{ color: '#3b82f6' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-2.625 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0118 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 016 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25C6 11.496 5.496 12 4.875 12M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M19.125 12h1.5m0 0c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h1.5m14.25 0h1.5" /></svg>
-            </div>
-          </div>
-
-          {/* Watched */}
-          <button
-            onClick={() => { setShowWatchedView(true); openFolder(null); }}
-            className="wl-metric-card glass-panel cursor-pointer text-left w-full group"
-            style={{ borderColor: undefined }}
-          >
-            <div className="wl-metric-stripe" style={{ background: '#34d399' }} />
-            <div>
-              <div className="wl-metric-label flex items-center gap-2">
-                Watched
-                <svg className="w-3.5 h-3.5 text-brand-text-dark group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight truncate">Welcome, {displayName}</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="text-xs sm:text-base text-brand-text-light">Your Cinematic Collection</p>
+                {isCloud ? (
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide ${isSyncing || syncBadgeVisible
+                        ? 'border-brand-primary/40 bg-brand-primary/10 text-brand-primary'
+                        : justSynced
+                          ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
+                          : 'border-white/15 bg-white/5 text-brand-text-light'
+                      }`}
+                  >
+                    {isSyncing || syncBadgeVisible ? (
+                      <>
+                        <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
+                          <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                        <span className="hidden xs:inline">Syncing changes</span>
+                        <span className="xs:hidden">Syncing</span>
+                      </>
+                    ) : justSynced ? (
+                      <>
+                        <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M5 12.5 9.2 17 19 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Synced
+                      </>
+                    ) : (
+                      <>
+                        <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-brand-text-light/60" />
+                        <span className="hidden xs:inline">Cloud connected</span>
+                        <span className="xs:hidden">Connected</span>
+                      </>
+                    )}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide text-brand-text-light">
+                    <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-300/90" />
+                    Local only
+                  </span>
+                )}
               </div>
-              <div className="wl-metric-value accent">{watchedCount}</div>
             </div>
-            <div className="wl-metric-icon" style={{ background: 'rgba(52,211,153,0.12)' }}>
-              <svg className="w-6 h-6" style={{ color: '#34d399' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+
+          {/* Integrated Watched Card */}
+          <button
+            onClick={() => navigate('/watchlists/watched')}
+            className="relative z-10 flex items-center justify-between gap-6 px-5 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 hover:border-emerald-500/35 border border-white/10 transition-all duration-300 cursor-pointer text-left w-full md:w-auto min-w-[240px] group shadow-inner"
+          >
+            <div>
+              <div className="text-xs font-semibold tracking-wider text-emerald-400 uppercase flex items-center gap-1.5">
+                Watched
+                <svg className="w-3.5 h-3.5 text-emerald-400/70 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </div>
+              <div className="text-3xl font-extrabold text-white mt-1 leading-none font-mono">
+                {watchedCount}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {topWatchedPosters.length > 0 ? (
+                <div className="flex -space-x-3 overflow-hidden py-1">
+                  {topWatchedPosters.map((poster, i) => (
+                    <img
+                      key={`watched-thumb-${i}`}
+                      src={poster}
+                      alt=""
+                      className="w-9 h-14 rounded-md object-cover border border-white/15 shadow-lg transform group-hover:-translate-y-1 group-hover:rotate-2 transition-all duration-300"
+                      style={{ zIndex: 10 + i }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+              )}
             </div>
           </button>
         </div>
@@ -688,7 +751,7 @@ export function WatchlistsDashboard() {
       {showWatchedView && !activeFolderId ? (
         <div className="animate-fade-in">
           <button
-            onClick={() => setShowWatchedView(false)}
+            onClick={() => navigate('/watchlists')}
             className="text-brand-text-light hover:text-white mb-6 flex items-center gap-2 group transition-colors"
           >
             <ChevronRightIcon className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
@@ -716,11 +779,28 @@ export function WatchlistsDashboard() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {watched.map((item) => {
-                const displayPosterUrl = sanitizeImgUrl(item.poster_url);
+                const displayPosterUrl = (() => {
+                  if (!item.poster_url) return '';
+                  try {
+                    const parsed = new URL(item.poster_url);
+                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
+                      return parsed.toString();
+                    }
+                  } catch {
+                    if (item.poster_url.startsWith('/') && !item.poster_url.startsWith('//')) {
+                      return item.poster_url;
+                    }
+                  }
+                  return '';
+                })();
+
+                const safeMediaType = item.media_type === 'tv' ? 'tv' : 'movie';
+                const safeTmdbId = String(item.tmdb_id).replace(/[^0-9]/g, '');
+                const safeLinkPath = `/${safeMediaType}/${safeTmdbId}`;
 
                 return (
                   <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
-                    <Link to={`/${item.media_type}/${item.tmdb_id}`} className="absolute inset-0 z-10" />
+                    <Link to={safeLinkPath} className="absolute inset-0 z-10" />
                     {/* Poster */}
                     {displayPosterUrl ? (
                       <img src={displayPosterUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
@@ -951,7 +1031,21 @@ export function WatchlistsDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {folders.map((folder, index) => {
                 const heroItem = folder.items[0];
-                const topPosters = folder.items.slice(0, 3).map(item => sanitizeImgUrl(item.movie?.poster_url)).filter(Boolean) as string[];
+                const topPosters = folder.items.slice(0, 3).map(item => {
+                  const url = item.movie?.poster_url;
+                  if (!url) return '';
+                  try {
+                    const parsed = new URL(url);
+                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
+                      return parsed.toString();
+                    }
+                  } catch {
+                    if (url.startsWith('/') && !url.startsWith('//')) {
+                      return url;
+                    }
+                  }
+                  return '';
+                }).filter(Boolean) as string[];
                 return (
                   <div
                     key={folder.id}
@@ -1061,7 +1155,7 @@ export function WatchlistsDashboard() {
           )}
 
           {/* SEARCH HISTORY SECTION */}
-          {user && !activeFolder && (
+          {!activeFolder && !showWatchedView && (
             <div className="mt-12 animate-fade-in pb-12">
               <div className="wl-section-header mb-6 flex items-center justify-between">
                 <div>
@@ -1144,11 +1238,17 @@ export function WatchlistsDashboard() {
                 <input
                   id="folder-name-input"
                   value={editFolderName}
-                  onChange={(event) => setEditFolderName(event.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  onChange={(event) => {
+                    setEditFolderName(event.target.value);
+                    setEditFolderError(null);
+                  }}
+                  className={`w-full rounded-lg border bg-black/30 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary ${editFolderError ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/10'}`}
                   placeholder="New folder name"
                   autoFocus
                 />
+                {editFolderError && (
+                  <p className="text-xs text-red-400 mt-1">{editFolderError}</p>
+                )}
               </div>
 
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">

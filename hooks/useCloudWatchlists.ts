@@ -68,6 +68,7 @@ export function useCloudWatchlists() {
   const { user } = useAuth();
   const [cloudFolders, setCloudFolders] = useState<WatchlistFolder[]>([]);
   const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudHydrated, setCloudHydrated] = useState(false);
   const cloudCacheHydratedUserRef = useRef<string | null>(null);
   const cloudFoldersOwnerRef = useRef<string | null>(null);
   const activeCloudUserIdRef = useRef<string | null>(null);
@@ -88,6 +89,9 @@ export function useCloudWatchlists() {
     } catch (error) {
       console.warn('Failed to refresh cloud watchlists', error);
     } finally {
+      if (activeCloudUserIdRef.current === userId) {
+        setCloudHydrated(true);
+      }
       setCloudLoading(false);
     }
   }, [setCloudFoldersForUser, user?.id]);
@@ -98,15 +102,18 @@ export function useCloudWatchlists() {
       cloudFoldersOwnerRef.current = null;
       setCloudFolders([]);
       cloudCacheHydratedUserRef.current = null;
+      setCloudHydrated(false);
       return;
     }
     activeCloudUserIdRef.current = user.id;
     cloudFoldersOwnerRef.current = null;
     setCloudFolders([]);
+    setCloudHydrated(false);
 
     const cached = readCloudCache(user.id);
     if (cached.length > 0) {
       setCloudFoldersForUser(user.id, cached);
+      setCloudHydrated(true);
     }
     cloudCacheHydratedUserRef.current = user.id;
     refreshCloud();
@@ -309,6 +316,7 @@ export function useCloudWatchlists() {
   if (!user || !isSupabaseConfigured) {
     return {
       folders: local.folders,
+      isHydrated: local.isHydrated,
       addFolder: local.addFolder,
       saveToFolder: local.saveToFolder,
       rollbackSave: local.rollbackSave,
@@ -331,7 +339,8 @@ export function useCloudWatchlists() {
   return {
     ...cloudApi,
     isCloud: true,
-    isSyncing: cloudLoading
+    isSyncing: cloudLoading,
+    isHydrated: cloudHydrated
   };
 }
 
