@@ -151,12 +151,7 @@ export function WatchlistsDashboard() {
   }, [actionToast]);
 
   useEffect(() => {
-    if (!supabase) {
-      setSearchHistory([]);
-      return;
-    }
-
-    if (user?.id) {
+    if (user?.id && supabase) {
       supabase
         .from('search_history')
         .select('*')
@@ -167,18 +162,37 @@ export function WatchlistsDashboard() {
           if (data) setSearchHistory(data);
         });
     } else {
-      setSearchHistory([]);
+      try {
+        const raw = localStorage.getItem('moviemonk_search_history_v1');
+        const parsed = raw ? JSON.parse(raw) : [];
+        setSearchHistory(parsed.map((item: any, idx: number) => ({
+          id: `local-${idx}`,
+          query: item.query,
+          created_at: new Date(item.timestamp).toISOString()
+        })).slice(0, 8));
+      } catch {
+        setSearchHistory([]);
+      }
     }
   }, [user?.id]);
 
   const handleClearHistory = async () => {
-    if (!user?.id || !supabase) return;
-    try {
-      const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
-      if (error) throw error;
-      setSearchHistory([]);
-    } catch (err) {
-      console.error('Failed to clear history from dashboard:', err);
+    if (user?.id && supabase) {
+      try {
+        const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
+        if (error) throw error;
+        setSearchHistory([]);
+      } catch (err) {
+        console.error('Failed to clear history from dashboard:', err);
+      }
+    } else {
+      try {
+        localStorage.removeItem('moviemonk_search_history_v1');
+        localStorage.removeItem('moviemonk_autocomplete_cache_v1');
+        setSearchHistory([]);
+      } catch (err) {
+        console.error('Failed to clear local history:', err);
+      }
     }
   };
 
@@ -1046,7 +1060,7 @@ export function WatchlistsDashboard() {
           )}
 
           {/* SEARCH HISTORY SECTION */}
-          {user && !activeFolder && (
+          {!activeFolder && !showWatchedView && (
             <div className="mt-12 animate-fade-in pb-12">
               <div className="wl-section-header mb-6 flex items-center justify-between">
                 <div>
