@@ -45,6 +45,11 @@ function DialogShell({
   const titleId = useMemo(() => `dialog-title-${Math.random().toString(36).slice(2, 8)}`, []);
   const descriptionId = useMemo(() => `dialog-description-${Math.random().toString(36).slice(2, 8)}`, []);
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -70,7 +75,7 @@ function DialogShell({
 
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -103,7 +108,7 @@ function DialogShell({
       document.body.style.overflow = previousBodyOverflow;
       previousFocusRef.current?.focus();
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) return null;
 
