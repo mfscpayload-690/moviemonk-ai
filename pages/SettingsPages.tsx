@@ -232,6 +232,80 @@ function getProviderLabel(user: any): string {
   return getAuthProviderLabel(user);
 }
 
+function SettingsHubSkeleton() {
+  return (
+    <div className="mm-settings-body mm-settings-hub-body animate-pulse">
+      {/* Hero */}
+      <div className="mm-settings-hero-top">
+        <div className="w-16 h-16 rounded-full bg-white/5 shrink-0" />
+        <div className="flex flex-col gap-2">
+          <div className="h-6 w-40 bg-white/5 rounded-md" />
+          <div className="h-4 w-52 bg-white/5 rounded-md" />
+          <div className="h-5 w-24 bg-white/5 rounded-full" />
+        </div>
+      </div>
+
+      {/* Status Grid */}
+      <div className="mm-settings-status-grid">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="mm-settings-status-card bg-white/2 h-16 animate-pulse" />
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mm-settings-quick-actions">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-10 bg-white/5 rounded-xl w-full" />
+        ))}
+      </div>
+
+      {/* Setup progress */}
+      <section className="mm-settings-progress-card">
+        <div className="h-5 w-32 bg-white/5 rounded mb-3" />
+        <div className="h-2 bg-white/5 rounded-full w-full mb-3" />
+        <div className="flex gap-2">
+          <div className="h-5 w-20 bg-white/5 rounded-full" />
+          <div className="h-5 w-24 bg-white/5 rounded-full" />
+        </div>
+      </section>
+
+      {/* Settings Grid */}
+      <div className="mm-settings-grid">
+        {[1, 2].map(i => (
+          <div key={i} className="mm-settings-grid-col mm-settings-column-surface">
+            <div className="mm-settings-section-head">
+              <div className="h-5 w-24 bg-white/5 rounded mb-2" />
+              <div className="h-3.5 w-48 bg-white/5 rounded" />
+            </div>
+            <div className="flex flex-col gap-2">
+              {[1, 2, 3].map(j => (
+                <div key={j} className="h-16 bg-white/2 rounded-xl w-full border border-white/5" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SettingsSubPageSkeleton() {
+  return (
+    <div className="mm-settings-body animate-pulse flex flex-col gap-5">
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+        <div className="w-24 h-24 rounded-full bg-white/5" />
+      </div>
+      {[1, 2, 3].map(i => (
+        <div key={i} className="mm-settings-field">
+          <div className="h-4 w-20 bg-white/5 rounded mb-2" />
+          <div className="h-11 w-full bg-white/5 rounded-xl border border-white/5" />
+        </div>
+      ))}
+      <div className="h-12 w-full bg-white/10 rounded-xl mt-4" />
+    </div>
+  );
+}
+
 /* ────────────────────────────────────────────
    HUB PAGE — /settings
    ──────────────────────────────────────────── */
@@ -376,7 +450,7 @@ export function SettingsHubPage() {
   }, [signOut]);
 
   if (loading) {
-    return <SettingsLayout><div className="mm-settings-body"><p className="text-sm text-brand-text-light text-center">Loading...</p></div></SettingsLayout>;
+    return <SettingsLayout><SettingsHubSkeleton /></SettingsLayout>;
   }
 
   if (!user) return null;
@@ -690,7 +764,7 @@ export function ProfileSettingsPage() {
   }, [user, loading, navigate]);
 
   if (loading) {
-    return <SubPageLayout title="Profile"><div className="mm-settings-body"><p className="text-sm text-brand-text-light text-center">Loading...</p></div></SubPageLayout>;
+    return <SubPageLayout title="Profile"><SettingsSubPageSkeleton /></SubPageLayout>;
   }
 
   if (!user) return null;
@@ -811,7 +885,7 @@ export function PreferenceSettingsPage() {
   }, [user, loading, navigate]);
 
   if (loading) {
-    return <SubPageLayout title="Preferences"><div className="mm-settings-body"><p className="text-sm text-brand-text-light text-center">Loading...</p></div></SubPageLayout>;
+    return <SubPageLayout title="Preferences"><SettingsSubPageSkeleton /></SubPageLayout>;
   }
 
   if (!user) return null;
