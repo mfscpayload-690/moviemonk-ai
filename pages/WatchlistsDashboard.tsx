@@ -88,6 +88,7 @@ export function WatchlistsDashboard() {
   const [editFolderName, setEditFolderName] = useState('');
   const [editFolderIcon, setEditFolderIcon] = useState(WATCHLIST_ICON_DEFAULT);
   const [editFolderPublic, setEditFolderPublic] = useState(false);
+  const [editFolderError, setEditFolderError] = useState<string | null>(null);
   const [syncBadgeVisible, setSyncBadgeVisible] = useState(false);
   const [justSynced, setJustSynced] = useState(false);
   const syncHideTimerRef = useRef<number | null>(null);
@@ -198,13 +199,14 @@ export function WatchlistsDashboard() {
 
   // Deep-link & route synchronization: keep internal state in sync with URL pathname and params
   useEffect(() => {
-    if (folders.length === 0) return;
-
     const pathname = location.pathname;
     if (pathname === '/watchlists/watched' || folderNameParam?.toLowerCase() === 'watched') {
       setShowWatchedView(true);
       setActiveFolderId(null);
     } else if (folderNameParam) {
+      if (folders.length === 0) {
+        return;
+      }
       const decoded = decodeURIComponent(folderNameParam);
       const match = folders.find(
         f => f.name.toLowerCase() === decoded.toLowerCase()
@@ -246,6 +248,10 @@ export function WatchlistsDashboard() {
 
   useEffect(() => {
     setProfile(loadProfileSettings());
+    document.title = 'MovieMonk | Watchlists';
+    return () => {
+      document.title = 'MovieMonk | Discover Movies & TV';
+    };
   }, []);
 
   useEffect(() => {
@@ -280,7 +286,20 @@ export function WatchlistsDashboard() {
   }, [folders]);
 
   const topWatchedPosters = useMemo(() => {
-    return watched.slice(0, 3).map(w => sanitizeImgUrl(w.poster_url)).filter(Boolean) as string[];
+    return watched.slice(0, 3).map(w => {
+      if (!w.poster_url) return '';
+      try {
+        const parsed = new URL(w.poster_url);
+        if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
+          return parsed.toString();
+        }
+      } catch {
+        if (w.poster_url.startsWith('/') && !w.poster_url.startsWith('//')) {
+          return w.poster_url;
+        }
+      }
+      return '';
+    }).filter(Boolean) as string[];
   }, [watched]);
 
   // const watchlistReminders = useMemo(
@@ -335,7 +354,24 @@ export function WatchlistsDashboard() {
     if (!folder) return;
 
     const trimmedName = editFolderName.trim();
-    if (trimmedName && trimmedName !== folder.name) {
+    if (!trimmedName) {
+      setEditFolderError('Give the folder a name.');
+      return;
+    }
+
+    const lower = trimmedName.toLowerCase();
+    if (lower === 'watched' || lower === 'share') {
+      setEditFolderError('That folder name is reserved for system features');
+      return;
+    }
+
+    // Check duplicate (excluding itself)
+    if (folders.some(f => f.id !== folder.id && f.name.toLowerCase() === lower)) {
+      setEditFolderError('A folder with that name already exists');
+      return;
+    }
+
+    if (trimmedName !== folder.name) {
       renameFolder(folder.id, trimmedName);
     }
     if ((editFolderIcon || WATCHLIST_ICON_DEFAULT) !== (folder.icon || WATCHLIST_ICON_DEFAULT)) {
@@ -471,7 +507,13 @@ export function WatchlistsDashboard() {
       return;
     }
 
-    if (folders.some(f => f.name.toLowerCase() === trimmed.toLowerCase())) {
+    const lower = trimmed.toLowerCase();
+    if (lower === 'watched' || lower === 'share') {
+      setNewFolderError('That folder name is reserved for system features');
+      return;
+    }
+
+    if (folders.some(f => f.name.toLowerCase() === lower)) {
       setNewFolderError('A folder with that name already exists');
       return;
     }
@@ -482,7 +524,7 @@ export function WatchlistsDashboard() {
     setNewFolderError(null);
     setNewFolderPublic(false);
     setActionToast({ message: 'Watchlist created', kind: 'watchlist' });
-  }, [addFolder, newFolderName, folders]);
+  }, [addFolder, newFolderName, folders, newFolderPublic]);
 
 
   if (loading) {
@@ -533,7 +575,20 @@ export function WatchlistsDashboard() {
     );
   }
 
-  const displayAvatarUrl = sanitizeImgUrl(avatarUrl);
+  const displayAvatarUrl = useMemo(() => {
+    if (!avatarUrl) return '';
+    try {
+      const parsed = new URL(avatarUrl);
+      if (parsed.protocol === 'https:' && (parsed.hostname.endsWith('supabase.co') || parsed.hostname.endsWith('githubusercontent.com') || parsed.hostname.endsWith('googleusercontent.com'))) {
+        return parsed.toString();
+      }
+    } catch {
+      if (avatarUrl.startsWith('/') && !avatarUrl.startsWith('//')) {
+        return avatarUrl;
+      }
+    }
+    return '';
+  }, [avatarUrl]);
 
   return (
     <DashboardLayout>
@@ -1143,11 +1198,17 @@ export function WatchlistsDashboard() {
                 <input
                   id="folder-name-input"
                   value={editFolderName}
-                  onChange={(event) => setEditFolderName(event.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  onChange={(event) => {
+                    setEditFolderName(event.target.value);
+                    setEditFolderError(null);
+                  }}
+                  className={`w-full rounded-lg border bg-black/30 px-4 py-3 text-white placeholder:text-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-primary ${editFolderError ? 'border-red-500/50 focus:ring-red-500/50' : 'border-white/10'}`}
                   placeholder="New folder name"
                   autoFocus
                 />
+                {editFolderError && (
+                  <p className="text-xs text-red-400 mt-1">{editFolderError}</p>
+                )}
               </div>
 
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-4">
