@@ -46,6 +46,7 @@ export default function AppRoutes() {
         <Route path="/person/:id" element={<App />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/watchlists" element={<WatchlistsDashboard />} />
+        <Route path="/watchlists/watched" element={<WatchlistsDashboard />} />
         <Route path="/watchlists/:folderName" element={<WatchlistsDashboard />} />
         <Route path="/watchlists/share" element={<SharedWatchlistView />} />
         <Route path="/watchlists/share/:token" element={<SharedWatchlistView />} />
