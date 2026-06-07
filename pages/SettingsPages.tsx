@@ -215,7 +215,12 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     if (!url) return '';
     try {
       const parsed = new URL(url);
-      if (parsed.protocol === 'https:' && (parsed.hostname.endsWith('supabase.co') || parsed.hostname.endsWith('githubusercontent.com') || parsed.hostname.endsWith('googleusercontent.com'))) {
+      const host = parsed.hostname;
+      const isAllowedHost =
+        host === 'supabase.co' || host.endsWith('.supabase.co') ||
+        host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
+        host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
+      if (parsed.protocol === 'https:' && isAllowedHost) {
         return parsed.toString();
       }
     } catch {
