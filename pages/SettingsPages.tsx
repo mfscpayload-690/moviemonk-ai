@@ -211,7 +211,20 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     setImageFailed(false);
   }, [url]);
 
-  const safeUrl = sanitizeImgUrl(url);
+  const safeUrl = useMemo(() => {
+    if (!url) return '';
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'https:' && (parsed.hostname.endsWith('supabase.co') || parsed.hostname.endsWith('githubusercontent.com') || parsed.hostname.endsWith('googleusercontent.com'))) {
+        return parsed.toString();
+      }
+    } catch {
+      if (url.startsWith('/') && !url.startsWith('//')) {
+        return url;
+      }
+    }
+    return '';
+  }, [url]);
 
   if (safeUrl && !imageFailed) {
     return (
