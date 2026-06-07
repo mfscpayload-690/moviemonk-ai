@@ -460,33 +460,48 @@ export function WatchlistsDashboard() {
     return (
       <DashboardLayout>
         <div className="w-full mt-4 sm:mt-8 animate-pulse">
-          <div className="flex flex-col md:flex-row gap-8 mb-12">
-            <div className="flex-1 min-w-[320px] max-w-full md:max-w-md">
-              <div className="flex items-center gap-5 mb-8">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[2rem] bg-white/5 shrink-0" />
-                <div className="flex flex-col gap-2">
-                  <div className="h-8 w-48 bg-white/5 rounded-lg" />
-                  <div className="h-4 w-32 bg-white/5 rounded" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3">
-                <div className="h-24 rounded-3xl bg-white/5" />
-                <div className="h-24 rounded-3xl bg-white/5" />
-              </div>
-              <div className="h-20 rounded-3xl bg-white/5 w-full" />
-            </div>
-            <div className="flex-1 min-w-[280px]">
-              <div className="h-8 w-48 bg-white/5 rounded-lg mb-6" />
-              <div className="flex flex-col gap-3">
-                <div className="h-24 bg-white/5 rounded-2xl" />
-                <div className="h-24 bg-white/5 rounded-2xl" />
+          {/* 1. Header skeleton */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
+            <div className="flex items-center gap-4 sm:gap-6 w-full">
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-white/5 shrink-0" />
+              <div className="flex flex-col gap-2.5 flex-1">
+                <div className="h-7 w-48 sm:w-64 bg-white/5 rounded-lg" />
+                <div className="h-4 w-32 bg-white/5 rounded" />
               </div>
             </div>
           </div>
-          <div className="h-8 w-48 bg-white/5 rounded-lg mb-6" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mt-6">
+
+          {/* 2. Metric Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-32 rounded-3xl bg-white/5" />
+              <div key={i} className="wl-metric-card glass-panel h-[94px] bg-white/2" />
+            ))}
+          </div>
+
+          {/* 3. Folders Section Header */}
+          <div className="wl-section-header flex items-center justify-between mb-6">
+            <div>
+              <div className="h-7 w-40 bg-white/5 rounded-lg mb-2" />
+              <div className="h-4 w-56 bg-white/5 rounded" />
+            </div>
+            <div className="h-9 w-28 bg-white/5 rounded-full" />
+          </div>
+
+          {/* 4. Folders Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="wl-folder-card bg-white/2 border border-white/5">
+                <div className="aspect-[16/10] w-full bg-white/5" />
+                <div className="wl-folder-body">
+                  <div className="h-5 w-32 bg-white/5 rounded mb-2" />
+                  <div className="h-3 w-44 bg-white/5 rounded mb-4" />
+                  <div className="flex justify-between">
+                    <div className="h-6 w-8 bg-white/5 rounded" />
+                    <div className="h-6 w-8 bg-white/5 rounded" />
+                    <div className="h-6 w-8 bg-white/5 rounded" />
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
