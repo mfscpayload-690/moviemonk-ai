@@ -770,7 +770,20 @@ export function WatchlistsDashboard() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {watched.map((item) => {
-                const displayPosterUrl = sanitizeImgUrl(item.poster_url);
+                const displayPosterUrl = (() => {
+                  if (!item.poster_url) return '';
+                  try {
+                    const parsed = new URL(item.poster_url);
+                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
+                      return parsed.toString();
+                    }
+                  } catch {
+                    if (item.poster_url.startsWith('/') && !item.poster_url.startsWith('//')) {
+                      return item.poster_url;
+                    }
+                  }
+                  return '';
+                })();
 
                 return (
                   <div key={`${item.tmdb_id}-${item.media_type}`} className="group relative aspect-[2/3] rounded-xl overflow-hidden glass-panel border border-white/5 select-none bg-brand-surface shadow-xl hover:ring-2 hover:ring-emerald-500/50 transition-all cursor-pointer">
@@ -1005,7 +1018,21 @@ export function WatchlistsDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {folders.map((folder, index) => {
                 const heroItem = folder.items[0];
-                const topPosters = folder.items.slice(0, 3).map(item => sanitizeImgUrl(item.movie?.poster_url)).filter(Boolean) as string[];
+                const topPosters = folder.items.slice(0, 3).map(item => {
+                  const url = item.movie?.poster_url;
+                  if (!url) return '';
+                  try {
+                    const parsed = new URL(url);
+                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
+                      return parsed.toString();
+                    }
+                  } catch {
+                    if (url.startsWith('/') && !url.startsWith('//')) {
+                      return url;
+                    }
+                  }
+                  return '';
+                }).filter(Boolean) as string[];
                 return (
                   <div
                     key={folder.id}
