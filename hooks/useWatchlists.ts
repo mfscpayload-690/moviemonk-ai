@@ -144,6 +144,7 @@ export function useWatchlists() {
 
   return {
     folders,
+    isHydrated,
     addFolder,
     saveToFolder,
     rollbackSave,
