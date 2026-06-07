@@ -265,6 +265,10 @@ export function WatchlistsDashboard() {
     };
   }, [folders]);
 
+  const topWatchedPosters = useMemo(() => {
+    return watched.slice(0, 3).map(w => sanitizeImgUrl(w.poster_url)).filter(Boolean) as string[];
+  }, [watched]);
+
   // const watchlistReminders = useMemo(
   //   () => deriveWatchlistReminders(folders, watched, 2),
   //   [folders, watched, reminderRefreshToken]
@@ -473,18 +477,15 @@ export function WatchlistsDashboard() {
         <div className="w-full mt-4 sm:mt-8 animate-pulse">
           {/* 1. Header skeleton */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
-            <div className="flex items-center gap-4 sm:gap-6 w-full">
+            <div className="flex items-center gap-4 sm:gap-6 w-full md:w-auto flex-1">
               <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-white/5 shrink-0" />
               <div className="flex flex-col gap-2.5 flex-1">
                 <div className="h-7 w-48 sm:w-64 bg-white/5 rounded-lg" />
                 <div className="h-4 w-32 bg-white/5 rounded" />
               </div>
             </div>
-          </div>
-
-          {/* 2. Metric Cards Grid */}
-          <div className="mb-12 max-w-sm">
-            <div className="wl-metric-card glass-panel h-[94px] bg-white/2" />
+            {/* Redesigned Watched Badge Skeleton */}
+            <div className="w-full md:w-auto min-w-[240px] h-[78px] rounded-2xl bg-white/5 border border-white/10" />
           </div>
 
           {/* 3. Folders Section Header */}
@@ -522,89 +523,101 @@ export function WatchlistsDashboard() {
 
   return (
     <DashboardLayout>
-      {/* 1. User Header */}
+      {/* 1. User Header & Watched Integration */}
       {!activeFolderId && !showWatchedView && (
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
+          {/* Subtle background glow */}
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-brand-primary/20 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="flex items-center gap-4 sm:gap-6 relative z-10">
-          <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
-            {displayAvatarUrl && !avatarFailed ? (
-              <img src={displayAvatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
-                {displayName[0]?.toUpperCase() || '?'}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight truncate">Welcome, {displayName}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <p className="text-xs sm:text-base text-brand-text-light">Your Cinematic Collection</p>
-              {isCloud ? (
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide ${isSyncing || syncBadgeVisible
-                      ? 'border-brand-primary/40 bg-brand-primary/10 text-brand-primary'
-                      : justSynced
-                        ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
-                        : 'border-white/15 bg-white/5 text-brand-text-light'
-                    }`}
-                >
-                  {isSyncing || syncBadgeVisible ? (
-                    <>
-                      <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
-                        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
-                      <span className="hidden xs:inline">Syncing changes</span>
-                      <span className="xs:hidden">Syncing</span>
-                    </>
-                  ) : justSynced ? (
-                    <>
-                      <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M5 12.5 9.2 17 19 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Synced
-                    </>
-                  ) : (
-                    <>
-                      <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-brand-text-light/60" />
-                      <span className="hidden xs:inline">Cloud connected</span>
-                      <span className="xs:hidden">Connected</span>
-                    </>
-                  )}
-                </span>
+          <div className="flex items-center gap-4 sm:gap-6 relative z-10 w-full md:w-auto flex-1">
+            <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-white/10 overflow-hidden flex-shrink-0 bg-brand-surface shadow-xl transition-transform hover:scale-105 duration-300">
+              {displayAvatarUrl && !avatarFailed ? (
+                <img src={displayAvatarUrl} alt="Avatar" className="w-full h-full object-cover" onError={() => setAvatarFailed(true)} />
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide text-brand-text-light">
-                  <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-300/90" />
-                  Local only
-                </span>
+                <div className="w-full h-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold bg-gradient-to-br from-brand-primary to-brand-secondary">
+                  {displayName[0]?.toUpperCase() || '?'}
+                </div>
               )}
             </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-3xl font-bold text-white tracking-tight truncate">Welcome, {displayName}</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="text-xs sm:text-base text-brand-text-light">Your Cinematic Collection</p>
+                {isCloud ? (
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide ${isSyncing || syncBadgeVisible
+                        ? 'border-brand-primary/40 bg-brand-primary/10 text-brand-primary'
+                        : justSynced
+                          ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
+                          : 'border-white/15 bg-white/5 text-brand-text-light'
+                      }`}
+                  >
+                    {isSyncing || syncBadgeVisible ? (
+                      <>
+                        <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
+                          <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                        <span className="hidden xs:inline">Syncing changes</span>
+                        <span className="xs:hidden">Syncing</span>
+                      </>
+                    ) : justSynced ? (
+                      <>
+                        <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M5 12.5 9.2 17 19 7.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Synced
+                      </>
+                    ) : (
+                      <>
+                        <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-brand-text-light/60" />
+                        <span className="hidden xs:inline">Cloud connected</span>
+                        <span className="xs:hidden">Connected</span>
+                      </>
+                    )}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold tracking-wide text-brand-text-light">
+                    <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-amber-300/90" />
+                    Local only
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    )}
 
-      {/* 2. Metric Cards */}
-      {!activeFolderId && (
-        <div className="mb-12 animate-fade-in max-w-sm">
-          {/* Watched */}
+          {/* Integrated Watched Card */}
           <button
             onClick={() => navigate('/watchlists/watched')}
-            className="wl-metric-card glass-panel cursor-pointer text-left w-full group hover:border-emerald-500/30 transition-all duration-300"
+            className="relative z-10 flex items-center justify-between gap-6 px-5 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 hover:border-emerald-500/35 border border-white/10 transition-all duration-300 cursor-pointer text-left w-full md:w-auto min-w-[240px] group shadow-inner"
           >
-            <div className="wl-metric-stripe" style={{ background: '#34d399' }} />
             <div>
-              <div className="wl-metric-label flex items-center gap-2">
+              <div className="text-xs font-semibold tracking-wider text-emerald-400 uppercase flex items-center gap-1.5">
                 Watched
-                <svg className="w-3.5 h-3.5 text-brand-text-dark group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                <svg className="w-3.5 h-3.5 text-emerald-400/70 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               </div>
-              <div className="wl-metric-value accent">{watchedCount}</div>
+              <div className="text-3xl font-extrabold text-white mt-1 leading-none font-mono">
+                {watchedCount}
+              </div>
             </div>
-            <div className="wl-metric-icon" style={{ background: 'rgba(52,211,153,0.12)' }}>
-              <svg className="w-6 h-6" style={{ color: '#34d399' }} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div className="flex items-center gap-2">
+              {topWatchedPosters.length > 0 ? (
+                <div className="flex -space-x-3 overflow-hidden py-1">
+                  {topWatchedPosters.map((poster, i) => (
+                    <img
+                      key={`watched-thumb-${i}`}
+                      src={poster}
+                      alt=""
+                      className="w-9 h-14 rounded-md object-cover border border-white/15 shadow-lg transform group-hover:-translate-y-1 group-hover:rotate-2 transition-all duration-300"
+                      style={{ zIndex: 10 + i }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+              )}
             </div>
           </button>
         </div>
