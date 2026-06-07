@@ -72,7 +72,8 @@ export function WatchlistsDashboard() {
     reorderItems,
     setFolderPrivacy,
     isCloud,
-    isSyncing
+    isSyncing,
+    isHydrated
   } = useCloudWatchlists();
   const { watchedCount, watched, toggle: toggleWatched } = useWatched();
 
@@ -204,7 +205,7 @@ export function WatchlistsDashboard() {
       setShowWatchedView(true);
       setActiveFolderId(null);
     } else if (folderNameParam) {
-      if (folders.length === 0) {
+      if (!isHydrated) {
         return;
       }
       const decoded = decodeURIComponent(folderNameParam);
@@ -222,7 +223,7 @@ export function WatchlistsDashboard() {
       setActiveFolderId(null);
       setShowWatchedView(false);
     }
-  }, [location.pathname, folderNameParam, folders]);
+  }, [location.pathname, folderNameParam, folders, isHydrated]);
 
   // Sync URL when active folder changes
   const openFolder = (folderId: string | null) => {
