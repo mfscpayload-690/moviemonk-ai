@@ -12,7 +12,7 @@ metadata:
 
 > **AUTHORITATIVE WORKFLOW — MANDATORY FOR DEPLOYMENT**
 >
-> This skill ensures all UI/UX changes are production-ready by validating type safety, component consistency, test coverage, and responsive behavior. **MUST** be completed before merging to `main` branch...
+> This skill ensures all UI/UX changes are production-ready by validating type safety, component consistency, test coverage, and responsive behavior. **MUST** be completed before merging to `main` branch.
 
 ## Triggers
 
