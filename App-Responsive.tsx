@@ -518,13 +518,52 @@ const App: React.FC = () => {
     const activeProvider = provider || selectedProvider || 'groq';
     setSelectedProvider(activeProvider);
 
+    const normalizeTvShow = (data: any) => {
+      if (!data) return data;
+      const rawTvShow = data.tvShow || data.tv_show;
+      if (rawTvShow && !data.tvShow) {
+        data.tvShow = {
+          status: rawTvShow.status || '',
+          premiered: rawTvShow.premiered || rawTvShow.premiere_date || null,
+          ended: rawTvShow.ended || rawTvShow.end_date || null,
+          totalSeasons: typeof rawTvShow.totalSeasons === 'number' ? rawTvShow.totalSeasons : typeof rawTvShow.total_seasons === 'number' ? rawTvShow.total_seasons : 0,
+          totalEpisodes: typeof rawTvShow.totalEpisodes === 'number' ? rawTvShow.totalEpisodes : typeof rawTvShow.total_episodes === 'number' ? rawTvShow.total_episodes : 0,
+          network: rawTvShow.network || '',
+          language: rawTvShow.language || '',
+          officialSite: rawTvShow.officialSite || rawTvShow.official_site || null,
+          seasons: (rawTvShow.seasons || []).map((s: any) => ({
+            number: s.number ?? 0,
+            name: s.name ?? '',
+            episodeCount: typeof s.episodeCount === 'number' ? s.episodeCount : typeof s.episode_count === 'number' ? s.episode_count : 0,
+            premiereDate: s.premiereDate || s.premiere_date || null,
+            endDate: s.endDate || s.end_date || null,
+            image: s.image,
+            summary: s.summary
+          })),
+          episodes: (rawTvShow.episodes || []).map((e: any) => ({
+            id: e.id ?? 0,
+            season: e.season ?? 0,
+            episode: typeof e.episode === 'number' ? e.episode : typeof e.number === 'number' ? e.number : 0,
+            name: e.name ?? '',
+            airdate: e.airdate ?? e.air_date ?? '',
+            runtime: e.runtime ?? null,
+            rating: e.rating ?? null,
+            image: e.image,
+            summary: e.summary
+          }))
+        };
+      }
+      return data;
+    };
+
     // ── Cache check ────────────────────────────────────────────────────────
     const cKey = movieCacheKey(item.id, item.mediaType === 'tv');
     const cached = cacheGet<any>('movie', cKey);
     if (cached) {
       debugLog('[cache] movie hit', item.id, item.mediaType);
       // Migration: Handle legacy cache format where the entire response envelope was cached
-      const actualData = (cached.ok === true && cached.data) ? cached.data : cached;
+      const rawActual = (cached.ok === true && cached.data) ? cached.data : cached;
+      const actualData = normalizeTvShow(rawActual);
       const actualSources = (cached.ok === true && cached.sources) ? cached.sources : null;
 
       // Start loading LCP images immediately before React re-renders
@@ -545,7 +584,7 @@ const App: React.FC = () => {
       const response = await apiGet<any>(
         `/api/details/${item.mediaType}/${item.id}`
       );
-      const detailsData = response.data;
+      const detailsData = normalizeTvShow(response.data);
       cacheSet('movie', cKey, detailsData);
       startTransition(() => {
         setMovieData(detailsData);
