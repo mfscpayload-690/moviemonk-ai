@@ -115,8 +115,39 @@ export function sanitizeMovieData(input: unknown): MovieData | null {
     ai_notes: toStringSafe(data.ai_notes)
   };
 
-  if (data.tvShow && typeof data.tvShow === 'object') {
-    movie.tvShow = data.tvShow as MovieData['tvShow'];
+  const rawTvShow = data.tvShow || data.tv_show;
+  if (rawTvShow && typeof rawTvShow === 'object') {
+    const ts = rawTvShow as any;
+    movie.tvShow = {
+      status: toStringSafe(ts.status),
+      premiered: ts.premiered || null,
+      ended: ts.ended || null,
+      totalSeasons: typeof ts.totalSeasons === 'number' ? ts.totalSeasons : typeof ts.total_seasons === 'number' ? ts.total_seasons : 0,
+      totalEpisodes: typeof ts.totalEpisodes === 'number' ? ts.totalEpisodes : typeof ts.total_episodes === 'number' ? ts.total_episodes : 0,
+      network: toStringSafe(ts.network),
+      language: toStringSafe(ts.language),
+      officialSite: ts.officialSite || ts.official_site || null,
+      seasons: Array.isArray(ts.seasons) ? ts.seasons.map((s: any) => ({
+        number: typeof s.number === 'number' ? s.number : 0,
+        name: toStringSafe(s.name),
+        episodeCount: typeof s.episodeCount === 'number' ? s.episodeCount : typeof s.episode_count === 'number' ? s.episode_count : 0,
+        premiereDate: s.premiereDate || s.premiere_date || null,
+        endDate: s.endDate || s.end_date || null,
+        image: s.image || null,
+        summary: s.summary || null
+      })) : [],
+      episodes: Array.isArray(ts.episodes) ? ts.episodes.map((e: any) => ({
+        id: typeof e.id === 'number' ? e.id : 0,
+        season: typeof e.season === 'number' ? e.season : 0,
+        episode: typeof e.episode === 'number' ? e.episode : typeof e.number === 'number' ? e.number : 0,
+        name: toStringSafe(e.name),
+        airdate: toStringSafe(e.airdate || e.air_date),
+        runtime: typeof e.runtime === 'number' ? e.runtime : null,
+        rating: typeof e.rating === 'number' ? e.rating : null,
+        image: e.image || null,
+        summary: e.summary || null
+      })) : []
+    };
   }
 
   return movie;
