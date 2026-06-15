@@ -166,3 +166,12 @@ class DetailsResponse(BaseResponseModel):
     similar: list[RelatedTitle] = []
     sources: list[dict] = []
     cached: bool = False
+
+
+class EpisodesResponse(BaseResponseModel):
+    """Envelope for the /api/episodes/{tmdb_id}/{season_number} endpoint."""
+    ok: bool = True
+    episodes: list[TVShowEpisode] = []
+    source: str = ""
+    cached: bool = False
+
