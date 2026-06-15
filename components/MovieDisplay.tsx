@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
-import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, ImdbIcon, MetacriticIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
+import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview, TVShowEpisode, EpisodesResponse } from '../types';
+import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, ImdbIcon, MetacriticIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, CalendarIcon, ClockIcon } from './icons';
 import type { AIProvider } from '../types';
-import TVShowDisplay from './TVShowDisplay'; // Import TV Show display component
+import '../styles/tv-show.css';
 import { VirtualizedList } from './VirtualizedList';
 import { useRenderCounter } from '../lib/perfDebug';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
@@ -244,6 +244,43 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     const [showFullPlot, setShowFullPlot] = useState(false);
     const [synopsisExpanded, setSynopsisExpanded] = useState(false);
 
+    const [selectedSeason, setSelectedSeason] = useState<number>(1);
+    const [expandedEpisode, setExpandedEpisode] = useState<string | null>(null);
+    const [episodesMap, setEpisodesMap] = useState<Record<number, TVShowEpisode[]>>({});
+    const [episodesLoading, setEpisodesLoading] = useState(false);
+    const [episodesSource, setEpisodesSource] = useState<string | null>(null);
+
+    const loadEpisodes = useCallback(async (seasonNum: number) => {
+        if (!movie?.tvShow || !movie.tmdb_id) return;
+        if (episodesMap[seasonNum]) return;
+        
+        setEpisodesLoading(true);
+        try {
+            const data = await apiGet<EpisodesResponse>(`/api/episodes/${movie.tmdb_id}/${seasonNum}`);
+            setEpisodesMap(prev => ({
+                ...prev,
+                [seasonNum]: data.episodes || []
+            }));
+            if (data.source) {
+                setEpisodesSource(data.source);
+            }
+        } catch (error) {
+            console.error("Failed to load episodes", error);
+            setEpisodesMap(prev => ({
+                ...prev,
+                [seasonNum]: []
+            }));
+        } finally {
+            setEpisodesLoading(false);
+        }
+    }, [movie?.tmdb_id, movie?.tvShow, episodesMap]);
+
+    useEffect(() => {
+        if (movie?.tvShow) {
+            void loadEpisodes(selectedSeason);
+        }
+    }, [movie?.tvShow, selectedSeason, loadEpisodes]);
+
     const [isTrailerOpen, setIsTrailerOpen] = useState(false);
     const [isPosterPreviewing, setIsPosterPreviewing] = useState(false);
     const [showAllCast, setShowAllCast] = useState(false);
@@ -292,6 +329,14 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
         setIsLoadingFullPlot(false);
         setFullPlotContent(movie?.summary_long_spoilers || '');
     }, [movie]);
+
+    useEffect(() => {
+        // Reset TV state when movie changes
+        setSelectedSeason(1);
+        setExpandedEpisode(null);
+        setEpisodesMap({});
+        setEpisodesSource(null);
+    }, [movie?.tmdb_id]);
 
     useEffect(() => {
         setCustomSavedTitle(movie?.title || '');
@@ -699,15 +744,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
         );
     }
 
-    // If this is a TV show with episode data, use the dedicated TV Show display
-    if (movie && movie.tvShow) {
-        return <TVShowDisplay movie={movie} isWatched={isWatched} onToggleWatched={onToggleWatched} />;
-    }
+    const isTV = !!movie?.tvShow;
 
-    // Otherwise, use the standard movie display
     const heroMetaParts = [
         movie.year,
-        typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : '',
+        isTV ? 'TV Series' : (typeof movie.type === 'string' && movie.type.length > 0 ? movie.type.charAt(0).toUpperCase() + movie.type.slice(1) : ''),
         formatDisplayLanguage(movie.language)
     ].filter((part) => typeof part === 'string' && part.trim().length > 0);
     const movieDescription = toMetaDescription(movie.summary_short || stripHtmlTags(movie.summary_medium));
@@ -786,6 +827,39 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             <p className="mt-2 md:mt-3 text-sm sm:text-base md:text-xl text-brand-text-light font-semibold animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'forwards' }}>
                                 {heroMetaParts.join(' \u2022 ')}
                             </p>
+
+                            {isTV && movie.tvShow && (
+                                <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2 animate-slide-up" style={{ animationDelay: '0.30s', animationFillMode: 'forwards' }}>
+                                    {movie.tvShow.status && (
+                                        <span className={`px-2.5 py-1 text-[11px] md:text-xs font-bold uppercase tracking-wider rounded border shadow-sm ${
+                                            movie.tvShow.status.toLowerCase() === 'ended' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
+                                            movie.tvShow.status.toLowerCase() === 'returning series' || movie.tvShow.status.toLowerCase() === 'running' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
+                                            'bg-white/10 text-white/80 border-white/10'
+                                        }`}>
+                                            {movie.tvShow.status}
+                                        </span>
+                                    )}
+                                    {movie.tvShow.network && (
+                                        <span className="px-2.5 py-1 text-[11px] md:text-xs font-semibold text-brand-text-dark bg-white/5 border border-white/10 rounded">
+                                            {movie.tvShow.network}
+                                        </span>
+                                    )}
+                                    <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] md:text-xs font-bold text-white bg-white/20 border border-white/10 rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">
+                                        <TvIcon className="w-3.5 h-3.5 opacity-70" />
+                                        {movie.tvShow.totalSeasons || 1} Season{movie.tvShow.totalSeasons !== 1 ? 's' : ''}
+                                    </span>
+                                    <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] md:text-xs font-bold text-white bg-white/20 border border-white/10 rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">
+                                        <FilmIcon className="w-3.5 h-3.5 opacity-70" />
+                                        {movie.tvShow.totalEpisodes || '?'} Episodes
+                                    </span>
+                                    {(movie.tvShow.premiered || movie.tvShow.ended) && (
+                                        <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] md:text-xs font-bold text-white bg-white/20 border border-white/10 rounded-md backdrop-blur-md hover:bg-white/30 transition-colors shadow-lg">
+                                            <CalendarIcon className="w-3.5 h-3.5 opacity-70" />
+                                            {movie.tvShow.premiered ? movie.tvShow.premiered.substring(0, 4) : '?'} - {movie.tvShow.status === 'Ended' && movie.tvShow.ended ? movie.tvShow.ended.substring(0, 4) : 'Present'}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="mt-2 md:mt-4 flex flex-wrap justify-center sm:justify-start gap-1.5 md:gap-2 animate-slide-up" style={{ animationDelay: '0.35s', animationFillMode: 'forwards' }}>
                                 {safeGenres.map(genre => (
@@ -958,6 +1032,123 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                         </div>
                     </Section>
 
+                    {isTV && movie.tvShow && movie.tvShow.totalSeasons > 0 && (
+                        <Section title="Episodes">
+                            <div className="space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-brand-surface/50 border border-white/10 p-4 rounded-xl">
+                                    <div className="flex-1">
+                                        <label htmlFor="season-select" className="sr-only">Select Season</label>
+                                        <div className="relative inline-block w-full sm:w-auto">
+                                            <select
+                                                id="season-select"
+                                                value={selectedSeason}
+                                                onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                                                className="w-full sm:w-auto appearance-none bg-brand-surface border border-brand-primary/40 text-white font-semibold py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent cursor-pointer hover:bg-brand-surface/80 transition-colors"
+                                            >
+                                                {Array.from({ length: movie.tvShow.totalSeasons || 1 }, (_, i) => i + 1).map(s => (
+                                                    <option key={s} value={s}>Season {s}</option>
+                                                ))}
+                                            </select>
+                                            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-dark pointer-events-none" />
+                                        </div>
+                                    </div>
+                                    {episodesSource && (
+                                        <div className="text-xs font-medium text-brand-text-dark/70 flex items-center justify-end sm:justify-start gap-1">
+                                            Episodes via 
+                                            <span className="text-brand-text-dark">{episodesSource}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {episodesLoading && (!episodesMap[selectedSeason] || episodesMap[selectedSeason].length === 0) ? (
+                                    <div className="space-y-3">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="animate-pulse flex items-start gap-4 p-4 rounded-xl border border-white/10 bg-white/5">
+                                                <div className="w-32 h-20 bg-white/10 rounded-lg flex-shrink-0" />
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="h-4 bg-white/10 rounded w-1/4" />
+                                                    <div className="h-4 bg-white/10 rounded w-1/2" />
+                                                    <div className="h-3 bg-white/5 rounded w-full mt-2" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : episodesMap[selectedSeason] && episodesMap[selectedSeason].length > 0 ? (
+                                    <div className="space-y-3">
+                                        {episodesMap[selectedSeason].map((episode) => {
+                                            const isExpanded = expandedEpisode === String(episode.id);
+                                            return (
+                                                <div key={episode.id} className="group relative flex flex-col sm:flex-row gap-4 p-3 sm:p-4 rounded-xl border border-white/10 bg-brand-surface/40 hover:bg-brand-surface/80 hover:border-brand-primary/30 transition-all duration-300">
+                                                    <div className="relative w-full sm:w-40 md:w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-brand-surface">
+                                                        {episode.image ? (
+                                                            <img 
+                                                                src={episode.image} 
+                                                                alt={episode.name} 
+                                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                                loading="lazy"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center bg-black/40">
+                                                                <TvIcon className="w-8 h-8 text-brand-text-dark/50" />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300" />
+                                                        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-white shadow-sm border border-white/10">
+                                                            S{String(episode.season).padStart(2, '0')} E{String(episode.episode).padStart(2, '0')}
+                                                        </div>
+                                                        {episode.rating !== null && episode.rating !== undefined && (
+                                                            <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded flex items-center gap-1 text-[10px] font-bold text-white border border-white/10">
+                                                                <StarIcon className="w-3 h-3 text-amber-400" /> {episode.rating}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                        <h4 className="text-sm md:text-base font-bold text-white leading-tight group-hover:text-brand-primary transition-colors">{episode.name}</h4>
+                                                        <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[11px] md:text-xs text-brand-text-dark font-medium">
+                                                            {episode.airdate && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <CalendarIcon className="w-3 h-3" />
+                                                                    {new Date(episode.airdate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                </span>
+                                                            )}
+                                                            {episode.runtime && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <ClockIcon className="w-3 h-3" />
+                                                                    {episode.runtime} min
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {episode.summary && (
+                                                            <div className="mt-2.5">
+                                                                <p className={`text-xs text-brand-text-light leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}
+                                                                    dangerouslySetInnerHTML={{ __html: episode.summary }}
+                                                                />
+                                                                {episode.summary.length > 150 && (
+                                                                    <button 
+                                                                        onClick={() => setExpandedEpisode(isExpanded ? null : String(episode.id))}
+                                                                        className="mt-1 text-[10px] md:text-[11px] font-bold text-brand-primary hover:text-brand-accent transition-colors flex items-center gap-1"
+                                                                    >
+                                                                        {isExpanded ? 'Show Less' : 'Read More'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="p-8 text-center border border-white/10 rounded-xl bg-white/5">
+                                        <p className="text-sm font-medium text-brand-text-light">No episodes found for this season.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </Section>
+                    )}
+
                     <Section title="Gallery">
                         {safeExtraImages.length > 0 ? (
                             <div className="flex flex-col gap-4">
@@ -1102,212 +1293,217 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                         </Section>
                     )}
 
-                    <Section title="Where to Watch">
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                            {safeWhereToWatch.length > 0 ? (
-                                safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />)
-                            ) : (
-                                <div className="empty-state">
-                                    <div className="empty-state-icon">
-                                        <TvIcon className="w-8 h-8" />
-                                    </div>
-                                    <p className="empty-state-title">Streaming info not available</p>
-                                    <p className="empty-state-subtitle">Check JustWatch for availability</p>
+                    {(safeWhereToWatch.length > 0 || (isTV && movie.tvShow && movie.tvShow.officialSite)) && (
+                        <Section title="Where to Watch">
+                            {safeWhereToWatch.length > 0 && (
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                                    {safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />)}
                                 </div>
                             )}
-                        </div>
-                    </Section>
+                            {isTV && movie.tvShow && movie.tvShow.officialSite && (
+                                <div className={`${safeWhereToWatch.length > 0 ? 'mt-4 pt-4 border-t' : ''} border-white/10`}>
+                                    <a 
+                                        href={movie.tvShow.officialSite} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between w-full p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-brand-primary/40 transition-all duration-200 group touch-target"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-brand-surface border border-white/10 flex items-center justify-center">
+                                                <LinkIcon className="w-5 h-5 text-brand-primary" />
+                                            </div>
+                                            <div className="text-left">
+                                                <h4 className="text-sm font-bold text-white group-hover:text-brand-primary transition-colors">Official Website</h4>
+                                                <p className="text-[10px] md:text-xs text-brand-text-dark max-w-[200px] truncate">{new URL(movie.tvShow.officialSite).hostname}</p>
+                                            </div>
+                                        </div>
+                                        <ArrowRightIcon className="w-4 h-4 text-brand-text-dark group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
+                                    </a>
+                                </div>
+                            )}
+                        </Section>
+                    )}
 
                 </div>
             </div>
 
             {/* ── User Reviews — full-width below the grid ────────────────── */}
-            <div className="mt-8 pb-8 px-4 md:px-8">
-
-                {/* Section header */}
-                <div className="flex items-center justify-between mb-6 border-b border-white/6 pb-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <svg className="w-5 h-5 text-brand-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
-                        </svg>
-                        <h2 className="text-lg font-bold text-white">User Reviews</h2>
-                        {!reviewsLoading && reviews.length > 0 && (
+            {((!reviewsLoading && reviews.length > 0) || reviewsLoading) && (
+                <div className="mt-8 pb-8 px-4 md:px-8">
+    
+                    {/* Section header */}
+                    <div className="flex items-center justify-between mb-6 border-b border-white/6 pb-3">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <svg className="w-5 h-5 text-brand-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 0 1-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z" />
+                            </svg>
+                            <h2 className="text-lg font-bold text-white">User Reviews</h2>
+                            {!reviewsLoading && reviews.length > 0 && (
+                                <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                    {reviews.length}{reviewsTotalPages > 1 ? '+' : ''} review{reviews.length !== 1 ? 's' : ''}
+                                </span>
+                            )}
                             <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                {reviews.length}{reviewsTotalPages > 1 ? '+' : ''} review{reviews.length !== 1 ? 's' : ''}
+                                Source: {reviewsSourceLabel}
                             </span>
-                        )}
-                        <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                            Source: {reviewsSourceLabel}
-                        </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => void loadReviews()}
+                                disabled={reviewsLoading}
+                                className="text-[11px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10 disabled:opacity-60 transition-colors"
+                            >
+                                {reviewsLoading ? 'Refreshing…' : 'Refresh reviews'}
+                            </button>
+                            <p className="text-[11px] text-brand-text-dark hidden sm:block">Real user sentiment</p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => void loadReviews()}
-                            disabled={reviewsLoading}
-                            className="text-[11px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-brand-text-light hover:text-white hover:bg-white/10 disabled:opacity-60 transition-colors"
-                        >
-                            {reviewsLoading ? 'Refreshing…' : 'Refresh reviews'}
-                        </button>
-                        <p className="text-[11px] text-brand-text-dark hidden sm:block">Real user sentiment</p>
-                    </div>
-                </div>
-
-                {/* Skeleton */}
-                {reviewsLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {[1, 2].map(i => (
-                            <div key={i} className="animate-pulse rounded-2xl p-5 bg-white/[0.03] border border-white/6">
-                                <div className="flex gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-full bg-white/10 flex-shrink-0" />
-                                    <div className="flex-1 space-y-2 pt-1">
-                                        <div className="h-3 bg-white/10 rounded w-1/3" />
-                                        <div className="h-2.5 bg-white/8 rounded w-1/4" />
+    
+                    {/* Skeleton */}
+                    {reviewsLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {[1, 2].map(i => (
+                                <div key={i} className="animate-pulse rounded-2xl p-5 bg-white/[0.03] border border-white/6">
+                                    <div className="flex gap-3 mb-4">
+                                        <div className="w-10 h-10 rounded-full bg-white/10 flex-shrink-0" />
+                                        <div className="flex-1 space-y-2 pt-1">
+                                            <div className="h-3 bg-white/10 rounded w-1/3" />
+                                            <div className="h-2.5 bg-white/8 rounded w-1/4" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="h-2.5 bg-white/8 rounded w-full" />
+                                        <div className="h-2.5 bg-white/8 rounded w-5/6" />
+                                        <div className="h-2.5 bg-white/8 rounded w-4/6" />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="h-2.5 bg-white/8 rounded w-full" />
-                                    <div className="h-2.5 bg-white/8 rounded w-5/6" />
-                                    <div className="h-2.5 bg-white/8 rounded w-4/6" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <>
-                        {reviews.length === 0 ? (
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-                                <p className="text-white font-semibold text-sm">No reviews available yet</p>
-                                <p className="text-xs text-brand-text-dark mt-1">This title has limited public reviews right now.</p>
-                                <button
-                                    type="button"
-                                    onClick={() => void loadReviews()}
-                                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-xs text-brand-text-light hover:text-white hover:bg-white/10 transition-colors"
-                                >
-                                    Try again
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Review cards grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {reviews.slice(0, reviewsVisible).map(rev => {
-                                        const isExp = expandedReview === rev.id;
-                                        const LIMIT = 220;
-                                        const isLong = rev.content.length > LIMIT;
-                                        const text = isExp || !isLong
-                                            ? rev.content
-                                            : rev.content.slice(0, LIMIT).trimEnd() + '…';
-                                        const date = rev.created_at
-                                            ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                                            : null;
-                                        return (
-                                            <div key={rev.id} className="flex flex-col rounded-2xl p-5 bg-brand-surface/60 backdrop-blur-md border border-white/10 hover:border-brand-primary/30 hover:bg-brand-surface/80 transition-all duration-300 shadow-xl group">
-                                                {/* Author row */}
-                                                <div className="flex items-start gap-3 mb-4">
-                                                    {/* Avatar */}
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary/60 to-brand-secondary/60 flex items-center justify-center border border-white/10 mt-0.5 group-hover:scale-105 transition-transform duration-300">
-                                                        {rev.avatar_url ? (
-                                                            <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
-                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                            />
-                                                        ) : (
-                                                            <span className="text-sm font-bold text-white/90">{rev.author[0]?.toUpperCase() || '?'}</span>
+                            ))}
+                        </div>
+                    ) : (
+                        <>
+                            {reviews.length > 0 && (
+                                <>
+                                    {/* Review cards grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {reviews.slice(0, reviewsVisible).map(rev => {
+                                            const isExp = expandedReview === rev.id;
+                                            const LIMIT = 220;
+                                            const isLong = rev.content.length > LIMIT;
+                                            const text = isExp || !isLong
+                                                ? rev.content
+                                                : rev.content.slice(0, LIMIT).trimEnd() + '…';
+                                            const date = rev.created_at
+                                                ? new Date(rev.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                                                : null;
+                                            return (
+                                                <div key={rev.id} className="flex flex-col rounded-2xl p-5 bg-brand-surface/60 backdrop-blur-md border border-white/10 hover:border-brand-primary/30 hover:bg-brand-surface/80 transition-all duration-300 shadow-xl group">
+                                                    {/* Author row */}
+                                                    <div className="flex items-start gap-3 mb-4">
+                                                        {/* Avatar */}
+                                                        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-primary/60 to-brand-secondary/60 flex items-center justify-center border border-white/10 mt-0.5 group-hover:scale-105 transition-transform duration-300">
+                                                            {rev.avatar_url ? (
+                                                                <img src={rev.avatar_url} alt={rev.author} className="w-full h-full object-cover" loading="lazy"
+                                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                                />
+                                                            ) : (
+                                                                <span className="text-sm font-bold text-white/90">{rev.author[0]?.toUpperCase() || '?'}</span>
+                                                            )}
+                                                        </div>
+                                                        {/* Name + meta */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-bold text-sm text-white leading-tight truncate group-hover:text-brand-primary transition-colors">{rev.author}</p>
+                                                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                                {rev.rating !== null && (
+                                                                    <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-md border border-amber-500/20">
+                                                                        ★ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}<span className="text-amber-400/50">/10</span>
+                                                                    </span>
+                                                                )}
+                                                                {date && <span className="text-[10px] font-medium text-brand-text-dark tracking-wide uppercase">{date}</span>}
+                                                            </div>
+                                                        </div>
+                                                        {/* TMDB link */}
+                                                        {rev.url && (
+                                                            <a href={rev.url} target="_blank" rel="noopener noreferrer"
+                                                                className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg text-brand-text-dark hover:text-brand-primary hover:bg-brand-primary/10 transition-all border border-transparent hover:border-brand-primary/20"
+                                                                title="Full review on TMDB" aria-label="Read full review on TMDB"
+                                                            >
+                                                                <LinkIcon className="w-3.5 h-3.5" />
+                                                            </a>
                                                         )}
                                                     </div>
-                                                    {/* Name + meta */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-sm text-white leading-tight truncate group-hover:text-brand-primary transition-colors">{rev.author}</p>
-                                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                                            {rev.rating !== null && (
-                                                                <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-md border border-amber-500/20">
-                                                                    ★ {rev.rating % 1 === 0 ? rev.rating : rev.rating.toFixed(1)}<span className="text-amber-400/50">/10</span>
-                                                                </span>
-                                                            )}
-                                                            {date && <span className="text-[10px] font-medium text-brand-text-dark tracking-wide uppercase">{date}</span>}
-                                                        </div>
+                                                    {/* Divider */}
+                                                    <div className="border-t border-white/5 mb-4" />
+                                                    {/* Review text */}
+                                                    <div className="flex-1 overflow-hidden">
+                                                        <p className="text-[13px] text-brand-text-light leading-relaxed font-medium">
+                                                            {text}
+                                                        </p>
                                                     </div>
-                                                    {/* TMDB link */}
-                                                    {rev.url && (
-                                                        <a href={rev.url} target="_blank" rel="noopener noreferrer"
-                                                            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg text-brand-text-dark hover:text-brand-primary hover:bg-brand-primary/10 transition-all border border-transparent hover:border-brand-primary/20"
-                                                            title="Full review on TMDB" aria-label="Read full review on TMDB"
+                                                    {isLong && (
+                                                        <button
+                                                            onClick={() => setExpandedRev(isExp ? null : rev.id)}
+                                                            className="mt-4 text-[11px] text-brand-primary hover:text-brand-accent font-bold transition-colors self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-primary/5 hover:bg-brand-primary/10 border border-brand-primary/10"
                                                         >
-                                                            <LinkIcon className="w-3.5 h-3.5" />
-                                                        </a>
+                                                            {isExp ? (
+                                                                <><span>Show less</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg></>
+                                                            ) : (
+                                                                <><span>Read more</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></>
+                                                            )}
+                                                        </button>
                                                     )}
                                                 </div>
-                                                {/* Divider */}
-                                                <div className="border-t border-white/5 mb-4" />
-                                                {/* Review text */}
-                                                <div className="flex-1 overflow-hidden">
-                                                    <p className="text-[13px] text-brand-text-light leading-relaxed font-medium">
-                                                        {text}
-                                                    </p>
-                                                </div>
-                                                {isLong && (
-                                                    <button
-                                                        onClick={() => setExpandedRev(isExp ? null : rev.id)}
-                                                        className="mt-4 text-[11px] text-brand-primary hover:text-brand-accent font-bold transition-colors self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-primary/5 hover:bg-brand-primary/10 border border-brand-primary/10"
-                                                    >
-                                                        {isExp ? (
-                                                            <><span>Show less</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg></>
-                                                        ) : (
-                                                            <><span>Read more</span><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></>
-                                                        )}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Load more */}
-                                {(reviewsVisible < reviews.length || reviewsPage < reviewsTotalPages) && (
-                                    <div className="flex justify-center mt-6">
-                                        <button
-                                            onClick={async () => {
-                                                if (!movie?.tmdb_id) return;
-                                                const currentId = movie.tmdb_id;
-
-                                                if (reviewsVisible < reviews.length) {
-                                                    setReviewsVisible(v => Math.min(v + 2, reviews.length));
-                                                    return;
-                                                }
-                                                if (reviewsPage >= reviewsTotalPages) return;
-
-                                                const nextPage = reviewsPage + 1;
-                                                const mediaType = movie.tvShow ? 'tv' : 'movie';
-                                                setRevLoadMore(true);
-                                                try {
-                                                    const next = await fetchTmdbReviewsPage(mediaType, currentId, nextPage, 'en-US');
-                                                    if (activeTmdbIdRef.current !== currentId) return;
-                                                    setReviews(prev => dedupeReviews([...prev, ...next.reviews]));
-                                                    setReviewsVisible(prev => prev + 2);
-                                                    setReviewsPage(nextPage);
-                                                } catch {
-                                                    // Keep existing reviews on transient errors.
-                                                } finally {
-                                                    if (activeTmdbIdRef.current === currentId) setRevLoadMore(false);
-                                                }
-                                            }}
-                                            disabled={reviewsLoadingMore}
-                                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-sm text-white font-medium transition-all duration-200 disabled:opacity-50"
-                                        >
-                                            {reviewsLoadingMore ? (
-                                                <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg> Loading…</>
-                                            ) : (
-                                                <><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg> Load more reviews</>
-                                            )}
-                                        </button>
+                                            );
+                                        })}
                                     </div>
-                                )}
+
+                                    {/* Load more */}
+                                    {(reviewsVisible < reviews.length || reviewsPage < reviewsTotalPages) && (
+                                        <div className="flex justify-center mt-6">
+                                            <button
+                                                onClick={async () => {
+                                                    if (!movie?.tmdb_id) return;
+                                                    const currentId = movie.tmdb_id;
+
+                                                    if (reviewsVisible < reviews.length) {
+                                                        setReviewsVisible(v => Math.min(v + 2, reviews.length));
+                                                        return;
+                                                    }
+                                                    if (reviewsPage >= reviewsTotalPages) return;
+
+                                                    const nextPage = reviewsPage + 1;
+                                                    const mediaType = movie.tvShow ? 'tv' : 'movie';
+                                                    setRevLoadMore(true);
+                                                    try {
+                                                        const next = await fetchTmdbReviewsPage(mediaType, currentId, nextPage, 'en-US');
+                                                        if (activeTmdbIdRef.current !== currentId) return;
+                                                        setReviews(prev => dedupeReviews([...prev, ...next.reviews]));
+                                                        setReviewsVisible(prev => prev + 2);
+                                                        setReviewsPage(nextPage);
+                                                    } catch {
+                                                        // Keep existing reviews on transient errors.
+                                                    } finally {
+                                                        if (activeTmdbIdRef.current === currentId) setRevLoadMore(false);
+                                                    }
+                                                }}
+                                                disabled={reviewsLoadingMore}
+                                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-sm text-white font-medium transition-all duration-200 disabled:opacity-50"
+                                            >
+                                                {reviewsLoadingMore ? (
+                                                    <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg> Loading…</>
+                                                ) : (
+                                                    <><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg> Load more reviews</>
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
                             </>
                         )}
                         <p className="text-[11px] text-brand-text-dark text-center mt-4">Reviews sourced from The Movie Database (TMDB)</p>
                     </>
                 )}
             </div>
+        )}
 
             {showWatchlistModal && modalRoot && ReactDOM.createPortal(
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
