@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview, WatchOption } from '../types';
+import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview, WatchOption, EpisodesResponse } from '../types';
 import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon } from './icons';
 import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
 import { apiGet } from '../lib/apiClient';
@@ -81,6 +81,11 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
     const [expandedReview, setExpandedReview] = useState<string | null>(null);
     const [reviewsSourceLabel, setReviewsSourceLabel] = useState<string>('TMDB');
 
+    // On-demand episode state
+    const [episodesMap, setEpisodesMap] = useState<Record<number, TVShowEpisode[]>>({});
+    const [episodesLoading, setEpisodesLoading] = useState<boolean>(false);
+    const [episodesSource, setEpisodesSource] = useState<Record<number, string>>({});
+
     if (!movie.tvShow) {
         return <div className="error">No TV show data available</div>;
     }
@@ -88,7 +93,10 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
     const tvShow = movie.tvShow;
     const seasonsData = tvShow.seasons || [];
     const selectedSeasonData = seasonsData.find(s => s.number === selectedSeason);
-    const episodesForSeason = (tvShow.episodes || []).filter(e => e.season === selectedSeason);
+    const loadedEpisodes = episodesMap[selectedSeason];
+    const episodesForSeason = loadedEpisodes !== undefined
+        ? loadedEpisodes
+        : (tvShow.episodes || []).filter(e => e.season === selectedSeason);
     const safeWhereToWatch: WatchOption[] = Array.isArray(movie.where_to_watch)
         ? movie.where_to_watch.map((option: any) => ({
             platform: option?.platform || 'Unknown',
@@ -185,6 +193,61 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
         if (!movie.tmdb_id) return;
         void loadReviews();
     }, [loadReviews, movie.tmdb_id]);
+
+    const loadEpisodes = useCallback(async (seasonNum: number) => {
+        if (!movie.tmdb_id) return;
+        // Check if we already have it in the map
+        if (episodesMap[seasonNum] !== undefined) return;
+
+        setEpisodesLoading(true);
+        try {
+            const data = await apiGet<EpisodesResponse>(`/api/episodes/${movie.tmdb_id}/${seasonNum}`);
+            if (data?.ok && Array.isArray(data.episodes)) {
+                setEpisodesMap(prev => ({
+                    ...prev,
+                    [seasonNum]: data.episodes
+                }));
+                setEpisodesSource(prev => ({
+                    ...prev,
+                    [seasonNum]: data.source || 'Unknown'
+                }));
+            } else {
+                setEpisodesMap(prev => ({
+                    ...prev,
+                    [seasonNum]: []
+                }));
+                setEpisodesSource(prev => ({
+                    ...prev,
+                    [seasonNum]: ''
+                }));
+            }
+        } catch (err) {
+            console.error('Failed to load episodes:', err);
+            setEpisodesMap(prev => ({
+                ...prev,
+                [seasonNum]: []
+            }));
+            setEpisodesSource(prev => ({
+                ...prev,
+                [seasonNum]: ''
+            }));
+        } finally {
+            setEpisodesLoading(false);
+        }
+    }, [movie.tmdb_id, episodesMap]);
+
+    useEffect(() => {
+        if (movie.tmdb_id) {
+            void loadEpisodes(selectedSeason);
+        }
+    }, [movie.tmdb_id, selectedSeason, loadEpisodes]);
+
+    useEffect(() => {
+        setEpisodesMap({});
+        setEpisodesSource({});
+        const defaultSeason = seasonsData.length > 0 ? seasonsData[0].number : 1;
+        setSelectedSeason(defaultSeason);
+    }, [movie.tmdb_id, seasonsData.length]);
 
     // Status badge color
     const getStatusColor = (status: string) => {
@@ -375,7 +438,14 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
             {/* Season Selector */}
             <div className="tv-show-section">
                 <div className="season-selector-header">
-                    <h2>Episodes</h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h2>Episodes</h2>
+                        {episodesSource[selectedSeason] && (
+                            <span className="source-badge">
+                                via {episodesSource[selectedSeason]}
+                            </span>
+                        )}
+                    </div>
                     <div className="season-controls">
                         <select
                             value={selectedSeason}
@@ -410,14 +480,29 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                             <div className="season-progress-fill" style={{ width: '0%' }}></div>
                         </div>
                         <div className="season-stats">
-                            <span>{episodesForSeason.length} Episodes</span>
+                            <span>{episodesLoading ? '...' : episodesForSeason.length} Episodes</span>
                         </div>
                     </div>
                 )}
 
                 {/* Episode List */}
                 <div className="episode-list">
-                    {episodesForSeason.length > 0 ? (
+                    {episodesLoading ? (
+                        <div className="flex flex-col gap-4">
+                            {[1, 2, 3].map((idx) => (
+                                <div key={idx} className="episode-card-enhanced animate-pulse" style={{ pointerEvents: 'none' }}>
+                                    <div className="episode-card-inner">
+                                        <div className="episode-thumbnail-container bg-white/[0.03]" />
+                                        <div className="episode-content flex flex-col gap-2">
+                                            <div className="h-4 bg-white/10 rounded w-1/4 mb-1" />
+                                            <div className="h-5 bg-white/8 rounded w-1/2 mb-2" />
+                                            <div className="h-3 bg-white/5 rounded w-1/3" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : episodesForSeason.length > 0 ? (
                         episodesForSeason.map((episode) => (
                             <div
                                 key={episode.id}
