@@ -7,6 +7,8 @@ import { emitClientError } from './clientObservability';
  * Better than TMDB for TV shows - includes seasons, episodes, episode lists
  * 
  * API Docs: https://www.tvmaze.com/api
+ * 
+ * @deprecated Use backend /api/episodes endpoint for episode lists to ensure caching and fallback orchestration.
  */
 
 export interface TVMazeShow {
