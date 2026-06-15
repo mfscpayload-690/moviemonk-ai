@@ -14,7 +14,7 @@
     "security-check": "npm audit && npm run lint && npm run build"
   },
   "dependencies": {
-    "@google/genai": "^2.7.0",
+    "@google/genai": "^2.8.0",
     "@supabase/supabase-js": "^2.106.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
