@@ -112,6 +112,11 @@ async def get_details(media_type: str, tmdb_id: int) -> dict:
     return await tmdb_fetch(f"{media_type}/{tmdb_id}", {"language": "en-US"})
 
 
+async def get_season_details(tv_id: int, season_number: int) -> dict:
+    """Fetch details for a specific season of a TV show (contains episodes)."""
+    return await tmdb_fetch(f"tv/{tv_id}/season/{season_number}", {"language": "en-US"})
+
+
 async def get_credits(media_type: str, tmdb_id: int) -> dict:
     return await tmdb_fetch(f"{media_type}/{tmdb_id}/credits", {"language": "en-US"})
 
