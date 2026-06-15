@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api import details, health, person, resolve, search, suggest, tmdb_proxy, vibe, watchlists, groq_proxy, query, omdb
+from app.api import details, health, person, resolve, search, suggest, tmdb_proxy, vibe, watchlists, groq_proxy, query, omdb, episodes
 
 router = APIRouter(prefix="/api")
 
@@ -20,3 +20,5 @@ router.include_router(watchlists.router, tags=["Watchlists"])
 router.include_router(groq_proxy.router, tags=["Groq Proxy"])
 router.include_router(query.router, tags=["Query"])
 router.include_router(omdb.router, tags=["OMDB Proxy"])
+router.include_router(episodes.router, tags=["Episodes"])
+
