@@ -1,3 +1,8 @@
+:root {
+  --brand-primary: var(--color-primary, #7c3aed);
+  --brand-secondary: var(--color-accent, #db2777);
+}
+
 .search-page-shell {
   padding: 0.75rem 1rem 1rem;
   display: flex;
@@ -146,14 +151,15 @@ html[data-card-density="compact"] .search-result-body {
 .search-hero-label {
   display: inline-flex;
   border-radius: 9999px;
-  background: rgba(224, 142, 254, 0.2);
-  color: var(--brand-primary);
-  border: 1px solid rgba(224, 142, 254, 0.3);
+  background: rgba(224, 142, 254, 0.38);
+  color: #ffffff;
+  border: 1px solid rgba(224, 142, 254, 0.65);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.25rem 0.75rem;
+  text-shadow: 0 0 8px rgba(224, 142, 254, 0.6);
 }
 
 .search-hero-rating {
@@ -220,18 +226,19 @@ html[data-card-density="compact"] .search-result-body {
   padding: 1rem 2rem;
   background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
   border-radius: 9999px;
-  color: var(--bg-base);
-  font-weight: 700;
+  color: #ffffff;
+  font-weight: 800;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 10px 20px -10px var(--brand-secondary);
+  box-shadow: 0 10px 20px -10px rgba(219, 39, 119, 0.5);
   transition: transform 0.2s ease, filter 0.2s ease;
   border: none;
   cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .search-btn-primary:hover {
