@@ -115,13 +115,13 @@ html[data-card-density="compact"] .search-result-body {
   inset: 0;
   background: linear-gradient(to right, 
     var(--bg-base) 0%, 
-    rgba(10, 10, 16, 0.8) 25%, 
-    rgba(10, 10, 16, 0.4) 50%, 
+    rgba(10, 10, 16, 0.92) 35%, 
+    rgba(10, 10, 16, 0.55) 65%, 
     transparent 100%
   ),
   linear-gradient(to top,
-    rgba(10, 10, 16, 0.6) 0%,
-    transparent 40%
+    rgba(10, 10, 16, 0.8) 0%,
+    transparent 60%
   );
 }
 
@@ -170,6 +170,7 @@ html[data-card-density="compact"] .search-result-body {
   line-height: 1.1;
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .search-hero-meta {
@@ -177,25 +178,26 @@ html[data-card-density="compact"] .search-result-body {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-  color: var(--color-text-muted);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.85rem;
   margin-bottom: 1.5rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .search-hero-meta-dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background-color: var(--color-text-muted);
+  background-color: rgba(255, 255, 255, 0.75);
   opacity: 0.5;
 }
 
 .search-hero-genres {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .search-hero-summary {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.88);
   font-size: 1.1rem;
   line-height: 1.6;
   max-width: 600px;
@@ -205,6 +207,7 @@ html[data-card-density="compact"] .search-result-body {
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .search-hero-actions {
