@@ -7,8 +7,6 @@ import { emitClientError } from './clientObservability';
  * Better than TMDB for TV shows - includes seasons, episodes, episode lists
  * 
  * API Docs: https://www.tvmaze.com/api
- * 
- * @deprecated Use backend /api/episodes endpoint for episode lists to ensure caching and fallback orchestration.
  */
 
 export interface TVMazeShow {
@@ -127,6 +125,7 @@ export async function findBestTVShow(query: string, year?: string): Promise<TVMa
 
 /**
  * Get full show details with episodes and cast
+ * @deprecated For episode fetching, use backend /api/episodes/{tmdb_id}/{season} instead.
  */
 export async function getTVShowDetails(showId: number): Promise<TVMazeShow | null> {
     try {
@@ -148,6 +147,7 @@ export async function getTVShowDetails(showId: number): Promise<TVMazeShow | nul
 
 /**
  * Get episodes for a specific season
+ * @deprecated Use backend /api/episodes/{tmdb_id}/{season} endpoint instead for caching and fallback orchestration.
  */
 export async function getSeasonEpisodes(showId: number, seasonNumber: number): Promise<TVMazeEpisode[]> {
     try {
@@ -173,6 +173,7 @@ export async function getSeasonEpisodes(showId: number, seasonNumber: number): P
 
 /**
  * Get single episode details
+ * @deprecated For episode metadata, prefer fetching via the backend /api/episodes endpoint.
  */
 export async function getEpisode(
     showId: number,

@@ -521,7 +521,7 @@ const App: React.FC = () => {
     const normalizeTvShow = (data: any) => {
       if (!data) return data;
       const rawTvShow = data.tvShow || data.tv_show;
-      if (rawTvShow && !data.tvShow) {
+      if (rawTvShow) {
         data.tvShow = {
           status: rawTvShow.status || '',
           premiered: rawTvShow.premiered || rawTvShow.premiere_date || null,
@@ -531,7 +531,7 @@ const App: React.FC = () => {
           network: rawTvShow.network || '',
           language: rawTvShow.language || '',
           officialSite: rawTvShow.officialSite || rawTvShow.official_site || null,
-          seasons: (rawTvShow.seasons || []).map((s: any) => ({
+          seasons: (Array.isArray(rawTvShow.seasons) ? rawTvShow.seasons : []).map((s: any) => ({
             number: s.number ?? 0,
             name: s.name ?? '',
             episodeCount: typeof s.episodeCount === 'number' ? s.episodeCount : typeof s.episode_count === 'number' ? s.episode_count : 0,
@@ -540,7 +540,7 @@ const App: React.FC = () => {
             image: s.image,
             summary: s.summary
           })),
-          episodes: (rawTvShow.episodes || []).map((e: any) => ({
+          episodes: (Array.isArray(rawTvShow.episodes) ? rawTvShow.episodes : []).map((e: any) => ({
             id: e.id ?? 0,
             season: e.season ?? 0,
             episode: typeof e.episode === 'number' ? e.episode : typeof e.number === 'number' ? e.number : 0,

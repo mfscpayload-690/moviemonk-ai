@@ -61,6 +61,19 @@ const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
 const toSentenceCase = (value: string): string =>
     value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 
+const getSafeHostname = (urlStr: string): string => {
+    try {
+        if (!urlStr) return '';
+        let formatted = urlStr.trim();
+        if (!/^https?:\/\//i.test(formatted)) {
+            formatted = 'https://' + formatted;
+        }
+        return new URL(formatted).hostname;
+    } catch {
+        return urlStr;
+    }
+};
+
 const formatDisplayLanguage = (value?: string): string => {
     if (!value || !value.trim()) return '';
     const normalized = value.trim();
@@ -758,9 +771,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
             <SeoHead
                 title={`${movie.title}${movie.year ? ` (${movie.year})` : ''}`}
                 description={movieDescription}
-                path={`/movie/${movie.tmdb_id || ''}`}
+                path={isTV ? `/tv/${movie.tmdb_id || ''}` : `/movie/${movie.tmdb_id || ''}`}
                 image={movie.poster_url || movie.backdrop_url || undefined}
-                type="video.movie"
+                type={isTV ? "video.tv_show" : "video.movie"}
                 structuredData={[buildMovieJsonLd(movie)]}
                 preloadImage={movie.poster_url || movie.backdrop_url || undefined}
             />
@@ -1122,9 +1135,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                                         
                                                         {episode.summary && (
                                                             <div className="mt-2.5">
-                                                                <p className={`text-xs text-brand-text-light leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}
-                                                                    dangerouslySetInnerHTML={{ __html: episode.summary }}
-                                                                />
+                                                                <p className={`text-xs text-brand-text-light leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
+                                                                    {stripHtmlTags(episode.summary)}
+                                                                </p>
                                                                 {episode.summary.length > 150 && (
                                                                     <button 
                                                                         onClick={() => setExpandedEpisode(isExpanded ? null : String(episode.id))}
@@ -1314,7 +1327,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                             </div>
                                             <div className="text-left">
                                                 <h4 className="text-sm font-bold text-white group-hover:text-brand-primary transition-colors">Official Website</h4>
-                                                <p className="text-[10px] md:text-xs text-brand-text-dark max-w-[200px] truncate">{new URL(movie.tvShow.officialSite).hostname}</p>
+                                                <p className="text-[10px] md:text-xs text-brand-text-dark max-w-[200px] truncate">{getSafeHostname(movie.tvShow.officialSite)}</p>
                                             </div>
                                         </div>
                                         <ArrowRightIcon className="w-4 h-4 text-brand-text-dark group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />

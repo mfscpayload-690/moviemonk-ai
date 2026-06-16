@@ -6,6 +6,7 @@ Does not require an API key.
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 from typing import Any
@@ -40,12 +41,12 @@ async def close_client() -> None:
 
 
 def strip_html(html_str: str | None) -> str | None:
-    """Strip HTML tags from a string."""
+    """Strip HTML tags from a string and decode HTML entities."""
     if not html_str:
         return html_str
     # Simple regex to strip HTML tags
     clean = re.sub(r"<[^>]+>", "", html_str)
-    return clean.strip()
+    return html.unescape(clean).strip()
 
 
 def parse_episode(data: dict[str, Any]) -> TVShowEpisode:
