@@ -641,57 +641,15 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
     }
   };
 
-  if (!isExpanded) {
-    const displayText = initialQuery?.trim() || 'Search movies, actors, or directors...';
-    const hasQuery = Boolean(initialQuery?.trim());
-    // Collapsed state: minimal search pill with hint or current query
-    return (
-      <div
-        ref={islandRef}
-        className="search-island collapsed"
-        role="button"
-        tabIndex={0}
-        aria-label="Open search"
-        aria-expanded="false"
-        aria-controls="search-island-content"
-        onClick={handleExpand}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleExpand();
-          }
-        }}
-      >
-        <SearchIcon className="search-icon" />
-        <span className={`collapsed-text${hasQuery ? ' has-query' : ''}`}>{displayText}</span>
-        <div className="collapsed-kbd">
-          <span className="kbd-tag">⌘K</span>
-        </div>
-      </div>
-    );
-  }
-
   const shouldExpandForResults = query.trim().length >= 2 || isSuggesting || (showSuggestions && suggestions.length > 0);
 
-  // Expanded panel state
   return (
     <>
-      <div 
-        className="search-island-backdrop" 
-        onClick={() => !showFilters && handleCollapse()} 
-        aria-hidden="true"
-        style={{ opacity: showFilters ? 0 : 1 }}
-      />
       <div
         ref={islandRef}
-        className={`search-island expanded ${shouldExpandForResults ? 'has-results' : 'is-compact'}`}
-        role="dialog"
-        aria-label="Search movies and shows"
-        aria-modal="false"
+        className={`search-island ${isExpanded ? 'expanded' : 'collapsed'} ${shouldExpandForResults ? 'has-results' : 'is-compact'}`}
         id="search-island-content"
       >
-        <div className="island-content">
-        {/* Search Input */}
         <form onSubmit={handleSubmit} className="search-form">
           <div className="search-input-wrapper">
             <SearchIcon className="search-input-left-icon" />
@@ -707,6 +665,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 setInlinePrompt(null);
               }}
               onFocus={() => {
+                handleExpand();
                 if (suggestions.length > 0) {
                   setShowSuggestions(true);
                 } else if (query.trim().length < 2 && (dailyTrending.length > 0 || isTrendingLoading || Boolean(trendingLoadError))) {
@@ -723,9 +682,13 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
               aria-activedescendant={highlightedIndex >= 0 ? `search-suggestion-${highlightedIndex}` : undefined}
               className="search-input has-icons"
             />
+            
             <button
               type="button"
-              onClick={() => setShowFilters(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFilters(true);
+              }}
               className="search-input-action filter-button"
               aria-label="Open search filters"
               title="Advanced Filters"
@@ -735,6 +698,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 <span className="filter-badge" title="Filters applied">{getActiveFilterCount(filters)}</span>
               )}
             </button>
+
             {isLoading ? (
               <button type="button" className="search-input-action" disabled aria-label="Searching">
                 <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -753,189 +717,203 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 <SendIcon className="w-4 h-4" />
               </button>
             )}
-          </div>
 
-          {showTrending && query.trim().length < 2 && (
-            <div className="suggest-dropdown trending-dropdown" role="listbox" aria-label="Daily trending searches">
-              <div className="trending-header">
-                <span className="trending-title">Trending Searches</span>
+            {!isExpanded && (
+              <div className="collapsed-kbd">
+                <span className="kbd-tag">⌘K</span>
               </div>
-              {isTrendingLoading && (
-                <div className="trending-loading-row">Loading daily picks...</div>
-              )}
-              {!isTrendingLoading && trendingLoadError && (
-                <div className="trending-error-row">
-                  <span>{trendingLoadError}</span>
-                  <button
-                    type="button"
-                    className="trending-retry-btn"
-                    onClick={() => void loadDailyTrending(true)}
-                  >
-                    Retry
-                  </button>
-                </div>
-              )}
-              {!isTrendingLoading && dailyTrending.map((suggestion) => {
-                const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                const safeBanner = sanitizeImgUrl(suggestion.banner_url);
-                const safePoster = sanitizeImgUrl(suggestion.poster_url);
-
-                return (
-                  <button
-                    type="button"
-                    key={`trending-${suggestion.id}`}
-                    role="option"
-                    className="suggest-row trending-row"
-                    onClick={() => handleSuggestionSelect(suggestion)}
-                  >
-                    <div className="suggest-poster-wrap is-title">
-                      {safeBanner ? (
-                        <img src={safeBanner} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                      ) : safePoster ? (
-                        <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                      ) : (
-                        <div className="suggest-poster placeholder">
-                          <IconComponent size={24} className="poster-icon" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="suggest-meta">
-                      <div className="suggest-title-row">
-                        <span className="suggest-title">{suggestion.title}</span>
-                      </div>
-                      <div className="suggest-subtitle">
-                        {suggestion.year && <span>{suggestion.year}</span>}
-                        <span>•</span>
-                        <span className="capitalize">movie</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Suggestions Dropdown with Icons */}
-          {(isSuggesting || (showSuggestions && suggestions.length > 0)) && query.trim().length >= 2 && (
-            <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
-              {isSuggesting && !isLoading && (
-                <div className="trending-loading-row animate-pulse" style={{ textAlign: 'center' }}>
-                  Searching...
-                </div>
-              )}
-              {showSuggestions && suggestions.length > 0 && suggestions.map((suggestion, index) => {
-                const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                const personCard = suggestion.type === 'person'
-                  ? buildPersonCardPresentation({
-                      name: suggestion.title,
-                      profile_url: suggestion.poster_url,
-                      known_for_department: suggestion.known_for_department,
-                      known_for_titles: suggestion.known_for_titles
-                    })
-                  : null;
-                const safePoster = sanitizeImgUrl(suggestion.poster_url);
-
-                return (
-                  <button
-                    type="button"
-                    key={`${suggestion.media_type}-${suggestion.id}`}
-                    id={`search-suggestion-${index}`}
-                    role="option"
-                    aria-selected={highlightedIndex === index}
-                    className={`suggest-row ${highlightedIndex === index ? 'active' : ''}`}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                    onClick={() => handleSuggestionSelect(suggestion)}
-                  >
-                    {/* Poster */}
-                    <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : 'is-title'}`}>
-                      {safePoster ? (
-                        <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
-                      ) : (
-                        <div className="suggest-poster placeholder">
-                          <IconComponent size={24} className="poster-icon" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Title and Metadata */}
-                    <div className="suggest-meta">
-                      <div className="suggest-title-row">
-                        <span className="suggest-title">{suggestion.title}</span>
-                        {suggestion.type === 'person' && personCard ? (
-                          <span className="suggest-role-chip">{personCard.roleChip}</span>
-                        ) : (
-                          <IconComponent size={18} className="suggest-icon-tag" />
-                        )}
-                      </div>
-                      {suggestion.type === 'person' && personCard ? (
-                        <div className="suggest-person-snippet">{personCard.snippet}</div>
-                      ) : (
-                        <div className="suggest-subtitle">
-                          {suggestion.year && <span>{suggestion.year}</span>}
-                          {suggestion.type && <span>•</span>}
-                          <span className="capitalize">{suggestion.type}</span>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {inlinePrompt && (
-            <div className="suggest-inline-hint">
-              <Lightbulb size={16} className="inline mr-1" />
-              {inlinePrompt}
-            </div>
-          )}
-
-          {/* Mode Selector: Single-line pill toggle */}
-          <div className="mode-selector-pill" role="tablist" aria-label="Search mode">
-            <button
-              type="button"
-              onClick={() => {
-                setAnalysisMode('quick');
-                localStorage.setItem(STORAGE_KEY_ANALYSIS, 'quick');
-                track('analysis_mode_toggled', { from: analysisMode, to: 'quick', source: 'search_island' });
-              }}
-              className={`mode-pill-btn ${analysisMode === 'quick' ? 'active' : ''}`}
-              role="tab"
-              aria-selected={analysisMode === 'quick'}
-              aria-pressed={analysisMode === 'quick'}
-              title="Fast results with summary"
-              aria-label="Quick Search"
-            >
-              <Zap size={14} className="mode-icon-inline" />
-              <span className="mode-label-group">
-                <span className="mode-label-inline">Quick</span>
-                <span className="mode-desc-inline">Fast summary</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setAnalysisMode('complex');
-                localStorage.setItem(STORAGE_KEY_ANALYSIS, 'complex');
-                track('analysis_mode_toggled', { from: analysisMode, to: 'complex', source: 'search_island' });
-              }}
-              className={`mode-pill-btn ${analysisMode === 'complex' ? 'active' : ''}`}
-              role="tab"
-              aria-selected={analysisMode === 'complex'}
-              aria-pressed={analysisMode === 'complex'}
-              title="Detailed analysis with cast, crew, ratings"
-              aria-label="Deep Dive"
-            >
-              <FlaskConical size={14} className="mode-icon-inline" />
-              <span className="mode-label-group">
-                <span className="mode-label-inline">Deep</span>
-                <span className="mode-desc-inline">Richer analysis</span>
-              </span>
-            </button>
+            )}
           </div>
+
+          {isExpanded && (
+            <div className="search-dropdown-menu">
+              {showTrending && query.trim().length < 2 && (
+                <div className="suggest-dropdown trending-dropdown" role="listbox" aria-label="Daily trending searches">
+                  <div className="trending-header">
+                    <span className="trending-title">Trending Searches</span>
+                  </div>
+                  {isTrendingLoading && (
+                    <div className="trending-loading-row">Loading daily picks...</div>
+                  )}
+                  {!isTrendingLoading && trendingLoadError && (
+                    <div className="trending-error-row">
+                      <span>{trendingLoadError}</span>
+                      <button
+                        type="button"
+                        className="trending-retry-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void loadDailyTrending(true);
+                        }}
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  )}
+                  {!isTrendingLoading && dailyTrending.map((suggestion) => {
+                    const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                    const safeBanner = sanitizeImgUrl(suggestion.banner_url);
+                    const safePoster = sanitizeImgUrl(suggestion.poster_url);
+
+                    return (
+                      <button
+                        type="button"
+                        key={`trending-${suggestion.id}`}
+                        role="option"
+                        className="suggest-row trending-row"
+                        onClick={() => handleSuggestionSelect(suggestion)}
+                      >
+                        <div className="suggest-poster-wrap is-title">
+                          {safeBanner ? (
+                            <img src={safeBanner} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                          ) : safePoster ? (
+                            <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                          ) : (
+                            <div className="suggest-poster placeholder">
+                              <IconComponent size={24} className="poster-icon" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="suggest-meta">
+                          <div className="suggest-title-row">
+                            <span className="suggest-title">{suggestion.title}</span>
+                          </div>
+                          <div className="suggest-subtitle">
+                            {suggestion.year && <span>{suggestion.year}</span>}
+                            <span>•</span>
+                            <span className="capitalize">movie</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Suggestions Dropdown with Icons */}
+              {(isSuggesting || (showSuggestions && suggestions.length > 0)) && query.trim().length >= 2 && (
+                <div className="suggest-dropdown" role="listbox" id="search-suggestion-list">
+                  {isSuggesting && !isLoading && (
+                    <div className="trending-loading-row" style={{ textAlign: 'center' }}>
+                      Searching...
+                    </div>
+                  )}
+                  {showSuggestions && suggestions.length > 0 && suggestions.map((suggestion, index) => {
+                    const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
+                    const personCard = suggestion.type === 'person'
+                      ? buildPersonCardPresentation({
+                          name: suggestion.title,
+                          profile_url: suggestion.poster_url,
+                          known_for_department: suggestion.known_for_department,
+                          known_for_titles: suggestion.known_for_titles
+                        })
+                      : null;
+                    const safePoster = sanitizeImgUrl(suggestion.poster_url);
+
+                    return (
+                      <button
+                        type="button"
+                        key={`${suggestion.media_type}-${suggestion.id}`}
+                        id={`search-suggestion-${index}`}
+                        role="option"
+                        aria-selected={highlightedIndex === index}
+                        className={`suggest-row ${highlightedIndex === index ? 'active' : ''}`}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        onClick={() => handleSuggestionSelect(suggestion)}
+                      >
+                        {/* Poster */}
+                        <div className={`suggest-poster-wrap ${suggestion.type === 'person' ? 'is-person' : 'is-title'}`}>
+                          {safePoster ? (
+                            <img src={safePoster} alt={suggestion.title} className="suggest-poster" loading="lazy" />
+                          ) : (
+                            <div className="suggest-poster placeholder">
+                              <IconComponent size={24} className="poster-icon" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Title and Metadata */}
+                        <div className="suggest-meta">
+                          <div className="suggest-title-row">
+                            <span className="suggest-title">{suggestion.title}</span>
+                            {suggestion.type === 'person' && personCard ? (
+                              <span className="suggest-role-chip">{personCard.roleChip}</span>
+                            ) : (
+                              <IconComponent size={18} className="suggest-icon-tag" />
+                            )}
+                          </div>
+                          {suggestion.type === 'person' && personCard ? (
+                            <div className="suggest-person-snippet">{personCard.snippet}</div>
+                          ) : (
+                            <div className="suggest-subtitle">
+                              {suggestion.year && <span>{suggestion.year}</span>}
+                              {suggestion.type && <span>•</span>}
+                              <span className="capitalize">{suggestion.type}</span>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {inlinePrompt && (
+                <div className="suggest-inline-hint">
+                  <Lightbulb size={16} className="inline mr-1" />
+                  {inlinePrompt}
+                </div>
+              )}
+
+              {/* Mode Selector: Single-line pill toggle */}
+              <div className="mode-selector-pill" role="tablist" aria-label="Search mode">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAnalysisMode('quick');
+                    localStorage.setItem(STORAGE_KEY_ANALYSIS, 'quick');
+                    track('analysis_mode_toggled', { from: analysisMode, to: 'quick', source: 'search_island' });
+                  }}
+                  className={`mode-pill-btn ${analysisMode === 'quick' ? 'active' : ''}`}
+                  role="tab"
+                  aria-selected={analysisMode === 'quick'}
+                  aria-pressed={analysisMode === 'quick'}
+                  title="Fast results with summary"
+                  aria-label="Quick Search"
+                >
+                  <Zap size={14} className="mode-icon-inline" />
+                  <span className="mode-label-group">
+                    <span className="mode-label-inline">Quick</span>
+                    <span className="mode-desc-inline">Fast summary</span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAnalysisMode('complex');
+                    localStorage.setItem(STORAGE_KEY_ANALYSIS, 'complex');
+                    track('analysis_mode_toggled', { from: analysisMode, to: 'complex', source: 'search_island' });
+                  }}
+                  className={`mode-pill-btn ${analysisMode === 'complex' ? 'active' : ''}`}
+                  role="tab"
+                  aria-selected={analysisMode === 'complex'}
+                  aria-pressed={analysisMode === 'complex'}
+                  title="Detailed analysis with cast, crew, ratings"
+                  aria-label="Deep Dive"
+                >
+                  <FlaskConical size={14} className="mode-icon-inline" />
+                  <span className="mode-label-group">
+                    <span className="mode-label-inline">Deep</span>
+                    <span className="mode-desc-inline">Richer analysis</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
         </form>
-        </div>
       </div>
       <div ref={filterPanelRef}>
         <FilterPanel
