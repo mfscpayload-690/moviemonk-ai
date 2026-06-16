@@ -758,6 +758,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     }
 
     const isTV = !!movie?.tvShow;
+    const hasRightColumn = !!(
+        (movie?.related && movie.related.length > 0) ||
+        (movie?.where_to_watch && movie.where_to_watch.length > 0) ||
+        (isTV && movie?.tvShow && movie.tvShow.officialSite)
+    );
 
     const heroMetaParts = [
         movie.year,
@@ -980,8 +985,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
             </div>
 
             {/* Main Content */}
-            <div className="p-4 md:px-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-                <div className="lg:col-span-2 space-y-8">
+            <div className={`p-4 md:px-8 grid grid-cols-1 ${hasRightColumn ? 'lg:grid-cols-3' : ''} gap-8 relative z-10`}>
+                <div className={`${hasRightColumn ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-8`}>
                     <Section title="Synopsis">
                         <div className="relative">
                             <p className="text-brand-text-dark text-accessible-muted leading-relaxed">
@@ -1288,56 +1293,58 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                     </Section>
                 </div>
 
-                <div className="lg:col-span-1 space-y-8">
-                    {/* Similar Titles above Where to Watch */}
-                    {movie.related && movie.related.length > 0 && (
-                        <Section title="Similar Titles">
-                            <div className="space-y-3">
-                                {/* Horizontal scroll with fade indicator */}
-                                <div className="horizontal-scroll-fade-right relative">
-                                    <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth">
-                                        {movie.related.slice(0, 12).map((it: any, idx: number) => renderRelatedTile(it, idx, 'inline'))}
+                {hasRightColumn && (
+                    <div className="lg:col-span-1 space-y-8">
+                        {/* Similar Titles above Where to Watch */}
+                        {movie.related && movie.related.length > 0 && (
+                            <Section title="Similar Titles">
+                                <div className="space-y-3">
+                                    {/* Horizontal scroll with fade indicator */}
+                                    <div className="horizontal-scroll-fade-right relative">
+                                        <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth">
+                                            {movie.related.slice(0, 12).map((it: any, idx: number) => renderRelatedTile(it, idx, 'inline'))}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <button className="text-xs px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 transform-gpu transition-[background-color,transform] duration-150 ease-out hover:-translate-y-px touch-target" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
                                     </div>
                                 </div>
-                                <div className="flex justify-end">
-                                    <button className="text-xs px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 transform-gpu transition-[background-color,transform] duration-150 ease-out hover:-translate-y-px touch-target" onClick={() => { (window as any)?.track && (window as any).track('related_see_all_open', { type: 'title', id: movie.tmdb_id }); setShowRelatedModal(true); }}>See all</button>
-                                </div>
-                            </div>
-                        </Section>
-                    )}
+                            </Section>
+                        )}
 
-                    {(safeWhereToWatch.length > 0 || (isTV && movie.tvShow && movie.tvShow.officialSite)) && (
-                        <Section title="Where to Watch">
-                            {safeWhereToWatch.length > 0 && (
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                                    {safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />)}
-                                </div>
-                            )}
-                            {isTV && movie.tvShow && movie.tvShow.officialSite && (
-                                <div className={`${safeWhereToWatch.length > 0 ? 'mt-4 pt-4 border-t' : ''} border-white/10`}>
-                                    <a 
-                                        href={movie.tvShow.officialSite} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="flex items-center justify-between w-full p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-brand-primary/40 transition-all duration-200 group touch-target"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-brand-surface border border-white/10 flex items-center justify-center">
-                                                <LinkIcon className="w-5 h-5 text-brand-primary" />
+                        {(safeWhereToWatch.length > 0 || (isTV && movie.tvShow && movie.tvShow.officialSite)) && (
+                            <Section title="Where to Watch">
+                                {safeWhereToWatch.length > 0 && (
+                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                                        {safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />)}
+                                    </div>
+                                )}
+                                {isTV && movie.tvShow && movie.tvShow.officialSite && (
+                                    <div className={`${safeWhereToWatch.length > 0 ? 'mt-4 pt-4 border-t' : ''} border-white/10`}>
+                                        <a 
+                                            href={movie.tvShow.officialSite} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between w-full p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-brand-primary/40 transition-all duration-200 group touch-target"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-brand-surface border border-white/10 flex items-center justify-center">
+                                                    <LinkIcon className="w-5 h-5 text-brand-primary" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <h4 className="text-sm font-bold text-white group-hover:text-brand-primary transition-colors">Official Website</h4>
+                                                    <p className="text-[10px] md:text-xs text-brand-text-dark max-w-[200px] truncate">{getSafeHostname(movie.tvShow.officialSite)}</p>
+                                                </div>
                                             </div>
-                                            <div className="text-left">
-                                                <h4 className="text-sm font-bold text-white group-hover:text-brand-primary transition-colors">Official Website</h4>
-                                                <p className="text-[10px] md:text-xs text-brand-text-dark max-w-[200px] truncate">{getSafeHostname(movie.tvShow.officialSite)}</p>
-                                            </div>
-                                        </div>
-                                        <ArrowRightIcon className="w-4 h-4 text-brand-text-dark group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
-                                    </a>
-                                </div>
-                            )}
-                        </Section>
-                    )}
+                                            <ArrowRightIcon className="w-4 h-4 text-brand-text-dark group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
+                                        </a>
+                                    </div>
+                                )}
+                            </Section>
+                        )}
 
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* ── User Reviews — full-width below the grid ────────────────── */}
