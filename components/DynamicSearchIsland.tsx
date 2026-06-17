@@ -19,7 +19,7 @@ import { getNextHighlightIndex } from '../services/suggestInteraction';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { useDebounce } from '../hooks/useDebounce';
 import { apiGet } from '../lib/apiClient';
-import { safeImgUrl, sanitizeImgUrl } from '../lib/seo';
+import { safeImgUrl, sanitizeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN } from '../lib/seo';
 import '../styles/dynamic-search-island.css';
 
 
@@ -755,8 +755,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   )}
                   {!isTrendingLoading && dailyTrending.map((suggestion) => {
                     const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                    const safeBanner = sanitizeImgUrl(suggestion.banner_url);
-                    const safePoster = sanitizeImgUrl(suggestion.poster_url);
+                    const rawBanner = suggestion.banner_url || '';
+                    const rawPoster = suggestion.poster_url || '';
+                    const safeBanner = rawBanner && (SAFE_URL_PATTERN.test(rawBanner) || SAFE_DATA_URL_PATTERN.test(rawBanner)) ? rawBanner : '';
+                    const safePoster = rawPoster && (SAFE_URL_PATTERN.test(rawPoster) || SAFE_DATA_URL_PATTERN.test(rawPoster)) ? rawPoster : '';
 
                     return (
                       <button
@@ -811,7 +813,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                         known_for_titles: suggestion.known_for_titles
                       })
                       : null;
-                    const safePoster = sanitizeImgUrl(suggestion.poster_url);
+                    const rawPoster = suggestion.poster_url || '';
+                    const safePoster = rawPoster && (SAFE_URL_PATTERN.test(rawPoster) || SAFE_DATA_URL_PATTERN.test(rawPoster)) ? rawPoster : '';
 
                     return (
                       <button
