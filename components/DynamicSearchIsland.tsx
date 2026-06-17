@@ -325,15 +325,15 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
       }
 
       // "/" or "k" to focus search (legacy shortcuts)
-      if ((e.key === '/' || (e.key === 'k' && !e.ctrlKey && !e.metaKey)) && 
-          !isExpanded && 
-          document.activeElement?.tagName !== 'INPUT' &&
-          document.activeElement?.tagName !== 'TEXTAREA') {
+      if ((e.key === '/' || (e.key === 'k' && !e.ctrlKey && !e.metaKey)) &&
+        !isExpanded &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA') {
         e.preventDefault();
         setIsExpanded(true);
         track('search_island_opened', { trigger: 'keyboard_shortcut', key: e.key });
       }
-      
+
       // Escape to collapse
       if (e.key === 'Escape' && isExpanded) {
         e.preventDefault();
@@ -366,7 +366,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
     if (!query.trim() || isLoading) return;
 
     const complexity = analysisMode === 'complex' ? QueryComplexity.COMPLEX : QueryComplexity.SIMPLE;
-    
+
     track('search_submitted_island', {
       query_length: query.trim().length,
       analysis_mode: analysisMode,
@@ -673,7 +673,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 }
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Search movies, shows, actors, directors..."
+              placeholder="Search movies, shows, cast..."
               disabled={isLoading}
               aria-label="Search query"
               aria-autocomplete="list"
@@ -682,7 +682,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
               aria-activedescendant={highlightedIndex >= 0 ? `search-suggestion-${highlightedIndex}` : undefined}
               className="search-input has-icons"
             />
-            
+
             <button
               type="button"
               onClick={(e) => {
@@ -802,11 +802,11 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                     const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
                     const personCard = suggestion.type === 'person'
                       ? buildPersonCardPresentation({
-                          name: suggestion.title,
-                          profile_url: suggestion.poster_url,
-                          known_for_department: suggestion.known_for_department,
-                          known_for_titles: suggestion.known_for_titles
-                        })
+                        name: suggestion.title,
+                        profile_url: suggestion.poster_url,
+                        known_for_department: suggestion.known_for_department,
+                        known_for_titles: suggestion.known_for_titles
+                      })
                       : null;
                     const safePoster = sanitizeImgUrl(suggestion.poster_url);
 
@@ -831,7 +831,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Title and Metadata */}
                         <div className="suggest-meta">
                           <div className="suggest-title-row">

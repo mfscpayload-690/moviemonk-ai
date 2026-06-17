@@ -22,4 +22,5 @@ class SuggestResponse(BaseModel):
     ok: bool = True
     query: str
     results: list[SuggestionItem] = []
+    suggestions: list[SuggestionItem] = []
     cached: bool = False
