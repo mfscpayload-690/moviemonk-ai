@@ -755,10 +755,14 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   )}
                   {!isTrendingLoading && dailyTrending.map((suggestion) => {
                     const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                    const rawBanner = suggestion.banner_url || '';
-                    const rawPoster = suggestion.poster_url || '';
-                    const safeBanner = rawBanner && (SAFE_URL_PATTERN.test(rawBanner) || SAFE_DATA_URL_PATTERN.test(rawBanner)) ? rawBanner : '';
-                    const safePoster = rawPoster && (SAFE_URL_PATTERN.test(rawPoster) || SAFE_DATA_URL_PATTERN.test(rawPoster)) ? rawPoster : '';
+                    let safeBanner = '';
+                    if (suggestion.banner_url && (SAFE_URL_PATTERN.test(suggestion.banner_url) || SAFE_DATA_URL_PATTERN.test(suggestion.banner_url))) {
+                      safeBanner = suggestion.banner_url;
+                    }
+                    let safePoster = '';
+                    if (suggestion.poster_url && (SAFE_URL_PATTERN.test(suggestion.poster_url) || SAFE_DATA_URL_PATTERN.test(suggestion.poster_url))) {
+                      safePoster = suggestion.poster_url;
+                    }
 
                     return (
                       <button
@@ -813,8 +817,10 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                         known_for_titles: suggestion.known_for_titles
                       })
                       : null;
-                    const rawPoster = suggestion.poster_url || '';
-                    const safePoster = rawPoster && (SAFE_URL_PATTERN.test(rawPoster) || SAFE_DATA_URL_PATTERN.test(rawPoster)) ? rawPoster : '';
+                    let safePoster = '';
+                    if (suggestion.poster_url && (SAFE_URL_PATTERN.test(suggestion.poster_url) || SAFE_DATA_URL_PATTERN.test(suggestion.poster_url))) {
+                      safePoster = suggestion.poster_url;
+                    }
 
                     return (
                       <button
