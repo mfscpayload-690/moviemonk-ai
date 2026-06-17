@@ -661,6 +661,9 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                 setQuery(e.target.value);
                 if (e.target.value.trim().length >= 2) {
                   setShowTrending(false);
+                  setIsSuggesting(true);
+                } else {
+                  setIsSuggesting(false);
                 }
                 setInlinePrompt(null);
               }}
