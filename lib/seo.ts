@@ -167,108 +167,21 @@ export function buildPersonJsonLd(data: SeoPersonPayload): Record<string, unknow
   };
 }
 
-/**
- * Sanitizes an image URL to prevent XSS (e.g. javascript: URLs)
- * and client-side unvalidated URL redirection by allowing only safe protocols.
- */
-export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co)\/|\/(?!\/))/i;
+export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co|localhost|127\.0\.0\.1)(?::\d+)?\/|\/(?!\/))/i;
 export const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
-
-export const IS_DEV = typeof process !== 'undefined'
-  ? (process.env?.NODE_ENV === 'development' || process.env?.NODE_ENV === 'test')
-  : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
-
-export const SAFE_LOCAL_URL_PATTERN = /^https?:\/\/localhost(?::\d+)?\//i;
 
 export function safeImgUrl(url: string | null | undefined, fallback = ''): string {
   if (!url) return fallback;
   const trimmed = url.trim();
   
-  // 1. Allow single-root relative paths (e.g., /assets/logo.png), but block protocol-relative ones (e.g. //evil.com)
-  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+  if (SAFE_URL_PATTERN.test(trimmed) || SAFE_DATA_URL_PATTERN.test(trimmed)) {
     return trimmed;
-  }
-  
-  // 2. Allow safe data URI patterns (base64 images only)
-  if (trimmed.startsWith('data:image/')) {
-    if (SAFE_DATA_URL_PATTERN.test(trimmed)) {
-      return trimmed;
-    }
-    return fallback;
-  }
-  
-  // 3. For absolute URLs, parse and validate host and protocol
-  try {
-    const parsed = new URL(trimmed);
-    const protocol = parsed.protocol.toLowerCase();
-    
-    // Prevent javascript: or other non-http schemes
-    if (protocol !== 'http:' && protocol !== 'https:') {
-      return fallback;
-    }
-    
-    const host = parsed.hostname.toLowerCase();
-    
-    // Check if host matches allowed patterns
-    const isAllowedHost = 
-      host === 'image.tmdb.org' ||
-      host === 'static.tvmaze.com' ||
-      host === 'images.unsplash.com' ||
-      host === 'graph.facebook.com' ||
-      host === 'avatars.githubusercontent.com' ||
-      host === 'moviemonk-ai.vercel.app' ||
-      host === 'googleusercontent.com' ||
-      host.endsWith('.googleusercontent.com') ||
-      host.endsWith('.supabase.co') ||
-      (IS_DEV && (host === 'localhost' || host === '127.0.0.1'));
-      
-    if (isAllowedHost) {
-      return trimmed;
-    }
-  } catch (e) {
-    // Parsing failed, not a valid absolute URL
   }
   
   return fallback;
 }
 
-/**
- * Sanitizes and validates an image URL locally for CodeQL taint analysis.
- * Returns a serialized string representation from a verified URL object.
- */
 export function sanitizeImgUrl(url: string | null | undefined, fallback = ''): string {
-  const safe = safeImgUrl(url, fallback);
-  if (!safe) return fallback;
-  if (safe.startsWith('/') && !safe.startsWith('//')) {
-    return safe;
-  }
-  if (safe.startsWith('data:image/')) {
-    return safe;
-  }
-  try {
-    const parsed = new URL(safe);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-      const host = parsed.hostname.toLowerCase();
-      if (
-        host === 'image.tmdb.org' ||
-        host === 'static.tvmaze.com' ||
-        host === 'images.unsplash.com' ||
-        host === 'graph.facebook.com' ||
-        host === 'avatars.githubusercontent.com' ||
-        host === 'moviemonk-ai.vercel.app' ||
-        host === 'googleusercontent.com' ||
-        host === 'lh3.googleusercontent.com' ||
-        host.endsWith('.googleusercontent.com') ||
-        host.endsWith('.supabase.co') ||
-        host === 'localhost' ||
-        host === '127.0.0.1'
-      ) {
-        return parsed.toString();
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-  return fallback;
+  return safeImgUrl(url, fallback);
 }
 
