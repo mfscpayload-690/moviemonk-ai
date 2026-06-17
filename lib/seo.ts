@@ -173,11 +173,48 @@ export const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml
 export function safeImgUrl(url: string | null | undefined, fallback = ''): string {
   if (!url) return fallback;
   const trimmed = url.trim();
-  
-  if (SAFE_URL_PATTERN.test(trimmed) || SAFE_DATA_URL_PATTERN.test(trimmed)) {
-    return trimmed;
+
+  // Handle data URLs
+  if (trimmed.toLowerCase().startsWith('data:')) {
+    if (SAFE_DATA_URL_PATTERN.test(trimmed)) {
+      return trimmed;
+    }
+    return fallback;
   }
-  
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const hostname = parsed.hostname.toLowerCase();
+      const isAllowedHost = 
+        hostname === 'image.tmdb.org' ||
+        hostname === 'static.tvmaze.com' ||
+        hostname === 'images.unsplash.com' ||
+        hostname === 'graph.facebook.com' ||
+        hostname === 'avatars.githubusercontent.com' ||
+        hostname === 'moviemonk-ai.vercel.app' ||
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === 'googleusercontent.com' ||
+        hostname.endsWith('.googleusercontent.com') ||
+        hostname === 'supabase.co' ||
+        hostname.endsWith('.supabase.co');
+
+      if (isAllowedHost) {
+        // Reconstruct URL from safe parts to clear taint
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
+      }
+    }
+  } catch {
+    // Relative path fallback
+    if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+      const pathPattern = /^\/[a-zA-Z0-9_./-]+$/;
+      if (pathPattern.test(trimmed)) {
+        return trimmed;
+      }
+    }
+  }
+
   return fallback;
 }
 

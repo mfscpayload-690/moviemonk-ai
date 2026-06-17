@@ -23,6 +23,42 @@ import { safeImgUrl, sanitizeImgUrl, SAFE_URL_PATTERN, SAFE_DATA_URL_PATTERN } f
 import '../styles/dynamic-search-island.css';
 
 
+const sanitizeImageUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const hostname = parsed.hostname.toLowerCase();
+      const isAllowedHost = 
+        hostname === 'image.tmdb.org' ||
+        hostname === 'static.tvmaze.com' ||
+        hostname === 'images.unsplash.com' ||
+        hostname === 'graph.facebook.com' ||
+        hostname === 'avatars.githubusercontent.com' ||
+        hostname === 'moviemonk-ai.vercel.app' ||
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === 'googleusercontent.com' ||
+        hostname.endsWith('.googleusercontent.com') ||
+        hostname === 'supabase.co' ||
+        hostname.endsWith('.supabase.co');
+
+      if (isAllowedHost) {
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+      }
+    }
+  } catch {
+    if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+      const pathPattern = /^\/[a-zA-Z0-9_./-]+$/;
+      if (pathPattern.test(trimmed)) {
+        return trimmed;
+      }
+    }
+  }
+  return '';
+};
+
 
 // Helper to get icon component by suggestion type
 const getSuggestionIconComponent = (type: string, media_type?: string) => {
@@ -84,18 +120,22 @@ const normalizeTrendingSuggestion = (item: any, trendLabel: string): TrendingSug
     ? item.release_date.slice(0, 4)
     : undefined;
 
+  const TMDB_PATH_PATTERN = /^\/[a-zA-Z0-9_.-]+$/;
+  const posterPath = typeof item.poster_path === 'string' && TMDB_PATH_PATTERN.test(item.poster_path)
+    ? item.poster_path
+    : '';
+  const backdropPath = typeof item.backdrop_path === 'string' && TMDB_PATH_PATTERN.test(item.backdrop_path)
+    ? item.backdrop_path
+    : '';
+
   return {
     id: item.id,
     title,
     year,
     type: 'movie',
     media_type: 'movie',
-    poster_url: typeof item.poster_path === 'string' && item.poster_path
-      ? `https://image.tmdb.org/t/p/w154${item.poster_path}`
-      : undefined,
-    banner_url: typeof item.backdrop_path === 'string' && item.backdrop_path
-      ? `https://image.tmdb.org/t/p/w300${item.backdrop_path}`
-      : undefined,
+    poster_url: posterPath ? `https://image.tmdb.org/t/p/w154${posterPath}` : undefined,
+    banner_url: backdropPath ? `https://image.tmdb.org/t/p/w300${backdropPath}` : undefined,
     confidence: 0.99,
     trendLabel
   };
@@ -755,14 +795,8 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                   )}
                   {!isTrendingLoading && dailyTrending.map((suggestion) => {
                     const IconComponent = getSuggestionIconComponent(suggestion.type, suggestion.media_type);
-                    let safeBanner = '';
-                    if (suggestion.banner_url && (SAFE_URL_PATTERN.test(suggestion.banner_url) || SAFE_DATA_URL_PATTERN.test(suggestion.banner_url))) {
-                      safeBanner = suggestion.banner_url;
-                    }
-                    let safePoster = '';
-                    if (suggestion.poster_url && (SAFE_URL_PATTERN.test(suggestion.poster_url) || SAFE_DATA_URL_PATTERN.test(suggestion.poster_url))) {
-                      safePoster = suggestion.poster_url;
-                    }
+                    const safeBanner = sanitizeImageUrl(suggestion.banner_url);
+                    const safePoster = sanitizeImageUrl(suggestion.poster_url);
 
                     return (
                       <button
@@ -817,10 +851,7 @@ const DynamicSearchIsland: React.FC<DynamicSearchIslandProps> = ({ initialQuery,
                         known_for_titles: suggestion.known_for_titles
                       })
                       : null;
-                    let safePoster = '';
-                    if (suggestion.poster_url && (SAFE_URL_PATTERN.test(suggestion.poster_url) || SAFE_DATA_URL_PATTERN.test(suggestion.poster_url))) {
-                      safePoster = suggestion.poster_url;
-                    }
+                    const safePoster = sanitizeImageUrl(suggestion.poster_url);
 
                     return (
                       <button
