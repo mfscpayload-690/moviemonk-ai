@@ -295,7 +295,7 @@ export function WatchlistsDashboard() {
       try {
         const parsed = new URL(w.poster_url);
         if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-          return parsed.toString();
+          return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
         }
       } catch {
         if (w.poster_url.startsWith('/') && !w.poster_url.startsWith('//')) {
@@ -589,7 +589,7 @@ export function WatchlistsDashboard() {
         host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
         host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
       if (parsed.protocol === 'https:' && isAllowedHost) {
-        return parsed.toString();
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
       }
     } catch {
       if (avatarUrl.startsWith('/') && !avatarUrl.startsWith('//')) {
@@ -784,7 +784,7 @@ export function WatchlistsDashboard() {
                   try {
                     const parsed = new URL(item.poster_url);
                     if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-                      return parsed.toString();
+                      return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
                     }
                   } catch {
                     if (item.poster_url.startsWith('/') && !item.poster_url.startsWith('//')) {
@@ -1037,7 +1037,7 @@ export function WatchlistsDashboard() {
                   try {
                     const parsed = new URL(url);
                     if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-                      return parsed.toString();
+                      return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
                     }
                   } catch {
                     if (url.startsWith('/') && !url.startsWith('//')) {

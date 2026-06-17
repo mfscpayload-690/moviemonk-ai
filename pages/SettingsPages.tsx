@@ -221,7 +221,7 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
         host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
         host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
       if (parsed.protocol === 'https:' && isAllowedHost) {
-        return parsed.toString();
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
       }
     } catch {
       if (url.startsWith('/') && !url.startsWith('//')) {
