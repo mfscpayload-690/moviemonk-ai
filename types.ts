@@ -428,3 +428,12 @@ export interface SearchPageResponse {
   };
 }
 
+export interface EpisodesResponse {
+  ok: boolean;
+  episodes: TVShowEpisode[];
+  source: string;
+  cached: boolean;
+}
+
+
+

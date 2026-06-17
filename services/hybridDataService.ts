@@ -8,6 +8,8 @@
  * 4. Merge the best data from all sources
  * 
  * This solves the "404" problem by using multiple data sources!
+ * 
+ * @deprecated Use the unified backend details endpoint (/api/details) and episodes endpoint (/api/episodes) instead.
  */
 
 import { MovieData } from '../types';

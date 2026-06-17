@@ -41,8 +41,11 @@ async def lifespan(app: FastAPI):
     logger.info("MovieMonk Backend shutting down")
     await close_redis()
 
-    from app.services.tmdb import close_client
-    await close_client()
+    from app.services.tmdb import close_client as close_tmdb
+    await close_tmdb()
+
+    from app.services.tvmaze import close_client as close_tvmaze
+    await close_tvmaze()
 
     logger.info("Shutdown complete")
 

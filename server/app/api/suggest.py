@@ -33,7 +33,7 @@ async def suggest(q: str = Query(..., min_length=1)) -> Any:
     cache_key = build_cache_key("suggest", {"q": query.lower()})
     cached = await get_cache(cache_key)
     if cached:
-        return SuggestResponse(ok=True, query=query, results=cached, cached=True)
+        return SuggestResponse(ok=True, query=query, results=cached, suggestions=cached, cached=True)
 
     intent = detect_person_intent(query)
     search_query = intent["stripped_query"] if intent["is_person_focused"] else query
@@ -88,7 +88,7 @@ async def suggest(q: str = Query(..., min_length=1)) -> Any:
 
         await set_cache(cache_key, [s.model_dump() for s in suggestions], _CACHE_TTL)
 
-        return SuggestResponse(ok=True, query=query, results=suggestions)
+        return SuggestResponse(ok=True, query=query, results=suggestions, suggestions=suggestions)
 
     except Exception:
         logger.exception("Suggestion search failed")
