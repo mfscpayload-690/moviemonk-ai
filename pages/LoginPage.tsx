@@ -26,13 +26,15 @@ const GitHubIcon: React.FC = () => (
   </svg>
 );
 
+import SeoHead from '../components/SeoHead';
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { user, loading, signInWithGitHub, signInWithGoogle, error } = useAuth();
   
   const [magneticTarget, setMagneticTarget] = useState<{ x: number, y: number } | null>(null);
 
-  // Framer Motion cursor tracking for smooth spotlight effect
+  // Framer Motion cursor tracking for spotlight effect
   const mouseX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
   const mouseY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
   const spotlightX = useSpring(mouseX, { stiffness: 100, damping: 25 });
@@ -77,6 +79,7 @@ export default function LoginPage() {
 
   return (
     <div className="login-page-shell">
+      <SeoHead title="Sign In" robots="noindex, follow" />
       {/* Dynamic Context Canvas */}
       <ParticleBackground magneticTarget={magneticTarget} />
 
