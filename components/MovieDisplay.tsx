@@ -191,30 +191,30 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 
 
 const LoadingSkeleton = () => (
-    <div className="h-full w-full p-4 md:p-8">
+    <div className="h-full w-full p-4 md:p-8 animate-fade-in">
         <div className="relative w-full h-[50vh] md:h-[60vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20">
-            <div className="absolute inset-0 animate-pulse bg-brand-surface/30" />
-            <div className="absolute bottom-6 left-6 flex items-center gap-6">
-                <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg bg-brand-surface/50 animate-pulse" />
+            <div className="absolute inset-0 discovery-skeleton skeleton-shimmer opacity-40" />
+            <div className="absolute bottom-6 left-6 flex items-center gap-6 z-10">
+                <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg discovery-skeleton skeleton-shimmer" />
                 <div className="space-y-4">
-                    <div className="h-10 w-64 bg-brand-surface/50 rounded-md animate-pulse" />
-                    <div className="h-6 w-40 bg-brand-surface/40 rounded-md animate-pulse" />
+                    <div className="h-10 w-64 rounded-md discovery-skeleton skeleton-shimmer" />
+                    <div className="h-6 w-40 rounded-md discovery-skeleton skeleton-shimmer" />
                     <div className="flex gap-2 mt-4">
-                        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 w-16 bg-brand-surface/40 rounded-full animate-pulse" />)}
+                        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 w-16 rounded-full discovery-skeleton skeleton-shimmer" />)}
                     </div>
-                    <div className="h-10 w-40 bg-brand-surface/50 rounded-md mt-6 animate-pulse" />
+                    <div className="h-10 w-40 rounded-md mt-6 discovery-skeleton skeleton-shimmer" />
                 </div>
             </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-                <div className="h-40 bg-brand-surface/40 rounded-lg animate-pulse" />
-                <div className="h-64 bg-brand-surface/40 rounded-lg animate-pulse" />
+                <div className="h-40 rounded-lg discovery-skeleton skeleton-shimmer" />
+                <div className="h-64 rounded-lg discovery-skeleton skeleton-shimmer" />
             </div>
             <div className="space-y-6">
-                <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
-                <div className="h-48 bg-brand-surface/40 rounded-lg animate-pulse" />
-                <div className="h-32 bg-brand-surface/40 rounded-lg animate-pulse" />
+                <div className="h-32 rounded-lg discovery-skeleton skeleton-shimmer" />
+                <div className="h-48 rounded-lg discovery-skeleton skeleton-shimmer" />
+                <div className="h-32 rounded-lg discovery-skeleton skeleton-shimmer" />
             </div>
         </div>
     </div>
