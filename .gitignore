@@ -61,3 +61,8 @@ pip-delete-this-directory.txt
 .lucid
 .replit
 .python-version
+
+# Generated SEO / IndexNow Files
+public/indexnow-key.txt
+public/*indexnow*.txt
+
