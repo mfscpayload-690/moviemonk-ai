@@ -918,6 +918,86 @@ const BiographyModal: React.FC<{ personName: string; biography: string; onClose:
   );
 };
 
+const PersonLoadingSkeleton: React.FC = () => (
+  <div className="person-editorial-page">
+    <section className="person-editorial-hero" aria-hidden="true">
+      <div className="person-editorial-identity">
+        {/* Avatar shimmer */}
+        <div className="person-editorial-avatar discovery-skeleton skeleton-shimmer" style={{ width: 132, height: 176 }} />
+
+        <div className="person-editorial-header flex flex-col gap-3">
+          {/* Name shimmer */}
+          <div className="discovery-skeleton skeleton-shimmer h-10 w-60 md:w-96 rounded-lg" />
+          
+          {/* Meta row shimmer */}
+          <div className="flex flex-wrap gap-4 mt-2">
+            <div className="discovery-skeleton skeleton-shimmer h-5 w-32 rounded" />
+            <div className="discovery-skeleton skeleton-shimmer h-5 w-40 rounded" />
+          </div>
+
+          {/* Tags shimmer */}
+          <div className="flex gap-2 mt-2">
+            <div className="discovery-skeleton skeleton-shimmer h-6 w-16 rounded-full" />
+            <div className="discovery-skeleton skeleton-shimmer h-6 w-20 rounded-full" />
+            <div className="discovery-skeleton skeleton-shimmer h-6 w-16 rounded-full" />
+          </div>
+        </div>
+      </div>
+      
+      {/* Biography text shimmer */}
+      <div className="mt-6 flex flex-col gap-2.5">
+        <div className="discovery-skeleton skeleton-shimmer h-4 w-full rounded" />
+        <div className="discovery-skeleton skeleton-shimmer h-4 w-[96%] rounded" />
+        <div className="discovery-skeleton skeleton-shimmer h-4 w-[85%] rounded" />
+      </div>
+    </section>
+
+    <div className="person-editorial-main-grid">
+      {/* Top Works Rail Skeleton */}
+      <section className="person-editorial-section p-4">
+        <div className="discovery-skeleton skeleton-shimmer h-6 w-32 rounded-md mb-4" />
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="min-w-[120px] w-[120px] flex flex-col gap-2 flex-shrink-0">
+              <div className="discovery-skeleton skeleton-shimmer aspect-[2/3] rounded-lg" />
+              <div className="discovery-skeleton skeleton-shimmer h-3.5 w-16 rounded" />
+              <div className="discovery-skeleton skeleton-shimmer h-3 w-10 rounded" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Recent Credits Rail Skeleton */}
+      <section className="person-editorial-section p-4">
+        <div className="discovery-skeleton skeleton-shimmer h-6 w-40 rounded-md mb-4" />
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="min-w-[120px] w-[120px] flex flex-col gap-2 flex-shrink-0">
+              <div className="discovery-skeleton skeleton-shimmer aspect-[2/3] rounded-lg" />
+              <div className="discovery-skeleton skeleton-shimmer h-3.5 w-16 rounded" />
+              <div className="discovery-skeleton skeleton-shimmer h-3 w-10 rounded" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Filmography Explorer Skeleton */}
+      <section className="person-editorial-section p-4">
+        <div className="discovery-skeleton skeleton-shimmer h-6 w-48 rounded-md mb-4" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <div className="discovery-skeleton skeleton-shimmer aspect-[2/3] rounded-lg" />
+              <div className="discovery-skeleton skeleton-shimmer h-3.5 w-20 rounded" />
+              <div className="discovery-skeleton skeleton-shimmer h-3 w-12 rounded" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  </div>
+);
+
 const PersonDisplay: React.FC<{
   data: PersonPayload;
   isLoading?: boolean;
@@ -944,7 +1024,7 @@ const PersonDisplay: React.FC<{
   const [isBiographyOpen, setIsBiographyOpen] = useState(false);
   useRenderCounter('PersonDisplay');
 
-  if (!data) return null;
+  if (!data) return <PersonLoadingSkeleton />;
 
   const { person, filmography, sources, related_people } = data;
   const {
