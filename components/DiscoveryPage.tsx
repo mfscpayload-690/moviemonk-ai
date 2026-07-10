@@ -71,8 +71,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
   const heroCandidates = heroItems.length ? heroItems : (sections[0]?.items || []).slice(0, 5);
   const [radarItems, setRadarItems] = useState<DiscoveryItem[]>([]);
   const [radarLoading, setRadarLoading] = useState(false);
-  const [radarError, setRadarError] = useState<string | null>(null);
-  const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
   const [showDeferredSections, setShowDeferredSections] = useState(!HAS_IDLE_CALLBACK_SUPPORT);
   const [railOrder, setRailOrder] = useState<string[]>(() => loadRailOrder());
   const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
@@ -106,19 +104,12 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
       return;
     }
     setRadarLoading(true);
-    setRadarError(null);
 
     try {
       const snapshot = await loadReleaseRadarSnapshot(watchlists);
       setRadarItems(snapshot.items);
-      setRadarCheckedAt(snapshot.checkedAt);
-      if (snapshot.items.length === 0) {
-        setRadarError('No accurate upcoming releases found right now.');
-      }
     } catch {
-      setRadarError('Release radar is temporarily unavailable.');
       setRadarItems([]);
-      setRadarCheckedAt('');
     } finally {
       setRadarLoading(false);
     }

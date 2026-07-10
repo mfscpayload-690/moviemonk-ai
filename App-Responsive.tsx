@@ -85,8 +85,6 @@ const App: React.FC = () => {
   const [shareFallbackLink, setShareFallbackLink] = useState<string | null>(null);
   const quickSaveDialogRef = useRef<HTMLDivElement | null>(null);
   const quickSavePreviousFocusRef = useRef<HTMLElement | null>(null);
-  const loadingStartedAtRef = useRef<number | null>(null);
-  const loadingHideTimeoutRef = useRef<number | null>(null);
   const lastHandledRouteRef = useRef<string>('');
   const actionToastTimeoutRef = useRef<number | null>(null);
   const lastSearchQueryRef = useRef<string | null>(null);
@@ -1013,9 +1011,9 @@ const App: React.FC = () => {
                 }); }}
                 onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
               />
-            ) : currentView === 'person' && personData ? (
+            ) : currentView === 'person' ? (
               <PersonDisplay
-                key={personData?.person?.id}
+                key={personData?.person?.id ?? 'person-display'}
                 data={personData}
                 isLoading={isLoading}
                 onQuickSearch={handleQuickSearch}

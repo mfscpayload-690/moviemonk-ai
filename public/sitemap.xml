@@ -45,16 +45,16 @@
     <lastmod>2026-07-15</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/movie/1084244</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2026-06-17</lastmod>
-  </url>
-  <url>
     <loc>https://moviemonk-ai.vercel.app/movie/1212763</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-07-07</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/movie/1084244</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-06-17</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/movie/1083381</loc>
@@ -69,16 +69,16 @@
     <lastmod>2026-05-20</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/movie/1315772</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2026-06-24</lastmod>
-  </url>
-  <url>
     <loc>https://moviemonk-ai.vercel.app/movie/969681</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-07-29</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/movie/1315772</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-06-24</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/movie/1202033</loc>
@@ -93,12 +93,6 @@
     <lastmod>2026-04-29</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/movie/687163</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2026-03-15</lastmod>
-  </url>
-  <url>
     <loc>https://moviemonk-ai.vercel.app/movie/1484913</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -111,16 +105,22 @@
     <lastmod>2026-06-24</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/movie/936075</loc>
+    <loc>https://moviemonk-ai.vercel.app/movie/687163</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2026-04-22</lastmod>
+    <lastmod>2026-03-15</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/movie/1301421</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-04-30</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/movie/936075</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-04-22</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/movie/1710008</loc>
@@ -159,22 +159,16 @@
     <lastmod>2021-01-11</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/296206</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2026-06-26</lastmod>
-  </url>
-  <url>
     <loc>https://moviemonk-ai.vercel.app/tv/37854</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>1999-10-20</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/299167</loc>
+    <loc>https://moviemonk-ai.vercel.app/tv/296206</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2026-05-15</lastmod>
+    <lastmod>2026-06-26</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/tv/283304</loc>
@@ -183,40 +177,10 @@
     <lastmod>2026-07-09</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/138502</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2024-03-20</lastmod>
-  </url>
-  <url>
     <loc>https://moviemonk-ai.vercel.app/tv/252107</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-05-28</lastmod>
-  </url>
-  <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/253960</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2026-07-02</lastmod>
-  </url>
-  <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/322055</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2026-06-25</lastmod>
-  </url>
-  <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/124364</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2022-02-20</lastmod>
-  </url>
-  <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/60625</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2013-12-02</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/tv/277439</loc>
@@ -225,22 +189,52 @@
     <lastmod>2026-06-04</lastmod>
   </url>
   <url>
+    <loc>https://moviemonk-ai.vercel.app/tv/299167</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-05-15</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/tv/138502</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2024-03-20</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/tv/322055</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-06-25</lastmod>
+  </url>
+  <url>
     <loc>https://moviemonk-ai.vercel.app/tv/312949</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-07-03</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/136315</loc>
+    <loc>https://moviemonk-ai.vercel.app/tv/124364</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2022-06-23</lastmod>
+    <lastmod>2022-02-20</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/tv/253960</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-07-02</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/tv/296286</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>2026-07-09</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/tv/60625</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2013-12-02</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/tv/69346</loc>
@@ -255,10 +249,16 @@
     <lastmod>2026-07-07</lastmod>
   </url>
   <url>
-    <loc>https://moviemonk-ai.vercel.app/tv/76479</loc>
+    <loc>https://moviemonk-ai.vercel.app/tv/136315</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2019-07-25</lastmod>
+    <lastmod>2022-06-23</lastmod>
+  </url>
+  <url>
+    <loc>https://moviemonk-ai.vercel.app/tv/254420</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-07-01</lastmod>
   </url>
   <url>
     <loc>https://moviemonk-ai.vercel.app/person/35224</loc>

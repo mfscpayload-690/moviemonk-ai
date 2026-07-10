@@ -253,10 +253,6 @@ export function WatchlistsDashboard() {
 
   useEffect(() => {
     setProfile(loadProfileSettings());
-    document.title = 'MovieMonk | Watchlists';
-    return () => {
-      document.title = 'MovieMonk | Discover Movies & TV';
-    };
   }, []);
 
   useEffect(() => {

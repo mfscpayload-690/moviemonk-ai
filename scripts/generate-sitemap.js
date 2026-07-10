@@ -1,37 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
-// ── Environment Variables Loader ────────────────────────────────────────────
-function loadEnv() {
-  const env = { ...process.env };
-  const envPaths = [
-    path.join(__dirname, '../.env.local'),
-    path.join(__dirname, '../.env')
-  ];
-  for (const envPath of envPaths) {
-    if (fs.existsSync(envPath)) {
-      try {
-        const content = fs.readFileSync(envPath, 'utf8');
-        content.split('\n').forEach(line => {
-          const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-          if (match) {
-            const key = match[1];
-            let value = match[2] || '';
-            if (value.startsWith('"') && value.endsWith('"')) {
-              value = value.slice(1, -1);
-            } else if (value.startsWith("'") && value.endsWith("'")) {
-              value = value.slice(1, -1);
-            }
-            env[key] = value.trim();
-          }
-        });
-      } catch (err) {
-        console.warn(`[SEO Warning] Failed to read environment file at ${envPath}:`, err.message);
-      }
-    }
-  }
-  return env;
-}
+const { loadEnv } = require('./load-env');
 
 const env = loadEnv();
 const TMDB_API_KEY = env.TMDB_API_KEY;
@@ -58,11 +27,20 @@ async function fetchFromTmdb(pathSegment, params = {}) {
   }).toString();
 
   const url = `https://api.themoviedb.org/3/${pathSegment}?${query}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`TMDB API request failed with status ${res.status}`);
+  
+  // Set up fetch timeout with AbortController
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`TMDB API request failed with status ${res.status}`);
+    }
+    return await res.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return res.json();
 }
 
 async function generateSitemap() {
@@ -140,7 +118,7 @@ async function generateSitemap() {
     xml += `    <changefreq>${url.changefreq}</changefreq>\n`;
     xml += `    <priority>${url.priority}</priority>\n`;
     if (url.lastmod) {
-      xml += `    <lastmod>${url.lastmod}</lastmod>\n`;
+      xml += `    <lastmod>${escapeXml(url.lastmod)}</lastmod>\n`;
     }
     xml += '  </url>\n';
   });

@@ -999,7 +999,7 @@ const PersonLoadingSkeleton: React.FC = () => (
 );
 
 const PersonDisplay: React.FC<{
-  data: PersonPayload;
+  data: PersonPayload | null;
   isLoading?: boolean;
   onQuickSearch?: (q: string) => void;
   onBriefMe?: (name: string) => void;

@@ -49,13 +49,18 @@ async function pingIndexNow() {
   const indexNowApiUrl = 'https://api.indexnow.org/indexnow';
   console.log(`[SEO] Pinging IndexNow at ${indexNowApiUrl}...`);
 
+  // Set up fetch timeout with AbortController
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
   try {
     const res = await fetch(indexNowApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
     if (res.status === 200 || res.status === 202) {
@@ -66,6 +71,8 @@ async function pingIndexNow() {
     }
   } catch (err) {
     console.error('[SEO Error] IndexNow API request failed:', err.message);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
