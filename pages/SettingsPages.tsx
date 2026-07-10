@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import SeoHead from '../components/SeoHead';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { CheckIcon, InfoIcon, StarIcon, BellIcon, ChevronRightIcon, ShieldIcon, TrashIcon, ClockIcon, GlobeIcon, Logo } from '../components/icons';
 import { ConfirmDialog, NoticeDialog, PromptDialog } from '../components/BrandedDialogs';
@@ -129,6 +130,7 @@ function SettingsLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   return (
     <div className="app-container" style={{ background: '#121212' }}>
+      <SeoHead title="Settings" robots="noindex, follow" />
       <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50">
         <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
           <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
@@ -153,6 +155,7 @@ function SubPageLayout({ title, children }: { title: string; children: React.Rea
   const navigate = useNavigate();
   return (
     <div className="app-container" style={{ background: '#121212' }}>
+      <SeoHead title={title} robots="noindex, follow" />
       <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50">
         <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
           <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
