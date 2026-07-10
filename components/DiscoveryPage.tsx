@@ -5,7 +5,7 @@ import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
 import { useDiscovery } from '../hooks/useDiscovery';
-import { loadReleaseRadarSnapshot } from '../services/releaseRadarService';
+import { loadReleaseRadarSnapshot, hasRadarInputs } from '../services/releaseRadarService';
 import {
   recordDiscoveryCardOpened,
   recordDiscoveryCardViewed,
@@ -100,6 +100,11 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
   }, []);
 
   const loadRadar = useCallback(async () => {
+    if (!hasRadarInputs(watchlists)) {
+      setRadarLoading(false);
+      setRadarItems([]);
+      return;
+    }
     setRadarLoading(true);
     setRadarError(null);
 
