@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import SeoHead from '../components/SeoHead';
 import { useCloudWatchlists } from '../hooks/useCloudWatchlists';
 import { useWatched } from '../hooks/useWatched';
 import { loadProfileSettings } from '../lib/userSettings';
@@ -534,6 +535,7 @@ export function WatchlistsDashboard() {
   if (loading) {
     return (
       <DashboardLayout>
+        <SeoHead title="My Watchlists" robots="noindex, follow" />
         <div className="w-full mt-4 sm:mt-8 animate-pulse">
           {/* 1. Header skeleton */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
@@ -601,6 +603,7 @@ export function WatchlistsDashboard() {
 
   return (
     <DashboardLayout>
+      <SeoHead title="My Watchlists" robots="noindex, follow" />
       {/* 1. User Header & Watched Integration */}
       {!activeFolderId && !showWatchedView && (
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6 glass-panel p-5 sm:p-8 rounded-[2rem] border border-white/5 relative overflow-hidden">
