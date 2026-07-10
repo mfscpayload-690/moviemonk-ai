@@ -49,7 +49,7 @@ function generateIndexNow() {
 
   // Write the IndexNow key verification file
   fs.writeFileSync(keyFilePath, INDEXNOW_KEY, 'utf8');
-  console.log(`[SEO Success] Created IndexNow verification file at public/${keyFilename}`);
+  console.log('[SEO Success] Created IndexNow verification file in public directory.');
 
   // Write key to indexnow-key.txt for ping script reference
   fs.writeFileSync(infoFilePath, INDEXNOW_KEY, 'utf8');
