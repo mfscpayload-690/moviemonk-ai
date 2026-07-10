@@ -192,17 +192,17 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 
 const LoadingSkeleton = () => (
     <div className="h-full w-full p-4 md:p-8 animate-fade-in">
-        <div className="relative w-full h-[50vh] md:h-[60vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20">
-            <div className="absolute inset-0 discovery-skeleton skeleton-shimmer opacity-40" />
-            <div className="absolute bottom-6 left-6 flex items-center gap-6 z-10">
-                <div className="w-40 md:w-52 lg:w-60 aspect-[2/3] rounded-lg discovery-skeleton skeleton-shimmer" />
-                <div className="space-y-4">
-                    <div className="h-10 w-64 rounded-md discovery-skeleton skeleton-shimmer" />
-                    <div className="h-6 w-40 rounded-md discovery-skeleton skeleton-shimmer" />
-                    <div className="flex gap-2 mt-4">
-                        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-6 w-16 rounded-full discovery-skeleton skeleton-shimmer" />)}
+        <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-8 overflow-hidden rounded-xl bg-gradient-to-br from-brand-surface/40 to-brand-surface/20 flex items-end p-4 md:p-12">
+            <div className="absolute inset-0 discovery-skeleton skeleton-shimmer opacity-40 z-0" />
+            <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto z-10">
+                <div className="w-32 sm:w-40 md:w-56 lg:w-64 aspect-[2/3] rounded-lg discovery-skeleton skeleton-shimmer flex-shrink-0" />
+                <div className="flex-1 text-center sm:text-left space-y-3 md:space-y-4 w-full sm:w-auto flex flex-col items-center sm:items-start">
+                    <div className="h-8 sm:h-10 w-48 sm:w-64 md:w-80 rounded-md discovery-skeleton skeleton-shimmer" />
+                    <div className="h-5 w-24 sm:w-32 rounded-md discovery-skeleton skeleton-shimmer" />
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
+                        {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-6 w-16 rounded-full discovery-skeleton skeleton-shimmer" />)}
                     </div>
-                    <div className="h-10 w-40 rounded-md mt-6 discovery-skeleton skeleton-shimmer" />
+                    <div className="h-10 w-32 sm:w-40 rounded-md mt-4 discovery-skeleton skeleton-shimmer" />
                 </div>
             </div>
         </div>
