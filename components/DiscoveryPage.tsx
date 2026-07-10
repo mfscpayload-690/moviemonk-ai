@@ -5,7 +5,7 @@ import ContentCarousel from './ContentCarousel';
 import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
 import { useDiscovery } from '../hooks/useDiscovery';
-import { loadReleaseRadarSnapshot } from '../services/releaseRadarService';
+import { loadReleaseRadarSnapshot, hasRadarInputs } from '../services/releaseRadarService';
 import {
   recordDiscoveryCardOpened,
   recordDiscoveryCardViewed,
@@ -71,11 +71,8 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
   const heroCandidates = heroItems.length ? heroItems : (sections[0]?.items || []).slice(0, 5);
   const [radarItems, setRadarItems] = useState<DiscoveryItem[]>([]);
   const [radarLoading, setRadarLoading] = useState(false);
-  const [radarError, setRadarError] = useState<string | null>(null);
-  const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
   const [showDeferredSections, setShowDeferredSections] = useState(!HAS_IDLE_CALLBACK_SUPPORT);
   const [railOrder, setRailOrder] = useState<string[]>(() => loadRailOrder());
-  const { ref: radarRevealRef, isRevealed: isRadarRevealed } = useScrollReveal<HTMLElement>();
   const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
   const prioritySections = useMemo(() => sections.slice(0, PRIORITY_SECTION_COUNT), [sections]);
   const deferredSections = useMemo(() => sections.slice(PRIORITY_SECTION_COUNT), [sections]);
@@ -101,20 +98,18 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
   }, []);
 
   const loadRadar = useCallback(async () => {
+    if (!hasRadarInputs(watchlists)) {
+      setRadarLoading(false);
+      setRadarItems([]);
+      return;
+    }
     setRadarLoading(true);
-    setRadarError(null);
 
     try {
       const snapshot = await loadReleaseRadarSnapshot(watchlists);
       setRadarItems(snapshot.items);
-      setRadarCheckedAt(snapshot.checkedAt);
-      if (snapshot.items.length === 0) {
-        setRadarError('No accurate upcoming releases found right now.');
-      }
     } catch {
-      setRadarError('Release radar is temporarily unavailable.');
       setRadarItems([]);
-      setRadarCheckedAt('');
     } finally {
       setRadarLoading(false);
     }
@@ -239,29 +234,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
         </section>
       )}
 
-      <section
-        ref={radarRevealRef}
-        className={getRevealClassName(isRadarRevealed, 'fade', 'discovery-section')}
-        data-reveal-variant="fade"
-        style={buildRevealStyle(0, 420)}
-      >
-
-
-        {radarError && !radarLoading && (
-          <div className="mm-empty-state" role="status">
-            <h3>Release radar is quiet right now</h3>
-            <p>{radarError} Add a few saved titles to sharpen the radar, or retry to pull a fresher release pass.</p>
-            <div className="mm-empty-state-actions">
-              <button type="button" className="mm-empty-state-cta" onClick={() => void loadRadar()}>
-                Retry release radar
-              </button>
-              <a href="/watchlists" className="mm-empty-state-cta-secondary">
-                Open watchlists
-              </a>
-            </div>
-          </div>
-        )}
-      </section>
 
       {orderedRails.map((rail) => (
         <ContentCarousel

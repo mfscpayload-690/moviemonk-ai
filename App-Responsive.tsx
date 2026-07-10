@@ -4,7 +4,6 @@ import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import HeaderUtilityMenu from './components/HeaderUtilityMenu';
-import LoadingScreen from './components/LoadingScreen';
 import ActionToast from './components/ActionToast';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
@@ -76,7 +75,6 @@ const App: React.FC = () => {
   const [undoingToastId, setUndoingToastId] = useState<number | null>(null);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<AppView>('discovery');
-  const [globalLoadingVisible, setGlobalLoadingVisible] = useState(false);
   const [shortlistCandidates, setShortlistCandidates] = useState<AmbiguousCandidate[] | null>(null);
   const [quickSaveTarget, setQuickSaveTarget] = useState<QuickSaveTitle | null>(null);
   const [quickSaveFolderId, setQuickSaveFolderId] = useState('');
@@ -87,8 +85,6 @@ const App: React.FC = () => {
   const [shareFallbackLink, setShareFallbackLink] = useState<string | null>(null);
   const quickSaveDialogRef = useRef<HTMLDivElement | null>(null);
   const quickSavePreviousFocusRef = useRef<HTMLElement | null>(null);
-  const loadingStartedAtRef = useRef<number | null>(null);
-  const loadingHideTimeoutRef = useRef<number | null>(null);
   const lastHandledRouteRef = useRef<string>('');
   const actionToastTimeoutRef = useRef<number | null>(null);
   const lastSearchQueryRef = useRef<string | null>(null);
@@ -345,41 +341,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (isLoading) {
-      if (loadingHideTimeoutRef.current !== null) {
-        window.clearTimeout(loadingHideTimeoutRef.current);
-        loadingHideTimeoutRef.current = null;
-      }
-      loadingStartedAtRef.current = Date.now();
-      setGlobalLoadingVisible(true);
-      return;
-    }
-
-    if (!globalLoadingVisible) {
-      return;
-    }
-
-    const elapsed = loadingStartedAtRef.current ? Date.now() - loadingStartedAtRef.current : GLOBAL_LOADING_MIN_VISIBLE_MS;
-    const remaining = Math.max(0, GLOBAL_LOADING_MIN_VISIBLE_MS - elapsed);
-
-    loadingHideTimeoutRef.current = window.setTimeout(() => {
-      setGlobalLoadingVisible(false);
-      loadingHideTimeoutRef.current = null;
-      loadingStartedAtRef.current = null;
-    }, remaining);
-  }, [isLoading, globalLoadingVisible]);
-
-  useEffect(() => {
-    return () => {
-      if (loadingHideTimeoutRef.current !== null) {
-        window.clearTimeout(loadingHideTimeoutRef.current);
-      }
-    };
-  }, []);
-
-
-
   const openPersonById = useCallback(async (
     personId: number,
     titleHint?: string,
@@ -407,6 +368,16 @@ const App: React.FC = () => {
       return;
     }
     // ── Fetch ───────────────────────────────────────────────────────────────
+    startTransition(() => {
+      setPersonData(null);
+      setMovieData(null);
+      setCurrentView('person');
+      if (titleHint) {
+        setCurrentQuery(titleHint);
+      }
+    });
+    scrollMainContentToTop();
+
     if (manageLoading) {
       setIsLoading(true);
       setError(null);
@@ -416,13 +387,10 @@ const App: React.FC = () => {
       cacheSet('person', personCacheKey(personId), data);
       startTransition(() => {
         setPersonData(data);
-        setMovieData(null);
-        setCurrentView('person');
         if (titleHint || data?.person?.name) {
           setCurrentQuery(titleHint || data?.person?.name || '');
         }
       });
-      scrollMainContentToTop();
     } catch (e) {
       setError('Failed to load person details');
     } finally {
@@ -578,6 +546,11 @@ const App: React.FC = () => {
       return;
     }
     // ── Fetch ───────────────────────────────────────────────────────────────
+    startTransition(() => {
+      setMovieData(null);
+      setPersonData(null);
+      setCurrentView('movie');
+    });
     setIsLoading(true);
     setError(null);
     try {
@@ -588,8 +561,6 @@ const App: React.FC = () => {
       cacheSet('movie', cKey, detailsData);
       startTransition(() => {
         setMovieData(detailsData);
-        setPersonData(null);
-        setCurrentView('movie');
         setCurrentQuery(detailsData?.title || '');
       });
     } catch (err: any) {
@@ -1040,9 +1011,9 @@ const App: React.FC = () => {
                 }); }}
                 onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
               />
-            ) : currentView === 'person' && personData ? (
+            ) : currentView === 'person' ? (
               <PersonDisplay
-                key={personData?.person?.id}
+                key={personData?.person?.id ?? 'person-display'}
                 data={personData}
                 isLoading={isLoading}
                 onQuickSearch={handleQuickSearch}
@@ -1129,17 +1100,6 @@ const App: React.FC = () => {
         </div>
 
       </div >
-      {/* Determine loading screen type based on current view and data */}
-      {globalLoadingVisible && (
-        <LoadingScreen
-          visible={globalLoadingVisible}
-          type={
-            personData ? 'person' : 
-            movieData?.tvShow ? 'tv' : 
-            'movie'
-          }
-        />
-      )}
       {/* Summary Modal */}
       {
         summaryModal && (

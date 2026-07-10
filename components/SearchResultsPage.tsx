@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { SearchPageResponse, SearchResult, SuggestionItem, VibeParseResult } from '../types';
 import type { QuickSaveTitle } from '../lib/quickSave';
 import RatingDisplay from './RatingDisplay';
-import LoadingScreen from './LoadingScreen';
+import SkeletonCard from './SkeletonCard';
 import { TagIcon, WatchedIcon } from './icons';
 import { useActionFeedback } from '../hooks/useActionFeedback';
 import { useAdaptiveImageTone } from '../hooks/useAdaptiveImageTone';
@@ -279,6 +279,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
   useEffect(() => {
     setPage(1);
+    setPayload(null);
   }, [normalizedQuery]);
 
   useEffect(() => {
@@ -500,7 +501,25 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           robots="noindex,follow"
         />
       )}
-      <LoadingScreen type="movie" visible={isLoading} />
+      {query.trim() && isLoading && !payload && (
+        <div className="search-skeletons-container space-y-8 animate-fade-in p-4 max-w-7xl mx-auto w-full">
+          {/* Best Match Skeleton */}
+          <div className="flex flex-col gap-3">
+            <div className="discovery-skeleton skeleton-shimmer h-6 w-36 rounded-md mb-1" />
+            <SkeletonCard variant="hero" />
+          </div>
+
+          {/* Grid Skeleton */}
+          <div className="flex flex-col gap-4 mt-6">
+            <div className="discovery-skeleton skeleton-shimmer h-6 w-48 rounded-md" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <SkeletonCard key={i} variant="poster" />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {error && (
@@ -614,7 +633,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         </section>
       )}
 
-      {query.trim() && (
+      {query.trim() && payload && (
         <section
           ref={resultsRevealRef}
           className={getRevealClassName(isResultsRevealed, 'fade', 'search-results-section')}
