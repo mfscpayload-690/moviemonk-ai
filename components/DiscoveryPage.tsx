@@ -75,7 +75,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
   const [radarCheckedAt, setRadarCheckedAt] = useState<string>('');
   const [showDeferredSections, setShowDeferredSections] = useState(!HAS_IDLE_CALLBACK_SUPPORT);
   const [railOrder, setRailOrder] = useState<string[]>(() => loadRailOrder());
-  const { ref: radarRevealRef, isRevealed: isRadarRevealed } = useScrollReveal<HTMLElement>();
   const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
   const prioritySections = useMemo(() => sections.slice(0, PRIORITY_SECTION_COUNT), [sections]);
   const deferredSections = useMemo(() => sections.slice(PRIORITY_SECTION_COUNT), [sections]);
@@ -239,29 +238,6 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
         </section>
       )}
 
-      <section
-        ref={radarRevealRef}
-        className={getRevealClassName(isRadarRevealed, 'fade', 'discovery-section')}
-        data-reveal-variant="fade"
-        style={buildRevealStyle(0, 420)}
-      >
-
-
-        {radarError && !radarLoading && (
-          <div className="mm-empty-state" role="status">
-            <h3>Release radar is quiet right now</h3>
-            <p>{radarError} Add a few saved titles to sharpen the radar, or retry to pull a fresher release pass.</p>
-            <div className="mm-empty-state-actions">
-              <button type="button" className="mm-empty-state-cta" onClick={() => void loadRadar()}>
-                Retry release radar
-              </button>
-              <a href="/watchlists" className="mm-empty-state-cta-secondary">
-                Open watchlists
-              </a>
-            </div>
-          </div>
-        )}
-      </section>
 
       {orderedRails.map((rail) => (
         <ContentCarousel
