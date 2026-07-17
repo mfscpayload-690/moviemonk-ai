@@ -10,6 +10,46 @@ import './styles/dynamic-search-island.css';
 import AppRoutes from './AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
 
+import { API_BASE_URL, SUPABASE_URL } from './lib/config';
+
+function injectPreconnectHints() {
+  const urls = [
+    API_BASE_URL,
+    SUPABASE_URL
+  ].filter(Boolean);
+
+  urls.forEach(urlStr => {
+    try {
+      const origin = new URL(urlStr).origin;
+      
+      // Preconnect
+      if (!document.querySelector(`link[rel="preconnect"][href="${origin}"]`)) {
+        const link = document.createElement('link');
+        link.rel = 'preconnect';
+        link.href = origin;
+        link.crossOrigin = 'anonymous';
+        document.head.appendChild(link);
+      }
+      
+      // DNS Prefetch
+      if (!document.querySelector(`link[rel="dns-prefetch"][href="${origin}"]`)) {
+        const link = document.createElement('link');
+        link.rel = 'dns-prefetch';
+        link.href = origin;
+        document.head.appendChild(link);
+      }
+    } catch (e) {
+      // Ignore if parsing fails
+    }
+  });
+}
+
+try {
+  injectPreconnectHints();
+} catch (err) {
+  console.warn('[Performance] Failed to inject preconnect hints:', err);
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");

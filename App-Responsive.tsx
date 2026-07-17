@@ -22,6 +22,7 @@ import { parseAppRoute } from './lib/routeState';
 import { useWatched } from './hooks/useWatched';
 import { cacheGet, cacheSet, movieCacheKey, personCacheKey } from './lib/sessionCache';
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './components/WatchlistIconPicker';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import SeoHead from './components/SeoHead';
 import { SITE_NAME } from './lib/seo';
 import { APP_VERSION } from './lib/appMeta';
@@ -979,75 +980,80 @@ const App: React.FC = () => {
             }
           >
             {currentView === 'discovery' ? (
-              <DiscoveryPage
-                onOpenTitle={(item) => handleOpenTitle(item)}
-                onRunQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE, 'groq')}
-                isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
-                onToggleWatched={(item) => { void runWatchedToggle({
-                  tmdb_id: String(item.id),
-                  media_type: item.media_type,
-                  title: item.title,
-                  poster_url: item.poster_url ?? undefined,
-                  year: item.year ?? undefined,
-                }); }}
-                onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
-                watchlists={watchlists}
-              />
+              <ErrorBoundary key="discovery">
+                <DiscoveryPage
+                  onOpenTitle={(item) => handleOpenTitle(item)}
+                  onRunQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE, 'groq')}
+                  isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+                  onToggleWatched={(item) => { void runWatchedToggle({
+                    tmdb_id: String(item.id),
+                    media_type: item.media_type,
+                    title: item.title,
+                    poster_url: item.poster_url ?? undefined,
+                    year: item.year ?? undefined,
+                  }); }}
+                  onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+                  watchlists={watchlists}
+                />
+              </ErrorBoundary>
             ) : currentView === 'search' ? (
-              <SearchResultsPage
-                query={new URLSearchParams(location.search).get('q') || currentQuery}
-                onSearchQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE)}
-                onOpenTitle={(item) => handleOpenTitle(item)}
-                onOpenPerson={(personId, name) => {
-                  void openPersonById(personId, name, { manageLoading: true });
-                }}
-                isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
-                onToggleWatched={(item) => { void runWatchedToggle({
-                  tmdb_id: String(item.id),
-                  media_type: item.media_type,
-                  title: item.title,
-                  poster_url: item.poster_url ?? undefined,
-                  year: item.year ?? undefined,
-                }); }}
-                onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
-              />
+              <ErrorBoundary key={`search-${currentQuery}`}>
+                <SearchResultsPage
+                  query={new URLSearchParams(location.search).get('q') || currentQuery}
+                  onSearchQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE)}
+                  onOpenTitle={(item) => handleOpenTitle(item)}
+                  onOpenPerson={(personId, name) => {
+                    void openPersonById(personId, name, { manageLoading: true });
+                  }}
+                  isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+                  onToggleWatched={(item) => { void runWatchedToggle({
+                    tmdb_id: String(item.id),
+                    media_type: item.media_type,
+                    title: item.title,
+                    poster_url: item.poster_url ?? undefined,
+                    year: item.year ?? undefined,
+                  }); }}
+                  onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+                />
+              </ErrorBoundary>
             ) : currentView === 'person' ? (
-              <PersonDisplay
-                key={personData?.person?.id ?? 'person-display'}
-                data={personData}
-                isLoading={isLoading}
-                onQuickSearch={handleQuickSearch}
-                onBriefMe={handleBriefMe}
-                onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
-                onOpenPerson={(personId, name) => {
-                  void openPersonById(personId, name, { manageLoading: true });
-                }}
-                isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
-                onToggleWatched={(item) => { void runWatchedToggle({
-                  tmdb_id: String(item.id),
-                  media_type: item.media_type,
-                  title: item.title,
-                  poster_url: item.poster_url ?? undefined,
-                  year: item.year ?? undefined,
-                }); }}
-                onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
-                watchlists={watchlists}
-              />
+              <ErrorBoundary key={`person-${personData?.person?.id || 'empty'}`}>
+                <PersonDisplay
+                  data={personData}
+                  isLoading={isLoading}
+                  onQuickSearch={handleQuickSearch}
+                  onBriefMe={handleBriefMe}
+                  onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
+                  onOpenPerson={(personId, name) => {
+                    void openPersonById(personId, name, { manageLoading: true });
+                  }}
+                  isWatched={(id, mediaType) => isWatched(String(id), mediaType)}
+                  onToggleWatched={(item) => { void runWatchedToggle({
+                    tmdb_id: String(item.id),
+                    media_type: item.media_type,
+                    title: item.title,
+                    poster_url: item.poster_url ?? undefined,
+                    year: item.year ?? undefined,
+                  }); }}
+                  onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+                  watchlists={watchlists}
+                />
+              </ErrorBoundary>
             ) : (
-              <MovieDisplay
-                key={movieData?.tmdb_id ?? 'movie-display'}
-                movie={movieData}
-                isLoading={isLoading}
-                selectedProvider={selectedProvider}
-                onFetchFullPlot={async (title: string, year: string, type: string) => {
-                  const res = await apiPost<any>('/api/query', { q: `${title} (${year})`, mode: 'full_plot' });
-                  return res?.summary?.summary_long || "Plot details unavailable";
-                }}
-                onQuickSearch={handleQuickSearch}
-                onOpenPerson={(personId, name) => {
-                  void openPersonById(personId, name, { manageLoading: true });
-                }}
-                onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
+              <ErrorBoundary key={`movie-${movieData?.tmdb_id || 'empty'}`}>
+                <MovieDisplay
+                  movie={movieData}
+                  isLoading={isLoading}
+                  selectedProvider={selectedProvider}
+                  onFetchFullPlot={async (title: string, year: string, type: string) => {
+                    const res = await apiPost<any>('/api/query', { q: `${title} (${year})`, mode: 'full_plot' });
+                    return res?.summary?.summary_long || "Plot details unavailable";
+                  }}
+                  onQuickSearch={handleQuickSearch}
+                  onOpenPerson={(personId, name) => {
+                    void openPersonById(personId, name, { manageLoading: true });
+                  }}
+                  onOpenTitle={(item) => handleOpenTitle(item, selectedProvider)}
                 watchlists={watchlists}
                 onCreateWatchlist={addFolder}
                 onSaveToWatchlist={handleSaveMovieToWatchlist}
@@ -1077,6 +1083,7 @@ const App: React.FC = () => {
                 isRelatedWatched={(tmdbId, mediaType) => isWatched(tmdbId, mediaType)}
                 onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
               />
+              </ErrorBoundary>
             )}
           </Suspense>
 
