@@ -9,7 +9,12 @@ function generateIndexNow() {
   console.log('[SEO] Starting IndexNow key verification file generation...');
   
   if (!INDEXNOW_KEY) {
-    throw new Error('VITE_INDEXNOW_KEY is not defined in the environment. IndexNow verification file generation failed.');
+    if (process.env.VERCEL === '1' && process.env.VERCEL_ENV === 'production') {
+      throw new Error('VITE_INDEXNOW_KEY is not defined in the environment. IndexNow verification file generation failed.');
+    } else {
+      console.warn('[SEO Warning] VITE_INDEXNOW_KEY is not defined. Skipping IndexNow verification file generation.');
+      return;
+    }
   }
 
   const keyFilename = `${INDEXNOW_KEY}.txt`;
