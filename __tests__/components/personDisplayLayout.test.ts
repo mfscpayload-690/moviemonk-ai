@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import PersonDisplay, { PersonPayload } from '../../components/PersonDisplay';
+import PersonDisplay from '../../components/PersonDisplay';
+import { PersonProfile } from '../../types';
 
 jest.mock('../../components/icons', () => ({
   BirthdayIcon: () => React.createElement('span', null, 'B'),
@@ -19,7 +20,7 @@ jest.mock('@vercel/analytics/react', () => ({
 }));
 
 describe('PersonDisplay layout', () => {
-  const payload: PersonPayload = {
+  const payload: PersonProfile = {
     person: {
       id: 99,
       name: 'Chris Hemsworth',
@@ -79,7 +80,7 @@ describe('PersonDisplay layout', () => {
   });
 
   it('renders professional empty states when optional data is unavailable', () => {
-    const emptyPayload: PersonPayload = {
+    const emptyPayload: PersonProfile = {
       person: {
         id: 100,
         name: 'No Data Person'

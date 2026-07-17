@@ -24,12 +24,12 @@ import {
   sortPersonCredits,
   toOpenTitlePayload,
   toQuickSaveTitle,
-  truncateBiography,
-  PersonPayload
+  truncateBiography
 } from '../../components/PersonDisplay';
+import { PersonProfile } from '../../types';
 
 describe('PersonDisplay helpers', () => {
-  const payload: PersonPayload = {
+  const payload: PersonProfile = {
     person: {
       id: 9,
       name: 'Sample Person'
