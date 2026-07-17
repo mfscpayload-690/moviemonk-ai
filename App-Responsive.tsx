@@ -980,7 +980,7 @@ const App: React.FC = () => {
             }
           >
             {currentView === 'discovery' ? (
-              <ErrorBoundary>
+              <ErrorBoundary key="discovery">
                 <DiscoveryPage
                   onOpenTitle={(item) => handleOpenTitle(item)}
                   onRunQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE, 'groq')}
@@ -997,7 +997,7 @@ const App: React.FC = () => {
                 />
               </ErrorBoundary>
             ) : currentView === 'search' ? (
-              <ErrorBoundary>
+              <ErrorBoundary key={`search-${currentQuery}`}>
                 <SearchResultsPage
                   query={new URLSearchParams(location.search).get('q') || currentQuery}
                   onSearchQuery={(nextQuery) => handleSendMessage(nextQuery, QueryComplexity.SIMPLE)}
@@ -1017,9 +1017,8 @@ const App: React.FC = () => {
                 />
               </ErrorBoundary>
             ) : currentView === 'person' ? (
-              <ErrorBoundary>
+              <ErrorBoundary key={`person-${personData?.person?.id || 'empty'}`}>
                 <PersonDisplay
-                  key={personData?.person?.id ?? 'person-display'}
                   data={personData}
                   isLoading={isLoading}
                   onQuickSearch={handleQuickSearch}
@@ -1041,9 +1040,8 @@ const App: React.FC = () => {
                 />
               </ErrorBoundary>
             ) : (
-              <ErrorBoundary>
+              <ErrorBoundary key={`movie-${movieData?.tmdb_id || 'empty'}`}>
                 <MovieDisplay
-                  key={movieData?.tmdb_id ?? 'movie-display'}
                   movie={movieData}
                   isLoading={isLoading}
                   selectedProvider={selectedProvider}

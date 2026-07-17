@@ -10,10 +10,12 @@ import './styles/dynamic-search-island.css';
 import AppRoutes from './AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
 
+import { API_BASE_URL, SUPABASE_URL } from './lib/config';
+
 function injectPreconnectHints() {
   const urls = [
-    import.meta.env.VITE_API_BASE_URL,
-    import.meta.env.VITE_SUPABASE_URL
+    API_BASE_URL,
+    SUPABASE_URL
   ].filter(Boolean);
 
   urls.forEach(urlStr => {
@@ -25,6 +27,7 @@ function injectPreconnectHints() {
         const link = document.createElement('link');
         link.rel = 'preconnect';
         link.href = origin;
+        link.crossOrigin = 'anonymous';
         document.head.appendChild(link);
       }
       
