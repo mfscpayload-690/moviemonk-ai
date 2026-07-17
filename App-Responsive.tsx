@@ -8,7 +8,7 @@ import ActionToast from './components/ActionToast';
 import { AuthButton } from './components/AuthButton';
 import { MigrationModal } from './components/MigrationModal';
 import { NoticeDialog } from './components/BrandedDialogs';
-import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt } from './types';
+import { MovieData, QueryComplexity, GroundingSource, AIProvider, SuggestionItem, WatchedTitle, WatchlistSaveReceipt, PersonProfile } from './types';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { apiGet, apiPost } from './lib/apiClient';
 import { CheckIcon, ClipboardIcon, EditIcon, Logo, TrashIcon, XMarkIcon, GithubIcon } from './components/icons';
@@ -66,7 +66,7 @@ const App: React.FC = () => {
   }, []);
 
   const [movieData, setMovieData] = useState<MovieData | null>(null);
-  const [personData, setPersonData] = useState<any | null>(null);
+  const [personData, setPersonData] = useState<PersonProfile | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>('groq');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -418,8 +418,8 @@ const App: React.FC = () => {
         ? `${window.location.origin}/${routePrefix}/${movieData.tmdb_id}`
         : `${window.location.origin}?q=${encodeURIComponent(movieData.title)}&type=${isTvShow ? 'show' : 'movie'}&year=${movieData.year}`;
     } else if (personData) {
-      const personName = personData?.person?.name || personData?.name || '';
-      const personId = personData?.person?.id || personData?.id;
+      const personName = personData?.person?.name || '';
+      const personId = personData?.person?.id;
       shareUrl += `?q=${encodeURIComponent(personName)}&type=person&id=${personId}`;
     } else {
       return; // Only share when a specific title or person is open
@@ -432,7 +432,7 @@ const App: React.FC = () => {
 
       track('share_link_copied', {
         type: movieData ? 'movie' : 'person',
-        title: movieData?.title || personData?.person?.name || personData?.name || ''
+        title: movieData?.title || personData?.person?.name || ''
       });
     } catch (err) {
       emitClientError(err, { context: 'copy_share_link' });

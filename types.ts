@@ -101,6 +101,20 @@ export interface PersonSearchCandidate {
   profile_url?: string;
 }
 
+export interface FilmItem {
+  id: number;
+  title: string;
+  year?: number;
+  role: string;
+  media_type?: 'movie' | 'tv';
+  role_bucket?: PersonRoleBucket;
+  character?: string;
+  poster_url?: string;
+  popularity?: number;
+  job?: string;
+  department?: string;
+}
+
 export interface PersonProfile {
   person: {
     id: number;
@@ -111,22 +125,26 @@ export interface PersonProfile {
     profile_url?: string;
     known_for_department?: string;
   };
-  top_work: PersonCredit[];
-  credits_all: PersonCredit[];
-  credits_acting: PersonCredit[];
-  credits_directing: PersonCredit[];
-  credits_other: PersonCredit[];
-  role_distribution: {
+  filmography: FilmItem[];
+  top_work?: PersonCredit[];
+  credits_all?: PersonCredit[];
+  credits_acting?: PersonCredit[];
+  credits_directing?: PersonCredit[];
+  credits_other?: PersonCredit[];
+  role_distribution?: {
     acting: number;
     directing: number;
     other: number;
   };
-  career_span: {
+  career_span?: {
     start_year?: number;
     end_year?: number;
     active_years?: number;
   };
-  known_for_tags: string[];
+  known_for_tags?: string[];
+  sources?: { name: string; url: string }[];
+  related_people?: RelatedPerson[];
+  cached?: boolean;
 }
 
 // Related content types for Similar/People Also Search
@@ -137,7 +155,7 @@ export type RelatedTitle = {
   media_type: 'movie' | 'tv';
   poster_url?: string;
   popularity?: number;
-  source: 'tmdb-similar' | 'tmdb-recommendations' | 'serpapi';
+  source?: 'tmdb-similar' | 'tmdb-recommendations' | 'serpapi';
 };
 
 export type RelatedPerson = {
@@ -146,7 +164,7 @@ export type RelatedPerson = {
   known_for?: string;
   profile_url?: string;
   popularity?: number;
-  source: 'tmdb-co-star' | 'tmdb-similar' | 'serpapi';
+  source?: 'tmdb-co-star' | 'tmdb-similar' | 'serpapi';
 };
 
 export interface Rating {

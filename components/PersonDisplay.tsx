@@ -11,49 +11,12 @@ import {
   X
 } from 'lucide-react';
 import { useRenderCounter } from '../lib/perfDebug';
-import { PersonCredit, PersonRoleBucket, WatchlistFolder } from '../types';
+import { PersonCredit, PersonRoleBucket, WatchlistFolder, PersonProfile, FilmItem } from '../types';
 import type { QuickSaveTitle } from '../lib/quickSave';
 import { buildPersonCardPresentation } from '../services/personPresentation';
 import { TagIcon, WatchedIcon } from './icons';
 import SeoHead from './SeoHead';
 import { buildPersonJsonLd, toMetaDescription } from '../lib/seo';
-
-interface FilmItem {
-  id: number;
-  title: string;
-  year?: number;
-  role: string;
-  media_type?: 'movie' | 'tv';
-  role_bucket?: PersonRoleBucket;
-  character?: string;
-  poster_url?: string;
-  popularity?: number;
-  job?: string;
-  department?: string;
-}
-
-export interface PersonPayload {
-  person: {
-    id: number;
-    name: string;
-    biography?: string;
-    birthday?: string;
-    place_of_birth?: string;
-    profile_url?: string;
-    known_for_department?: string;
-  };
-  filmography: FilmItem[];
-  top_work?: FilmItem[];
-  credits_all?: FilmItem[];
-  credits_acting?: FilmItem[];
-  credits_directing?: FilmItem[];
-  credits_other?: FilmItem[];
-  role_distribution?: { acting: number; directing: number; other: number };
-  career_span?: { start_year?: number; end_year?: number; active_years?: number };
-  known_for_tags?: string[];
-  sources?: { name: string; url: string }[];
-  related_people?: { id: number; name: string; profile_url?: string; known_for?: string }[];
-}
 
 type PersonCreditBuckets = {
   allCredits: PersonCredit[];
@@ -75,7 +38,7 @@ export type DisplayCredit = PersonCredit & {
   roleCount: number;
 };
 
-export function derivePersonCreditBuckets(data: PersonPayload): PersonCreditBuckets {
+export function derivePersonCreditBuckets(data: PersonProfile): PersonCreditBuckets {
   const normalizedFallback = (data.filmography || []).map((item) => {
     const roleLower = String(item.role || item.job || '').toLowerCase();
     let bucket: PersonRoleBucket = 'other';
@@ -393,7 +356,7 @@ function formatBirthDate(birthdayStr: string): string {
 }
 
 const PersonHero: React.FC<{
-  person: PersonPayload['person'];
+  person: PersonProfile['person'];
   tags: string[];
   topWork: DisplayCredit[];
   biographyExcerpt: string;
@@ -762,7 +725,7 @@ const CreditsExplorer: React.FC<{
 };
 
 const RelatedPeopleRail: React.FC<{
-  relatedPeople?: PersonPayload['related_people'];
+  relatedPeople?: PersonProfile['related_people'];
   onOpenPerson?: (id: number, name: string) => void;
   onQuickSearch?: (q: string) => void;
 }> = ({ relatedPeople, onOpenPerson, onQuickSearch }) => (
@@ -811,7 +774,7 @@ const RelatedPeopleRail: React.FC<{
   </section>
 );
 
-const SourcesSection: React.FC<{ sources?: PersonPayload['sources'] }> = ({ sources }) => (
+const SourcesSection: React.FC<{ sources?: PersonProfile['sources'] }> = ({ sources }) => (
   <section className="person-editorial-section person-sources-section" aria-labelledby="person-sources-title">
     <header>
       <h3 id="person-sources-title">Sources</h3>
@@ -999,7 +962,7 @@ const PersonLoadingSkeleton: React.FC = () => (
 );
 
 const PersonDisplay: React.FC<{
-  data: PersonPayload | null;
+  data: PersonProfile | null;
   isLoading?: boolean;
   onQuickSearch?: (q: string) => void;
   onBriefMe?: (name: string) => void;
