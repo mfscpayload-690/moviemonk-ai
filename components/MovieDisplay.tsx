@@ -1167,8 +1167,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                         </Section>
                     )}
 
-                    <Section title="Gallery">
-                        {safeExtraImages.length > 0 ? (
+                    {safeExtraImages.length > 0 && (
+                        <Section title="Gallery">
                             <div className="flex flex-col gap-4">
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                                     {(isGalleryExpanded ? safeExtraImages : safeExtraImages.slice(0, 3)).map((img, i) => (
@@ -1211,16 +1211,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                     </div>
                                 )}
                             </div>
-                        ) : (
-                            <div className="empty-state">
-                                <div className="empty-state-icon">
-                                    <ImageIcon className="w-8 h-8" />
-                                </div>
-                                <p className="empty-state-title">No gallery images available</p>
-                                <p className="empty-state-subtitle">Images may be added later</p>
-                            </div>
-                        )}
-                    </Section>
+                        </Section>
+                    )}
 
                     <Section title="Cast & Crew">
                         {shouldVirtualizeCast ? (
