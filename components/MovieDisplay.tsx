@@ -311,6 +311,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     const [customSavedTitle, setCustomSavedTitle] = useState('');
     const [showRelatedModal, setShowRelatedModal] = useState(false);
     const [autoplayTrailers, setAutoplayTrailers] = useState(loadPreferenceSettings().autoplayTrailers);
+    const [whereToWatchExpanded, setWhereToWatchExpanded] = useState(false);
     const heroPosterSrc = movie?.poster_url || movie?.backdrop_url || movie?.extra_images?.[0] || '';
     const canSave = (selectedFolderId && selectedFolderId.length > 0) || (newFolderName && newFolderName.trim().length > 0);
     const newFolderNameError = newFolderName.length > 0 && newFolderName.trim().length === 0 ? 'Folder name cannot be blank.' : '';
@@ -1307,8 +1308,26 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                         {(safeWhereToWatch.length > 0 || (isTV && movie.tvShow && movie.tvShow.officialSite)) && (
                             <Section title="Where to Watch">
                                 {safeWhereToWatch.length > 0 && (
-                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                                        {safeWhereToWatch.map(option => <WatchCard key={option.platform + option.type} option={option} />)}
+                                    <div className="space-y-3">
+                                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                                            {(whereToWatchExpanded ? safeWhereToWatch : safeWhereToWatch.slice(0, 2)).map(option => (
+                                                <WatchCard key={option.platform + option.type} option={option} />
+                                            ))}
+                                        </div>
+                                        {safeWhereToWatch.length > 2 && (
+                                            <div className="flex justify-center pt-1">
+                                                <button
+                                                    onClick={() => setWhereToWatchExpanded(!whereToWatchExpanded)}
+                                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-xs text-white font-semibold transition-all duration-200"
+                                                >
+                                                    {whereToWatchExpanded ? (
+                                                        <>Show less <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" /></svg></>
+                                                    ) : (
+                                                        <>Show all ({safeWhereToWatch.length}) <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg></>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 {isTV && movie.tvShow && movie.tvShow.officialSite && (
@@ -1341,7 +1360,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
 
             {/* ── User Reviews — full-width below the grid ────────────────── */}
             {((!reviewsLoading && reviews.length > 0) || reviewsLoading) && (
-                <div className="mt-8 pb-8 px-4 md:px-8">
+                <div className={`mt-8 pb-8 px-4 md:px-8 ${reviews.length === 1 ? 'max-w-3xl mx-auto w-full' : ''}`}>
                     <Section title="User Reviews">
                         {/* Skeleton */}
                         {reviewsLoading ? (
@@ -1368,7 +1387,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                 {reviews.length > 0 && (
                                     <>
                                         {/* Review cards grid */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className={`grid gap-4 ${reviews.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                                             {reviews.slice(0, reviewsVisible).map(rev => {
                                                 const isExp = expandedReview === rev.id;
                                                 const LIMIT = 220;
