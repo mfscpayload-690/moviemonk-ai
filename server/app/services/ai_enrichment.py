@@ -19,14 +19,14 @@ from app.config import get_settings
 logger = logging.getLogger("moviemonk.ai")
 
 GROQ_API = "https://api.groq.com/openai/v1/chat/completions"
-CREATIVE_MODEL = "llama-3.1-8b-instant"
+CREATIVE_MODEL = "openai/gpt-oss-20b"
 
 CREATIVE_PROMPT = (
     "You are MovieMonk AI. Generate ONLY these JSON fields for the given movie/show:\n"
     '- summary_short: 150-200 chars, spoiler-free hook\n'
     '- summary_medium: 400-500 chars, spoiler-free plot\n'
-    '- summary_long_spoilers: Full plot with ALL spoilers (start with "SPOILER WARNING")\n'
-    '- suspense_breaker: One sentence revealing the twist/ending\n'
+    '- summary_long_spoilers: Full plot with ALL spoilers (start with "SPOILER WARNING"). CRITICAL RULE: If you do not know the exact, factual ending/twist, or if it is not explicitly documented in the Overview, do NOT fabricate or hallucinate any details. Instead, set summary_long_spoilers and suspense_breaker to: "Spoiler details are not verified for this title."\n'
+    '- suspense_breaker: One sentence revealing the twist/ending. Set to "Spoiler details are not verified for this title." if unknown.\n'
     '- ai_notes: Markdown trivia, quotes, themes, similar titles (3-5 bullets)\n'
     '- vibe_check: 2-4 word mood description (e.g. "Gritty, Neon, Tense")\n'
     '- best_watched_with: One short recommendation (e.g. "Late night with headphones")\n'
