@@ -192,7 +192,7 @@ async def get_details(
         if isinstance(providers, dict):
             watch_options = _build_watch_options(providers, _get_preferred_region())
 
-        # Phase 2: Parallel enrichment (OMDB + Wikipedia + Wikimedia + AI)
+        # Phase 2: Parallel enrichment (OMDB + Wikipedia + Wikimedia)
         imdb_id = ext_ids.get("imdb_id") if isinstance(ext_ids, dict) else None
 
         async def _empty_ratings():
@@ -201,16 +201,24 @@ async def get_details(
         omdb_task = omdb.fetch_ratings(imdb_id) if imdb_id else _empty_ratings()
         wiki_task = wikipedia.enrich_movie(title, year)
         wikimedia_task = wikimedia.get_movie_images(title, year)
-        ai_task = ai_enrichment.generate_creative_fields(title, year, genres, overview, media_type)
 
         phase2_list: list[Any] = await asyncio.gather(
-            omdb_task, wiki_task, wikimedia_task, ai_task,
+            omdb_task, wiki_task, wikimedia_task,
             return_exceptions=True,
         )
         ratings_raw: Any = phase2_list[0]
         wiki_data: Any = phase2_list[1]
         wiki_images: Any = phase2_list[2]
-        ai_fields: Any = phase2_list[3]
+
+        # Combine Wikipedia extended plot if available for grounding
+        combined_overview = overview or ""
+        if isinstance(wiki_data, dict) and wiki_data.get("plot_extended"):
+            combined_overview += f"\n\nAdditional Context/Plot:\n{wiki_data['plot_extended']}"
+
+        # Generate creative fields using Groq with the grounded combined overview
+        ai_fields = await ai_enrichment.generate_creative_fields(
+            title, year, genres, combined_overview, media_type
+        )
 
         # Ratings
         ratings: list[Rating] = ratings_raw if isinstance(ratings_raw, list) else []

@@ -18,7 +18,7 @@ from app.config import get_settings
 logger = logging.getLogger("moviemonk.vibe")
 
 GROQ_API = "https://api.groq.com/openai/v1/chat/completions"
-VIBE_MODEL = "llama-3.1-8b-instant"
+VIBE_MODEL = "openai/gpt-oss-20b"
 
 VIBE_SYSTEM_PROMPT = """You are a movie recommendation assistant. Parse the user's natural language query into structured search constraints.
 

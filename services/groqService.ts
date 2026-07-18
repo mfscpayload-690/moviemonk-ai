@@ -68,10 +68,10 @@ export async function fetchMovieData(
   }
 
   // Model selection based on complexity
-  // Updated models: llama-3.3-70b-versatile, llama-3.1-8b-instant, mixtral-8x7b-32768
+  // Updated models: openai/gpt-oss-120b, openai/gpt-oss-20b
   const model = complexity === QueryComplexity.COMPLEX 
-    ? 'llama-3.3-70b-versatile'  // Best for complex reasoning
-    : 'llama-3.1-8b-instant';     // Fastest for simple queries (not deprecated)
+    ? 'openai/gpt-oss-120b'  // Best for complex reasoning
+    : 'openai/gpt-oss-20b';    // Fastest for simple queries
 
   // Build proper multi-turn message array
   const messages: Array<{role: string; content: string}> = [
@@ -147,7 +147,7 @@ type StreamGroqTextArgs = {
 export async function streamGroqText(args: StreamGroqTextArgs): Promise<string> {
   const {
     messages,
-    model = 'llama-3.1-8b-instant',
+    model = 'openai/gpt-oss-20b',
     temperature = 0.2,
     max_tokens = 700,
     signal,
