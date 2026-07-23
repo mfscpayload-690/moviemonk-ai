@@ -43,7 +43,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.5.4",
     "jest": "^30.3.0",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.22",
     "tailwindcss": "^3.4.19",
     "ts-jest": "^29.4.11",
     "typescript": "~5.9.3",
