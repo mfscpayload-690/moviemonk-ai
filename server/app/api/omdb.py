@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
-from app.services import omdb
+
 from app.models.details import Rating
+from app.services import omdb
 
 router = APIRouter()
 
