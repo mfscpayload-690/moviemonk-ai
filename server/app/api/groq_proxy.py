@@ -1,7 +1,7 @@
 """Groq API proxy — keeps API key server-side."""
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -17,10 +17,10 @@ _request_count = 0
 
 class GroqRequest(BaseModel):
     model: str
-    messages: list[Dict[str, Any]]
+    messages: list[dict[str, Any]]
     max_tokens: int | None = None
     temperature: float | None = None
-    response_format: Dict[str, Any] | None = None
+    response_format: dict[str, Any] | None = None
     stream: bool = False
 
 @router.post("/groq")
@@ -65,7 +65,7 @@ async def proxy_groq(req: GroqRequest):
 
             try:
                 return resp.json()
-            except Exception as json_err:
+            except Exception as json_err:  # noqa: BLE001
                 logger.error(f"Failed to parse Groq JSON: {resp.text} | Error: {json_err}")
                 raise HTTPException(status_code=500, detail="Invalid JSON from AI provider")
 
