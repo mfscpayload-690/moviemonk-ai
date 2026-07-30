@@ -13,7 +13,12 @@ from fastapi import APIRouter, Path
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
 from app.models.person import (
-    CareerSpan, PersonCredit, PersonData, PersonResponse, RelatedPerson, RoleDistribution,
+    CareerSpan,
+    PersonCredit,
+    PersonData,
+    PersonResponse,
+    RelatedPerson,
+    RoleDistribution,
 )
 from app.services import tmdb, wikipedia
 
@@ -124,7 +129,7 @@ async def _fetch_related_people(person_id: int) -> list[RelatedPerson]:
                                          or member.get("character")),
                             "overlap": 1,
                         }
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         await asyncio.gather(*(fetch_credits_for_work(w) for w in top_works))
@@ -165,7 +170,7 @@ async def get_person(person_id: int = Path(...)):
 
         combined_raw = (credits_data.get("cast") or []) + (credits_data.get("crew") or [])
         all_credits = _dedupe_credits(
-            [c for c in ((_map_credit(r) for r in combined_raw)) if c is not None]
+            [c for c in (_map_credit(r) for r in combined_raw) if c is not None]
         )
         all_credits.sort(key=lambda c: (c.year or 0, c.popularity or 0), reverse=True)
 
@@ -213,9 +218,8 @@ async def get_person(person_id: int = Path(...)):
 
         # Merge Wikipedia bio if TMDB bio is short
         biography = person_data.get("biography", "")
-        if isinstance(wiki_data, dict) and wiki_data.get("biography_extended"):
-            if len(biography) < 200:
-                biography = wiki_data["biography_extended"]
+        if isinstance(wiki_data, dict) and wiki_data.get("biography_extended") and len(biography) < 200:
+            biography = wiki_data["biography_extended"]
 
         person_obj = PersonData(
             id=person_data["id"],
