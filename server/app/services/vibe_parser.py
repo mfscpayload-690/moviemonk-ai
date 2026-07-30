@@ -90,10 +90,8 @@ async def parse_vibe_query(query: str, timeout: float = 8.0) -> dict[str, Any] |
             )
             cleaned = content.strip()
             for prefix in ("```json", "```"):
-                if cleaned.startswith(prefix):
-                    cleaned = cleaned[len(prefix):]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
+                cleaned = cleaned.removeprefix(prefix)
+            cleaned = cleaned.removesuffix("```")
 
             return json.loads(cleaned.strip())
 
