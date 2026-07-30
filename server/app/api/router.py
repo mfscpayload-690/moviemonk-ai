@@ -4,7 +4,21 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api import details, health, person, resolve, search, suggest, tmdb_proxy, vibe, watchlists, groq_proxy, query, omdb, episodes
+from app.api import (
+    details,
+    episodes,
+    groq_proxy,
+    health,
+    omdb,
+    person,
+    query,
+    resolve,
+    search,
+    suggest,
+    tmdb_proxy,
+    vibe,
+    watchlists,
+)
 
 router = APIRouter(prefix="/api")
 
