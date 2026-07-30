@@ -16,7 +16,11 @@ from fastapi import APIRouter, Query, Request
 from app.config import get_settings
 from app.core.errors import api_error
 from app.core.security import get_user_id_from_token, verify_supabase_jwt
-from app.models.watchlist import SharedWatchlistView, WatchlistShareRequest, WatchlistShareResponse
+from app.models.watchlist import (
+    SharedWatchlistView,
+    WatchlistShareRequest,
+    WatchlistShareResponse,
+)
 
 logger = logging.getLogger("moviemonk.watchlists")
 router = APIRouter()
@@ -74,7 +78,7 @@ async def create_shared_watchlist(
             or user_resp.user.email
             or "Anonymous"
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         display_name = "Anonymous"
 
     try:
@@ -142,7 +146,7 @@ async def get_shared_watchlist(
             supabase.table("shared_watchlists").update(
                 {"view_count": (row.get("view_count") or 0) + 1}
             ).eq("share_token", token.strip()).execute()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
         return SharedWatchlistView(
