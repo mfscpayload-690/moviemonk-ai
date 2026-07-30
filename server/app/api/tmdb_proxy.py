@@ -7,6 +7,7 @@ and this handler forwards the request to TMDB with auth.
 from __future__ import annotations
 
 import logging
+
 from fastapi import APIRouter, Query, Request
 
 from app.core.errors import api_error
