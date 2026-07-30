@@ -52,10 +52,8 @@ def _parse_json(raw: str) -> dict[str, Any] | None:
     try:
         cleaned = raw.strip()
         for prefix in ("```json", "```"):
-            if cleaned.startswith(prefix):
-                cleaned = cleaned[len(prefix):]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
+            cleaned = cleaned.removeprefix(prefix)
+        cleaned = cleaned.removesuffix("```")
         return json.loads(cleaned.strip())
     except json.JSONDecodeError:
         m = re.search(r"\{[\s\S]*\}", raw)
@@ -137,7 +135,7 @@ async def generate_creative_fields(
             if isinstance(specs, str):
                 try:
                     specs = json.loads(specs)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     specs = {}
             if not isinstance(specs, dict):
                 specs = {}
