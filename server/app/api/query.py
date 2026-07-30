@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.core.cache import build_cache_key, get_cache, set_cache
-from app.services import tmdb, ai_enrichment
+from app.services import ai_enrichment, tmdb
 from app.services.entity_resolver import resolve
 
 logger = logging.getLogger("moviemonk.query")
