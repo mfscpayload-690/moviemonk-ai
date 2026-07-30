@@ -14,7 +14,12 @@ from fastapi import APIRouter, Query
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
 from app.models.search import (
-    AppliedFilters, PersonSearchCandidate, SearchPageResponse, SearchRequest, SearchResult, VibeInfo,
+    AppliedFilters,
+    PersonSearchCandidate,
+    SearchPageResponse,
+    SearchRequest,
+    SearchResult,
+    VibeInfo,
 )
 from app.services import tmdb
 from app.services.person_intent import detect_person_intent
@@ -30,7 +35,6 @@ _genre_map: dict[int, str] = {}
 
 
 async def _ensure_genre_map() -> None:
-    global _genre_map
     if _genre_map:
         return
     try:
@@ -38,7 +42,7 @@ async def _ensure_genre_map() -> None:
         tv_genres = await tmdb.get_genre_list("tv")
         for g in movie_genres.get("genres", []) + tv_genres.get("genres", []):
             _genre_map[g["id"]] = g["name"]
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.warning("Failed to load genre map")
 
 
