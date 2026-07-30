@@ -21,7 +21,7 @@ async def health_check() -> HealthResponse:
 
     # Check Redis
     try:
-        from app.core.cache import _redis_pool, _redis_available
+        from app.core.cache import _redis_available, _redis_pool
         if _redis_available and _redis_pool:
             t0 = time.monotonic()
             await _redis_pool.ping()
@@ -32,12 +32,12 @@ async def health_check() -> HealthResponse:
             ))
         else:
             deps.append(HealthDependency(name="redis", status="unavailable"))
-    except Exception:
+    except Exception:  # noqa: BLE001
         deps.append(HealthDependency(name="redis", status="error"))
 
     # Check TMDB connectivity
     try:
-        from app.services.tmdb import get_client, _auth_headers, _auth_params
+        from app.services.tmdb import _auth_headers, _auth_params, get_client
         client = await get_client()
         t0 = time.monotonic()
         resp = await client.get(
@@ -52,7 +52,7 @@ async def health_check() -> HealthResponse:
             status="ok" if resp.status_code == 200 else "error",
             latency_ms=latency,
         ))
-    except Exception:
+    except Exception:  # noqa: BLE001
         deps.append(HealthDependency(name="tmdb", status="error"))
 
     all_ok = all(d.status == "ok" or d.status == "unavailable" for d in deps)
