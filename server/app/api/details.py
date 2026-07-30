@@ -19,8 +19,16 @@ from fastapi import APIRouter, Path
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
 from app.models.details import (
-    CastMember, Crew, DetailsResponse, MovieData, Rating, RelatedTitle,
-    TVShowData, TVShowSeason, WatchOption, WikipediaEnrichment,
+    CastMember,
+    Crew,
+    DetailsResponse,
+    MovieData,
+    Rating,
+    RelatedTitle,
+    TVShowData,
+    TVShowSeason,
+    WatchOption,
+    WikipediaEnrichment,
 )
 from app.services import ai_enrichment, omdb, tmdb, wikimedia, wikipedia
 
