@@ -10,7 +10,11 @@ jest.mock('../../components/icons', () => ({
   XMarkIcon: () => React.createElement('span', null, 'close')
 }));
 
-import { MemoryRouter } from 'react-router-dom';
+const MemoryRouter = ({ children }: any) => children;
+
+jest.mock('react-router-dom', () => ({
+  useLocation: () => ({ pathname: '/', search: '' })
+}));
 import HeaderUtilityMenu, {
   buildHeaderUtilityMenuItems,
   runUtilityMenuAction
