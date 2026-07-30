@@ -6,6 +6,7 @@ Ported from api/resolveEntity.ts.
 from __future__ import annotations
 
 import logging
+
 from fastapi import APIRouter, Query
 
 from app.core.cache import build_cache_key, get_cache, set_cache
