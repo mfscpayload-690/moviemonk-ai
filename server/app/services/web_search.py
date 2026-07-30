@@ -56,7 +56,7 @@ async def search_duckduckgo(query: str, limit: int = 5) -> list[dict[str, str]]:
                 decoded = unquote(raw_url)
                 if decoded.startswith(("http://", "https://")):
                     results.append({"title": title, "snippet": snippet, "url": decoded})
-            except Exception:
+            except Exception:  # noqa: BLE001, S112
                 continue
         return results
     except Exception:
