@@ -12,7 +12,7 @@ from fastapi import APIRouter, Query
 
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
-from app.models.suggest import SuggestResponse, SuggestionItem
+from app.models.suggest import SuggestionItem, SuggestResponse
 from app.services import tmdb
 from app.services.person_intent import detect_person_intent
 from app.services.suggest_ranking import score_suggestion
