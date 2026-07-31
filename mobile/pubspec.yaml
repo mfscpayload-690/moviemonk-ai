@@ -1,0 +1,42 @@
+name: moviemonk_ai
+description: "MovieMonk AI — Entertainment Discovery Engine for Android"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Design
+  cupertino_icons: ^1.0.8
+  google_fonts: ^8.2.0
+  flutter_animate: ^4.5.2
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+
+  # Networking
+  dio: ^5.11.0
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # State Management
+  provider: ^6.1.2
+
+  # Auth & Backend
+  supabase_flutter: ^2.16.0
+
+  # Utilities
+  url_launcher: ^6.3.2
+  share_plus: ^10.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
