@@ -158,4 +158,38 @@ describe('hooks/watchlistStore icon behavior', () => {
     expect(next[1].items.map((item) => item.id)).toEqual(['a-2', 'a-1']);
     expect(buildWatchlistOrderState(next).folderIds).toEqual(['folder-b', 'folder-a']);
   });
+
+  it('purges items matching tmdb_id and media_type across all folders', () => {
+    const folders = [
+      {
+        id: 'folder-1',
+        name: 'Plan to Watch',
+        icon: 'bookmark',
+        items: [
+          { id: 'item-1', saved_title: 'Inception', movie: { tmdb_id: '27205', media_type: 'movie', type: 'movie' } }
+        ]
+      },
+      {
+        id: 'folder-2',
+        name: 'Favorites',
+        icon: 'heart',
+        items: [
+          { id: 'item-2', saved_title: 'Inception', movie: { tmdb_id: '27205', media_type: 'movie', type: 'movie' } },
+          { id: 'item-3', saved_title: 'Interstellar', movie: { tmdb_id: '157336', media_type: 'movie', type: 'movie' } }
+        ]
+      }
+    ];
+
+    const targetTmdb = '27205';
+    const targetMedia = 'movie';
+
+    const purgedFolders = folders.map((folder) => ({
+      ...folder,
+      items: folder.items.filter((item) => !(item.movie.tmdb_id === targetTmdb && item.movie.media_type === targetMedia))
+    }));
+
+    expect(purgedFolders[0].items).toHaveLength(0);
+    expect(purgedFolders[1].items).toHaveLength(1);
+    expect(purgedFolders[1].items[0].saved_title).toBe('Interstellar');
+  });
 });

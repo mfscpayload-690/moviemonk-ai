@@ -197,6 +197,17 @@ export async function deleteCloudItem(itemId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteCloudItemsByTmdbId(tmdbId: string, mediaType: string): Promise<void> {
+  const client = getSupabaseOrThrow();
+  const cloudType = toCloudMediaType(mediaType);
+  const { error } = await client
+    .from('watchlist_items')
+    .delete()
+    .eq('tmdb_id', tmdbId)
+    .eq('media_type', cloudType);
+  if (error) throw error;
+}
+
 export async function renameCloudFolder(folderId: string, name: string): Promise<void> {
   const client = getSupabaseOrThrow();
   const { error } = await client

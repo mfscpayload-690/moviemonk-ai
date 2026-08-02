@@ -13,6 +13,7 @@ type AuthContextValue = {
   signInWithGitHub: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -178,6 +179,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     savePreferenceSettings(DEFAULT_PREFERENCE_SETTINGS);
   };
 
+  const refreshSession = async (): Promise<boolean> => {
+    if (!isSupabaseConfigured || !supabase) return false;
+    try {
+      const { data, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr || !data.session) {
+        console.warn('Supabase session token refresh failed, performing sign-out:', refreshErr);
+        await signOut();
+        return false;
+      }
+      setSession(data.session);
+      setUser(data.session.user);
+      return true;
+    } catch (err) {
+      console.warn('Error refreshing session:', err);
+      try {
+        await signOut();
+      } catch { /* noop */ }
+      return false;
+    }
+  };
+
   const value = useMemo<AuthContextValue>(
     () => ({
       isEnabled: isSupabaseConfigured,
@@ -187,7 +209,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       error,
       signInWithGitHub,
       signInWithGoogle,
-      signOut
+      signOut,
+      refreshSession
     }),
     [user, session, loading, error]
   );
