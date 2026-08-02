@@ -94,6 +94,7 @@ const App: React.FC = () => {
     addFolder,
     saveToFolder,
     rollbackSave,
+    purgeTitleFromWatchlists,
     isCloud,
     isSyncing
   } = useCloudWatchlists();
@@ -242,21 +243,44 @@ const App: React.FC = () => {
 
     try {
       const result = await toggleWatched(entry);
+
+      // Auto-purge from watchlists when marked as watched
+      let removedFromWatchlist: { folderId: string; item: any }[] = [];
+      if (result.action === 'marked') {
+        removedFromWatchlist = purgeTitleFromWatchlists(entry.tmdb_id, entry.media_type);
+      }
+
       if (!showUndo) return result;
 
+      const wasPurged = removedFromWatchlist.length > 0;
       showActionToast({
         kind: 'watched',
-        message: result.action === 'marked' ? 'Marked as watched' : 'Removed from watched',
+        message: result.action === 'marked'
+          ? (wasPurged ? 'Marked as watched (removed from watchlist)' : 'Marked as watched')
+          : 'Removed from watched',
         onUndo: async () => {
-          await runWatchedToggle(buildWatchedEntry(result.entry), { showUndo: false });
+          try {
+            await runWatchedToggle(buildWatchedEntry(result.entry), { showUndo: false });
+            // Restore removed items back to their watchlist folders if undone
+            if (wasPurged) {
+              for (const { folderId, item } of removedFromWatchlist) {
+                try {
+                  await saveToFolder(folderId, item.movie, item.saved_title);
+                } catch (err) {
+                  console.warn('Failed to restore item to watchlist on undo', err);
+                }
+              }
+            }
+          } catch (undoErr) {
+            console.warn('Failed to undo watched toggle', undoErr);
+          }
         }
       });
       return result;
     } catch (error) {
-      setError('Failed to update watched titles');
-      throw error;
+      console.warn('Failed to update watched titles:', error);
     }
-  }, [buildWatchedEntry, showActionToast, toggleWatched]);
+  }, [buildWatchedEntry, purgeTitleFromWatchlists, saveToFolder, showActionToast, toggleWatched]);
 
   const handleQuickSaveToWatchlist = useCallback((item: QuickSaveTitle) => {
     const next = getOpenedQuickSaveState(item, watchlists, WATCHLIST_ICON_DEFAULT);
