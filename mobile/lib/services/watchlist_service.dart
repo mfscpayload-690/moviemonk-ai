@@ -41,6 +41,42 @@ class WatchlistService extends ChangeNotifier {
     }
   }
 
+  /// Remove a title from all watchlist folders (e.g. when marked as Watched).
+  Future<void> removeTitleFromWatchlists(int tmdbId, String mediaType) async {
+    final targetMediaType = mediaType == 'show' ? 'tv' : mediaType;
+
+    _folders = _folders.map((folder) {
+      final filteredItems = folder.items.where((item) {
+        final itemTmdb = int.tryParse(item.movie.tmdbId ?? '') ?? 0;
+        final itemType = (item.movie.mediaType ?? item.movie.type) == 'show' ? 'tv' : (item.movie.mediaType ?? item.movie.type);
+        return !(itemTmdb == tmdbId && itemType == targetMediaType);
+      }).toList();
+
+      return WatchlistFolder(
+        id: folder.id,
+        name: folder.name,
+        icon: folder.icon,
+        isPublic: folder.isPublic,
+        items: filteredItems,
+      );
+    }).toList();
+
+    notifyListeners();
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        await Supabase.instance.client
+            .from('watchlist_items')
+            .delete()
+            .eq('tmdb_id', tmdbId.toString())
+            .eq('media_type', targetMediaType);
+      }
+    } catch (e) {
+      debugPrint('Error purging watched title from cloud watchlists: $e');
+    }
+  }
+
   List<WatchlistFolder> _defaultFolders() {
     return [
       WatchlistFolder(
