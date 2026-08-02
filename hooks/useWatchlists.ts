@@ -119,6 +119,38 @@ export function useWatchlists() {
     ));
   };
 
+  const purgeTitleFromWatchlists = (tmdbId: string, mediaType: string) => {
+    if (!tmdbId) return [];
+    const removed: { folderId: string; item: any }[] = [];
+    const targetMediaType = mediaType === 'show' ? 'tv' : mediaType;
+
+    persist((prev) =>
+      prev.map((folder) => {
+        const matchingItems = folder.items.filter((item) => {
+          const itemTmdb = String(item.movie?.tmdb_id || (item.movie as any)?.id || '');
+          const itemMedia = (item.movie?.media_type || item.movie?.type || 'movie') === 'show' ? 'tv' : (item.movie?.media_type || item.movie?.type || 'movie');
+          return itemTmdb === String(tmdbId) && itemMedia === targetMediaType;
+        });
+
+        matchingItems.forEach((item) => {
+          removed.push({ folderId: folder.id, item });
+        });
+
+        if (matchingItems.length === 0) return folder;
+        return {
+          ...folder,
+          items: folder.items.filter((item) => {
+            const itemTmdb = String(item.movie?.tmdb_id || (item.movie as any)?.id || '');
+            const itemMedia = (item.movie?.media_type || item.movie?.type || 'movie') === 'show' ? 'tv' : (item.movie?.media_type || item.movie?.type || 'movie');
+            return !(itemTmdb === String(tmdbId) && itemMedia === targetMediaType);
+          }),
+        };
+      })
+    );
+
+    return removed;
+  };
+
   const reorderFolders = (activeId: string, overId: string) => {
     if (!activeId || !overId) return;
     persist((prev) => reorderByIds(prev, activeId, overId));
@@ -155,6 +187,7 @@ export function useWatchlists() {
     setFolderIcon,
     moveItem,
     deleteItem,
+    purgeTitleFromWatchlists,
     reorderFolders,
     reorderItems
   };
