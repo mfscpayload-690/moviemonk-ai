@@ -1014,18 +1014,30 @@ export function WatchlistsDashboard() {
           </div>
 
           {folders.length === 0 ? (
-            <div className="mm-empty-state">
-              <h3>Build your first watchlist</h3>
-              <p>Start with a folder for weekend picks, comfort rewatches, or what to see next. Then save titles into it from anywhere in the app.</p>
-              <div className="mm-empty-state-actions">
-                <button type="button" className="mm-empty-state-cta" onClick={() => setCreateFolderOpen(true)}>
-                  Create your first watchlist
-                </button>
-                <Link to="/" className="mm-empty-state-cta-secondary">
-                  Go to discovery
-                </Link>
+            (isSyncing || !isHydrated) ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
+                {[1, 2, 3, 4].map((n) => (
+                  <div key={`folder-skeleton-${n}`} className="glass-panel p-4 rounded-2xl border border-white/5 space-y-3">
+                    <div className="aspect-[16/9] w-full bg-white/5 rounded-xl" />
+                    <div className="h-5 w-3/4 bg-white/10 rounded" />
+                    <div className="h-4 w-1/2 bg-white/5 rounded" />
+                  </div>
+                ))}
               </div>
-            </div>
+            ) : (
+              <div className="mm-empty-state">
+                <h3>Build your first watchlist</h3>
+                <p>Start with a folder for weekend picks, comfort rewatches, or what to see next. Then save titles into it from anywhere in the app.</p>
+                <div className="mm-empty-state-actions">
+                  <button type="button" className="mm-empty-state-cta" onClick={() => setCreateFolderOpen(true)}>
+                    Create your first watchlist
+                  </button>
+                  <Link to="/" className="mm-empty-state-cta-secondary">
+                    Go to discovery
+                  </Link>
+                </div>
+              </div>
+            )
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {folders.map((folder, index) => {
