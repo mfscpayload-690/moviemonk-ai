@@ -19,6 +19,7 @@ import {
   addCloudFolder,
   deleteCloudFolder,
   deleteCloudItem,
+  deleteCloudItemsByTmdbId,
   fetchCloudWatchlists,
   renameCloudFolder,
   saveCloudItem,
@@ -106,15 +107,16 @@ export function useCloudWatchlists() {
       return;
     }
     activeCloudUserIdRef.current = user.id;
-    cloudFoldersOwnerRef.current = null;
-    setCloudFolders([]);
-    setCloudHydrated(false);
 
+    // 0ms instant hydration from cloud cache or local storage fallback
     const cached = readCloudCache(user.id);
-    if (cached.length > 0) {
-      setCloudFoldersForUser(user.id, cached);
+    const initialFolders = cached.length > 0 ? cached : loadWatchlistsFromStorage(localStorage);
+
+    if (initialFolders.length > 0) {
+      setCloudFoldersForUser(user.id, initialFolders);
       setCloudHydrated(true);
     }
+
     cloudCacheHydratedUserRef.current = user.id;
     refreshCloud();
   }, [refreshCloud, setCloudFoldersForUser, user?.id]);
@@ -289,6 +291,44 @@ export function useCloudWatchlists() {
           refreshCloud();
         });
       },
+      purgeTitleFromWatchlists: (tmdbId: string, mediaType: string) => {
+        if (!tmdbId) return [];
+        const removed: { folderId: string; item: any }[] = [];
+        const targetMediaType = mediaType === 'show' ? 'tv' : mediaType;
+
+        updateCloudState((prev) =>
+          prev.map((folder) => {
+            const matchingItems = folder.items.filter((item) => {
+              const itemTmdb = String(item.movie?.tmdb_id || (item.movie as any)?.id || '');
+              const itemMedia = (item.movie?.media_type || item.movie?.type || 'movie') === 'show' ? 'tv' : (item.movie?.media_type || item.movie?.type || 'movie');
+              return itemTmdb === String(tmdbId) && itemMedia === targetMediaType;
+            });
+
+            matchingItems.forEach((item) => {
+              removed.push({ folderId: folder.id, item });
+            });
+
+            if (matchingItems.length === 0) return folder;
+            return {
+              ...folder,
+              items: folder.items.filter((item) => {
+                const itemTmdb = String(item.movie?.tmdb_id || (item.movie as any)?.id || '');
+                const itemMedia = (item.movie?.media_type || item.movie?.type || 'movie') === 'show' ? 'tv' : (item.movie?.media_type || item.movie?.type || 'movie');
+                return !(itemTmdb === String(tmdbId) && itemMedia === targetMediaType);
+              }),
+            };
+          })
+        );
+
+        if (removed.length > 0) {
+          void deleteCloudItemsByTmdbId(tmdbId, mediaType).catch((error) => {
+            console.warn('Failed to delete cloud items by tmdb_id', error);
+            refreshCloud();
+          });
+        }
+
+        return removed;
+      },
       deleteFolder: (folderId: string) => {
         if (!folderId) return;
         updateCloudState((prev) => prev.filter((folder) => folder.id !== folderId));
@@ -327,6 +367,7 @@ export function useCloudWatchlists() {
       setFolderIcon: local.setFolderIcon,
       moveItem: local.moveItem,
       deleteItem: local.deleteItem,
+      purgeTitleFromWatchlists: local.purgeTitleFromWatchlists,
       deleteFolder: deleteLocalFolder,
       reorderFolders: local.reorderFolders,
       reorderItems: local.reorderItems,
