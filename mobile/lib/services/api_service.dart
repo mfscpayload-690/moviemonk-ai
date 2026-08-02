@@ -97,8 +97,12 @@ class ApiService {
   // ── Vibe (AI discovery) ──
 
   Future<SearchPageResponse> vibeSearch(String prompt) async {
-    final res = await _dio.post('/api/vibe', data: {'prompt': prompt});
-    return SearchPageResponse.fromJson(res.data as Map<String, dynamic>);
+    final vibeRes = await _dio.post('/api/vibe', data: {'q': prompt});
+    final constraints = vibeRes.data as Map<String, dynamic>;
+    
+    // Convert vibe constraints to query params for TMDB discover
+    final searchRes = await _dio.get('/api/search', queryParameters: constraints);
+    return SearchPageResponse.fromJson(searchRes.data as Map<String, dynamic>);
   }
 
   // ── Trending (TMDB proxy) ──
@@ -106,7 +110,8 @@ class ApiService {
   Future<List<SearchResult>> getTrending({String timeWindow = 'week'}) async {
     try {
       final res = await _dio.get(
-        '/api/tmdb/trending/all/$timeWindow',
+        '/api/tmdb',
+        queryParameters: {'endpoint': '/trending/all/$timeWindow'},
       );
       final data = res.data;
       if (data is Map && data['results'] is List) {

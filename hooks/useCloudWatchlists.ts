@@ -106,8 +106,11 @@ export function useCloudWatchlists() {
       setCloudHydrated(false);
       return;
     }
+    if (activeCloudUserIdRef.current !== user.id) {
+      setCloudFolders([]);
+      cloudFoldersOwnerRef.current = null;
+    }
     activeCloudUserIdRef.current = user.id;
-
     // 0ms instant hydration from cloud cache or local storage fallback
     const cached = readCloudCache(user.id);
     const initialFolders = cached.length > 0 ? cached : loadWatchlistsFromStorage(localStorage);

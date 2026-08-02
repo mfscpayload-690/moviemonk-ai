@@ -87,7 +87,7 @@ export function useWatched() {
 
   // Keep local cache synced on state changes
   useEffect(() => {
-    if (isCloud && user?.id && watched.length > 0) {
+    if (isCloud && user?.id && watched !== undefined) {
       writeCloudWatchedCache(user.id, watched);
     }
   }, [isCloud, user?.id, watched]);

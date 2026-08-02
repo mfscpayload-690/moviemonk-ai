@@ -56,7 +56,7 @@ class WatchlistItem {
     return WatchlistItem(
       id: json['id'] ?? '',
       savedTitle: json['saved_title'] ?? '',
-      movie: MovieData.fromJson(json['movie'] as Map<String, dynamic>),
+      movie: MovieData.fromJson((json['movie'] ?? json['movie_data']) as Map<String, dynamic>),
       addedAt: json['added_at'] ?? '',
     );
   }

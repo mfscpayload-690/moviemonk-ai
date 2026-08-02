@@ -25,9 +25,13 @@ class WatchlistService extends ChangeNotifier {
             .select('*, watchlist_items(*)')
             .eq('user_id', user.id);
 
-        _folders = (res as List)
-            .map((f) => WatchlistFolder.fromJson(f as Map<String, dynamic>))
-            .toList();
+        _folders = (res as List).map((f) {
+          final folderMap = Map<String, dynamic>.from(f as Map);
+          if (folderMap.containsKey('watchlist_items')) {
+            folderMap['items'] = folderMap.remove('watchlist_items');
+          }
+          return WatchlistFolder.fromJson(folderMap);
+        }).toList();
         if (_folders.isEmpty) {
           _folders = _defaultFolders();
         }
