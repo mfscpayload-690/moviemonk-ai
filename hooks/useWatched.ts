@@ -10,8 +10,7 @@ import {
 } from '../services/watchedService';
 
 const LS_KEY = 'moviemonk_watched';
-
-// ─── localStorage helpers ────────────────────────────────────────────────────
+const CLOUD_WATCHED_CACHE_PREFIX = 'moviemonk_cloud_watched_cache_v1';
 
 function loadLocalWatched(): WatchedTitle[] {
   try {
@@ -36,6 +35,23 @@ function clearLocalWatched(): void {
   } catch { /* noop */ }
 }
 
+function readCloudWatchedCache(userId: string): WatchedTitle[] {
+  try {
+    const raw = localStorage.getItem(`${CLOUD_WATCHED_CACHE_PREFIX}:${userId}`);
+    return raw ? (JSON.parse(raw) as WatchedTitle[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCloudWatchedCache(userId: string, items: WatchedTitle[]): void {
+  try {
+    localStorage.setItem(`${CLOUD_WATCHED_CACHE_PREFIX}:${userId}`, JSON.stringify(items));
+  } catch {
+    // storage full – silent
+  }
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useWatched() {
@@ -46,18 +62,35 @@ export function useWatched() {
 
   const isCloud = Boolean(user && isSupabaseConfigured);
 
-  // Load on mount / user change
+  // Load on mount / user change with instant 0ms local cache hydration
   useEffect(() => {
     if (isCloud && user?.id) {
+      const cached = readCloudWatchedCache(user.id);
+      if (cached.length > 0) {
+        setWatched(cached);
+      }
+
       setIsLoading(true);
       fetchWatchedTitles(user.id)
-        .then(setWatched)
-        .catch(() => setWatched([]))
+        .then((fetched) => {
+          setWatched(fetched);
+          writeCloudWatchedCache(user.id, fetched);
+        })
+        .catch(() => {
+          // If network fetch fails, keep cached items so user never sees 0
+        })
         .finally(() => setIsLoading(false));
     } else {
       setWatched(loadLocalWatched());
     }
   }, [isCloud, user?.id]);
+
+  // Keep local cache synced on state changes
+  useEffect(() => {
+    if (isCloud && user?.id && watched.length > 0) {
+      writeCloudWatchedCache(user.id, watched);
+    }
+  }, [isCloud, user?.id, watched]);
 
   // Auto-migrate local → cloud on first sign-in
   useEffect(() => {
@@ -106,11 +139,12 @@ export function useWatched() {
           try {
             await unmarkWatchedCloud(user.id, entry.tmdb_id, entry.media_type);
           } catch (error) {
-            setWatched((prev) => [
-              { ...(previousEntry || entry), watched_at: previousEntry?.watched_at || new Date().toISOString() },
-              ...prev,
-            ]);
-            throw error;
+            console.warn('Cloud unmark watched failed (RLS/auth), persisting to local storage:', error);
+            const next = loadLocalWatched().filter(
+              (w) =>
+                !(w.tmdb_id === entry.tmdb_id && w.media_type === entry.media_type)
+            );
+            saveLocalWatched(next);
           }
         } else {
           const next = loadLocalWatched().filter(
@@ -141,16 +175,15 @@ export function useWatched() {
           try {
             await markWatchedCloud(user.id, entry);
           } catch (error) {
-            setWatched((prev) =>
-              prev.filter(
+            console.warn('Cloud mark watched failed (RLS/auth), persisting to local storage:', error);
+            const next = [
+              newEntry,
+              ...loadLocalWatched().filter(
                 (w) =>
-                  !(
-                    w.tmdb_id === entry.tmdb_id &&
-                    w.media_type === entry.media_type
-                  )
-              )
-            );
-            throw error;
+                  !(w.tmdb_id === entry.tmdb_id && w.media_type === entry.media_type)
+              ),
+            ];
+            saveLocalWatched(next);
           }
         } else {
           const next = [newEntry, ...loadLocalWatched()];
