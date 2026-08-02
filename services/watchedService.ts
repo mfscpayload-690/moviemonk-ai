@@ -25,18 +25,30 @@ export async function markWatchedCloud(
   entry: Omit<WatchedTitle, 'id' | 'user_id' | 'watched_at'>
 ): Promise<void> {
   const client = getSupabaseOrThrow();
-  const { error } = await client.from('watched_titles').upsert(
-    {
-      user_id: userId,
-      tmdb_id: entry.tmdb_id,
-      media_type: entry.media_type,
-      title: entry.title,
-      poster_url: entry.poster_url || null,
-      year: entry.year || null,
-      watched_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,tmdb_id,media_type' }
-  );
+  const payload = {
+    user_id: userId,
+    tmdb_id: entry.tmdb_id,
+    media_type: entry.media_type,
+    title: entry.title,
+    poster_url: entry.poster_url || null,
+    year: entry.year || null,
+    watched_at: new Date().toISOString(),
+  };
+
+  let { error } = await client.from('watched_titles').upsert(payload, { onConflict: 'user_id,tmdb_id,media_type' });
+
+  // Auto-refresh token and retry on 403 RLS violation or expired JWT
+  if (error && (error.code === '42501' || /jwt|expired|unauthorized|forbidden/i.test(error.message || ''))) {
+    try {
+      const { data: refreshData } = await client.auth.refreshSession();
+      if (refreshData?.session) {
+        payload.user_id = refreshData.session.user.id;
+        const retry = await client.from('watched_titles').upsert(payload, { onConflict: 'user_id,tmdb_id,media_type' });
+        error = retry.error;
+      }
+    } catch { /* noop */ }
+  }
+
   if (error) throw error;
 }
 
@@ -46,12 +58,29 @@ export async function unmarkWatchedCloud(
   mediaType: string
 ): Promise<void> {
   const client = getSupabaseOrThrow();
-  const { error } = await client
+  let { error } = await client
     .from('watched_titles')
     .delete()
     .eq('user_id', userId)
     .eq('tmdb_id', tmdbId)
     .eq('media_type', mediaType);
+
+  // Auto-refresh token and retry on 403 RLS violation or expired JWT
+  if (error && (error.code === '42501' || /jwt|expired|unauthorized|forbidden/i.test(error.message || ''))) {
+    try {
+      const { data: refreshData } = await client.auth.refreshSession();
+      if (refreshData?.session) {
+        const retry = await client
+          .from('watched_titles')
+          .delete()
+          .eq('user_id', refreshData.session.user.id)
+          .eq('tmdb_id', tmdbId)
+          .eq('media_type', mediaType);
+        error = retry.error;
+      }
+    } catch { /* noop */ }
+  }
+
   if (error) throw error;
 }
 
