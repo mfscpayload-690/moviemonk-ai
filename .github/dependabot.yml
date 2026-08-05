@@ -28,6 +28,20 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@tailwindcss/postcss"
         update-types: ["version-update:semver-major"]
+    groups:
+      vite-ecosystem:
+        patterns:
+          - "vite"
+          - "@vitejs/*"
+      typescript-ecosystem:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "lucide-react"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
