@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.18.0",
-    "@supabase/supabase-js": "^2.112.2",
+    "@supabase/supabase-js": "^2.112.4",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.43.0",
