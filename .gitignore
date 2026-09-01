@@ -66,3 +66,10 @@ pip-delete-this-directory.txt
 /public/sitemap.xml
 public/*.txt
 !public/robots.txt
+
+# Mobile run script
+mobile/run-mobile.sh
+
+# Mobile build artifacts
+mobile/android/build
+mobile/ios/build
