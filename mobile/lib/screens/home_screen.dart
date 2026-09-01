@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.whatshot_rounded,
                   ),
                   SizedBox(
-                    height: 240,
+                    height: 260,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),

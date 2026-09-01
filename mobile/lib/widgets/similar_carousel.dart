@@ -25,7 +25,7 @@ class SimilarCarousel extends StatelessWidget {
         SectionHeader(title: title, icon: Icons.recommend_outlined),
         const SizedBox(height: 4),
         SizedBox(
-          height: 240,
+          height: 260,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -137,7 +137,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                       color: AppColors.textLight)),
               const SizedBox(height: 12),
               SizedBox(
-                height: 220,
+                height: 260,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: topWork.length,

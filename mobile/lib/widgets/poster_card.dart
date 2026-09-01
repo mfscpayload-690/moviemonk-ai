@@ -33,6 +33,7 @@ class PosterCard extends StatelessWidget {
       child: SizedBox(
         width: width,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Poster image
