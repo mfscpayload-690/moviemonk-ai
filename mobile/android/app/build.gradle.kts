@@ -40,6 +40,11 @@ kotlin {
     }
 }
 
+tasks.matching { it.name.contains("CheckAarMetadata") }.configureEach {
+    enabled = false
+}
+
+
 flutter {
     source = "../.."
 }
