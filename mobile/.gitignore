@@ -52,3 +52,5 @@ key.properties
 .env*
 *.env
 
+# Widget Preview related
+.widget_preview/
