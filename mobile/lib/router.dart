@@ -5,6 +5,7 @@ import 'screens/movie_detail_screen.dart';
 import 'screens/person_detail_screen.dart';
 import 'screens/watchlists_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/login_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -12,6 +13,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
     ),
     GoRoute(
       path: '/search',
