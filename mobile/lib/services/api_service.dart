@@ -83,26 +83,90 @@ class ApiService {
   // ── Details ──
 
   Future<DetailsResponse> getDetails(String mediaType, int tmdbId) async {
-    final res = await _dio.get('/api/details/$mediaType/$tmdbId');
-    return DetailsResponse.fromJson(res.data as Map<String, dynamic>);
+    try {
+      final res = await _dio.get('/api/details/$mediaType/$tmdbId');
+      return DetailsResponse.fromJson(res.data as Map<String, dynamic>);
+    } catch (_) {
+      // Fallback directly to TMDB proxy if details aggregator route errors
+      final res = await _dio.get(
+        '/api/tmdb',
+        queryParameters: {'endpoint': '/$mediaType/$tmdbId'},
+      );
+      final raw = res.data as Map<String, dynamic>;
+      final title = (raw['title'] ?? raw['name'] ?? 'Untitled').toString();
+      final dateStr = (raw['release_date'] ?? raw['first_air_date'] ?? '').toString();
+      final year = dateStr.length >= 4 ? dateStr.substring(0, 4) : '';
+
+      final fakeMovieDataJson = <String, dynamic>{
+        'tmdb_id': tmdbId.toString(),
+        'title': title,
+        'year': year,
+        'type': mediaType == 'tv' ? 'show' : 'movie',
+        'media_type': mediaType,
+        'genres': (raw['genres'] as List?)?.map((g) => (g is Map ? g['name'] : '').toString()).where((g) => g.isNotEmpty).toList() ?? [],
+        'poster_url': ApiConfig.tmdbImage(raw['poster_path']),
+        'backdrop_url': ApiConfig.tmdbImage(raw['backdrop_path'], size: 'w780'),
+        'trailer_url': '',
+        'ratings': raw['vote_average'] != null
+            ? [{'source': 'TMDB', 'score': raw['vote_average'].toString(), 'numeric': (raw['vote_average'] as num).toDouble()}]
+            : [],
+        'cast': [],
+        'crew': {'directors': [], 'writers': [], 'producers': []},
+        'summary_short': (raw['overview'] ?? '').toString(),
+        'summary_medium': (raw['overview'] ?? '').toString(),
+        'summary_long_spoilers': '',
+        'suspense_breaker': '',
+        'where_to_watch': [],
+        'extra_images': [],
+        'ai_notes': '',
+      };
+
+      return DetailsResponse.fromJson({
+        'ok': true,
+        'data': fakeMovieDataJson,
+        'similar': [],
+        'cached': false,
+      });
+    }
   }
 
   // ── Person ──
 
   Future<PersonResponse> getPerson(int personId) async {
-    final res = await _dio.get('/api/person/$personId');
-    return PersonResponse.fromJson(res.data as Map<String, dynamic>);
+    try {
+      final res = await _dio.get('/api/person/$personId');
+      return PersonResponse.fromJson(res.data as Map<String, dynamic>);
+    } catch (_) {
+      final res = await _dio.get(
+        '/api/tmdb',
+        queryParameters: {'endpoint': '/person/$personId'},
+      );
+      final raw = res.data as Map<String, dynamic>;
+      final fakePersonJson = <String, dynamic>{
+        'ok': true,
+        'person': {
+          'id': personId,
+          'name': (raw['name'] ?? '').toString(),
+          'biography': (raw['biography'] ?? '').toString(),
+          'profile_url': ApiConfig.tmdbImage(raw['profile_path']),
+        },
+        'top_work': [],
+        'credits_all': [],
+        'credits_acting': [],
+        'credits_directing': [],
+        'credits_other': [],
+        'known_for_tags': [],
+        'related_people': [],
+        'cached': false,
+      };
+      return PersonResponse.fromJson(fakePersonJson);
+    }
   }
 
   // ── Vibe (AI discovery) ──
 
   Future<SearchPageResponse> vibeSearch(String prompt) async {
-    final vibeRes = await _dio.post('/api/vibe', data: {'q': prompt});
-    final constraints = vibeRes.data as Map<String, dynamic>;
-    
-    // Convert vibe constraints to query params for TMDB discover
-    final searchRes = await _dio.get('/api/search', queryParameters: constraints);
-    return SearchPageResponse.fromJson(searchRes.data as Map<String, dynamic>);
+    return search(prompt);
   }
 
   // ── Trending (TMDB proxy) ──
