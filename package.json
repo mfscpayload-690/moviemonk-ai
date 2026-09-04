@@ -18,7 +18,8 @@
     "seo:ping": "node scripts/ping-indexnow.js",
     "audit": "npm audit",
     "audit:fix": "npm audit fix",
-    "security-check": "npm audit && npm run lint && npm run build"
+    "security-check": "npm audit && npm run lint && npm run build",
+    "mobile": "cd mobile && ./run-mobile.sh"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

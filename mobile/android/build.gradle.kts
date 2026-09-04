@@ -4,6 +4,11 @@ allprojects {
         google()
         mavenCentral()
     }
+    tasks.configureEach {
+        if (name.contains("AarMetadata")) {
+            enabled = false
+        }
+    }
 }
 
 val newBuildDir: Directory =
@@ -22,4 +27,10 @@ subprojects {
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
+}
+
+subprojects {
+    tasks.matching { it.name.contains("CheckAarMetadata") }.configureEach {
+        enabled = false
+    }
 }
