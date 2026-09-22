@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     # ── Supabase (Server-side) ──
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str | None = None
+
+    # ── Security & Documentation ──
+    ENABLE_API_DOCS: bool = False
 
     # ── Redis Cache ──
     REDIS_URL: str | None = None

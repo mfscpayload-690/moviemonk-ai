@@ -59,9 +59,9 @@ def create_app() -> FastAPI:
         description="Dedicated backend for MovieMonk — movie/TV discovery and AI enrichment",
         version="1.0.0",
         lifespan=lifespan,
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json",
+        docs_url="/api/docs" if settings.ENABLE_API_DOCS else None,
+        redoc_url="/api/redoc" if settings.ENABLE_API_DOCS else None,
+        openapi_url="/api/openapi.json" if settings.ENABLE_API_DOCS else None,
     )
 
     # CORS middleware
@@ -85,15 +85,17 @@ def create_app() -> FastAPI:
     # Mount API routes
     application.include_router(api_router)
 
-    # Root redirect to docs
+    # Root endpoint
     @application.get("/", include_in_schema=False)
     async def root():
-        return {
+        response: dict[str, str] = {
             "name": "MovieMonk API",
             "version": "1.0.0",
             "status": "running",
-            "docs": "/api/docs",
         }
+        if settings.ENABLE_API_DOCS:
+            response["docs"] = "/api/docs"
+        return response
 
     return application
 

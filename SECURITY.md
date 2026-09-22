@@ -34,89 +34,96 @@ We follow semantic versioning and support:
 ### For Users
 
 1. **Keep Dependencies Updated**
-   - Run `npm audit` regularly
+   - Run `npm audit` and `uv run pip-audit` regularly
    - Enable Dependabot in your fork
    - Update to latest version when patches are released
 
 2. **Environment Variables**
-   - Store API keys in `.env.local` (never commit)
-   - Use Vercel environment variables for production
-   - Never log sensitive data
+   - Store frontend secrets in `.env.local` (never commit)
+   - Store backend secrets in `server/.env` (never commit)
+   - Use hosting platform environment variables (Vercel / Hugging Face Spaces) for production
+   - Never log sensitive data or access tokens
 
 3. **CORS & API Security**
-   - All external API requests go through Vercel serverless functions
-   - API keys are server-side only
-   - Share links are URL-safe encoded
+   - External APIs (TMDB, OMDB, Groq, Mistral) are proxied through the dedicated FastAPI backend
+   - Third-party API keys are server-side only and never exposed to the client
+   - Shared watchlist URLs use cryptographically random URL-safe tokens
 
 ### For Contributors
 
 1. **Code Review**
    - All PRs require review before merge
-   - Security-sensitive changes require additional scrutiny
+   - Security-sensitive changes require additional scrutiny (auth, CORS, rate limits)
 
 2. **Dependency Management**
-   - Use `npm audit` before committing
+   - Use `npm audit` for frontend and `pip-audit` for backend before committing
    - Run `npm run security-check` before PRs
-   - Keep dependencies up-to-date
+   - Keep dependencies up-to-date and pinned
 
 3. **Data Handling**
-   - Never store user data without consent
-   - Use secure headers (CSP, HSTS, etc.)
-   - Sanitize user inputs
+   - User data is secured in Supabase PostgreSQL with Row Level Security (RLS)
+   - Sensitive query params are automatically redacted in observability logs
+   - Security response headers (CSP, HSTS, X-Content-Type-Options) are enforced on all routes
 
 ## Known Security Controls
 
 ### Client-Side
 
-- **Content Security Policy (CSP)** - Prevents XSS attacks
+- **Content Security Policy (CSP)** - Prevents XSS attacks and restricts connect-src/img-src
 - **X-Frame-Options: DENY** - Prevents clickjacking
 - **X-Content-Type-Options: nosniff** - Prevents MIME type sniffing
 - **Referrer-Policy** - Limits referrer information leakage
+- **No Client Secrets** - Only public `VITE_*` keys bundled in frontend assets
 
-### Server-Side
+### Server-Side (FastAPI Backend)
 
-- **HTTPS/TLS** - All communication encrypted
-- **No Server Components** - Client-side React only, no SSR vulnerabilities
-- **API Key Isolation** - Keys stored as environment variables
-- **Rate Limiting** - Implemented via Vercel/API providers
+- **HTTPS/TLS** - All communication encrypted in transit
+- **Strict CORS Policy** - Whitelisted origins only with preflight validation
+- **JWT Verification** - `PyJWT[crypto]` verifies Supabase auth tokens with signature and expiration checks
+- **Rate Limiting** - Multi-tier token-bucket and sliding-window rate limiters (Redis + local in-memory fallback) on mutation and AI proxy routes (HTTP 429 + `Retry-After`)
+- **Input Validation** - Bounded Pydantic models preventing payload exhaustion / DoS
+- **Observability Sanitization** - Automatic query string credential and token masking in JSON logs
+- **Hardened API Docs** - OpenAPI/Swagger endpoints disabled in production by default (`ENABLE_API_DOCS=false`)
 
 ## Dependency Security
 
-### Current Status (Updated: December 2024)
+### Current Status
 
-- ✅ React: ^19.2.1 (patched for CVE-2025-55182)
-- ✅ React-DOM: ^19.2.1 (patched)
-- ✅ All production dependencies audited
-- ✅ Dependabot enabled for automated checks
+- ✅ Frontend: All production dependencies audited clean
+- ✅ Backend: Audited via `pip-audit` (0 known CVEs)
+- ✅ Dependabot enabled for automated vulnerability alerts
 
 ### Audit Process
 
-Run the security check before each release:
+Run security checks before each release:
 
 ```bash
-npm run security-check  # runs audit + lint + build
+# Frontend
+npm run security-check
+
+# Backend
+cd server && uv run pip-audit
 ```
 
 ## Security Features
 
 ### URL Sharing
 
-- Links are URL-encoded (safe)
-- No sensitive data in query params
-- Links expire on logout (cache only)
+- Secure URL-safe base64 tokens
+- No sensitive keys or user credentials in query parameters
+- Enforcement of public/private visibility permissions at database and API layers
 
 ### Data Handling
 
-- No user database (stateless)
-- Search history in localStorage only (user's device)
-- API responses cached securely
-- No third-party tracking (except Vercel Analytics)
+- User profiles and personal watchlists guarded by Supabase RLS
+- Search history stored in localStorage only on the user's device
+- Sensitive logs redacted before emission to structured JSON log streams
 
 ### API Integrations
 
-- TMDB, OMDB, Groq, Mistral, etc. are called server-side via Vercel functions
-- API keys never exposed to client
-- Requests authenticated server-side only
+- TMDB, OMDB, Groq, Mistral, and TVMaze are proxied through FastAPI
+- Server-side rate limiting prevents quota exhaustion and resource abuse
+- Upstream error details sanitized before returning responses to clients
 
 ## Compliance
 
@@ -124,16 +131,16 @@ npm run security-check  # runs audit + lint + build
 - ✅ CSP Level 3 compliant
 - ✅ HSTS preload ready
 - ✅ No mixed-content
-- ✅ Secure cookie handling
+- ✅ Secure token and cookie handling
 
 ## Questions?
 
-For security questions or concerns, contact: [your security contact]
+For security questions or concerns, contact: security@moviemonk.ai
 
 For vulnerability reports: Use the process above.
 
 ---
 
-**Last Updated:** December 4, 2025  
+**Last Updated:** September 2026  
 **Version:** 1.0.0  
 **Maintainer:** MovieMonk Security Team

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
+import urllib.parse
 import uuid
 from contextvars import ContextVar
 
@@ -19,6 +20,29 @@ from starlette.responses import Response
 _request_id_ctx: ContextVar[str] = ContextVar("request_id", default="")
 
 logger = logging.getLogger("moviemonk.http")
+
+SENSITIVE_PARAM_NAMES = frozenset({
+    "token", "key", "secret", "code", "api_key", "apikey",
+    "password", "access_token", "refresh_token", "auth",
+})
+
+
+def _sanitize_query(query: str) -> str:
+    """Mask potentially sensitive query parameter values in logs."""
+    if not query:
+        return ""
+    try:
+        parsed = urllib.parse.parse_qsl(query, keep_blank_values=True)
+        sanitized: list[tuple[str, str]] = []
+        for k, v in parsed:
+            k_lower = k.lower()
+            if k_lower in SENSITIVE_PARAM_NAMES or any(s in k_lower for s in ("secret", "token", "password", "key")):
+                sanitized.append((k, "[REDACTED]"))
+            else:
+                sanitized.append((k, v))
+        return urllib.parse.urlencode(sanitized)
+    except Exception:
+        return "[REDACTED_QUERY]"
 
 
 def get_request_id() -> str:
@@ -49,7 +73,7 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
                 "request_id": request_id,
                 "method": request.method,
                 "path": request.url.path,
-                "query": str(request.url.query),
+                "query": _sanitize_query(request.url.query),
                 "has_origin": bool(request.headers.get("origin")),
             },
         )

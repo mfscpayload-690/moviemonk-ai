@@ -11,28 +11,31 @@ import logging
 from typing import Any
 
 from fastapi import HTTPException, Request
-from jose import JWTError, jwt
+
+try:
+    import jwt
+    from jwt.exceptions import PyJWTError as JWTError
+except ImportError:
+    from jose import JWTError, jwt  # type: ignore[no-redef]
 
 from app.config import get_settings
 
 logger = logging.getLogger("moviemonk.security")
 
-# Supabase JWTs are signed with the project JWT secret.  We verify
-# using the service-role key's embedded secret.  The anon key is
-# only used client-side and is NOT trusted here.
+# Supabase JWTs are signed with the project JWT secret (HS256).
+# Pinning HS256 prevents algorithm-confusion attacks.
 _SUPABASE_JWT_ALGORITHMS = ["HS256"]
 
 
 def _get_jwt_secret() -> str:
-    """Derive the JWT secret from the Supabase service-role key.
+    """Return the HMAC secret for verifying Supabase JWTs.
 
-    Supabase uses the same JWT secret for signing both anon and
-    service-role tokens.  The secret is the ``SUPABASE_SERVICE_ROLE_KEY``
-    itself decoded — but in practice Supabase tokens can be verified
-    with the service-role key as the HMAC secret.
+    Requires ``SUPABASE_JWT_SECRET`` (the project JWT secret from Supabase Dashboard).
     """
     settings = get_settings()
-    return settings.SUPABASE_SERVICE_ROLE_KEY
+    if settings.SUPABASE_JWT_SECRET and settings.SUPABASE_JWT_SECRET.strip():
+        return settings.SUPABASE_JWT_SECRET.strip()
+    return ""
 
 
 async def verify_supabase_jwt(request: Request) -> dict[str, Any]:
@@ -58,7 +61,7 @@ async def verify_supabase_jwt(request: Request) -> dict[str, Any]:
 
     secret = _get_jwt_secret()
     if not secret:
-        logger.error("SUPABASE_SERVICE_ROLE_KEY not configured — auth disabled")
+        logger.error("SUPABASE_JWT_SECRET is not configured on the server")
         raise HTTPException(
             status_code=500,
             detail={"code": "auth_misconfigured", "message": "Authentication is not configured"},
@@ -74,6 +77,12 @@ async def verify_supabase_jwt(request: Request) -> dict[str, Any]:
         return payload
     except JWTError as exc:
         logger.warning("JWT verification failed: %s", exc)
+        raise HTTPException(
+            status_code=401,
+            detail={"code": "invalid_token", "message": "Token is invalid or expired"},
+        )
+    except Exception as exc:
+        logger.warning("Unexpected error during JWT verification: %s", exc)
         raise HTTPException(
             status_code=401,
             detail={"code": "invalid_token", "message": "Token is invalid or expired"},

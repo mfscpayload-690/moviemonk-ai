@@ -5,10 +5,11 @@ Ported from api/vibe.ts.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
+from app.core.ratelimit import rate_limit
 from app.models.search import VibeRequest
 from app.services.vibe_parser import local_vibe_fallback, parse_vibe_query
 
@@ -17,7 +18,11 @@ router = APIRouter()
 _CACHE_TTL = 3600  # 1 hour
 
 
-@router.api_route("/vibe", methods=["GET", "POST"])
+@router.api_route(
+    "/vibe",
+    methods=["GET", "POST"],
+    dependencies=[Depends(rate_limit(times=30, seconds=60, key_prefix="vibe"))],
+)
 async def vibe_parse(
     q: str | None = Query(None, min_length=2),
     body: VibeRequest | None = None

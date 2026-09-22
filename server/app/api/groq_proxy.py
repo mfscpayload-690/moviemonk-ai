@@ -4,10 +4,11 @@ import logging
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.config import get_settings
+from app.core.ratelimit import rate_limit
 
 logger = logging.getLogger("moviemonk.groq")
 router = APIRouter()
@@ -23,7 +24,10 @@ class GroqRequest(BaseModel):
     response_format: dict[str, Any] | None = None
     stream: bool = False
 
-@router.post("/groq")
+@router.post(
+    "/groq",
+    dependencies=[Depends(rate_limit(times=30, seconds=60, key_prefix="groq"))],
+)
 async def proxy_groq(req: GroqRequest):
     global _request_count
     settings = get_settings()

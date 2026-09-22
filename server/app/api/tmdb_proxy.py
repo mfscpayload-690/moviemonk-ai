@@ -8,16 +8,20 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.core.errors import api_error
+from app.core.ratelimit import rate_limit
 from app.services import tmdb
 
 logger = logging.getLogger("moviemonk.tmdb_proxy")
 router = APIRouter()
 
 
-@router.get("/tmdb")
+@router.get(
+    "/tmdb",
+    dependencies=[Depends(rate_limit(times=60, seconds=60, key_prefix="tmdb"))],
+)
 async def tmdb_proxy(
     request: Request,
     endpoint: str = Query(..., description="TMDB API endpoint path"),
