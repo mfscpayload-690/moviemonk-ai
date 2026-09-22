@@ -150,19 +150,22 @@ class SearchPageResponse {
       totalResults: json['total_results'] ?? 0,
       searchMode: json['search_mode'],
       hero: json['hero'] != null
-          ? SearchResult.fromJson(json['hero'] as Map<String, dynamic>)
+          ? SearchResult.fromJson(
+              Map<String, dynamic>.from(json['hero'] as Map))
           : null,
       results: (json['results'] as List?)
-              ?.map((r) => SearchResult.fromJson(r as Map<String, dynamic>))
+              ?.map((r) => SearchResult.fromJson(
+                  Map<String, dynamic>.from(r as Map)))
               .toList() ??
           [],
       people: (json['people'] as List?)
-              ?.map((p) =>
-                  PersonSearchCandidate.fromJson(p as Map<String, dynamic>))
+              ?.map((p) => PersonSearchCandidate.fromJson(
+                  Map<String, dynamic>.from(p as Map)))
               .toList() ??
           [],
       vibe: json['vibe'] != null
-          ? VibeInfo.fromJson(json['vibe'] as Map<String, dynamic>)
+          ? VibeInfo.fromJson(
+              Map<String, dynamic>.from(json['vibe'] as Map))
           : null,
     );
   }
