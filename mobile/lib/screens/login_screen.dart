@@ -17,11 +17,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context);
 
-    // Auto-pop if user becomes authenticated
+    // Auto-pop or navigate home if user becomes authenticated
     if (auth.isAuthenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && context.canPop()) {
-          context.pop();
+        if (mounted) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/');
+          }
         }
       });
     }
