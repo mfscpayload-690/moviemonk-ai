@@ -46,12 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final results = await Future.wait([
         _apiService.getTrending(),
-        _apiService.search('marvel', type: 'movie'),
+        _apiService.getPopular(),
       ]);
 
       setState(() {
-        _trending = results[0] as List<SearchResult>;
-        _popular = (results[1] as SearchPageResponse).results;
+        _trending = results[0];
+        _popular = results[1];
         _isLoading = false;
       });
     } catch (e) {
