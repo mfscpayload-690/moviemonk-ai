@@ -32,11 +32,19 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-supabase': ['@supabase/supabase-js'],
-            'vendor-motion': ['framer-motion'],
-            'vendor-analytics': ['@vercel/analytics', '@vercel/speed-insights'],
+          manualChunks(id) {
+            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router')) {
+              return 'vendor-react';
+            }
+            if (id.includes('node_modules/@supabase/')) {
+              return 'vendor-supabase';
+            }
+            if (id.includes('node_modules/framer-motion') || id.includes('node_modules/motion-dom')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('node_modules/@vercel/analytics') || id.includes('node_modules/@vercel/speed-insights')) {
+              return 'vendor-analytics';
+            }
           }
         }
       }
