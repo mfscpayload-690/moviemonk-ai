@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 /// Glassmorphism AI vibe search bar with sparkle icon.
@@ -21,6 +22,7 @@ class _VibeSearchBarState extends State<VibeSearchBar>
     with SingleTickerProviderStateMixin {
   final _controller = TextEditingController();
   late AnimationController _sparkleAnim;
+  Timer? _hintTimer;
   int _hintIndex = 0;
 
   static const _hints = [
@@ -39,18 +41,17 @@ class _VibeSearchBarState extends State<VibeSearchBar>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
-    // Rotate hints every 4 seconds
-    Future.delayed(const Duration(seconds: 4), _rotateHint);
-  }
-
-  void _rotateHint() {
-    if (!mounted) return;
-    setState(() => _hintIndex = (_hintIndex + 1) % _hints.length);
-    Future.delayed(const Duration(seconds: 4), _rotateHint);
+    // Rotate hints every 4 seconds with cancelable periodic timer
+    _hintTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) {
+        setState(() => _hintIndex = (_hintIndex + 1) % _hints.length);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _hintTimer?.cancel();
     _controller.dispose();
     _sparkleAnim.dispose();
     super.dispose();
