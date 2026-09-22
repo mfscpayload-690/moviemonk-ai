@@ -73,3 +73,7 @@ mobile/run-mobile.sh
 # Mobile build artifacts
 mobile/android/build
 mobile/ios/build
+
+# Agent skills
+*.skill
+
