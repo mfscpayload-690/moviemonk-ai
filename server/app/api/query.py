@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.cache import build_cache_key, get_cache, set_cache
+from app.core.ratelimit import rate_limit
 from app.services import ai_enrichment, tmdb
 from app.services.entity_resolver import resolve
 
@@ -19,7 +20,10 @@ class QueryRequest(BaseModel):
     q: str
     mode: str = "detailed"
 
-@router.post("/query")
+@router.post(
+    "/query",
+    dependencies=[Depends(rate_limit(times=30, seconds=60, key_prefix="query"))],
+)
 async def handle_query(req: QueryRequest):
     query = req.q.strip()
     if not query:
