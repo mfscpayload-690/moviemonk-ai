@@ -30,13 +30,12 @@ _SUPABASE_JWT_ALGORITHMS = ["HS256"]
 def _get_jwt_secret() -> str:
     """Return the HMAC secret for verifying Supabase JWTs.
 
-    Prefers ``SUPABASE_JWT_SECRET`` (the project JWT secret from Supabase Dashboard).
-    Falls back to ``SUPABASE_SERVICE_ROLE_KEY`` if not explicitly set.
+    Requires ``SUPABASE_JWT_SECRET`` (the project JWT secret from Supabase Dashboard).
     """
     settings = get_settings()
     if settings.SUPABASE_JWT_SECRET and settings.SUPABASE_JWT_SECRET.strip():
         return settings.SUPABASE_JWT_SECRET.strip()
-    return settings.SUPABASE_SERVICE_ROLE_KEY
+    return ""
 
 
 async def verify_supabase_jwt(request: Request) -> dict[str, Any]:
@@ -62,7 +61,7 @@ async def verify_supabase_jwt(request: Request) -> dict[str, Any]:
 
     secret = _get_jwt_secret()
     if not secret:
-        logger.error("Neither SUPABASE_JWT_SECRET nor SUPABASE_SERVICE_ROLE_KEY configured")
+        logger.error("SUPABASE_JWT_SECRET is not configured on the server")
         raise HTTPException(
             status_code=500,
             detail={"code": "auth_misconfigured", "message": "Authentication is not configured"},
