@@ -286,7 +286,26 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   // Trailer link
                   if (movie.trailerUrl.isNotEmpty) ...[
                     ElevatedButton.icon(
-                      onPressed: () => launchUrl(Uri.parse(movie.trailerUrl)),
+                      onPressed: () async {
+                        try {
+                          final uri = Uri.parse(movie.trailerUrl);
+                          final launched = await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
+                          if (!launched && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Could not launch trailer link.')),
+                            );
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Unable to open trailer.')),
+                            );
+                          }
+                        }
+                      },
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text('Watch Official Trailer'),
                       style: ElevatedButton.styleFrom(
