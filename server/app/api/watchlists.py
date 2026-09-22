@@ -11,10 +11,11 @@ import logging
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.config import get_settings
 from app.core.errors import api_error
+from app.core.ratelimit import rate_limit
 from app.core.security import get_user_id_from_token, verify_supabase_jwt
 from app.models.watchlist import (
     SharedWatchlistView,
@@ -40,7 +41,10 @@ def _generate_share_token() -> str:
     return secrets.token_urlsafe(8)
 
 
-@router.post("/watchlists/share")
+@router.post(
+    "/watchlists/share",
+    dependencies=[Depends(rate_limit(times=10, seconds=60, key_prefix="wl_share_post"))],
+)
 async def create_shared_watchlist(
     request: Request,
     body: WatchlistShareRequest,
@@ -114,7 +118,10 @@ async def create_shared_watchlist(
         return api_error(500, "share_failed", "Failed to create shared watchlist")
 
 
-@router.get("/watchlists/share")
+@router.get(
+    "/watchlists/share",
+    dependencies=[Depends(rate_limit(times=60, seconds=60, key_prefix="wl_share_get"))],
+)
 async def get_shared_watchlist(
     token: str = Query(..., description="Share token"),
 ):
