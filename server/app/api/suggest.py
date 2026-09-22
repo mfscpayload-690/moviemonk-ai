@@ -8,10 +8,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.core.cache import build_cache_key, get_cache, set_cache
 from app.core.errors import api_error
+from app.core.ratelimit import rate_limit
 from app.models.suggest import SuggestionItem, SuggestResponse
 from app.services import tmdb
 from app.services.person_intent import detect_person_intent
@@ -23,7 +24,10 @@ router = APIRouter()
 _CACHE_TTL = 45  # seconds
 
 
-@router.get("/suggest")
+@router.get(
+    "/suggest",
+    dependencies=[Depends(rate_limit(times=120, seconds=60, key_prefix="suggest"))],
+)
 async def suggest(q: str = Query(..., min_length=1)) -> Any:
     """Return type-ahead suggestions for a query."""
     query = q.strip()
