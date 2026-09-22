@@ -1,3 +1,10 @@
+[project]
+name = "moviemonk-server"
+version = "1.0.0"
+description = "FastAPI backend for MovieMonk AI discovery engine"
+requires-python = ">=3.11"
+dependencies = []
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"
