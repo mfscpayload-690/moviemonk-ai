@@ -211,4 +211,44 @@ class ApiService {
       return [];
     }
   }
+
+  // ── Popular (TMDB proxy) ──
+
+  Future<List<SearchResult>> getPopular() async {
+    try {
+      final res = await _dio.get(
+        '/api/tmdb',
+        queryParameters: {'endpoint': '/movie/popular'},
+      );
+      final data = res.data;
+      if (data is Map && data['results'] is List) {
+        return (data['results'] as List).map((item) {
+          final title = (item['title'] ?? item['name'] ?? '').toString();
+          final year = (item['release_date'] ?? '').toString();
+          return SearchResult(
+            id: item['id'] ?? 0,
+            title: title,
+            year: year.length >= 4 ? year.substring(0, 4) : null,
+            type: 'movie',
+            mediaType: 'movie',
+            posterUrl: item['poster_path'] != null
+                ? ApiConfig.tmdbImage(item['poster_path'], size: 'w342')
+                : null,
+            backdropUrl: item['backdrop_path'] != null
+                ? ApiConfig.tmdbImage(item['backdrop_path'], size: 'w780')
+                : null,
+            overview: item['overview'],
+            rating: (item['vote_average'] as num?)?.toDouble(),
+            genreIds: List<int>.from(item['genre_ids'] ?? []),
+            genres: [],
+            confidence: 0.0,
+            popularity: (item['popularity'] as num?)?.toDouble(),
+          );
+        }).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }
