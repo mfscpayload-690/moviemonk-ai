@@ -6,23 +6,23 @@ explicitly marked as ``public`` by the user can be shared.
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class WatchlistShareItem(BaseModel):
     """A single item within a shared watchlist."""
-    id: str
-    saved_title: str
+    id: str = Field(..., max_length=100)
+    saved_title: str = Field(..., min_length=1, max_length=200)
     movie: dict  # Full MovieData as dict (flexible schema)
-    added_at: str
+    added_at: str = Field(..., max_length=50)
 
 
 class WatchlistShareRequest(BaseModel):
     """Request body for creating a shared watchlist."""
-    folder_name: str
-    folder_icon: str | None = None
-    items: list[WatchlistShareItem]
-    visibility: str = "public"  # must be "public" to share
+    folder_name: str = Field(..., min_length=1, max_length=100)
+    folder_icon: str | None = Field(default=None, max_length=50)
+    items: list[WatchlistShareItem] = Field(..., min_length=1, max_length=500)
+    visibility: str = Field(default="public", pattern=r"^(public|private)$")  # must be "public" to share
 
 
 class WatchlistShareResponse(BaseModel):
