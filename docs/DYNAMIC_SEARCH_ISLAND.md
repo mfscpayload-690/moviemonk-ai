@@ -70,8 +70,7 @@ All tracking preserves existing Vercel Web Analytics events from other component
 - **Reduced motion**: All animations disabled when `prefers-reduced-motion: reduce`
 
 ## localStorage Persistence
-Two keys store user preferences:
-- `moviemonk_provider`: `'groq'` (default) or `'mistral'`
+Preference keys:
 - `moviemonk_analysis_mode`: `'quick'` (default) or `'complex'`
 
 Preferences persist across sessions and are loaded on mount.
