@@ -18,13 +18,17 @@ All caches store complete movie/person payloads and AI-enriched responses. Error
 4. Periodically clear stale client cache entries to keep storage small.
 
 ## Enabling server cache
-1. Provision a Redis instance (any managed Redis works).
-2. Add `REDIS_URL` to `.env.local` (and your hosting provider’s env vars).
-3. Deploy normally. If Redis is unreachable, the app logs a warning and falls back to client-only caching.
+1. Provision a Redis instance (e.g., Upstash, Redis Cloud, or local Docker Redis).
+2. Add `REDIS_URL` to `server/.env` (and your hosting provider’s server environment variables).
+3. Start the backend. If Redis is unreachable, the app logs a warning and falls back to local in-memory sliding-window caches.
 
 ## Cache keys and TTLs
-- Keys include query and provider to avoid mixing responses.
-- Client cache entries are short lived (hours to days); Redis TTL is set by the API helper when writing.
+- **Client Cache**:
+  - `cacheService.ts` (localStorage query/entity index): 6 hours.
+  - `indexedDBService.ts` (IndexedDB persistent cache): 7 days.
+- **Server Cache**:
+  - Redis cache keys are built with `build_cache_key` based on endpoint and normalized parameters.
+  - Query summaries and title details have configurable server TTLs (e.g., 24 hours for details).
 
 ## Troubleshooting
 - **Seeing no cache hits**: confirm the same query/provider is reused and that cookies/storage are not blocked.
