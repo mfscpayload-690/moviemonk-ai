@@ -6,12 +6,11 @@ Welcome to the MovieMonk codebase! If you are looking to make your first contrib
 
 ## 1. Expand Unit Test Coverage
 
-- **Target Component**: [ActionToast.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/components/ActionToast.tsx) and [GenrePills.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/components/GenrePills.tsx)
-- **Goal**: Currently, these lightweight components have low coverage. Create dedicated Jest test files under `__tests__/components/` to verify their rendering, props propagation, and event handlers.
+- **Target Component**: [ActionToast.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/components/ActionToast.tsx)
+- **Goal**: Currently, `ActionToast.tsx` has low or no dedicated unit test coverage. Create a dedicated Jest test file under `__tests__/components/actionToast.test.tsx` to verify its rendering, toast timeout/dismissal, props propagation, and status variants.
 - **Where to look**:
   - `components/ActionToast.tsx`
-  - `components/GenrePills.tsx`
-  - Existing component tests in `__tests__/components/` (e.g., `ambiguousModal.test.ts`) as a reference.
+  - Existing component tests in `__tests__/components/` (e.g., `genrePills.test.ts`, `ambiguousModal.test.ts`) as a reference.
 
 ---
 
