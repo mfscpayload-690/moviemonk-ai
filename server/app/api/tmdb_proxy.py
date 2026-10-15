@@ -20,7 +20,7 @@ router = APIRouter()
 
 @router.get(
     "/tmdb",
-    dependencies=[Depends(rate_limit(times=60, seconds=60, key_prefix="tmdb"))],
+    dependencies=[Depends(rate_limit(times=240, seconds=60, key_prefix="tmdb"))],
 )
 async def tmdb_proxy(
     request: Request,
