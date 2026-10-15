@@ -4,8 +4,7 @@ This is the most data-rich endpoint.  Merge order:
 1. TMDB  -> core metadata, cast, crew, images, trailer, watch providers
 2. OMDB  -> IMDb/RT/Metacritic ratings
 3. Wikipedia -> extended plot, production, trivia, awards
-4. Wikimedia -> supplementary high-res images
-5. Groq AI   -> creative summaries, suspense breaker, ai_notes
+4. Groq AI   -> creative summaries, suspense breaker, ai_notes
 """
 
 from __future__ import annotations
@@ -30,7 +29,7 @@ from app.models.details import (
     WatchOption,
     WikipediaEnrichment,
 )
-from app.services import ai_enrichment, omdb, tmdb, wikimedia, wikipedia
+from app.services import ai_enrichment, omdb, tmdb, wikipedia
 
 logger = logging.getLogger("moviemonk.details")
 router = APIRouter()
@@ -103,7 +102,7 @@ async def get_details(
     if media_type not in ("movie", "tv"):
         return api_error(400, "invalid_type", "media_type must be 'movie' or 'tv'")
 
-    cache_key = build_cache_key("details_v4", {"mt": media_type, "id": tmdb_id})
+    cache_key = build_cache_key("details_v5", {"mt": media_type, "id": tmdb_id})
     cached = await get_cache(cache_key)
     if cached:
         return {**cached, "cached": True}
@@ -173,7 +172,7 @@ async def get_details(
                 elif job == "Original Music Composer" and not crew.music:
                     crew.music = member.get("name", "")
 
-        # Images
+        # Images (official TMDB backdrops and posters only)
         poster_url = tmdb.build_image_url(details.get("poster_path"), "w500")
         backdrop_url = tmdb.build_image_url(details.get("backdrop_path"), "w780")
         extra_images: list[str] = []
@@ -183,6 +182,15 @@ async def get_details(
                 if len(extra_images) >= 6:
                     break
                 fp = bd.get("file_path")
+                if fp and fp not in seen_paths:
+                    seen_paths.add(fp)
+                    extra_images.append(tmdb.build_image_url(fp, "w780"))
+
+            # Fill remaining slots with official posters if backdrops are fewer than 6
+            for poster in sorted(images.get("posters", []), key=lambda x: x.get("vote_count", 0), reverse=True):
+                if len(extra_images) >= 6:
+                    break
+                fp = poster.get("file_path")
                 if fp and fp not in seen_paths:
                     seen_paths.add(fp)
                     extra_images.append(tmdb.build_image_url(fp, "w780"))
@@ -200,7 +208,7 @@ async def get_details(
         if isinstance(providers, dict):
             watch_options = _build_watch_options(providers, _get_preferred_region())
 
-        # Phase 2: Parallel enrichment (OMDB + Wikipedia + Wikimedia)
+        # Phase 2: Parallel enrichment (OMDB + Wikipedia)
         imdb_id = ext_ids.get("imdb_id") if isinstance(ext_ids, dict) else None
 
         async def _empty_ratings():
@@ -208,15 +216,13 @@ async def get_details(
 
         omdb_task = omdb.fetch_ratings(imdb_id) if imdb_id else _empty_ratings()
         wiki_task = wikipedia.enrich_movie(title, year)
-        wikimedia_task = wikimedia.get_movie_images(title, year)
 
         phase2_list: list[Any] = await asyncio.gather(
-            omdb_task, wiki_task, wikimedia_task,
+            omdb_task, wiki_task,
             return_exceptions=True,
         )
         ratings_raw: Any = phase2_list[0]
         wiki_data: Any = phase2_list[1]
-        wiki_images: Any = phase2_list[2]
 
         # Combine Wikipedia extended plot if available for grounding
         combined_overview = overview or ""
@@ -242,10 +248,6 @@ async def get_details(
                 cultural_context=wiki_data.get("cultural_context"),
                 wikipedia_url=wiki_data.get("wikipedia_url"),
             )
-
-        # Wikimedia supplementary images
-        if isinstance(wiki_images, list):
-            extra_images.extend(wiki_images[:4])
 
         # AI creative fields
         creative = ai_fields if isinstance(ai_fields, dict) else {}
