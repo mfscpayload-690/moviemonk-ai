@@ -20,7 +20,29 @@
   padding: 1.5rem;
 }
 
+/* ── Atmospheric Projector Beam & Micro Film Texture ── */
+.login-page-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% -5%, rgba(139, 92, 246, 0.20) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.login-page-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  opacity: 0.2;
+  z-index: 1;
+}
+
 /* ── Canvas Background & Spotlight ── */
+.cinematic-canvas,
 .particle-canvas {
   position: absolute;
   top: 0;
@@ -28,7 +50,7 @@
   width: 100%;
   height: 100%;
   z-index: 0;
-  pointer-events: none; /* Let pointer events fall through if needed, though shell captures them */
+  pointer-events: none; /* Let pointer events fall through */
   animation: canvas-defocus-enter 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
