@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/icons';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import ParticleBackground from '../components/ParticleBackground';
+import CinematicBackground from '../components/CinematicBackground';
 import { APP_VERSION } from '../lib/appMeta';
 import '../styles/login-page.css';
 
@@ -32,7 +32,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { user, loading, signInWithGitHub, signInWithGoogle, error } = useAuth();
   
-  const [magneticTarget, setMagneticTarget] = useState<{ x: number, y: number } | null>(null);
+  const [interactiveTarget, setInteractiveTarget] = useState<{ x: number, y: number } | null>(null);
+  const [targetType, setTargetType] = useState<'google' | 'github' | null>(null);
 
   // Framer Motion cursor tracking for spotlight effect
   const mouseX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
@@ -63,25 +64,26 @@ export default function LoginPage() {
     void signInWithGoogle().catch(() => undefined);
   };
 
-  // Magnetic Button Hover Logic
-  const handleButtonHoverStart = (e: React.MouseEvent<HTMLButtonElement>) => {
+  // Interactive Button Hover Lighting Logic
+  const handleButtonHoverStart = (type: 'google' | 'github') => (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    // Set magnetic target to the center of the hovered button
-    setMagneticTarget({
+    setInteractiveTarget({
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
     });
+    setTargetType(type);
   };
 
   const handleButtonHoverEnd = () => {
-    setMagneticTarget(null);
+    setInteractiveTarget(null);
+    setTargetType(null);
   };
 
   return (
     <div className="login-page-shell">
       <SeoHead title="Sign In" robots="noindex, follow" />
-      {/* Dynamic Context Canvas */}
-      <ParticleBackground magneticTarget={magneticTarget} />
+      {/* Cinematic Aurora & Projector Canvas */}
+      <CinematicBackground interactiveTarget={interactiveTarget} targetType={targetType} />
 
       {/* Spotlight layer linked to Framer Motion values */}
       <motion.div
@@ -125,7 +127,7 @@ export default function LoginPage() {
             type="button"
             className="login-oauth-btn login-oauth-btn--google"
             onClick={handleGoogle}
-            onMouseEnter={handleButtonHoverStart}
+            onMouseEnter={handleButtonHoverStart('google')}
             onMouseLeave={handleButtonHoverEnd}
             disabled={loading}
           >
@@ -139,7 +141,7 @@ export default function LoginPage() {
             type="button"
             className="login-oauth-btn login-oauth-btn--github"
             onClick={handleGitHub}
-            onMouseEnter={handleButtonHoverStart}
+            onMouseEnter={handleButtonHoverStart('github')}
             onMouseLeave={handleButtonHoverEnd}
             disabled={loading}
           >
