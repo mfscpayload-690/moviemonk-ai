@@ -45,6 +45,15 @@ export default function CinematicBackground({
   targetType = null,
 }: CinematicBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const interactiveTargetRef = useRef(interactiveTarget);
+  const targetTypeRef = useRef(targetType);
+  const renderStaticFrameRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    interactiveTargetRef.current = interactiveTarget;
+    targetTypeRef.current = targetType;
+    renderStaticFrameRef.current?.();
+  }, [interactiveTarget, targetType]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -53,25 +62,14 @@ export default function CinematicBackground({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animationFrameId: number;
+    let animationFrameId: number | null = null;
     let width = window.innerWidth;
     let height = window.innerHeight;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const resize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    resize();
-
     // Respect user's motion preferences
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let prefersReducedMotion = motionQuery.matches;
 
     const isMobile = width < 768;
     const orbCount = isMobile ? 18 : 34;
@@ -134,13 +132,15 @@ export default function CinematicBackground({
 
     window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('resize', resize);
 
     // Main cinematic render loop
     const render = () => {
+      animationFrameId = null;
       time += 0.015;
 
       // Smoothly interpolate spotlight position
+      const interactiveTarget = interactiveTargetRef.current;
+      const targetType = targetTypeRef.current;
       const targetX = interactiveTarget ? interactiveTarget.x : mouseX;
       const targetY = interactiveTarget ? interactiveTarget.y : mouseY;
       smoothX += (targetX - smoothX) * 0.06;
@@ -338,31 +338,67 @@ export default function CinematicBackground({
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, width, height);
 
-      if (!prefersReducedMotion) {
+      if (!prefersReducedMotion && !document.hidden) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    };
+
+    renderStaticFrameRef.current = () => {
+      if (prefersReducedMotion) render();
+    };
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (prefersReducedMotion) render();
+    };
+
+    const stopAnimation = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    const onMotionPreferenceChange = () => {
+      prefersReducedMotion = motionQuery.matches;
+      stopAnimation();
+      if (prefersReducedMotion) {
+        render();
+      } else if (!document.hidden) {
         animationFrameId = requestAnimationFrame(render);
       }
     };
 
     // Pause animation when tab is inactive to conserve battery and CPU
     const onVisibilityChange = () => {
-      if (document.hidden) {
-        cancelAnimationFrame(animationFrameId);
-      } else if (!prefersReducedMotion) {
+      stopAnimation();
+      if (!document.hidden && !prefersReducedMotion) {
         animationFrameId = requestAnimationFrame(render);
       }
     };
 
+    resize();
+    window.addEventListener('resize', resize);
+    motionQuery.addEventListener('change', onMotionPreferenceChange);
     document.addEventListener('visibilitychange', onVisibilityChange);
-    render();
+    if (!prefersReducedMotion) render();
 
     return () => {
+      renderStaticFrameRef.current = null;
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('resize', resize);
+      motionQuery.removeEventListener('change', onMotionPreferenceChange);
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      cancelAnimationFrame(animationFrameId);
+      stopAnimation();
     };
-  }, [interactiveTarget, targetType]);
+  }, []);
 
   return (
     <canvas
