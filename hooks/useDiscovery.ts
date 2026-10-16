@@ -498,8 +498,111 @@ export async function loadDiscoverySnapshot(
   };
 }
 
+export const DISCOVERY_SNAPSHOT_CACHE_PREFIX = 'mm_discovery_snapshot_v2:';
+export const DISCOVERY_FRESH_TTL_MS = 15 * 60 * 1000; // 15 minutes
+export const DISCOVERY_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+export interface CachedDiscoverySnapshot {
+  snapshot: DiscoverySnapshot;
+  timestamp: number;
+}
+
+const memorySnapshotCache = new Map<string, CachedDiscoverySnapshot>();
+
+export function getDiscoveryPreferencesHash(prefs: UserPreferenceSettings): string {
+  const parts = [
+    (prefs.genres || []).slice().sort().join(','),
+    (prefs.languages || []).slice().sort().join(','),
+    (prefs.favoriteDecades || []).slice().sort().join(','),
+    (prefs.favoriteRegions || []).slice().sort().join(','),
+    prefs.contentMix || 'balanced'
+  ];
+  return parts.join('|');
+}
+
+export function getCachedDiscoverySnapshot(
+  preferences?: UserPreferenceSettings
+): { snapshot: DiscoverySnapshot; isFresh: boolean } | null {
+  const prefs = preferences || DEFAULT_PREFERENCE_SETTINGS;
+  const hash = getDiscoveryPreferencesHash(prefs);
+  const key = `${DISCOVERY_SNAPSHOT_CACHE_PREFIX}${hash}`;
+  const now = Date.now();
+
+  try {
+    let entry: CachedDiscoverySnapshot | null = null;
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const raw = sessionStorage.getItem(key);
+      if (raw) {
+        entry = JSON.parse(raw) as CachedDiscoverySnapshot;
+      }
+    }
+
+    if (!entry) {
+      entry = memorySnapshotCache.get(key) || null;
+    }
+
+    if (!entry || !entry.snapshot || !Number.isFinite(entry.timestamp)) {
+      return null;
+    }
+
+    const age = now - entry.timestamp;
+    if (age > DISCOVERY_MAX_AGE_MS) {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.removeItem(key);
+      }
+      memorySnapshotCache.delete(key);
+      return null;
+    }
+
+    return {
+      snapshot: entry.snapshot,
+      isFresh: age < DISCOVERY_FRESH_TTL_MS
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedDiscoverySnapshot(
+  snapshot: DiscoverySnapshot,
+  preferences?: UserPreferenceSettings
+): void {
+  const prefs = preferences || DEFAULT_PREFERENCE_SETTINGS;
+  const hash = getDiscoveryPreferencesHash(prefs);
+  const key = `${DISCOVERY_SNAPSHOT_CACHE_PREFIX}${hash}`;
+  const entry: CachedDiscoverySnapshot = {
+    snapshot,
+    timestamp: Date.now()
+  };
+
+  memorySnapshotCache.set(key, entry);
+
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      sessionStorage.setItem(key, JSON.stringify(entry));
+    }
+  } catch {
+    // sessionStorage full or quota exceeded — in-memory cache acts as fallback
+  }
+}
+
+export function clearCachedDiscoverySnapshot(preferences?: UserPreferenceSettings): void {
+  const prefs = preferences || DEFAULT_PREFERENCE_SETTINGS;
+  const hash = getDiscoveryPreferencesHash(prefs);
+  const key = `${DISCOVERY_SNAPSHOT_CACHE_PREFIX}${hash}`;
+  memorySnapshotCache.delete(key);
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      sessionStorage.removeItem(key);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export function useDiscovery() {
   const genreRequestRef = useRef<AbortController | null>(null);
+  const genreCacheRef = useRef<Map<number, DiscoveryItem[]>>(new Map());
   const hasLoadedOnceRef = useRef(false);
   const [heroItems, setHeroItems] = useState<DiscoveryItem[]>([]);
   const [sections, setSections] = useState<DiscoverySection[]>([]);
@@ -534,8 +637,25 @@ export function useDiscovery() {
     };
   }, []);
 
-  const load = useCallback(async (signal?: AbortSignal) => {
-    if (!hasLoadedOnceRef.current) {
+  const load = useCallback(async (signal?: AbortSignal, forceFresh = false) => {
+    const cachedEntry = !forceFresh ? getCachedDiscoverySnapshot(preferences) : null;
+
+    if (cachedEntry) {
+      setHeroItems(cachedEntry.snapshot.heroItems);
+      setSections(cachedEntry.snapshot.sections);
+      setMovieGenres(cachedEntry.snapshot.movieGenres);
+      setSelectedGenre(cachedEntry.snapshot.selectedGenre);
+      setSelectedGenreItems(cachedEntry.snapshot.selectedGenreItems);
+      if (cachedEntry.snapshot.selectedGenre) {
+        genreCacheRef.current.set(cachedEntry.snapshot.selectedGenre.id, cachedEntry.snapshot.selectedGenreItems);
+      }
+      hasLoadedOnceRef.current = true;
+      setIsLoading(false);
+
+      if (cachedEntry.isFresh) {
+        return;
+      }
+    } else if (!hasLoadedOnceRef.current) {
       setIsLoading(true);
     }
     setError(null);
@@ -556,15 +676,21 @@ export function useDiscovery() {
       setMovieGenres(snapshot.movieGenres);
       setSelectedGenre(snapshot.selectedGenre);
       setSelectedGenreItems(snapshot.selectedGenreItems);
+      if (snapshot.selectedGenre) {
+        genreCacheRef.current.set(snapshot.selectedGenre.id, snapshot.selectedGenreItems);
+      }
+      setCachedDiscoverySnapshot(snapshot, preferences);
     } catch (err: any) {
       if (err?.name === 'AbortError') return;
       emitClientError(err, { context: 'load_discovery_snapshot' });
-      setError('Failed to load discovery content. Please try again.');
-      setHeroItems([]);
-      setSections([]);
-      setMovieGenres([]);
-      setSelectedGenre(null);
-      setSelectedGenreItems([]);
+      if (!cachedEntry) {
+        setError('Failed to load discovery content. Please try again.');
+        setHeroItems([]);
+        setSections([]);
+        setMovieGenres([]);
+        setSelectedGenre(null);
+        setSelectedGenreItems([]);
+      }
     } finally {
       if (!signal?.aborted) {
         hasLoadedOnceRef.current = true;
@@ -609,16 +735,25 @@ export function useDiscovery() {
 
   useEffect(() => {
     const controller = new AbortController();
-    load(controller.signal);
+    load(controller.signal, reloadToken > 0);
     return () => controller.abort();
   }, [load, reloadToken]);
 
   const selectGenre = useCallback(async (genre: DiscoveryGenre) => {
     if (!genre) return;
     genreRequestRef.current?.abort();
+    setSelectedGenre(genre);
+
+    // Instant return if genre items were previously loaded in this session
+    const cachedGenreItems = genreCacheRef.current.get(genre.id);
+    if (cachedGenreItems && cachedGenreItems.length > 0) {
+      setSelectedGenreItems(cachedGenreItems);
+      setIsGenreLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
     genreRequestRef.current = controller;
-    setSelectedGenre(genre);
     setIsGenreLoading(true);
     try {
       const items = applyStrictFilters(
@@ -627,6 +762,7 @@ export function useDiscovery() {
         strictDecadeRanges
       );
       if (controller.signal.aborted) return;
+      genreCacheRef.current.set(genre.id, items);
       setSelectedGenreItems(items);
     } catch (err: any) {
       if (err?.name !== 'AbortError') {

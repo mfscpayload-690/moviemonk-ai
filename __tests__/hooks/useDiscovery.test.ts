@@ -13,10 +13,16 @@ jest.mock('../../services/tmdbService', () => ({
 
 import {
   buildBalancedMixRow,
+  clearCachedDiscoverySnapshot,
   dedupeSectionsByTitle,
+  getCachedDiscoverySnapshot,
   getCuratedMovieGenres,
+  getDiscoveryPreferencesHash,
   loadDiscoverySnapshot,
-  pickHeroItems
+  pickHeroItems,
+  setCachedDiscoverySnapshot,
+  DISCOVERY_FRESH_TTL_MS,
+  DISCOVERY_MAX_AGE_MS
 } from '../../hooks/useDiscovery';
 import {
   fetchByGenre,
@@ -244,5 +250,95 @@ describe('useDiscovery helpers', () => {
     expect(snapshot.selectedGenre).toEqual({ id: 28, name: 'Action' });
     expect(fetchByGenre).toHaveBeenCalledWith(28, 'movie', { signal: undefined });
     expect(snapshot.selectedGenreItems[0].title).toBe('Genre Match');
+  });
+
+  describe('discovery snapshot cache and TTL', () => {
+    const mockPreferences = {
+      genres: ['Action', 'Sci-Fi'],
+      languages: ['English', 'French'],
+      favoriteDecades: ['2020s'],
+      favoriteRegions: ['Hollywood'],
+      contentMix: 'balanced' as const,
+      familySafe: false,
+      reducedMotion: false,
+      autoplayTrailers: true,
+      cardDensity: 'rich' as const
+    };
+
+    const mockSnapshot = {
+      heroItems: [{ id: 1, tmdb_id: '1', media_type: 'movie' as const, title: 'Hero', year: '2024', overview: '', poster_url: '', backdrop_url: '/h.jpg', rating: 8, genre_ids: [28] }],
+      sections: [{ key: 'trending', title: 'Trending', items: [] }],
+      movieGenres: [{ id: 28, name: 'Action' }],
+      selectedGenre: { id: 28, name: 'Action' },
+      selectedGenreItems: []
+    };
+
+    beforeEach(() => {
+      clearCachedDiscoverySnapshot(mockPreferences);
+    });
+
+    it('generates a deterministic preference hash regardless of array insertion order', () => {
+      const hash1 = getDiscoveryPreferencesHash(mockPreferences);
+      const hash2 = getDiscoveryPreferencesHash({
+        ...mockPreferences,
+        genres: ['Sci-Fi', 'Action'],
+        languages: ['French', 'English']
+      });
+      expect(hash1).toBe(hash2);
+    });
+
+    it('stores and retrieves a fresh snapshot within fresh TTL', () => {
+      setCachedDiscoverySnapshot(mockSnapshot, mockPreferences);
+      const cached = getCachedDiscoverySnapshot(mockPreferences);
+
+      expect(cached).not.toBeNull();
+      expect(cached?.isFresh).toBe(true);
+      expect(cached?.snapshot.heroItems[0].title).toBe('Hero');
+    });
+
+    it('marks snapshot as not fresh when age exceeds DISCOVERY_FRESH_TTL_MS but within DISCOVERY_MAX_AGE_MS', () => {
+      const realNow = Date.now;
+      try {
+        let currentTime = 1000000000;
+        Date.now = () => currentTime;
+
+        setCachedDiscoverySnapshot(mockSnapshot, mockPreferences);
+
+        // Advance by 16 minutes (> 15m fresh TTL, < 2h max age)
+        currentTime += DISCOVERY_FRESH_TTL_MS + 60000;
+
+        const cached = getCachedDiscoverySnapshot(mockPreferences);
+        expect(cached).not.toBeNull();
+        expect(cached?.isFresh).toBe(false);
+        expect(cached?.snapshot.heroItems[0].title).toBe('Hero');
+      } finally {
+        Date.now = realNow;
+      }
+    });
+
+    it('evicts and returns null when snapshot age exceeds DISCOVERY_MAX_AGE_MS', () => {
+      const realNow = Date.now;
+      try {
+        let currentTime = 1000000000;
+        Date.now = () => currentTime;
+
+        setCachedDiscoverySnapshot(mockSnapshot, mockPreferences);
+
+        // Advance by 3 hours (> 2h max age)
+        currentTime += DISCOVERY_MAX_AGE_MS + 60000;
+
+        const cached = getCachedDiscoverySnapshot(mockPreferences);
+        expect(cached).toBeNull();
+      } finally {
+        Date.now = realNow;
+      }
+    });
+
+    it('clears snapshot when clearCachedDiscoverySnapshot is invoked', () => {
+      setCachedDiscoverySnapshot(mockSnapshot, mockPreferences);
+      clearCachedDiscoverySnapshot(mockPreferences);
+      const cached = getCachedDiscoverySnapshot(mockPreferences);
+      expect(cached).toBeNull();
+    });
   });
 });
