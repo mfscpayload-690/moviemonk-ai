@@ -45,7 +45,7 @@ We follow semantic versioning and support:
    - Never log sensitive data or access tokens
 
 3. **CORS & API Security**
-   - External APIs (TMDB, OMDB, Groq, Mistral) are proxied through the dedicated FastAPI backend
+   - External APIs (TMDB, OMDB, Groq, Perplexity) are proxied through the dedicated FastAPI backend
    - Third-party API keys are server-side only and never exposed to the client
    - Shared watchlist URLs use cryptographically random URL-safe tokens
 
@@ -121,7 +121,7 @@ cd server && uv run pip-audit
 
 ### API Integrations
 
-- TMDB, OMDB, Groq, Mistral, and TVMaze are proxied through FastAPI
+- TMDB, OMDB, Groq, Perplexity, and TVMaze are proxied through FastAPI
 - Server-side rate limiting prevents quota exhaustion and resource abuse
 - Upstream error details sanitized before returning responses to clients
 
