@@ -10,7 +10,10 @@ Thank you for your interest in contributing to MovieMonk! This document outlines
 4.  **Verification**:
     *   **Unit Tests**: `npm test -- --runInBand`
     *   **Static Analysis**: `npm run lint`
-    *   **Build Validation**: `npm run build`
+    *   **Style & Emoji Guard**: `npm run check:no-emoji`
+    *   **Security & Build**: `npm run security-check` (or `npm run build`)
+    *   **Backend Tests** (if modifying `server/`): `cd server && pytest`
+    *   **Mobile Checks** (if modifying `mobile/`): `npm run mobile:analyze && npm run mobile:test`
 5.  **Submission**: Submit a PR with a comprehensive description of the changes, potential risks, and any necessary configuration updates. Include visual evidence (screenshots/recordings) for UI-facing changes.
 
 ## Engineering Standards
