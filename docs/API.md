@@ -9,72 +9,71 @@ This guide documents the API providers, integration patterns, and security pract
 MovieMonk-AI uses a decoupled data pipeline to combine factual entertainment database records with qualitative LLM analysis.
 
 ```
-[User Query] ──> [Cache Check] (IndexedDB/localStorage)
+[User Query] ──> [Client Cache Check] (IndexedDB / localStorage)
                       │
             ┌─────────┴─────────┐
        (Cache Miss)        (Cache Hit)
             │                   │
-  [AI Provider Chain]           ▼
-  1. Groq (Llama 3.3)      [Render UI]
-  2. Mistral (Large)
-  3. OpenRouter (Fallback)
+            ▼                   ▼
+    [FastAPI Backend]      [Render UI]
             │
-            ▼
-  [TMDB API Enrichment] (Posters, Backdrops, Cast, Crew)
+            ├─► [Redis Cache Check]
             │
-            ▼
-  [OMDB API Integration] (IMDB Ratings)
+            ├─► [AI Enrichment Engine] (Groq LPU / Perplexity Fallback)
             │
-            ▼
-  [Cache Update] ──> [Render UI]
+            ├─► [TMDB Metadata Proxy] (Posters, Backdrops, Cast, Crew)
+            │
+            └─► [OMDB Scoring Proxy] (IMDb, Rotten Tomatoes, Metacritic)
+                      │
+                      ▼
+        [Normalize & Cache Payload]
+                      │
+                      ▼
+                 [Render UI]
 ```
 
 ### Decoupled Data Pipeline Sequence
 
-1. **Client Request**: The frontend initiates search or detail fetch via the custom query parser.
-2. **Local Cache Lookup**: The system checks browser storage (IndexedDB and `localStorage`) for cached results.
-3. **AI Inference & Fallback**: If uncached, the backend queries the prioritized AI provider chain to generate narrative context (summaries, reviews, watch options).
-4. **Factual Metadata Enrichment**: The returned AI payload is matched against TMDB endpoints to append high-resolution image assets, cast/crew hierarchies, and runtime specifications.
-5. **Third-Party Scoring**: The pipeline queries the OMDB API to fetch live IMDB ratings.
-6. **Persistence & Presentation**: The normalized payload is written to the cache and rendered.
+1. **Client Request**: The frontend initiates search or detail fetch via [lib/apiClient.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/lib/apiClient.ts).
+2. **Local Cache Lookup**: The system checks browser storage (IndexedDB via `indexedDBService.ts` and `localStorage` via `cacheService.ts`) for cached results.
+3. **Backend Proxy & Orchestration**: On cache miss, requests hit the dedicated FastAPI backend (`/api/search`, `/api/details/*`, `/api/query`, etc.).
+4. **AI Inference & Fallback**: The backend queries Groq LPU (`openai/gpt-oss-20b` or configured model) with optional Perplexity search fallback to generate narrative context (summaries, spoilers, notes, vibe tags).
+5. **Factual Metadata Enrichment**: Backend aggregates TMDB metadata to append high-resolution image assets, cast/crew hierarchies, and runtime specifications.
+6. **Third-Party Scoring**: The backend queries the OMDB API to fetch live IMDb, Rotten Tomatoes, and Metacritic ratings.
+7. **Persistence & Presentation**: The normalized payload is written to Redis (if configured) and client storage, then rendered in the UI.
 
 ---
 
 ## 2. AI Provider Architecture
 
-MovieMonk integrates multiple LLM endpoints with automatic, client-side fallback triggers to ensure high availability.
+MovieMonk integrates low-latency LLM inference via Groq, with optional search-augmented fallback.
 
 ### 2.1 Provider Hierarchy
 
-| Priority | Provider | Model | Tier / Role | Rate Limits |
+| Priority | Provider | Model | Tier / Role | Rate Limits / Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **1 (Primary)** | Groq | `llama-3.3-70b-versatile` | Ultra-low latency inference | 30 requests/minute |
-| **2 (Backup)** | Mistral | `mistral-large-latest` | Context-rich qualitative backup | 2M tokens/month (free) |
-| **3 (Fallback)** | OpenRouter | Dynamic Selection | General backup endpoint | Varies by target model |
-| **4 (Real-time)**| Perplexity | `sonar-reasoning` | Optional web search resolver | Varies by query complexity |
+| **1 (Primary)** | Groq | `openai/gpt-oss-20b` / `llama-3.3-70b-versatile` | Ultra-low latency inference & creative enrichment | 30 requests/minute (supports multiple keys via `groq_keys` round-robin) |
+| **2 (Real-time Fallback)** | Perplexity | `sonar-reasoning` / Search model | Real-time web search resolver & recent release fallback | Configured via `PERPLEXITY_API_KEY` |
+| **3 (Web Search)** | SerpApi | Search API | Search enrichment fallback | Configured via `SERPAPI_KEY` |
 
 ### 2.2 Query Complexity Modes
 
 - **Simple Mode**: Optimizes for quick, low-token responses. Ideal for rapid entity lookup.
 - **Complex Mode**: Prompts the LLM for deep analysis, critical trivia, and spoiler-guarded qualitative descriptions.
 
-### 2.3 Provider Fallback Logic
+### 2.3 Provider Execution Logic
 
-The core service coordinates the provider cascade. If the primary provider times out or throws an error (e.g. HTTP 429 / rate limit), the pipeline catches the exception and routes to the next tier:
+AI generation is coordinated through the FastAPI backend (`server/app/services/ai_enrichment.py` and `server/app/api/groq_proxy.py`) and client adapter (`services/ai.ts`):
 
 ```typescript
-// services/aiService.ts (Cascading Resolver)
-try {
-  return await groqService.fetchMovieData(query, complexity);
-} catch (error) {
-  console.warn("Groq failed, attempting Mistral fallback...", error);
-  try {
-    return await mistralService.fetchMovieData(query, complexity);
-  } catch (err) {
-    console.warn("Mistral failed, routing to OpenRouter...", err);
-    return await openrouterService.fetchMovieData(query, complexity);
-  }
-}
+// services/ai.ts (Client AI Adapter)
+export type Provider = 'groq';
+
+const call: Promise<any> = fetchFromGroq(
+  JSON.stringify({ schema, messages }),
+  QueryComplexity.SIMPLE,
+  chatHistory
+);
 ```
 
 ---
@@ -83,32 +82,31 @@ try {
 
 The Movie Database (TMDB) API provides the factual baseline for MovieMonk.
 
-### 3.1 Authentication
+### 3.1 Authentication & Proxy Architecture
 
-The application supports two methods of authentication, configured in your `.env.local` file:
+All TMDB credentials reside strictly on the server (`server/.env` or Hugging Face Space Secrets):
 
-- **API Key (v3 Auth)**: Appended as query parameters.
-- **Read Access Token (v4 Auth - Recommended)**: Passed as a bearer token in the headers for increased security.
+- **API Key (v3 Auth)**: `TMDB_API_KEY` used by FastAPI service.
+- **Read Access Token (v4 Auth - Recommended)**: `TMDB_READ_TOKEN` passed as Bearer token by backend to TMDB.
 
-```typescript
-// API client header configuration
-const headers = {
-  Authorization: `Bearer ${process.env.TMDB_READ_TOKEN}`,
-  'Content-Type': 'application/json'
-};
-```
+The client application never communicates with TMDB directly; requests are proxied via `/api/tmdb` and aggregated through endpoints such as `/api/details/{media_type}/{tmdb_id}`.
 
-### 3.2 Key Endpoints
+### 3.2 Key Backend Endpoints
 
-| Endpoint | Method | Purpose | Parameters |
+| Backend Route | Method | Purpose | Upstream Target |
 | :--- | :--- | :--- | :--- |
-| `https://api.themoviedb.org/3/search/movie` | GET | Locates movie matches | `query`, `year` |
-| `https://api.themoviedb.org/3/search/tv` | GET | Locates TV matches | `query`, `first_air_date_year` |
-| `https://api.themoviedb.org/3/search/multi` | GET | Unified multi-entity fallback | `query` |
-| `https://api.themoviedb.org/3/movie/{id}` | GET | Fetch movie details | `id` |
-| `https://api.themoviedb.org/3/tv/{id}` | GET | Fetch TV details | `id` |
-| `https://api.themoviedb.org/3/movie/{id}/images` | GET | Fetch high-res artwork | `id` |
-| `https://api.themoviedb.org/3/movie/{id}/external_ids`| GET | Resolves IMDB ID for ratings | `id` |
+| `/api/search` | GET/POST | Multi-signal keyword & vibe search | TMDB search + vibe parser |
+| `/api/suggest` | GET | Typeahead query autocomplete | TMDB search multi + ranking |
+| `/api/resolve` | GET | Resolves title/person entity by query | TMDB search |
+| `/api/details/{media_type}/{tmdb_id}` | GET | Consolidated details, credits, videos, ratings | TMDB + OMDB + Wikipedia + Groq |
+| `/api/person/{person_id}` | GET | Person details, biography & filmography | TMDB person endpoints |
+| `/api/episodes/{tmdb_id}/{season}` | GET | Season episode list & air dates | TMDB / TVMaze |
+| `/api/vibe` | GET/POST | Semantic vibe/mood search | Groq / TMDB discover |
+| `/api/query` | POST | "Brief Me" structured summary | Groq AI enrichment |
+| `/api/omdb` | GET | Critic & IMDb ratings proxy | OMDB API |
+| `/api/tmdb` | GET | Generic passthrough proxy | TMDB API |
+| `/api/watchlists` | POST/GET | Watchlist snapshot sharing | Supabase PostgreSQL |
+| `/api/observability` | GET/POST | System metrics & client telemetry | Server in-memory / Sentry |
 
 ### 3.3 Search & Disambiguation Strategy
 
