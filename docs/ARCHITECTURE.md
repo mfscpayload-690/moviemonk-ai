@@ -42,12 +42,26 @@ MovieMonk employs a decoupled, secure architecture designed for low-latency ente
 
 ## 2. Core Layers & Responsibilities
 
-### 2.1 User Interface & Routing (Frontend)
+### 2.1 User Interface & Routing (Frontend & Mobile)
 - **[index.tsx](../index.tsx)**: Mounts React 19 root with `HelmetProvider`, preconnects API & database origins, and registers Vercel Analytics and Speed Insights.
-- **[AppRoutes.tsx](../AppRoutes.tsx)**: Code-splits routes via `React.lazy` (`/`, `/search`, `/movie/:id`, `/tv/:id`, `/person/:id`, `/watchlists`, `/settings`).
+- **[AppRoutes.tsx](../AppRoutes.tsx)**: Code-splits routes via `React.lazy`:
+  - `/` & `/search`: Discovery home and search view via `App-Responsive`
+  - `/movie/:id` & `/tv/:id`: Detailed title view
+  - `/person/:id`: Actor, director, or crew profile
+  - `/login`: User authentication view
+  - `/watchlists`: Watchlist dashboard
+  - `/watchlists/watched`: Watched items list
+  - `/watchlists/:folderName`: Custom folder view
+  - `/watchlists/share` & `/watchlists/share/:token`: Shared watchlist snapshot view
+  - `/settings`: Settings hub
+  - `/settings/profile`: User profile management
+  - `/settings/preferences`: App and playback preferences
+  - `/auth/callback`: OAuth redirection handler
+  - `/onboarding`: First-time user onboarding flow
 - **[App-Responsive.tsx](../App-Responsive.tsx)**: Main shell coordinating discovery, search, title details, person profiles, action toasts, and modal traps.
 - **[components/DynamicSearchIsland.tsx](../components/DynamicSearchIsland.tsx)**: Accessible, debounced search island with real-time suggestions and filter toggles.
 - **[components/MovieDisplay.tsx](../components/MovieDisplay.tsx)** & **[components/PersonDisplay.tsx](../components/PersonDisplay.tsx)**: Rich detail views featuring multi-source metadata, watch providers, spoiler-safe summaries, and filmographies.
+- **Mobile Companion (`mobile/`)**: Flutter client (`mobile/lib/main.dart` and `mobile/lib/router.dart`) replicating routes (`/`, `/login`, `/search`, `/movie/:id`, `/tv/:id`, `/person/:id`, `/watchlists`, `/settings`) with native Cupertino and Material styling.
 
 ### 2.2 Client Data & Persistence
 - **[lib/apiClient.ts](../lib/apiClient.ts)**: Central HTTP interface with request ID tracking (`X-Client-Request-Id`), error normalization, and abort signal forwarding.
@@ -59,9 +73,15 @@ MovieMonk employs a decoupled, secure architecture designed for low-latency ente
 Built with FastAPI (Python 3.11+) and deployed to Hugging Face Spaces:
 - **`app/api/search.py`**: Multi-signal keyword & vibe search coordinating TMDB person, movie, and TV searches in parallel with server-side vibe intent extraction.
 - **`app/api/details.py`**: Consolidated media details combining TMDB facts, OMDB critic ratings, Wikipedia extended background, and Groq LLM spoiler-conscious summaries.
+- **`app/api/person.py`**: Enriched person profile endpoint with biographical details and filmography.
+- **`app/api/episodes.py`**: Season and episode metadata resolver.
+- **`app/api/vibe.py`**: Natural-language vibe search parser mapping moods to TMDB discover filters.
+- **`app/api/query.py`**: "Brief Me" query summary endpoint backed by Groq LLM.
 - **`app/api/suggest.py`**: High-speed, type-ahead suggestion rankings scored by query similarity, popularity, and intent.
+- **`app/api/resolve.py`**: Fast entity disambiguation endpoint.
 - **`app/api/watchlists.py`**: Authenticated snapshot sharing with strict JWT verification and item payload validation.
-- **`app/api/tmdb_proxy.py` & `app/api/groq_proxy.py`**: Authenticated server proxies keeping all secret provider credentials off client devices.
+- **`app/api/tmdb_proxy.py` & `app/api/omdb.py` & `app/api/groq_proxy.py`**: Authenticated server proxies keeping all secret provider credentials off client devices.
+- **`app/api/health.py` & `app/api/observability.py`**: Health checks, server-side latency telemetry, and Sentry breadcrumb integration.
 - **`app/core/ratelimit.py` & `app/core/cache.py`**: Redis-backed caching and sliding-window rate limiting with seamless in-memory fallback.
 
 ---
