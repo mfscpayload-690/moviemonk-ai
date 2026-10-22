@@ -36,6 +36,14 @@ VITE_API_BASE_URL=http://localhost:8000
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
+# Web Push (VAPID)
+VITE_VAPID_PUBLIC_KEY=your_vapid_public_key
+
+# Sentry Observability (Optional)
+VITE_SENTRY_DSN=
+# VITE_SENTRY_ENVIRONMENT=development
+# VITE_SENTRY_TRACES_SAMPLE_RATE=0.2
+
 # Optional SEO Verification
 VITE_GOOGLE_SITE_VERIFICATION=
 VITE_BING_SITE_VERIFICATION=
@@ -57,14 +65,29 @@ OMDB_API_KEY=your_omdb_api_key
 # AI Inference (Groq)
 GROQ_API_KEY=your_groq_api_key
 VIBE_SEARCH_API_KEY=your_secondary_groq_key
+PERPLEXITY_API_KEY=your_perplexity_api_key
+
+# Web Search (Optional)
+SERPAPI_KEY=your_serpapi_key
 
 # Supabase (Server-side admin & JWT verification)
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 SUPABASE_JWT_SECRET=your_supabase_jwt_secret
 
+# Security & Docs
+ENABLE_API_DOCS=false
+
+# Sentry Observability (Optional)
+# SENTRY_DSN=https://examplePublicKey@o0.ingest.sentry.io/0
+# SENTRY_ENVIRONMENT=development
+# SENTRY_TRACES_SAMPLE_RATE=0.2
+
 # Cache (Optional)
 REDIS_URL=redis://localhost:6379/0
+
+# CORS
+ALLOWED_ORIGINS=https://moviemonk-ai.vercel.app,http://localhost:3000,http://127.0.0.1:3000
 ```
 
 ### 2.3 Starting Dev Servers
@@ -91,11 +114,15 @@ REDIS_URL=redis://localhost:6379/0
 ## 3. Project Directory Structure
 
 - `components/` — UI components (Search Island, displays, carousels, layouts)
+- `contexts/` — React contexts (AuthContext for Supabase session management)
+- `hooks/` — Custom React hooks (cloud watchlists, debounces, media queries)
 - `pages/` — Page shells (Discovery page, Search results, Settings panel)
 - `services/` — AI adapters, TMDB fetches, caching layers, synchronization
 - `styles/` — Global styling and modern CSS files
-- `lib/` — Shared utilities (cache wrappers, Redis connections, SEO helpers)
+- `lib/` — Shared utilities (apiClient, cache wrappers, SEO helpers)
 - `server/` — Python FastAPI backend code
+- `supabase/` — Supabase database migrations and configuration
+- `mobile/` — Flutter cross-platform companion client
 - `__tests__/` — Jest tests for components, services, and integration flows
 - `types.ts` — Shared TypeScript interface definitions (e.g., `MovieData`)
 
