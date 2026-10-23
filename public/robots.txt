@@ -1,6 +1,27 @@
-User-agent: *
+User-agent: Googlebot
 Allow: /
-Sitemap: https://moviemonk-ai.vercel.app/sitemap.xml
 Disallow: /api/
 Disallow: /auth/
 Disallow: /settings/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /settings/
+
+User-agent: GPTBot
+User-agent: CCBot
+User-agent: Bytespider
+User-agent: ClaudeBot
+User-agent: PerplexityBot
+User-agent: Diffbot
+Disallow: /
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /settings/
+
+Sitemap: https://moviemonk-ai.vercel.app/sitemap.xml

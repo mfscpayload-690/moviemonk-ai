@@ -43,17 +43,61 @@ async function fetchFromTmdb(pathSegment, params = {}) {
   }
 }
 
+const CURATED_EVERGREEN_ITEMS = [
+  // Popular movies
+  { type: 'movie', id: 1058424, priority: '0.8' },
+  { type: 'movie', id: 533535, priority: '0.8' },
+  { type: 'movie', id: 157336, priority: '0.8' },
+  { type: 'movie', id: 27205, priority: '0.8' },
+  { type: 'movie', id: 155, priority: '0.8' },
+  { type: 'movie', id: 693134, priority: '0.8' },
+  { type: 'movie', id: 872585, priority: '0.8' },
+  { type: 'movie', id: 945961, priority: '0.8' },
+  { type: 'movie', id: 1022789, priority: '0.8' },
+  { type: 'movie', id: 1184918, priority: '0.8' },
+  { type: 'movie', id: 603, priority: '0.8' },
+  { type: 'movie', id: 19995, priority: '0.8' },
+  // Popular TV series
+  { type: 'tv', id: 1399, priority: '0.8' },
+  { type: 'tv', id: 94605, priority: '0.8' },
+  { type: 'tv', id: 66732, priority: '0.8' },
+  { type: 'tv', id: 1396, priority: '0.8' },
+  { type: 'tv', id: 94997, priority: '0.8' },
+  { type: 'tv', id: 100088, priority: '0.8' },
+  { type: 'tv', id: 76479, priority: '0.8' },
+  { type: 'tv', id: 93405, priority: '0.8' },
+  { type: 'tv', id: 202250, priority: '0.8' },
+  { type: 'tv', id: 114472, priority: '0.8' },
+  { type: 'tv', id: 119051, priority: '0.8' },
+  // Popular actors / people
+  { type: 'person', id: 6193, priority: '0.6' },
+  { type: 'person', id: 976, priority: '0.6' },
+  { type: 'person', id: 1245, priority: '0.6' },
+  { type: 'person', id: 18918, priority: '0.6' },
+  { type: 'person', id: 3223, priority: '0.6' },
+  { type: 'person', id: 11701, priority: '0.6' },
+  { type: 'person', id: 500, priority: '0.6' },
+  { type: 'person', id: 1136406, priority: '0.6' }
+];
+
 async function generateSitemap() {
   console.log('[SEO] Starting sitemap generation...');
+  // Only 100% indexable canonical URLs should be in the sitemap.
+  // Private / noindex routes (/search, /watchlists, /settings, /auth) are excluded.
   const urls = [
-    { loc: `${SITE_URL}/`, changefreq: 'daily', priority: '1.0' },
-    { loc: `${SITE_URL}/search`, changefreq: 'daily', priority: '0.9' },
-    { loc: `${SITE_URL}/watchlists`, changefreq: 'weekly', priority: '0.7' },
-    { loc: `${SITE_URL}/settings`, changefreq: 'weekly', priority: '0.5' }
+    { loc: `${SITE_URL}/`, changefreq: 'daily', priority: '1.0' }
   ];
 
   if (!TMDB_API_KEY) {
-    console.warn('[SEO Warning] TMDB_API_KEY is not defined. Static-only sitemap will be compiled.');
+    console.warn('[SEO Warning] TMDB_API_KEY is not defined. Populating sitemap with curated evergreen popular titles.');
+    CURATED_EVERGREEN_ITEMS.forEach(item => {
+      urls.push({
+        loc: `${SITE_URL}/${item.type}/${item.id}`,
+        changefreq: 'weekly',
+        priority: item.priority
+      });
+    });
+    console.log(`[SEO] Compiled ${urls.length} indexable URLs using curated library.`);
   } else {
     try {
       console.log('[SEO] Fetching trending movies from TMDB...');
@@ -64,8 +108,7 @@ async function generateSitemap() {
             urls.push({
               loc: `${SITE_URL}/movie/${movie.id}`,
               changefreq: 'weekly',
-              priority: '0.8',
-              lastmod: movie.release_date || undefined
+              priority: '0.8'
             });
           }
         });
@@ -80,8 +123,7 @@ async function generateSitemap() {
             urls.push({
               loc: `${SITE_URL}/tv/${show.id}`,
               changefreq: 'weekly',
-              priority: '0.8',
-              lastmod: show.first_air_date || undefined
+              priority: '0.8'
             });
           }
         });
@@ -104,7 +146,15 @@ async function generateSitemap() {
       }
     } catch (err) {
       console.error('[SEO Error] Failed to fetch dynamic items from TMDB:', err.message);
-      console.warn('[SEO Warning] Sitemap generation falling back to static routes only.');
+      console.warn('[SEO Warning] Sitemap generation falling back to curated evergreen library.');
+      CURATED_EVERGREEN_ITEMS.forEach(item => {
+        urls.push({
+          loc: `${SITE_URL}/${item.type}/${item.id}`,
+          changefreq: 'weekly',
+          priority: item.priority
+        });
+      });
+      console.log(`[SEO] Compiled ${urls.length} indexable URLs using curated fallback.`);
     }
   }
 
