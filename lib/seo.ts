@@ -19,9 +19,9 @@ type SeoPersonPayload = {
   sources?: Array<{ url: string }>;
 };
 
-export const SITE_NAME = 'MovieMonk';
+export const SITE_NAME = 'MovieMonk AI';
 export const SITE_URL = 'https://moviemonk-ai.vercel.app';
-export const DEFAULT_DESCRIPTION = 'Discover trending movies and TV shows, then dive deeper with MovieMonk\'s AI-assisted details.';
+export const DEFAULT_DESCRIPTION = 'Discover trending movies and TV shows, then dive deeper with MovieMonk AI\'s intelligent recommendations, cast details, ratings, and streaming guides.';
 export const DEFAULT_SOCIAL_IMAGE = `${SITE_URL}/asset/android-chrome-512x512.png`;
 
 export function buildAbsoluteUrl(path = '/'): string {
