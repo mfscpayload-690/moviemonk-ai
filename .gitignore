@@ -65,8 +65,6 @@ pip-delete-this-directory.txt
 # Generated SEO / IndexNow Files
 public/*.txt
 !public/robots.txt
-!public/HeckisFoxin7833.txt
-!public/indexnow-key.txt
 
 # Mobile run script
 mobile/run-mobile.sh
