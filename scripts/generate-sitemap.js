@@ -108,8 +108,7 @@ async function generateSitemap() {
             urls.push({
               loc: `${SITE_URL}/movie/${movie.id}`,
               changefreq: 'weekly',
-              priority: '0.8',
-              lastmod: movie.release_date || undefined
+              priority: '0.8'
             });
           }
         });
@@ -124,8 +123,7 @@ async function generateSitemap() {
             urls.push({
               loc: `${SITE_URL}/tv/${show.id}`,
               changefreq: 'weekly',
-              priority: '0.8',
-              lastmod: show.first_air_date || undefined
+              priority: '0.8'
             });
           }
         });
