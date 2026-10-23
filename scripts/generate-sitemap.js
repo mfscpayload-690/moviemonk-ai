@@ -146,7 +146,15 @@ async function generateSitemap() {
       }
     } catch (err) {
       console.error('[SEO Error] Failed to fetch dynamic items from TMDB:', err.message);
-      console.warn('[SEO Warning] Sitemap generation falling back to static routes only.');
+      console.warn('[SEO Warning] Sitemap generation falling back to curated evergreen library.');
+      CURATED_EVERGREEN_ITEMS.forEach(item => {
+        urls.push({
+          loc: `${SITE_URL}/${item.type}/${item.id}`,
+          changefreq: 'weekly',
+          priority: item.priority
+        });
+      });
+      console.log(`[SEO] Compiled ${urls.length} indexable URLs using curated fallback.`);
     }
   }
 
