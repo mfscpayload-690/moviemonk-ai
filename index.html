@@ -10,11 +10,83 @@
   <link rel="manifest" href="/asset/site.webmanifest" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#121212" />
+
+  <!-- Primary Meta Tags -->
+  <title>MovieMonk AI — Discover Movies, TV Shows & AI Recommendations</title>
+  <meta name="title" content="MovieMonk AI — Discover Movies, TV Shows & AI Recommendations" />
   <meta name="description"
-    content="Discover trending movies and TV shows, then dive deeper with MovieMonk's AI-assisted details." />
+    content="Discover trending movies and TV series with MovieMonk AI. Get intelligent recommendations, AI-powered plot summaries, cast details, ratings, and streaming guides." />
+  <meta name="keywords"
+    content="MovieMonk, MovieMonk AI, movie recommendations, AI movie finder, trending movies, TV shows, cast filmographies, movie streaming guide" />
+  <meta name="author" content="MovieMonk AI" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <link rel="canonical" href="https://moviemonk-ai.vercel.app/" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://moviemonk-ai.vercel.app/" />
+  <meta property="og:site_name" content="MovieMonk AI" />
+  <meta property="og:title" content="MovieMonk AI — Discover Movies, TV Shows & AI Recommendations" />
+  <meta property="og:description"
+    content="Discover trending movies and TV series with MovieMonk AI. Get intelligent recommendations, AI-powered plot summaries, cast details, ratings, and streaming guides." />
+  <meta property="og:image" content="https://moviemonk-ai.vercel.app/asset/android-chrome-512x512.png" />
+  <meta property="og:image:alt" content="MovieMonk AI — Intelligent Movie & TV Discovery" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://moviemonk-ai.vercel.app/" />
+  <meta name="twitter:title" content="MovieMonk AI — Discover Movies, TV Shows & AI Recommendations" />
+  <meta name="twitter:description"
+    content="Discover trending movies and TV series with MovieMonk AI. Get intelligent recommendations, AI-powered plot summaries, cast details, ratings, and streaming guides." />
+  <meta name="twitter:image" content="https://moviemonk-ai.vercel.app/asset/android-chrome-512x512.png" />
+  <meta name="twitter:image:alt" content="MovieMonk AI — Intelligent Movie & TV Discovery" />
+
+  <!-- Search Engine Verification -->
   <meta name="google-site-verification" content="%VITE_GOOGLE_SITE_VERIFICATION%" />
   <meta name="msvalidate.01" content="%VITE_BING_SITE_VERIFICATION%" />
-  <title>MovieMonk | Discover Movies & TV</title>
+
+  <!-- Schema.org JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://moviemonk-ai.vercel.app/#website",
+        "url": "https://moviemonk-ai.vercel.app/",
+        "name": "MovieMonk AI",
+        "alternateName": ["MovieMonk", "Movie Monk AI", "MovieMonk App"],
+        "description": "Discover trending movies, TV shows, and AI-powered recommendations.",
+        "inLanguage": "en-US",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://moviemonk-ai.vercel.app/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://moviemonk-ai.vercel.app/#webapp",
+        "name": "MovieMonk AI",
+        "url": "https://moviemonk-ai.vercel.app/",
+        "applicationCategory": "EntertainmentApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "AI-assisted movie and TV show discovery platform featuring real-time insights, cast details, trailers, and personal watchlists."
+      }
+    ]
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://image.tmdb.org">
@@ -25,7 +97,20 @@
 </head>
 
 <body class="bg-brand-bg text-brand-text-light font-sans">
-  <div id="root"></div>
+  <div id="root">
+    <!-- Accessible, crawlable semantic fallback before client-side hydration -->
+    <noscript>
+      <div style="padding: 2rem; max-width: 800px; margin: 0 auto; font-family: sans-serif; color: #fff; background-color: #121212;">
+        <h1>MovieMonk AI — Discover Movies, TV Shows & AI Recommendations</h1>
+        <p>MovieMonk AI helps you explore trending movies, top-rated TV series, cast filmographies, and AI-assisted deep dives.</p>
+        <p>Please enable JavaScript to enjoy the full interactive experience with real-time AI recommendations and personalized watchlists.</p>
+      </div>
+    </noscript>
+    <div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
+      <h1>MovieMonk AI — Discover Movies, TV Shows & Streaming Recommendations</h1>
+      <p>Discover trending movies, TV shows, cast details, AI vibes, and personalized watchlists with MovieMonk AI.</p>
+    </div>
+  </div>
   <div id="modal-root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
