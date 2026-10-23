@@ -781,17 +781,26 @@ const App: React.FC = () => {
   const homeStructuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: SITE_NAME,
+    name: 'MovieMonk AI',
+    alternateName: ['MovieMonk', 'Movie Monk AI'],
     url: 'https://moviemonk-ai.vercel.app/',
-    description: 'Discover trending movies and TV shows, then dive deeper with MovieMonk\'s AI-assisted details.'
+    description: 'Discover trending movies and TV shows with MovieMonk AI. Intelligent AI-assisted recommendations, cast filmographies, and streaming guides.',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: 'https://moviemonk-ai.vercel.app/search?q={search_term_string}'
+      },
+      'query-input': 'required name=search_term_string'
+    }
   };
 
   return (
     <>
       {currentView === 'discovery' && (
         <SeoHead
-          title="Discover Movies & TV"
-          description="Browse trending movies and TV shows, then open detailed AI-assisted summaries, cast, ratings, and watch options."
+          title="Discover Movies, TV Shows & Streaming Recommendations"
+          description="Browse trending movies and TV shows with MovieMonk AI. Explore smart recommendations, cast filmographies, ratings, and streaming guides."
           path="/"
           structuredData={[homeStructuredData]}
         />
