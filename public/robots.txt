@@ -1,8 +1,14 @@
 User-agent: Googlebot
 Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /settings/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /settings/
 
 User-agent: GPTBot
 User-agent: CCBot
