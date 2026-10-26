@@ -25,21 +25,46 @@ npm install
 ```
 
 ### 2.2 Configure Local Variables
+
+#### Frontend Configuration (`.env.local`)
 Create a `.env.local` file in the project root:
 ```env
-# Base URL for the FastAPI backend proxy (default local port)
+# Base URL for the FastAPI backend proxy (defaults to local port 8000 in dev)
 VITE_API_BASE_URL=http://localhost:8000
 
-# Metadata Providers
+# Supabase Client (Public anonymous variables only)
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Optional SEO Verification
+VITE_GOOGLE_SITE_VERIFICATION=
+VITE_BING_SITE_VERIFICATION=
+VITE_INDEXNOW_KEY=
+```
+
+> **Security Note:** Sensitive credentials (`TMDB_API_KEY`, `GROQ_API_KEY`, `OMDB_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) must **NEVER** be added to the frontend `.env.local`. They belong exclusively in `server/.env`.
+
+#### Backend Configuration (`server/.env`)
+Create a `server/.env` file:
+```env
+# Metadata Providers (Required)
 TMDB_API_KEY=your_tmdb_v3_api_key
 TMDB_READ_TOKEN=your_tmdb_v4_read_token
+
+# Optional Metadata & Ratings
 OMDB_API_KEY=your_omdb_api_key
 
-# AI Providers
+# AI Inference (Groq)
 GROQ_API_KEY=your_groq_api_key
-MISTRAL_API_KEY=your_mistral_key_optional
-OPENROUTER_API_KEY=your_openrouter_key_optional
-PERPLEXITY_API_KEY=your_perplexity_key_optional
+VIBE_SEARCH_API_KEY=your_secondary_groq_key
+
+# Supabase (Server-side admin & JWT verification)
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_JWT_SECRET=your_supabase_jwt_secret
+
+# Cache (Optional)
+REDIS_URL=redis://localhost:6379/0
 ```
 
 ### 2.3 Starting Dev Servers
