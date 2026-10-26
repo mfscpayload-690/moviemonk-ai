@@ -305,9 +305,12 @@ Rejected premiere wordmark variant:
     left: 0;
     right: 0;
     z-index: 50;
-    background: rgba(8, 8, 8, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(10, 10, 18, 0.82);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 
 .has-overlay-header .main-content {
@@ -2843,11 +2846,12 @@ a:focus-visible {
 }
 
 .app-header {
-    background: rgba(8, 8, 8, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(124, 58, 237, 0.15);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    background: rgba(10, 10, 18, 0.82);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 
 /* Header Logo Animations */
@@ -6746,9 +6750,9 @@ a:focus-visible {
     }
 
     .app-header {
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
     }
 
     .discovery-hero-wrapper.is-preview-active {
