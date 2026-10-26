@@ -21,6 +21,20 @@ function normalizeText(text: string): string {
     .toLowerCase();
 }
 
+function editDistanceWithin(a: string, b: string, max: number): boolean {
+  if (Math.abs(a.length - b.length) > max) return false;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i];
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = curr;
+  }
+  return prev[b.length] <= max;
+}
+
 export function searchMovieItems<T extends SearchableMovieItem>(
   items: T[],
   query: string,
@@ -42,7 +56,15 @@ export function searchMovieItems<T extends SearchableMovieItem>(
 
       let score = 0;
       for (const term of terms) {
-        if (title.includes(term)) score += 10;
+        const maxTypos = term.length >= 5 ? 1 : 0;
+        const titleMatches =
+          title.includes(term) ||
+          (maxTypos > 0 &&
+            title
+              .split(/[\s\p{P}]+/u)
+              .filter(Boolean)
+              .some((word) => editDistanceWithin(term, word, maxTypos)));
+        if (titleMatches) score += 10;
         if (genres.includes(term)) score += 3;
         if (cast.includes(term)) score += 2;
         if (overview.includes(term)) score += 1;
