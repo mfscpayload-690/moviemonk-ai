@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import Fuse, { FuseOptionKey } from 'fuse.js';
 
 export interface SearchableMovieItem {
   title: string;
@@ -9,44 +8,45 @@ export interface SearchableMovieItem {
   cast?: string[];
 }
 
-export interface UseMovieSearchOptions<T extends SearchableMovieItem> {
+export interface UseMovieSearchOptions {
   limit?: number;
-  threshold?: number;
-  keys?: FuseOptionKey<T>[];
 }
 
 const DEFAULT_LIMIT = 20;
-const DEFAULT_THRESHOLD = 0.34;
 
 export function useMovieSearch<T extends SearchableMovieItem>(
   items: T[],
   query: string,
-  options: UseMovieSearchOptions<T> = {}
+  options: UseMovieSearchOptions = {}
 ): T[] {
-  const { limit = DEFAULT_LIMIT, threshold = DEFAULT_THRESHOLD, keys } = options;
-
-  const fuse = useMemo(() => {
-    return new Fuse(items, {
-      includeScore: true,
-      threshold,
-      shouldSort: true,
-      ignoreLocation: true,
-      minMatchCharLength: 2,
-      keys: keys || [
-        { name: 'title', weight: 0.65 },
-        { name: 'genres', weight: 0.15 },
-        { name: 'overview', weight: 0.1 },
-        { name: 'cast', weight: 0.1 }
-      ]
-    });
-  }, [items, keys, threshold]);
+  const { limit = DEFAULT_LIMIT } = options;
 
   return useMemo(() => {
-    const normalized = query.trim();
+    const normalized = query.trim().toLowerCase();
     if (!normalized) {
       return items.slice(0, limit);
     }
+    const terms = normalized.split(/\s+/).filter(Boolean);
 
-    return fuse.search(normalized, { limit }).map((result) => result.item);
-  }, [fuse, items, limit, query]);
+    return items
+      .map((item) => {
+        const title = (item.title || '').toLowerCase();
+        const overview = (item.overview || '').toLowerCase();
+        const genres = (item.genres || []).join(' ').toLowerCase();
+        const cast = (item.cast || []).join(' ').toLowerCase();
+
+        let score = 0;
+        for (const term of terms) {
+          if (title.includes(term)) score += 10;
+          if (genres.includes(term)) score += 3;
+          if (cast.includes(term)) score += 2;
+          if (overview.includes(term)) score += 1;
+        }
+        return { item, score };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(({ item }) => item);
+  }, [items, limit, query]);
 }
