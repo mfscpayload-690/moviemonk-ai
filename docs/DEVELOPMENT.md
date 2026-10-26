@@ -42,7 +42,7 @@ VITE_BING_SITE_VERIFICATION=
 VITE_INDEXNOW_KEY=
 ```
 
-> **Security Note:** Sensitive credentials (`TMDB_API_KEY`, `GROQ_API_KEY`, `OMDB_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) must **NEVER** be added to the frontend `.env.local`. They belong exclusively in `server/.env`.
+> **Security Note:** All backend-only credentials, including `TMDB_API_KEY`, `TMDB_READ_TOKEN`, `GROQ_API_KEY`, `VIBE_SEARCH_API_KEY`, `OMDB_API_KEY`, `PERPLEXITY_API_KEY`, `SERPAPI_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, and any other private keys, tokens, or connection credentials, must **NEVER** be placed in frontend environment files (including `.env` and `.env.local`) or exposed through `VITE_*` variables. Use `server/.env` for local development and provider-managed server-side secrets (such as Hugging Face Space Secrets) for deployment.
 
 #### Backend Configuration (`server/.env`)
 Create a `server/.env` file:

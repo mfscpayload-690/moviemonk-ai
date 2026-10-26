@@ -43,17 +43,17 @@ MovieMonk employs a decoupled, secure architecture designed for low-latency ente
 ## 2. Core Layers & Responsibilities
 
 ### 2.1 User Interface & Routing (Frontend)
-- **[index.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/index.tsx)**: Mounts React 19 root with `HelmetProvider`, preconnects API & database origins, and registers Vercel Analytics and Speed Insights.
-- **[AppRoutes.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/AppRoutes.tsx)**: Code-splits routes via `React.lazy` (`/`, `/search`, `/movie/:id`, `/tv/:id`, `/person/:id`, `/watchlists`, `/settings`).
-- **[App-Responsive.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/App-Responsive.tsx)**: Main shell coordinating discovery, search, title details, person profiles, action toasts, and modal traps.
-- **[components/DynamicSearchIsland.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/components/DynamicSearchIsland.tsx)**: Accessible, debounced search island with real-time suggestions and filter toggles.
-- **[components/MovieDisplay.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/components/MovieDisplay.tsx)** & **[components/PersonDisplay.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/components/PersonDisplay.tsx)**: Rich detail views featuring multi-source metadata, watch providers, spoiler-safe summaries, and filmographies.
+- **[index.tsx](../index.tsx)**: Mounts React 19 root with `HelmetProvider`, preconnects API & database origins, and registers Vercel Analytics and Speed Insights.
+- **[AppRoutes.tsx](../AppRoutes.tsx)**: Code-splits routes via `React.lazy` (`/`, `/search`, `/movie/:id`, `/tv/:id`, `/person/:id`, `/watchlists`, `/settings`).
+- **[App-Responsive.tsx](../App-Responsive.tsx)**: Main shell coordinating discovery, search, title details, person profiles, action toasts, and modal traps.
+- **[components/DynamicSearchIsland.tsx](../components/DynamicSearchIsland.tsx)**: Accessible, debounced search island with real-time suggestions and filter toggles.
+- **[components/MovieDisplay.tsx](../components/MovieDisplay.tsx)** & **[components/PersonDisplay.tsx](../components/PersonDisplay.tsx)**: Rich detail views featuring multi-source metadata, watch providers, spoiler-safe summaries, and filmographies.
 
 ### 2.2 Client Data & Persistence
-- **[lib/apiClient.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/lib/apiClient.ts)**: Central HTTP interface with request ID tracking (`X-Client-Request-Id`), error normalization, and abort signal forwarding.
-- **[contexts/AuthContext.tsx](file:///home/mfscpayload-690/Desktop/moviemonk-ai/contexts/AuthContext.tsx)**: Supabase OAuth (GitHub & Google) session management and lifecycle hooks.
-- **[hooks/useCloudWatchlists.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/hooks/useCloudWatchlists.ts)** & **[services/watchlistSync.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/services/watchlistSync.ts)**: Bi-directional sync between local storage (Guest Mode) and Supabase Postgres tables with Row Level Security.
-- **[services/tmdbService.ts](file:///home/mfscpayload-690/Desktop/moviemonk-ai/services/tmdbService.ts)**: Typed client wrapper calling the backend TMDB proxy (`/api/tmdb`).
+- **[lib/apiClient.ts](../lib/apiClient.ts)**: Central HTTP interface with request ID tracking (`X-Client-Request-Id`), error normalization, and abort signal forwarding.
+- **[contexts/AuthContext.tsx](../contexts/AuthContext.tsx)**: Supabase OAuth (GitHub & Google) session management and lifecycle hooks.
+- **[hooks/useCloudWatchlists.ts](../hooks/useCloudWatchlists.ts)** & **[services/watchlistSync.ts](../services/watchlistSync.ts)**: Bi-directional sync between local storage (Guest Mode) and Supabase Postgres tables with Row Level Security.
+- **[services/tmdbService.ts](../services/tmdbService.ts)**: Typed client wrapper calling the backend TMDB proxy (`/api/tmdb`).
 
 ### 2.3 Backend API & AI Orchestration (`server/app/`)
 Built with FastAPI (Python 3.11+) and deployed to Hugging Face Spaces:
