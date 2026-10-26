@@ -46,6 +46,22 @@ describe('searchMovieItems', () => {
     expect(byOverview[0].title).toBe('The Matrix');
   });
 
+  it('matches one-character typos for title words when term length is at least 5', () => {
+    const results = searchMovieItems(sampleItems, 'matrx');
+    expect(results).toHaveLength(1);
+    expect(results[0].title).toBe('The Matrix');
+  });
+
+  it('does not match typos when term length is under 5 characters or distance exceeds 1', () => {
+    // 3 chars typo: 'thw' vs 'the' should not match
+    const shortTypo = searchMovieItems(sampleItems, 'thw');
+    expect(shortTypo).toHaveLength(0);
+
+    // 2-char edit distance: 'mtrx' vs 'matrix'
+    const twoTypos = searchMovieItems(sampleItems, 'mtrx');
+    expect(twoTypos).toHaveLength(0);
+  });
+
   it('respects the limit option', () => {
     const results = searchMovieItems(sampleItems, 'sci-fi', { limit: 1 });
     expect(results).toHaveLength(1);
