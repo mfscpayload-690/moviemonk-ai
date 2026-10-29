@@ -4,30 +4,59 @@ How to deploy MovieMonk to production.
 
 ---
 
-## Recommended: Vercel
+## Recommended Deployment Model
+
+MovieMonk uses a decoupled deployment model:
+1. **Frontend**: Deployed to **Vercel** (Static site & client assets).
+2. **Backend**: Deployed to **Hugging Face Spaces** (Docker container running FastAPI on port 7860) or any container host / VPS.
+
+---
+
+## 1. Frontend: Vercel Deployment
+
 1. Install and log in:
    ```bash
    npm i -g vercel
    vercel login
    ```
-2. Add environment variables (repeat for each key you use):
+2. Add frontend environment variables:
    ```bash
-   vercel env add TMDB_API_KEY
-   vercel env add TMDB_READ_TOKEN
-   vercel env add OMDB_API_KEY
-   vercel env add GROQ_API_KEY
-   vercel env add MISTRAL_API_KEY
-   vercel env add OPENROUTER_API_KEY
-   vercel env add PERPLEXITY_API_KEY   # optional
-   vercel env add SERPAPI_KEY          # optional
-   vercel env add REDIS_URL            # optional
+   vercel env add VITE_API_BASE_URL               # e.g., https://your-space.hf.space
+   vercel env add VITE_SUPABASE_URL               # https://your-project.supabase.co
+   vercel env add VITE_SUPABASE_ANON_KEY          # your public anon key
+   vercel env add VITE_VAPID_PUBLIC_KEY           # optional web push public key
+   vercel env add VITE_SENTRY_DSN                 # optional Sentry DSN
+   vercel env add VITE_INDEXNOW_KEY               # optional IndexNow key
    ```
 3. Deploy:
    ```bash
    npm run build       # confirm it succeeds locally
    vercel --prod
    ```
-Your app is live at the URL Vercel prints. Re-run `vercel --prod` after future changes.
+
+---
+
+## 2. Backend: Hugging Face Spaces / Docker Deployment
+
+The backend resides in `server/` with a production Dockerfile.
+
+1. Create a Hugging Face Space (SDK: Docker).
+2. Configure **Space Secrets** (or environment variables in your container runner):
+   - `TMDB_API_KEY` (Required)
+   - `TMDB_READ_TOKEN` (Required / Recommended)
+   - `OMDB_API_KEY` (Optional, enables IMDb / RT ratings)
+   - `GROQ_API_KEY` (Required for AI features)
+   - `VIBE_SEARCH_API_KEY` (Optional secondary Groq key)
+   - `PERPLEXITY_API_KEY` (Optional search fallback)
+   - `SERPAPI_KEY` (Optional web search)
+   - `SUPABASE_URL` (For backend operations)
+   - `SUPABASE_SERVICE_ROLE_KEY` (For admin DB operations)
+   - `SUPABASE_JWT_SECRET` (For verifying user auth tokens)
+   - `ALLOWED_ORIGINS` (Comma-separated, e.g. `https://moviemonk-ai.vercel.app,http://localhost:3000`)
+   - `REDIS_URL` (Optional Redis connection string)
+   - `SENTRY_DSN` (Optional Sentry monitoring DSN)
+   - `ENABLE_API_DOCS` (`false` in production)
+3. The Space will build and serve FastAPI on port 7860.
 
 ## Other hosting options
 
@@ -97,19 +126,37 @@ server {
 
 ## Environment Variables Reference
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GROQ_API_KEY` | **Yes** | Groq API key for AI queries (primary provider) |
-| `MISTRAL_API_KEY` | Recommended | Mistral API key (backup provider) |
-| `OPENROUTER_API_KEY` | Recommended | OpenRouter API key (fallback provider) |
-| `TMDB_API_KEY` | **Yes** | TMDB v3 API Key for movie data |
-| `TMDB_READ_TOKEN` | Recommended | TMDB v4 Read Access Token (preferred over v3) |
-| `OMDB_API_KEY` | **Yes** | OMDB API key for IMDB ratings |
-| `PERPLEXITY_API_KEY` | Optional | Perplexity API for web search (recent releases) |
-| `SERPAPI_KEY` | Optional | Suggestion/search enrichment |
-| `REDIS_URL` | Optional | Redis endpoint for shared server caching |
+### Frontend Variables (`.env.local` / Vercel)
 
-**Note**: You need at least Groq, TMDB, and OMDB credentials to run the app. Mistral and OpenRouter provide backup/fallback functionality.
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_API_BASE_URL` | **Yes** | Base URL for FastAPI backend (e.g. `https://your-space.hf.space` or `http://localhost:8000`) |
+| `VITE_SUPABASE_URL` | **Yes** | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | **Yes** | Supabase public anonymous key |
+| `VITE_VAPID_PUBLIC_KEY` | Optional | Web push VAPID public key |
+| `VITE_SENTRY_DSN` | Optional | Sentry React SDK DSN |
+| `VITE_INDEXNOW_KEY` | Optional | Search engine IndexNow key |
+| `VITE_GOOGLE_SITE_VERIFICATION` | Optional | Google Search Console verification code |
+| `VITE_BING_SITE_VERIFICATION` | Optional | Bing Webmaster Tools verification code |
+
+### Backend Variables (`server/.env` / Hugging Face Space Secrets)
+
+| Variable | Required | Description |
+|---|---|---|
+| `TMDB_API_KEY` | **Yes** | TMDB v3 API key |
+| `TMDB_READ_TOKEN` | Recommended | TMDB v4 Read Access Token |
+| `GROQ_API_KEY` | **Yes** | Groq API key for LPU AI inference |
+| `VIBE_SEARCH_API_KEY` | Optional | Secondary Groq key for round-robin load distribution |
+| `OMDB_API_KEY` | Optional | OMDB API key for IMDb, Rotten Tomatoes, and Metacritic scores |
+| `PERPLEXITY_API_KEY` | Optional | Perplexity API key for web search fallback |
+| `SERPAPI_KEY` | Optional | SerpApi key for search suggestions enrichment |
+| `SUPABASE_URL` | Optional | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional | Supabase service role key (bypasses RLS for backend operations) |
+| `SUPABASE_JWT_SECRET` | Optional | JWT secret for verifying Supabase user tokens |
+| `ALLOWED_ORIGINS` | Recommended | Comma-separated CORS allowed origins |
+| `REDIS_URL` | Optional | Redis connection string for response caching and distributed rate limiting |
+| `ENABLE_API_DOCS` | Optional | Set to `true` to enable Swagger `/api/docs` (default `false`) |
+| `SENTRY_DSN` | Optional | Sentry Python SDK DSN |
 
 ---
 
