@@ -131,6 +131,22 @@ class ObservabilityEndpointTests(unittest.TestCase):
         self.assertFalse(data.get("ok"))
         self.assertEqual(data.get("error", {}).get("code"), "payload_too_large")
 
+    def test_reject_streamed_payload_too_large(self) -> None:
+        """POST /api/observability incrementally streams body and rejects when exceeding limit."""
+        def generate_large_stream():
+            for _ in range(70):
+                yield b"A" * 1024
+
+        response = self.client.post(
+            "/api/observability",
+            content=generate_large_stream(),
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(response.status_code, 413)
+        data = response.json()
+        self.assertFalse(data.get("ok"))
+        self.assertEqual(data.get("error", {}).get("code"), "payload_too_large")
+
     def test_sanitization_masks_sensitive_credentials(self) -> None:
         """Data sanitization replaces sensitive keys and tokens with redaction masks."""
         raw_data = {
@@ -138,6 +154,7 @@ class ObservabilityEndpointTests(unittest.TestCase):
             "supabase_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMC6Y5",
             "auth_header": "sensitive_auth_value",
             "error_detail": "Failed request with header Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgN7s",
+            "request_log": "Proxy rejected with Basic dXNlcjpwYXNz",
             "normal_key": "safe_value",
             "nested": {
                 "password": "hunter2",
@@ -149,8 +166,10 @@ class ObservabilityEndpointTests(unittest.TestCase):
         self.assertEqual(sanitized["supabase_token"], "[REDACTED]")
         self.assertEqual(sanitized["auth_header"], "[REDACTED]")
         self.assertIn("Bearer [REDACTED]", sanitized["error_detail"])
+        self.assertIn("Basic [REDACTED]", sanitized["request_log"])
         self.assertEqual(sanitized["normal_key"], "safe_value")
         self.assertEqual(sanitized["nested"]["password"], "[REDACTED]")
+        self.assertEqual(sanitized["nested"]["message"], "Failed with token=[REDACTED]")
 
     def test_log_injection_characters_rejected_safely(self) -> None:
         """Event names containing control characters (CRLF) are skipped without crashing."""
@@ -164,6 +183,18 @@ class ObservabilityEndpointTests(unittest.TestCase):
         data = response.json()
         # Invalid event name is safely skipped
         self.assertEqual(data.get("ingested"), 0)
+
+    def test_validation_error_does_not_leak_inputs_in_logs(self) -> None:
+        """Validation errors log locations and error types without echoing raw input."""
+        with self.assertLogs("moviemonk.client", level="WARNING") as cm:
+            invalid_payload = {
+                "event": "normal_event\r\nINJECTED",
+                "data": {"api_key": "super_secret_value"},
+            }
+            self.client.post("/api/observability", json=invalid_payload)
+            log_output = " ".join(cm.output)
+            self.assertNotIn("super_secret_value", log_output)
+            self.assertNotIn("INJECTED", log_output)
 
 
 if __name__ == "__main__":
