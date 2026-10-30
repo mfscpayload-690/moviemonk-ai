@@ -9,6 +9,7 @@ from app.api import (
     episodes,
     groq_proxy,
     health,
+    observability,
     omdb,
     person,
     query,
@@ -23,6 +24,7 @@ from app.api import (
 router = APIRouter(prefix="/api")
 
 router.include_router(health.router, tags=["Health"])
+router.include_router(observability.router, tags=["Observability"])
 router.include_router(search.router, tags=["Search"])
 router.include_router(suggest.router, tags=["Suggest"])
 router.include_router(resolve.router, tags=["Resolve"])
