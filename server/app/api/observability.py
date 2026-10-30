@@ -19,7 +19,7 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from app.core.errors import api_error
 from app.core.ratelimit import get_client_ip, rate_limit
@@ -38,7 +38,11 @@ _SENSITIVE_KEY_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _BEARER_PATTERN = re.compile(r"Bearer\s+[A-Za-z0-9_\-\.=]+", re.IGNORECASE)
+_BASIC_PATTERN = re.compile(r"Basic\s+[A-Za-z0-9+/=]+", re.IGNORECASE)
 _JWT_PATTERN = re.compile(r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]+")
+_KV_SECRET_PATTERN = re.compile(
+    r"(?i)((?:token|secret|password|passwd|api[_-]?key|auth\w*|session\w*)[\"']?\s*[=:]\s*[\"']?)[^\s&\"',;]+"
+)
 _SAFE_EVENT_CHARS = re.compile(r"^[a-zA-Z0-9_\-\.:/]+$")
 
 
@@ -48,10 +52,12 @@ def _sanitize_value(val: Any, depth: int = 1) -> Any:
         return "[TRUNCATED_NESTING]"
 
     if isinstance(val, str):
+        val = _BEARER_PATTERN.sub("Bearer [REDACTED]", val)
+        val = _BASIC_PATTERN.sub("Basic [REDACTED]", val)
+        val = _JWT_PATTERN.sub("[REDACTED_JWT]", val)
+        val = _KV_SECRET_PATTERN.sub(r"\1[REDACTED]", val)
         if len(val) > 2048:
             val = val[:2048] + "...[TRUNCATED]"
-        val = _BEARER_PATTERN.sub("Bearer [REDACTED]", val)
-        val = _JWT_PATTERN.sub("[REDACTED_JWT]", val)
         return val
 
     if isinstance(val, dict):
@@ -140,15 +146,20 @@ async def ingest_client_observability(request: Request) -> JSONResponse:
         except ValueError:
             pass
 
-    # 2. Read raw request body with hard byte limit
-    raw_body = await request.body()
-    if len(raw_body) > MAX_PAYLOAD_BYTES:
-        return api_error(
-            status.HTTP_413_CONTENT_TOO_LARGE,
-            "payload_too_large",
-            f"Observability payload exceeds maximum allowed size ({MAX_PAYLOAD_BYTES // 1024} KB)",
-        )
+    # 2. Incrementally stream body chunks to enforce hard byte limit before full allocation
+    chunks: list[bytes] = []
+    total_bytes = 0
+    async for chunk in request.stream():
+        total_bytes += len(chunk)
+        if total_bytes > MAX_PAYLOAD_BYTES:
+            return api_error(
+                status.HTTP_413_CONTENT_TOO_LARGE,
+                "payload_too_large",
+                f"Observability payload exceeds maximum allowed size ({MAX_PAYLOAD_BYTES // 1024} KB)",
+            )
+        chunks.append(chunk)
 
+    raw_body = b"".join(chunks)
     if not raw_body.strip():
         return api_error(
             status.HTTP_400_BAD_REQUEST,
@@ -192,10 +203,21 @@ async def ingest_client_observability(request: Request) -> JSONResponse:
     for raw_event in events_to_process:
         try:
             validated = ClientObservabilityEvent.model_validate(raw_event)
-        except Exception as err:
+        except ValidationError as err:
+            error_summary = [
+                {"loc": ".".join(str(p) for p in e["loc"]), "type": e["type"]}
+                for e in err.errors(include_input=False, include_url=False, include_context=False)
+            ]
             logger.warning(
                 "Invalid client observability event skipped: %s",
-                str(err),
+                error_summary,
+                extra={"client_ip": client_ip},
+            )
+            continue
+        except Exception as err:
+            logger.warning(
+                "Unexpected error validating observability event: %s",
+                type(err).__name__,
                 extra={"client_ip": client_ip},
             )
             continue
