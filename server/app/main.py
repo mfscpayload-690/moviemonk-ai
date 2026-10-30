@@ -76,6 +76,7 @@ def create_app() -> FastAPI:
             "X-Request-Id",
             "X-Client-Request-Id",
             "X-Notification-Secret",
+            "keepalive",
         ],
     )
 
