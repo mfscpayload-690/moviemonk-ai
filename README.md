@@ -92,10 +92,17 @@ python -m app.main  # or: uvicorn app.main:app --port 8000 --reload
 # In the root directory
 npm install
 cp .env.example .env.local
-# Set VITE_API_BASE_URL=http://localhost:8000 (or leave default proxy to /api)
+# Configure VITE_API_BASE_URL (http://localhost:8000), VITE_SUPABASE_URL, and VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
 *Frontend serves on `http://localhost:3000`*
+
+### 3. Mobile Companion (Optional)
+```bash
+npm run mobile          # Run Flutter mobile client via mobile/run-mobile.sh
+npm run mobile:analyze  # Run Flutter static analysis
+npm run mobile:test     # Run Flutter widget & unit tests
+```
 
 ## 🤝 Contributing
 
