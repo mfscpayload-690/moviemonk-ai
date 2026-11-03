@@ -25,6 +25,7 @@
     "mobile:test": "cd mobile && flutter test"
   },
   "dependencies": {
+    "@sentry/react": "^11.10.0",
     "@supabase/supabase-js": "^2.112.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
