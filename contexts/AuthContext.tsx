@@ -129,8 +129,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setError(null);
+    const redirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}${window.location.search}`
+      : 'https://moviemonk-ai.vercel.app/';
+
     const { error: authError } = await supabase.auth.signInWithOAuth({
-      provider: 'github'
+      provider: 'github',
+      options: {
+        redirectTo
+      }
     });
     if (authError) {
       emitClientError(authError, { context: 'github_signin_auth_error' });
@@ -148,8 +155,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setError(null);
+    const redirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}${window.location.search}`
+      : 'https://moviemonk-ai.vercel.app/';
+
     const { error: authError } = await supabase.auth.signInWithOAuth({
-      provider: 'google'
+      provider: 'google',
+      options: {
+        redirectTo
+      }
     });
     if (authError) {
       emitClientError(authError, { context: 'google_signin_auth_error' });
