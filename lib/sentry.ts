@@ -26,16 +26,17 @@ export function initSentry(): void {
   );
 
   const tracePropagationTargets: (string | RegExp)[] = [
-    'localhost',
+    /^https?:\/\/localhost(:\d+)?(\/|$)/,
     /^\//,
-    /https:\/\/.*\.hf\.space/,
-    /https:\/\/huggingface\.co/,
+    /^https:\/\/[\w-]+\.hf\.space(\/|$)/,
+    /^https:\/\/huggingface\.co(\/|$)/,
   ];
 
   if (API_BASE_URL) {
     try {
       const parsedUrl = new URL(API_BASE_URL);
-      tracePropagationTargets.push(parsedUrl.origin);
+      const escapedOrigin = parsedUrl.origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      tracePropagationTargets.push(new RegExp(`^${escapedOrigin}(\\/|$)`));
     } catch {
       tracePropagationTargets.push(API_BASE_URL);
     }
