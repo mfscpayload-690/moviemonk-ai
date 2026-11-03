@@ -9,6 +9,10 @@ import './styles/modern.css';
 import './styles/dynamic-search-island.css';
 import AppRoutes from './AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
+import { initSentry } from './lib/sentry';
+
+// Initialize Sentry monitoring if VITE_SENTRY_DSN is configured
+initSentry();
 
 import { API_BASE_URL, SUPABASE_URL } from './lib/config';
 
