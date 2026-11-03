@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any
 import urllib.parse
 import uuid
 from contextvars import ContextVar
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from sentry_sdk.types import Event, Hint
