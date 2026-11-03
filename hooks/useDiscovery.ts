@@ -545,6 +545,18 @@ export function getCachedDiscoverySnapshot(
       return null;
     }
 
+    const hasItems =
+      (entry.snapshot.heroItems && entry.snapshot.heroItems.length > 0) ||
+      (entry.snapshot.sections && entry.snapshot.sections.some((s) => s.items && s.items.length > 0));
+
+    if (!hasItems) {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.removeItem(key);
+      }
+      memorySnapshotCache.delete(key);
+      return null;
+    }
+
     const age = now - entry.timestamp;
     if (age > DISCOVERY_MAX_AGE_MS) {
       if (typeof window !== 'undefined' && window.sessionStorage) {
@@ -567,6 +579,13 @@ export function setCachedDiscoverySnapshot(
   snapshot: DiscoverySnapshot,
   preferences?: UserPreferenceSettings
 ): void {
+  // Avoid caching empty snapshots caused by network or backend startup delays
+  const hasItems =
+    (snapshot.heroItems && snapshot.heroItems.length > 0) ||
+    (snapshot.sections && snapshot.sections.some((s) => s.items && s.items.length > 0));
+  if (!hasItems) {
+    return;
+  }
   const prefs = preferences || DEFAULT_PREFERENCE_SETTINGS;
   const hash = getDiscoveryPreferencesHash(prefs);
   const key = `${DISCOVERY_SNAPSHOT_CACHE_PREFIX}${hash}`;
