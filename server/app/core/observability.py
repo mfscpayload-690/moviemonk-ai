@@ -11,6 +11,10 @@ import time
 import urllib.parse
 import uuid
 from contextvars import ContextVar
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from sentry_sdk.types import Event, Hint
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -54,6 +58,57 @@ def _generate_request_id() -> str:
     return f"req_{uuid.uuid4().hex[:12]}"
 
 
+def sentry_before_send(event: Event, hint: Hint) -> Event | None:
+    """Scrub sensitive credentials, auth headers, and tokens from Sentry events."""
+    # 1. Scrub request headers
+    request_info: Any = event.get("request")
+    if isinstance(request_info, dict):
+        headers = request_info.get("headers")
+        if isinstance(headers, dict):
+            for header_name in list(headers.keys()):
+                h_lower = str(header_name).lower()
+                if h_lower in ("authorization", "x-notification-secret", "cookie", "set-cookie", "x-api-key"):
+                    headers[header_name] = "[REDACTED]"
+
+        # Sanitize query string if present
+        query_string = request_info.get("query_string")
+        if isinstance(query_string, str) and query_string:
+            request_info["query_string"] = _sanitize_query(query_string)
+
+    # 2. Scrub user info (IP, email) unless explicitly anonymized id
+    if "user" in event and isinstance(event["user"], dict):
+        user = event["user"]
+        user.pop("ip_address", None)
+        user.pop("email", None)
+        user.pop("username", None)
+
+    # 3. Attach current request ID tag if missing
+    req_id = get_request_id()
+    if req_id:
+        tags = event.setdefault("tags", {})
+        if isinstance(tags, dict):
+            tags["request_id"] = req_id
+
+    return event
+
+
+def sentry_traces_sampler(sampling_context: dict) -> float:
+    """Dynamically determine trace sampling rate based on operation and endpoint."""
+    asgi_scope = sampling_context.get("asgi_scope", {})
+    path = asgi_scope.get("path", "")
+
+    # Never sample healthchecks to avoid quota noise
+    if path in ("/api/health", "/health", "/"):
+        return 0.0
+
+    # Critical AI and search paths get higher attention
+    if path.startswith(("/api/vibe", "/api/query")):
+        return 0.5
+
+    # Default baseline sampling rate
+    return 0.15
+
+
 class ObservabilityMiddleware(BaseHTTPMiddleware):
     """Middleware that assigns a request ID and logs request lifecycle."""
 
@@ -64,6 +119,12 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
         incoming_id = request.headers.get("x-request-id", "").strip()
         request_id = incoming_id if incoming_id else _generate_request_id()
         _request_id_ctx.set(request_id)
+
+        try:
+            import sentry_sdk
+            sentry_sdk.set_tag("request_id", request_id)
+        except ImportError:
+            pass
 
         start = time.monotonic()
 
