@@ -21,3 +21,6 @@ pyjwt[crypto]>=2.14.0
 
 # Structured logging
 python-json-logger>=3.3.0
+
+# Sentry SDK (Error tracking & APM)
+sentry-sdk[fastapi]>=2.22.0
