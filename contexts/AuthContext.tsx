@@ -18,6 +18,28 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const getAuthRedirectUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return 'https://moviemonk-ai.vercel.app/';
+  }
+
+  let returnPath = '/';
+  try {
+    const stored = sessionStorage.getItem('auth_return_url');
+    if (stored && stored !== '/login' && stored.startsWith('/') && !stored.startsWith('//')) {
+      returnPath = stored;
+    } else if (window.location.pathname !== '/login') {
+      returnPath = `${window.location.pathname}${window.location.search}`;
+    }
+  } catch {
+    if (window.location.pathname !== '/login') {
+      returnPath = `${window.location.pathname}${window.location.search}`;
+    }
+  }
+
+  return `${window.location.origin}${returnPath}`;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -129,9 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setError(null);
-    const redirectTo = typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}${window.location.search}`
-      : 'https://moviemonk-ai.vercel.app/';
+    const redirectTo = getAuthRedirectUrl();
 
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'github',
@@ -155,9 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setError(null);
-    const redirectTo = typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}${window.location.search}`
-      : 'https://moviemonk-ai.vercel.app/';
+    const redirectTo = getAuthRedirectUrl();
 
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
