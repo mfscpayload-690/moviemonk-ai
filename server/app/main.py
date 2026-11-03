@@ -48,7 +48,7 @@ def init_sentry() -> None:
             dsn=settings.SENTRY_DSN,
             environment=settings.SENTRY_ENVIRONMENT,
             traces_sampler=sentry_traces_sampler,
-            before_send=sentry_before_send,
+            before_send=sentry_before_send,  # type: ignore[arg-type]
             send_default_pii=False,
             integrations=[
                 FastApiIntegration(transaction_style="endpoint"),

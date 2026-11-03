@@ -8,9 +8,13 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import TYPE_CHECKING, Any
 import urllib.parse
 import uuid
 from contextvars import ContextVar
+
+if TYPE_CHECKING:
+    from sentry_sdk.types import Event, Hint
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -54,15 +58,15 @@ def _generate_request_id() -> str:
     return f"req_{uuid.uuid4().hex[:12]}"
 
 
-def sentry_before_send(event: dict, hint: dict) -> dict | None:
+def sentry_before_send(event: Event, hint: Hint) -> Event | None:
     """Scrub sensitive credentials, auth headers, and tokens from Sentry events."""
     # 1. Scrub request headers
-    request_info = event.get("request")
+    request_info: Any = event.get("request")
     if isinstance(request_info, dict):
         headers = request_info.get("headers")
         if isinstance(headers, dict):
             for header_name in list(headers.keys()):
-                h_lower = header_name.lower()
+                h_lower = str(header_name).lower()
                 if h_lower in ("authorization", "x-notification-secret", "cookie", "set-cookie", "x-api-key"):
                     headers[header_name] = "[REDACTED]"
 
