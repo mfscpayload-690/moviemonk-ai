@@ -38,7 +38,19 @@ export const AuthButton: React.FC = () => {
       <button
         type="button"
         className="auth-btn auth-btn-signin"
-        onClick={() => navigate('/login')}
+        onClick={() => {
+          if (typeof window !== 'undefined') {
+            const currentPath = `${window.location.pathname}${window.location.search}`;
+            if (currentPath !== '/login') {
+              try {
+                sessionStorage.setItem('auth_return_url', currentPath);
+              } catch {
+                // Ignore storage access errors
+              }
+            }
+          }
+          navigate('/login');
+        }}
         title="Sign in to MovieMonk"
       >
         <span className="hidden sm:inline">Sign in</span>

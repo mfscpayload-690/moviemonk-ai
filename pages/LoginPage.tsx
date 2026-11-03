@@ -42,9 +42,21 @@ export default function LoginPage() {
   const spotlightY = useSpring(mouseY, { stiffness: 100, damping: 25 });
 
   useEffect(() => {
-    // If already logged in, redirect away
+    // If already logged in, redirect away to saved return URL or /
     if (!loading && user) {
-      navigate('/', { replace: true });
+      let target = '/';
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = sessionStorage.getItem('auth_return_url');
+          if (stored && stored !== '/login' && stored.startsWith('/') && !stored.startsWith('//')) {
+            target = stored;
+            sessionStorage.removeItem('auth_return_url');
+          }
+        } catch {
+          // Ignore storage access errors
+        }
+      }
+      navigate(target, { replace: true });
     }
 
     const handleMouseMove = (e: MouseEvent) => {
