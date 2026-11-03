@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     # ── Security & Documentation ──
     ENABLE_API_DOCS: bool = False
 
+    # ── Sentry Observability ──
+    SENTRY_DSN: str | None = None
+    SENTRY_ENVIRONMENT: str = "production"
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.2
+
+
     # ── Redis Cache ──
     REDIS_URL: str | None = None
 
