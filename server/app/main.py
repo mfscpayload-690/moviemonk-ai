@@ -19,15 +19,54 @@ from app.core.observability import (
     ObservabilityMiddleware,
     SecurityHeadersMiddleware,
     configure_logging,
+    sentry_before_send,
+    sentry_traces_sampler,
 )
 
 logger = logging.getLogger("moviemonk.app")
+
+
+def init_sentry() -> None:
+    """Initialize Sentry SDK if SENTRY_DSN is configured."""
+    settings = get_settings()
+    if not settings.SENTRY_DSN:
+        return
+
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.asyncio import AsyncioIntegration
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.httpx import HttpxIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+
+        logging_integration = LoggingIntegration(
+            level=logging.INFO,  # Capture info and above as breadcrumbs
+            event_level=logging.ERROR,  # Send errors as events
+        )
+
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            environment=settings.SENTRY_ENVIRONMENT,
+            traces_sampler=sentry_traces_sampler,
+            before_send=sentry_before_send,
+            send_default_pii=False,
+            integrations=[
+                FastApiIntegration(transaction_style="endpoint"),
+                AsyncioIntegration(),
+                HttpxIntegration(),
+                logging_integration,
+            ],
+        )
+        logger.info(f"Sentry initialized in environment: {settings.SENTRY_ENVIRONMENT}")
+    except Exception as e:
+        logger.warning(f"Failed to initialize Sentry: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle — startup and shutdown events."""
     configure_logging()
+    init_sentry()
     settings = get_settings()
 
     # Startup
