@@ -4,6 +4,7 @@ MovieMonk is a high-performance, AI-orchestrated entertainment discovery engine.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://moviemonk-ai.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/mfscpayload-690/badge.svg)](https://hub.xerj.org/contributors/mfscpayload-690)
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React 19](https://img.shields.io/badge/Frontend-React%2019-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Bundler-Vite%208-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
@@ -16,7 +17,7 @@ MovieMonk is a high-performance, AI-orchestrated entertainment discovery engine.
 
 ## 🚀 Key Capabilities
 
-- **Intent-Aware Discovery**: intelligent landing experience featuring trending spotlight, genre-based filtering, and swipe-optimized carousels.
+- **Intent-Aware Discovery**: Intelligent landing experience featuring trending spotlight, genre-based filtering, and swipe-optimized carousels.
 - **Semantic Search & Disambiguation**: Advanced search ranking that understands person-focused queries and resolves ambiguous names via confidence-based shortlists.
 - **AI-Enriched Context**: Layered AI summaries and qualitative explanations generated via Groq (LLM) and Perplexity (Web Search) to augment factual TMDB metadata.
 - **Deep Entity Linking**: Seamless navigation between rich title details (synopsis, cast, crew, watch options) and editorial-style person profiles (biography, filmography).
@@ -31,16 +32,21 @@ MovieMonk is a high-performance, AI-orchestrated entertainment discovery engine.
 - **Animations**: Framer Motion
 - **State & Routing**: React Router v7
 - **Database Client**: Supabase JS SDK
+- **Observability & Analytics**: Sentry React SDK (`@sentry/react`), Vercel Analytics, Speed Insights
+
+### Mobile Companion
+- **Framework**: Flutter 3.x / Dart (Android & cross-platform mobile client)
 
 ### Backend (Inference & Proxy)
 - **Engine**: FastAPI (Python 3.11+)
 - **AI Infrastructure**: Groq (LPU Inference), Perplexity (Real-time Search Fallback)
-- **Data Orchestration**: TMDB API Integration
+- **Data Orchestration**: TMDB API Integration, OMDB API (Critic & community ratings), SerpApi
+- **Caching**: Redis async client (`redis[hiredis]`) with in-memory fallback
 
 ### Infrastructure
-- **Hosting**: Vercel (Frontend), Hugging Face Spaces (Backend)
+- **Hosting**: Vercel (Frontend), Hugging Face Spaces (Backend Docker container)
 - **Persistence**: Supabase (PostgreSQL, Row Level Security, Auth)
-- **Observability**: Lightweight custom logging and performance debugging utilities
+- **Observability**: Sentry APM & error tracking, structured JSON logging (`python-json-logger`)
 
 ## 🏗 System Architecture
 
@@ -48,19 +54,19 @@ MovieMonk employs a decoupled architecture designed for security, high-concurren
 
 ### Data Flow
 1. **Request**: Frontend initiates search or detail fetch.
-2. **Cache Check**: System checks IndexedDB (local) and session cache for existing data.
-3. **Orchestration**: If uncached, the Backend fetches factual data from TMDB.
+2. **Cache Check**: System checks IndexedDB / Cache API (client-side) and Redis (server-side) for cached payloads.
+3. **Orchestration**: If uncached, the Backend fetches factual data from TMDB and ratings from OMDB.
 4. **AI Enrichment**: The AI Service triggers a fallback chain (Groq → Perplexity) to generate summaries and verify recent data.
 5. **Normalization**: Payloads are normalized into consistent Movie/TV/Person schemas.
 6. **Delivery**: Data is merged, cached, and rendered via optimized React components.
 
 ## 🛡 Engineering Highlights
 
-- **Zero-Trust Client**: Sensitive API keys (TMDB, Groq, Perplexity) are restricted to server-side environments. The frontend only communicates with the backend proxy.
+- **Zero-Trust Client**: Sensitive API keys (TMDB, Groq, Perplexity, OMDB, Supabase Service Role) are restricted to server-side environments. The frontend only communicates with the backend proxy or public Supabase anon APIs.
 - **Streaming Inference**: Backend leverages FastAPI's asynchronous capabilities to handle high-concurrency AI streaming responses efficiently.
 - **Graceful Degradation**: The application maintains functionality (Guest Mode) via local storage persistence if the primary Supabase connection is unavailable.
 - **Type Safety**: End-to-end TypeScript implementation ensures rigorous interface adherence and reduces runtime regressions.
-- **Automated Quality Checks**: Custom CI scripts (`check:no-emoji`, `security-check`) enforce project-specific coding standards and security audits.
+- **Automated Quality Checks**: Custom CI scripts (`check:no-emoji`, `security-check`), TypeScript validation (`tsc --noEmit`), and Python linters enforce project-specific coding standards and security audits.
 
 ## ⚙️ Development Setup
 
@@ -74,17 +80,17 @@ MovieMonk employs a decoupled architecture designed for security, high-concurren
 cd server
 pip install -r requirements.txt
 cp .env.example .env
-# Configure TMDB_API_KEY and GROQ_API_KEY
+# Configure TMDB_API_KEY and GROQ_API_KEY (optional: OMDB_API_KEY, REDIS_URL, SENTRY_DSN)
 python -m app.main  # or: uvicorn app.main:app --port 8000 --reload
 ```
-*Backend listens on `http://localhost:8000`*
+*Backend listens on `http://localhost:8000` (or `http://localhost:7860` in Hugging Face Docker)*
 
 ### 2. Frontend Configuration
 ```bash
 # In the root directory
 npm install
 cp .env.example .env.local
-# Set VITE_API_BASE_URL=http://localhost:8000
+# Set VITE_API_BASE_URL=http://localhost:8000 (or leave default proxy to /api)
 npm run dev
 ```
 *Frontend serves on `http://localhost:3000`*
