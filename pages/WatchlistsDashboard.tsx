@@ -515,25 +515,7 @@ export function WatchlistsDashboard() {
     );
   }
 
-  const displayAvatarUrl = useMemo(() => {
-    if (!avatarUrl) return '';
-    try {
-      const parsed = new URL(avatarUrl);
-      const host = parsed.hostname;
-      const isAllowedHost =
-        host === 'supabase.co' || host.endsWith('.supabase.co') ||
-        host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
-        host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
-      if (parsed.protocol === 'https:' && isAllowedHost) {
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-      }
-    } catch {
-      if (avatarUrl.startsWith('/') && !avatarUrl.startsWith('//')) {
-        return avatarUrl;
-      }
-    }
-    return '';
-  }, [avatarUrl]);
+  const displayAvatarUrl = useMemo(() => safeImgUrl(avatarUrl), [avatarUrl]);
 
   return (
     <DashboardLayout>
