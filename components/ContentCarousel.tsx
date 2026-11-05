@@ -1,10 +1,10 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import type { FC, KeyboardEvent } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { DiscoveryItem } from '../types';
 import PosterCard from './PosterCard';
 import SkeletonCard from './SkeletonCard';
-import { ArrowLeftIcon, ArrowRightIcon } from './icons';
+import { ChevronLeftIcon, ChevronRightIcon } from './icons';
 import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
 interface ContentCarouselProps {
@@ -53,11 +53,45 @@ const ContentCarousel: FC<ContentCarouselProps> = ({
   const sectionRef = useRef<HTMLElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const { ref: revealRef, isRevealed } = useScrollReveal<HTMLElement>();
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const setSectionRefs = useCallback((node: HTMLElement | null) => {
     sectionRef.current = node;
     revealRef(node);
   }, [revealRef]);
+
+  const updateScrollBounds = useCallback(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scroller;
+    setCanScrollLeft(scrollLeft > 8);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    updateScrollBounds();
+    const settleTimeout = setTimeout(updateScrollBounds, 120);
+
+    scroller.addEventListener('scroll', updateScrollBounds, { passive: true });
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        updateScrollBounds();
+      });
+      resizeObserver.observe(scroller);
+    }
+
+    return () => {
+      clearTimeout(settleTimeout);
+      scroller.removeEventListener('scroll', updateScrollBounds);
+      resizeObserver?.disconnect();
+    };
+  }, [items, isLoading, updateScrollBounds]);
 
   useEffect(() => {
     if (!sectionRef.current || typeof IntersectionObserver === 'undefined') return;
@@ -158,51 +192,61 @@ const ContentCarousel: FC<ContentCarouselProps> = ({
             </span>
           )}
           {headerActions}
-          <div className="discovery-carousel-controls" aria-hidden={isLoading}>
-            <button
-              type="button"
-              className="discovery-carousel-arrow"
-              onClick={() => scrollByAmount('left')}
-              aria-label={`Scroll ${title} left`}
-              disabled={isLoading}
-            >
-              <ArrowLeftIcon className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              className="discovery-carousel-arrow"
-              onClick={() => scrollByAmount('right')}
-              aria-label={`Scroll ${title} right`}
-              disabled={isLoading}
-            >
-              <ArrowRightIcon className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
 
-      <div
-        ref={scrollerRef}
-        className="discovery-carousel"
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-      >
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, index) => <SkeletonCard key={index} />)
-          : items.map((item, index) => (
-              <PosterCard
-                key={`${item.media_type}-${item.id}`}
-                item={item}
-                sectionKey={sectionKey}
-                position={index}
-                onView={onCardView}
-                onOpen={onCardOpen}
-                onOpenTitle={onOpenTitle}
-                isWatched={isWatched?.(item.id, item.media_type)}
-                onToggleWatched={onToggleWatched}
-                onQuickSaveToWatchlist={onQuickSaveToWatchlist}
-              />
-            ))}
+      <div className="discovery-carousel-wrapper">
+        {canScrollLeft && (
+          <div className="discovery-carousel-paddle discovery-carousel-paddle-left">
+            <button
+              type="button"
+              className="discovery-carousel-overlay-arrow"
+              onClick={() => scrollByAmount('left')}
+              aria-label={`Scroll ${title} left`}
+              tabIndex={0}
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        <div
+          ref={scrollerRef}
+          className="discovery-carousel"
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+        >
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, index) => <SkeletonCard key={index} />)
+            : items.map((item, index) => (
+                <PosterCard
+                  key={`${item.media_type}-${item.id}`}
+                  item={item}
+                  sectionKey={sectionKey}
+                  position={index}
+                  onView={onCardView}
+                  onOpen={onCardOpen}
+                  onOpenTitle={onOpenTitle}
+                  isWatched={isWatched?.(item.id, item.media_type)}
+                  onToggleWatched={onToggleWatched}
+                  onQuickSaveToWatchlist={onQuickSaveToWatchlist}
+                />
+              ))}
+        </div>
+
+        {canScrollRight && (
+          <div className="discovery-carousel-paddle discovery-carousel-paddle-right">
+            <button
+              type="button"
+              className="discovery-carousel-overlay-arrow"
+              onClick={() => scrollByAmount('right')}
+              aria-label={`Scroll ${title} right`}
+              tabIndex={0}
+            >
+              <ChevronRightIcon className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
