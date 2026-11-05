@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAuthAvatarUrl, getAuthDisplayName } from '../../lib/authIdentity';
+import { safeImgUrl } from '../../lib/seo';
 
 export interface UserProfileMenuProps {
   user: User | null;
@@ -39,7 +40,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const avatarUrl = getAuthAvatarUrl(user);
+  const avatarUrl = safeImgUrl(getAuthAvatarUrl(user));
   const displayName = getAuthDisplayName(user);
 
   useEffect(() => {
