@@ -3,6 +3,7 @@ import { emitClientError } from './services/clientObservability';
 import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
 import AppHeader from './components/header/AppHeader';
+import AppFooter from './components/footer/AppFooter';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import HeaderUtilityMenu from './components/HeaderUtilityMenu';
 import ActionToast from './components/ActionToast';
@@ -1103,23 +1104,8 @@ const App: React.FC = () => {
             )}
           </Suspense>
 
-          {/* Global Footer */}
-          <footer className="w-full py-2.5 mt-6 text-center border-t border-white/10 text-brand-text-light/50 text-xs px-4">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3">
-              <span className="whitespace-nowrap">MovieMonk v{APP_VERSION} · MIT License</span>
-              <span className="hidden sm:inline-block w-0.5 h-0.5 rounded-full bg-white/20"></span>
-              <a 
-                href="https://github.com/mfscpayload-690/moviemonk-ai" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 hover:text-white transition-colors group"
-                aria-label="GitHub Repository"
-              >
-                <GithubIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                <span>Contribute</span>
-              </a>
-            </div>
-          </footer>
+          {/* Revamped Floating Cinematic Footer Island */}
+          <AppFooter />
         </div>
 
       </div >
