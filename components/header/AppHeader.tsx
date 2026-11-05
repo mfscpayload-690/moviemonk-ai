@@ -117,8 +117,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       }
     };
 
+    const handleCustomOpen = () => setIsPaletteOpen(true);
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-command-palette', handleCustomOpen);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-command-palette', handleCustomOpen);
+    };
   }, [isPaletteOpen]);
 
   return (
