@@ -175,6 +175,8 @@ function getInitial(name?: string, email?: string): string {
   return '?';
 }
 
+const SAFE_AVATAR_PATTERN = /^(?:https?:\/\/(?:(?:[a-zA-Z0-9-]+\.)*(?:githubusercontent\.com|googleusercontent\.com|supabase\.co|tmdb\.org|unsplash\.com|tvmaze\.com|vercel\.app)|localhost|127\.0\.0\.1)(?::\d+)?\/[a-zA-Z0-9_.\/&=%?#+-]*|\/[a-zA-Z0-9_.\/&=%?#+-]*)$/i;
+
 function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSettings; size?: 'lg' }) {
   const url = getAuthAvatarUrl(user, profile?.avatarUrl);
   const name = getAuthDisplayName(user, profile?.fullName);
@@ -186,13 +188,15 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     setImageFailed(false);
   }, [url]);
 
-  const safeUrl = useMemo(() => safeImgUrl(url), [url]);
+  const cleanUrl = safeImgUrl(url);
+  const isSafe = typeof cleanUrl === 'string' && SAFE_AVATAR_PATTERN.test(cleanUrl);
+  const displayUrl = isSafe ? cleanUrl.replace(/[<>"']/g, '') : '';
 
-  if (safeUrl && !imageFailed) {
+  if (displayUrl && !imageFailed) {
     return (
       <div className={cls} style={{ padding: 0, overflow: 'hidden' }}>
         <img
-          src={safeUrl}
+          src={displayUrl}
           alt=""
           onError={() => setImageFailed(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
