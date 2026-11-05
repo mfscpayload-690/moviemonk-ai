@@ -26,6 +26,8 @@ export interface UserProfileMenuProps {
   onShare: () => void;
 }
 
+const SAFE_AVATAR_PATTERN = /^(?:https?:\/\/(?:(?:[a-zA-Z0-9-]+\.)*(?:githubusercontent\.com|googleusercontent\.com|supabase\.co|tmdb\.org|unsplash\.com|tvmaze\.com|vercel\.app)|localhost|127\.0\.0\.1)(?::\d+)?\/[a-zA-Z0-9_.\/&=%?#+-]*|\/[a-zA-Z0-9_.\/&=%?#+-]*)$/i;
+
 export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   user,
   isCloud,
@@ -40,7 +42,9 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const avatarUrl = safeImgUrl(getAuthAvatarUrl(user));
+  const rawAvatarUrl = safeImgUrl(getAuthAvatarUrl(user));
+  const isAvatarSafe = typeof rawAvatarUrl === 'string' && SAFE_AVATAR_PATTERN.test(rawAvatarUrl);
+  const avatarUrl = isAvatarSafe ? rawAvatarUrl.replace(/[<>"']/g, '') : '';
   const displayName = getAuthDisplayName(user);
 
   useEffect(() => {
