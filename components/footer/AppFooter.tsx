@@ -10,7 +10,7 @@ export interface AppFooterProps {
 export const AppFooter: React.FC<AppFooterProps> = ({ className = '' }) => {
   return (
     <footer className={`w-full mt-8 sm:mt-10 border-t border-white/10 bg-neutral-950/40 ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+      <div className="w-full px-4 sm:px-6 md:px-8 lg:px-10 py-5 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
         
         {/* Left: Brand Identity & Quiet Tagline */}
         <div className="flex flex-col sm:items-start items-center gap-1.5 text-center sm:text-left">
@@ -62,7 +62,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({ className = '' }) => {
             <span className="font-semibold text-emerald-400/80">TMDB</span>
           </div>
 
-          <p className="text-[10px] text-white/30 max-w-xs leading-normal">
+          <p className="text-[10px] text-white/30 whitespace-nowrap leading-normal">
             This product uses the TMDB API but is not endorsed or certified by TMDB.
           </p>
         </div>
