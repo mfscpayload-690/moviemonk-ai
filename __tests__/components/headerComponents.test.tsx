@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { SearchCapsule } from '../../components/header/SearchCapsule';
 import { WatchlistHeaderButton } from '../../components/header/WatchlistHeaderButton';
 import { UserProfileMenu } from '../../components/header/UserProfileMenu';
+import { SecondaryHeader } from '../../components/header/SecondaryHeader';
 import { QueryComplexity } from '../../types';
 
 jest.mock('../../contexts/AuthContext', () => ({
@@ -15,7 +16,8 @@ jest.mock('../../contexts/AuthContext', () => ({
 
 jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
-  useLocation: () => ({ pathname: '/', search: '' })
+  useLocation: () => ({ pathname: '/', search: '' }),
+  Link: ({ to, children, ...props }: any) => <a href={to} {...props}>{children}</a>
 }));
 
 describe('Header Revamp Components', () => {
@@ -141,6 +143,29 @@ describe('Header Revamp Components', () => {
       expect(html).toContain('bg-amber-400');
       expect(html).toContain('animate-pulse');
       expect(html).toContain('title="Syncing..."');
+    });
+  });
+
+  describe('SecondaryHeader', () => {
+    it('renders logo link and default "Back to app" navigation button', () => {
+      const html = renderToStaticMarkup(<SecondaryHeader />);
+
+      expect(html).toContain('MovieMonk');
+      expect(html).toContain('Back to app');
+      expect(html).toContain('href="/"');
+    });
+
+    it('renders custom title and back navigation label', () => {
+      const html = renderToStaticMarkup(
+        <SecondaryHeader
+          title="Preferences"
+          backLabel="Settings"
+          backTo="/settings"
+        />
+      );
+
+      expect(html).toContain('Preferences');
+      expect(html).toContain('Settings');
     });
   });
 });
