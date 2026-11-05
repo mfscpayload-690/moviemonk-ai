@@ -25,7 +25,7 @@ import {
     Sparkles as LucideSparkles,
     Trash2
 } from 'lucide-react';
-const logoUrl = '/asset/android-chrome-192x192.png';
+const logoUrl = '/asset/logo.svg';
 
 type IconProps = { className?: string; 'aria-label'?: string };
 
