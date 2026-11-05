@@ -186,25 +186,7 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     setImageFailed(false);
   }, [url]);
 
-  const safeUrl = useMemo(() => {
-    if (!url) return '';
-    try {
-      const parsed = new URL(url);
-      const host = parsed.hostname;
-      const isAllowedHost =
-        host === 'supabase.co' || host.endsWith('.supabase.co') ||
-        host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
-        host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
-      if (parsed.protocol === 'https:' && isAllowedHost) {
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-      }
-    } catch {
-      if (url.startsWith('/') && !url.startsWith('//')) {
-        return url;
-      }
-    }
-    return '';
-  }, [url]);
+  const safeUrl = useMemo(() => safeImgUrl(url), [url]);
 
   if (safeUrl && !imageFailed) {
     return (
