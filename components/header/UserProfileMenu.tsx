@@ -93,6 +93,17 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   if (!user) {
     return (
       <div className="flex items-center gap-1.5 sm:gap-2">
+        {canShare && (
+          <button
+            type="button"
+            onClick={onShare}
+            className="h-9 w-9 flex items-center justify-center rounded-full text-white/80 hover:text-white bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 hover:border-white/20 transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/50"
+            title="Share this page"
+            aria-label="Share page"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={handleSignIn}
@@ -113,7 +124,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
         onClick={() => setIsOpen((prev) => !prev)}
         className="group flex items-center gap-1.5 p-0.5 sm:p-1 sm:pr-2.5 rounded-full bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 hover:border-white/20 transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/50 touch-target flex-shrink-0"
         aria-expanded={isOpen}
-        aria-haspopup="menu"
+        aria-haspopup="true"
         aria-label="User account and profile menu"
       >
         {/* Avatar Container with unclipped status dot */}
@@ -157,7 +168,6 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
       {/* Profile Flyout Menu */}
       {isOpen && (
         <div
-          role="menu"
           aria-label="User settings and account menu"
           className="absolute right-0 top-full mt-2 w-72 bg-neutral-950/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] py-2 z-[9999] animate-scale-up origin-top-right overflow-hidden"
         >
@@ -199,7 +209,6 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
           <div className="py-1">
             <button
               type="button"
-              role="menuitem"
               onClick={() => {
                 setIsOpen(false);
                 onOpenWatchlists();
@@ -215,7 +224,6 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
 
             <button
               type="button"
-              role="menuitem"
               onClick={() => {
                 setIsOpen(false);
                 onOpenSettings();
@@ -232,7 +240,6 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
             {canShare && (
               <button
                 type="button"
-                role="menuitem"
                 onClick={() => {
                   setIsOpen(false);
                   onShare();
@@ -252,7 +259,6 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
           <div className="pt-1 mt-1 border-t border-white/10">
             <button
               type="button"
-              role="menuitem"
               onClick={handleSignOut}
               className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors text-left"
             >
