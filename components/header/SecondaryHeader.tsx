@@ -113,7 +113,7 @@ export const SecondaryHeader: React.FC<SecondaryHeaderProps> = ({
       <div className="flex items-center justify-end gap-2 flex-shrink-0">
         {rightContent ? (
           rightContent
-        ) : (
+        ) : onBack ? (
           <button
             type="button"
             onClick={handleBackClick}
@@ -123,6 +123,15 @@ export const SecondaryHeader: React.FC<SecondaryHeaderProps> = ({
             <ArrowLeft className="w-4 h-4 text-white/60 group-hover:text-white group-hover:-translate-x-0.5 transition-all duration-200" />
             <span>{backLabel}</span>
           </button>
+        ) : (
+          <Link
+            to={backTo}
+            className="group flex items-center gap-1.5 sm:gap-2 h-9 px-3 sm:px-3.5 rounded-full text-xs sm:text-sm font-medium text-white/80 hover:text-white bg-white/[0.04] hover:bg-white/[0.1] active:bg-white/[0.15] border border-white/10 hover:border-white/20 transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/50 shadow-sm"
+            aria-label={backLabel}
+          >
+            <ArrowLeft className="w-4 h-4 text-white/60 group-hover:text-white group-hover:-translate-x-0.5 transition-all duration-200" />
+            <span>{backLabel}</span>
+          </Link>
         )}
       </div>
     </header>
