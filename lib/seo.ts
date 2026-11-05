@@ -167,12 +167,18 @@ export function buildPersonJsonLd(data: SeoPersonPayload): Record<string, unknow
   };
 }
 
-export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co|localhost|127\.0\.0\.1)(?::\d+)?\/|\/(?!\/))/i;
+export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|(?:[a-zA-Z0-9-]+\.)*githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co|localhost|127\.0\.0\.1)(?::\d+)?\/|\/(?!\/))/i;
 export const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
+export const SAFE_IMAGE_PATTERN = /^(?:https?:\/\/(?:(?:[a-zA-Z0-9-]+\.)*(?:githubusercontent\.com|googleusercontent\.com|supabase\.co|tmdb\.org|unsplash\.com|tvmaze\.com|vercel\.app)|localhost|127\.0\.0\.1)(?::\d+)?\/[a-zA-Z0-9_.\/&=%?#+-]*|\/[a-zA-Z0-9_.\/&=%?#+-]*)$/i;
 
 export function safeImgUrl(url: string | null | undefined, fallback = ''): string {
   if (!url) return fallback;
   const trimmed = url.trim();
+
+  // Reject strings containing dangerous HTML meta-characters
+  if (/[<>"']/.test(trimmed)) {
+    return fallback;
+  }
 
   // Handle data URLs
   if (trimmed.toLowerCase().startsWith('data:')) {
@@ -191,7 +197,8 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
         hostname === 'static.tvmaze.com' ||
         hostname === 'images.unsplash.com' ||
         hostname === 'graph.facebook.com' ||
-        hostname === 'avatars.githubusercontent.com' ||
+        hostname === 'githubusercontent.com' ||
+        hostname.endsWith('.githubusercontent.com') ||
         hostname === 'moviemonk-ai.vercel.app' ||
         hostname === 'localhost' ||
         hostname === '127.0.0.1' ||
@@ -202,7 +209,12 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
 
       if (isAllowedHost) {
         // Reconstruct URL from safe parts to clear taint
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
+        const safePath = parsed.pathname.replace(/[<>"']/g, '');
+        const safeSearch = parsed.search.replace(/[<>"']/g, '');
+        const reconstructed = `${parsed.protocol}//${parsed.host}${safePath}${safeSearch}`;
+        if (SAFE_IMAGE_PATTERN.test(reconstructed)) {
+          return reconstructed;
+        }
       }
     }
   } catch {
@@ -219,6 +231,7 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
 }
 
 export function sanitizeImgUrl(url: string | null | undefined, fallback = ''): string {
-  return safeImgUrl(url, fallback);
+  const clean = safeImgUrl(url, fallback);
+  return clean ? clean.replace(/[<>"']/g, '') : fallback;
 }
 

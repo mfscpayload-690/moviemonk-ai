@@ -27,26 +27,14 @@ import { getAuthAvatarUrl, getAuthDisplayName } from '../lib/authIdentity';
 import { emitClientEvent } from '../services/clientObservability';
 import { apiPost } from '../lib/apiClient';
 import { safeImgUrl, sanitizeImgUrl } from '../lib/seo';
+import { SecondaryHeader } from '../components/header/SecondaryHeader';
 
-
+const SAFE_AVATAR_PATTERN = /^(?:https?:\/\/(?:(?:[a-zA-Z0-9-]+\.)*(?:githubusercontent\.com|googleusercontent\.com|supabase\.co|tmdb\.org|unsplash\.com|tvmaze\.com|vercel\.app)|localhost|127\.0\.0\.1)(?::\d+)?\/[a-zA-Z0-9_.\/&=%?#+-]*|\/[a-zA-Z0-9_.\/&=%?#+-]*)$/i;
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
   return (
     <div className="app-container watchlists-dashboard-layout" style={{ background: '#121212' }}>
-      <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50 sticky top-0">
-        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
-          <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
-          <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
-            <span className="brand-signature-movie">Movie</span>
-            <span className="brand-signature-monk">Monk</span>
-          </h1>
-        </Link>
-        <button type="button" className="mm-settings-nav-back" onClick={() => navigate('/')}>
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
-          Back to app
-        </button>
-      </header>
+      <SecondaryHeader backLabel="Back to app" backTo="/" />
       <main
         className="w-full max-w-[92rem] mx-auto p-4 sm:p-6 lg:p-8 xl:px-10"
       >
@@ -120,8 +108,6 @@ export function WatchlistsDashboard() {
   const [itemDropTargetId, setItemDropTargetId] = useState<string | null>(null);
   // const [reminderRefreshToken, setReminderRefreshToken] = useState(0);
   const [privacyPromptFolder, setPrivacyPromptFolder] = useState<WatchlistFolder | null>(null);
-
-  const [searchHistory, setSearchHistory] = useState<any[]>([]);
   const [mobileActionFolder, setMobileActionFolder] = useState<WatchlistFolder | null>(null);
 
   useEffect(() => {
@@ -152,52 +138,6 @@ export function WatchlistsDashboard() {
       return () => clearTimeout(timer);
     }
   }, [actionToast]);
-
-  useEffect(() => {
-    if (user?.id && supabase) {
-      supabase
-        .from('search_history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(8)
-        .then(({ data }) => {
-          if (data) setSearchHistory(data);
-        });
-    } else {
-      try {
-        const raw = localStorage.getItem('moviemonk_search_history_v1');
-        const parsed = raw ? JSON.parse(raw) : [];
-        setSearchHistory(parsed.map((item: any, idx: number) => ({
-          id: `local-${idx}`,
-          query: item.query,
-          created_at: new Date(item.timestamp).toISOString()
-        })).slice(0, 8));
-      } catch {
-        setSearchHistory([]);
-      }
-    }
-  }, [user?.id]);
-
-  const handleClearHistory = async () => {
-    if (user?.id && supabase) {
-      try {
-        const { error } = await supabase.from('search_history').delete().eq('user_id', user.id);
-        if (error) throw error;
-        setSearchHistory([]);
-      } catch (err) {
-        console.error('Failed to clear history from dashboard:', err);
-      }
-    } else {
-      try {
-        localStorage.removeItem('moviemonk_search_history_v1');
-        localStorage.removeItem('moviemonk_autocomplete_cache_v1');
-        setSearchHistory([]);
-      } catch (err) {
-        console.error('Failed to clear local history:', err);
-      }
-    }
-  };
 
   // Deep-link & route synchronization: keep internal state in sync with URL pathname and params
   useEffect(() => {
@@ -288,16 +228,9 @@ export function WatchlistsDashboard() {
 
   const topWatchedPosters = useMemo(() => {
     return watched.slice(0, 3).map(w => {
-      if (!w.poster_url) return '';
-      try {
-        const parsed = new URL(w.poster_url);
-        if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-          return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-        }
-      } catch {
-        if (w.poster_url.startsWith('/') && !w.poster_url.startsWith('//')) {
-          return w.poster_url;
-        }
+      const clean = safeImgUrl(w.poster_url);
+      if (clean && SAFE_AVATAR_PATTERN.test(clean)) {
+        return clean.replace(/[<>"']/g, '');
       }
       return '';
     }).filter(Boolean) as string[];
@@ -577,25 +510,9 @@ export function WatchlistsDashboard() {
     );
   }
 
-  const displayAvatarUrl = useMemo(() => {
-    if (!avatarUrl) return '';
-    try {
-      const parsed = new URL(avatarUrl);
-      const host = parsed.hostname;
-      const isAllowedHost =
-        host === 'supabase.co' || host.endsWith('.supabase.co') ||
-        host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
-        host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
-      if (parsed.protocol === 'https:' && isAllowedHost) {
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-      }
-    } catch {
-      if (avatarUrl.startsWith('/') && !avatarUrl.startsWith('//')) {
-        return avatarUrl;
-      }
-    }
-    return '';
-  }, [avatarUrl]);
+  const cleanAvatarUrl = safeImgUrl(avatarUrl);
+  const isAvatarSafe = typeof cleanAvatarUrl === 'string' && SAFE_AVATAR_PATTERN.test(cleanAvatarUrl);
+  const displayAvatarUrl = isAvatarSafe ? cleanAvatarUrl.replace(/[<>"']/g, '') : '';
 
   return (
     <DashboardLayout>
@@ -778,20 +695,10 @@ export function WatchlistsDashboard() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {watched.map((item) => {
-                const displayPosterUrl = (() => {
-                  if (!item.poster_url) return '';
-                  try {
-                    const parsed = new URL(item.poster_url);
-                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-                      return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-                    }
-                  } catch {
-                    if (item.poster_url.startsWith('/') && !item.poster_url.startsWith('//')) {
-                      return item.poster_url;
-                    }
-                  }
-                  return '';
-                })();
+                const cleanPoster = safeImgUrl(item.poster_url);
+                const displayPosterUrl = cleanPoster && SAFE_AVATAR_PATTERN.test(cleanPoster)
+                  ? cleanPoster.replace(/[<>"']/g, '')
+                  : '';
 
                 const safeMediaType = item.media_type === 'tv' ? 'tv' : 'movie';
                 const safeTmdbId = String(item.tmdb_id).replace(/[^0-9]/g, '');
@@ -1043,17 +950,9 @@ export function WatchlistsDashboard() {
               {folders.map((folder, index) => {
                 const heroItem = folder.items[0];
                 const topPosters = folder.items.slice(0, 3).map(item => {
-                  const url = item.movie?.poster_url;
-                  if (!url) return '';
-                  try {
-                    const parsed = new URL(url);
-                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-                      return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-                    }
-                  } catch {
-                    if (url.startsWith('/') && !url.startsWith('//')) {
-                      return url;
-                    }
+                  const clean = safeImgUrl(item.movie?.poster_url);
+                  if (clean && SAFE_AVATAR_PATTERN.test(clean)) {
+                    return clean.replace(/[<>"']/g, '');
                   }
                   return '';
                 }).filter(Boolean) as string[];
@@ -1162,44 +1061,6 @@ export function WatchlistsDashboard() {
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {/* SEARCH HISTORY SECTION */}
-          {!activeFolder && !showWatchedView && (
-            <div className="mt-12 animate-fade-in pb-12">
-              <div className="wl-section-header mb-6 flex items-center justify-between">
-                <div>
-                  <h2 className="wl-section-title text-2xl font-bold">Recent Searches</h2>
-                </div>
-                {searchHistory.length > 0 && (
-                  <button type="button" onClick={handleClearHistory} className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-brand-text-light hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-50">
-                    <TrashIcon className="w-3.5 h-3.5" /> Clear History
-                  </button>
-                )}
-              </div>
-
-              {searchHistory.length > 0 ? (
-                <div className="flex flex-wrap gap-3">
-                  {searchHistory.map((sh, idx) => (
-                    <Link
-                      key={sh.id || idx}
-                      to={`/search?q=${encodeURIComponent(sh.query)}`}
-                      className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2.5 text-sm font-medium shadow-sm"
-                    >
-                      <svg className="w-4 h-4 text-brand-text-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                      {sh.query}
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="glass-panel p-8 rounded-2xl border border-white/5 text-center">
-                  <svg className="w-10 h-10 text-white/20 mx-auto mb-3" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                  </svg>
-                  <p className="text-brand-text-light text-sm">No recent searches yet — explore discovery or search for a title</p>
-                </div>
-              )}
             </div>
           )}
 

@@ -25,6 +25,7 @@ import {
 } from '../services/userSettingsService';
 import { getAuthAvatarUrl, getAuthDisplayName, getAuthProviderLabel } from '../lib/authIdentity';
 import { safeImgUrl, sanitizeImgUrl } from '../lib/seo';
+import { SecondaryHeader } from '../components/header/SecondaryHeader';
 
 /* ────────────────────────────────────────────
    Constants
@@ -127,23 +128,10 @@ function useSettingsState() {
    ──────────────────────────────────────────── */
 
 function SettingsLayout({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
   return (
     <div className="app-container" style={{ background: '#121212' }}>
       <SeoHead title="Settings" robots="noindex, follow" />
-      <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50">
-        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
-          <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
-          <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
-            <span className="brand-signature-movie">Movie</span>
-            <span className="brand-signature-monk">Monk</span>
-          </h1>
-        </Link>
-        <button type="button" className="mm-settings-nav-back" onClick={() => navigate('/')}>
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
-          Back to app
-        </button>
-      </header>
+      <SecondaryHeader backLabel="Back to app" backTo="/" />
       <main className="main-content">
         {children}
       </main>
@@ -152,26 +140,10 @@ function SettingsLayout({ children }: { children: React.ReactNode }) {
 }
 
 function SubPageLayout({ title, children }: { title: string; children: React.ReactNode }) {
-  const navigate = useNavigate();
   return (
     <div className="app-container" style={{ background: '#121212' }}>
       <SeoHead title={title} robots="noindex, follow" />
-      <header className="app-header flex items-center justify-between px-4 sm:px-6 py-3 glass-panel border-b-0 z-50">
-        <Link to="/" className="flex items-center gap-2.5 sm:gap-3 text-left" aria-label="Go to discovery home">
-          <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
-          <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
-            <span className="brand-signature-movie">Movie</span>
-            <span className="brand-signature-monk">Monk</span>
-          </h1>
-        </Link>
-      </header>
-      <div className="mm-settings-panel-header">
-        <button type="button" className="mm-settings-nav-back" onClick={() => navigate('/settings')}>
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
-          Settings
-        </button>
-        <span className="mm-settings-panel-title">{title}</span>
-      </div>
+      <SecondaryHeader title={title} backLabel="Settings" backTo="/settings" />
       <main className="main-content">
         {children}
       </main>
@@ -203,6 +175,8 @@ function getInitial(name?: string, email?: string): string {
   return '?';
 }
 
+const SAFE_AVATAR_PATTERN = /^(?:https?:\/\/(?:(?:[a-zA-Z0-9-]+\.)*(?:githubusercontent\.com|googleusercontent\.com|supabase\.co|tmdb\.org|unsplash\.com|tvmaze\.com|vercel\.app)|localhost|127\.0\.0\.1)(?::\d+)?\/[a-zA-Z0-9_.\/&=%?#+-]*|\/[a-zA-Z0-9_.\/&=%?#+-]*)$/i;
+
 function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSettings; size?: 'lg' }) {
   const url = getAuthAvatarUrl(user, profile?.avatarUrl);
   const name = getAuthDisplayName(user, profile?.fullName);
@@ -214,31 +188,15 @@ function Avatar({ user, profile, size }: { user: any; profile?: UserProfileSetti
     setImageFailed(false);
   }, [url]);
 
-  const safeUrl = useMemo(() => {
-    if (!url) return '';
-    try {
-      const parsed = new URL(url);
-      const host = parsed.hostname;
-      const isAllowedHost =
-        host === 'supabase.co' || host.endsWith('.supabase.co') ||
-        host === 'githubusercontent.com' || host.endsWith('.githubusercontent.com') ||
-        host === 'googleusercontent.com' || host.endsWith('.googleusercontent.com');
-      if (parsed.protocol === 'https:' && isAllowedHost) {
-        return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-      }
-    } catch {
-      if (url.startsWith('/') && !url.startsWith('//')) {
-        return url;
-      }
-    }
-    return '';
-  }, [url]);
+  const cleanUrl = safeImgUrl(url);
+  const isSafe = typeof cleanUrl === 'string' && SAFE_AVATAR_PATTERN.test(cleanUrl);
+  const displayUrl = isSafe ? cleanUrl.replace(/[<>"']/g, '') : '';
 
-  if (safeUrl && !imageFailed) {
+  if (displayUrl && !imageFailed) {
     return (
       <div className={cls} style={{ padding: 0, overflow: 'hidden' }}>
         <img
-          src={safeUrl}
+          src={displayUrl}
           alt=""
           onError={() => setImageFailed(true)}
           style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
