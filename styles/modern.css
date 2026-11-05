@@ -2252,9 +2252,9 @@ button:active,
     }
 }
 
-/* --- 18. Scroll Padding for Search Island --- */
+/* --- 18. Scroll Padding for Main Content --- */
 .main-content {
-    scroll-padding-bottom: 100px;
+    scroll-padding-bottom: 32px;
 }
 
 /* --- 19. Focus States for Accessibility --- */
@@ -3717,7 +3717,7 @@ a:focus-visible {
 
 /* Discovery density modes */
 .discovery-page.is-compact {
-    padding: 0.7rem 0 4rem;
+    padding: 0.7rem 0 1.25rem;
 }
 
 .discovery-page.is-compact .discovery-hero-wrapper {
@@ -3940,7 +3940,7 @@ a:focus-visible {
 
 @media (min-width: 768px) {
     .discovery-page {
-        padding: 1.25rem 0 6rem;
+        padding: 1.25rem 0 1.5rem;
     }
 
     .discovery-section {
@@ -3964,7 +3964,7 @@ a:focus-visible {
     min-height: 100%;
     color: #f5f5f5;
     padding: 1rem;
-    padding-bottom: calc(6.25rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -5098,7 +5098,7 @@ a:focus-visible {
 @media (max-width: 640px) {
     .person-editorial-page {
         padding: 0.75rem;
-        padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
         gap: 0.85rem;
     }
 
