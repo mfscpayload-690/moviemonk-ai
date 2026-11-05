@@ -1,7 +1,8 @@
-import React, { Suspense, lazy, useCallback, useEffect, useRef, useState, startTransition } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import { emitClientError } from './services/clientObservability';
 import ErrorBanner from './components/ErrorBanner';
 import AmbiguousModal, { Candidate as AmbiguousCandidate } from './components/AmbiguousModal';
+import AppHeader from './components/header/AppHeader';
 import DynamicSearchIsland from './components/DynamicSearchIsland';
 import HeaderUtilityMenu from './components/HeaderUtilityMenu';
 import ActionToast from './components/ActionToast';
@@ -98,6 +99,11 @@ const App: React.FC = () => {
     isCloud,
     isSyncing
   } = useCloudWatchlists();
+
+  const totalWatchlistItems = useMemo(
+    () => watchlists.reduce((acc, folder) => acc + (folder.items?.length || 0), 0),
+    [watchlists]
+  );
 
   const closeQuickSaveModal = useCallback(() => {
     const next = getClosedQuickSaveState(WATCHLIST_ICON_DEFAULT);
@@ -806,46 +812,23 @@ const App: React.FC = () => {
         />
       )}
       <div className="app-container has-overlay-header">
-        {/* Header */}
-        <header className="app-header flex-shrink-0 grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-2.5 sm:py-2.5 glass-panel z-50">
-          <button type="button" className="flex items-center gap-2.5 sm:gap-3 text-left" onClick={handleGoHome} aria-label="Go to discovery home">
-            <Logo className="w-[2.125rem] h-[2.125rem] sm:w-9 sm:h-9 text-primary drop-shadow-glow" />
-            {/*
-            Previous cinematic wordmark:
-            <h1 className="brand-wordmark title-font text-xl sm:text-2xl font-bold tracking-tight">
-              <span className="brand-wordmark-prefix">Movie</span>
-              <span className="brand-wordmark-main">Monk</span>
-            </h1>
-            */}
-            {/*
-            Rejected studio wordmark:
-            <h1 className="brand-studio title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
-              <span className="brand-studio-prefix">Movie</span>
-              <span className="brand-studio-title">Monk</span>
-            </h1>
-            */}
-            {/*
-            Rejected premiere wordmark:
-            <h1 className="brand-premiere text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
-              <span className="brand-premiere-prefix">Movie</span>
-              <span className="brand-premiere-title">Monk</span>
-            </h1>
-            */}
-            <h1 className="brand-signature title-font text-xl sm:text-2xl font-bold tracking-tight" aria-label="MovieMonk">
-              <span className="brand-signature-movie">Movie</span>
-              <span className="brand-signature-monk">Monk</span>
-            </h1>
-          </button>
-          <div className="header-search-slot col-span-2 sm:col-span-1 order-3 sm:order-none px-0 sm:px-2">
-            <DynamicSearchIsland
-              initialQuery={currentQuery || new URLSearchParams(location.search).get('q') || ''}
-              onSearch={handleSendMessage}
-              onSuggestionSelect={handleSuggestionSelect}
-              isLoading={isLoading}
-            />
-          </div>
-          <div className="flex items-center justify-end gap-2 sm:gap-2.5">
-            <AuthButton />
+        {/* Revamped Adaptive Floating Glass Island Header */}
+        <AppHeader
+          user={user}
+          isCloud={isCloud}
+          isSyncing={isSyncing}
+          canShare={Boolean(movieData || personData)}
+          totalWatchlistItems={totalWatchlistItems}
+          initialQuery={currentQuery || new URLSearchParams(location.search).get('q') || ''}
+          isLoading={isLoading}
+          onGoHome={handleGoHome}
+          onSearch={handleSendMessage}
+          onSuggestionSelect={handleSuggestionSelect}
+          onOpenWatchlists={handleOpenWatchlists}
+          onOpenSettings={handleOpenSettings}
+          onShare={handleShare}
+          onQuickSaveToWatchlist={handleQuickSaveToWatchlist}
+          headerUtilityMenu={
             <HeaderUtilityMenu
               user={user}
               isCloud={isCloud}
@@ -855,8 +838,8 @@ const App: React.FC = () => {
               onOpenSettings={handleOpenSettings}
               onShare={handleShare}
             />
-          </div>
-        </header>
+          }
+        />
 
         {quickSaveTarget && (
           <div className="fixed inset-0 z-[10001] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="quick-save-title" onClick={closeQuickSaveModal}>
