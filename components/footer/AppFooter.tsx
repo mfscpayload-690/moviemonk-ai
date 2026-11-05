@@ -59,10 +59,12 @@ export const AppFooter: React.FC<AppFooterProps> = ({ className = '' }) => {
             <span>·</span>
             <span>MIT License</span>
             <span>·</span>
-            <span title="This product uses the TMDB API but is not endorsed or certified by TMDB.">
-              TMDB Data
-            </span>
+            <span className="font-semibold text-emerald-400/80">TMDB</span>
           </div>
+
+          <p className="text-[10px] text-white/30 max-w-xs leading-normal">
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </p>
         </div>
 
       </div>
