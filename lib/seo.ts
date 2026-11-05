@@ -167,7 +167,7 @@ export function buildPersonJsonLd(data: SeoPersonPayload): Record<string, unknow
   };
 }
 
-export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|avatars\.githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co|localhost|127\.0\.0\.1)(?::\d+)?\/|\/(?!\/))/i;
+export const SAFE_URL_PATTERN = /^(?:https?:\/\/(?:image\.tmdb\.org|static\.tvmaze\.com|images\.unsplash\.com|(?:[a-zA-Z0-9-]+\.)*googleusercontent\.com|graph\.facebook\.com|(?:[a-zA-Z0-9-]+\.)*githubusercontent\.com|moviemonk-ai\.vercel.app|(?:[a-zA-Z0-9-]+\.)*supabase\.co|localhost|127\.0\.0\.1)(?::\d+)?\/|\/(?!\/))/i;
 export const SAFE_DATA_URL_PATTERN = /^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,[a-zA-Z0-9+/=]+$/i;
 
 export function safeImgUrl(url: string | null | undefined, fallback = ''): string {
@@ -191,7 +191,8 @@ export function safeImgUrl(url: string | null | undefined, fallback = ''): strin
         hostname === 'static.tvmaze.com' ||
         hostname === 'images.unsplash.com' ||
         hostname === 'graph.facebook.com' ||
-        hostname === 'avatars.githubusercontent.com' ||
+        hostname === 'githubusercontent.com' ||
+        hostname.endsWith('.githubusercontent.com') ||
         hostname === 'moviemonk-ai.vercel.app' ||
         hostname === 'localhost' ||
         hostname === '127.0.0.1' ||
