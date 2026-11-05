@@ -29,6 +29,8 @@ import { apiPost } from '../lib/apiClient';
 import { safeImgUrl, sanitizeImgUrl } from '../lib/seo';
 import { SecondaryHeader } from '../components/header/SecondaryHeader';
 
+const SAFE_AVATAR_PATTERN = /^(?:https?:\/\/(?:(?:[a-zA-Z0-9-]+\.)*(?:githubusercontent\.com|googleusercontent\.com|supabase\.co|tmdb\.org|unsplash\.com|tvmaze\.com|vercel\.app)|localhost|127\.0\.0\.1)(?::\d+)?\/[a-zA-Z0-9_.\/&=%?#+-]*|\/[a-zA-Z0-9_.\/&=%?#+-]*)$/i;
+
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-container watchlists-dashboard-layout" style={{ background: '#121212' }}>
@@ -226,16 +228,9 @@ export function WatchlistsDashboard() {
 
   const topWatchedPosters = useMemo(() => {
     return watched.slice(0, 3).map(w => {
-      if (!w.poster_url) return '';
-      try {
-        const parsed = new URL(w.poster_url);
-        if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-          return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-        }
-      } catch {
-        if (w.poster_url.startsWith('/') && !w.poster_url.startsWith('//')) {
-          return w.poster_url;
-        }
+      const clean = safeImgUrl(w.poster_url);
+      if (clean && SAFE_AVATAR_PATTERN.test(clean)) {
+        return clean.replace(/[<>"']/g, '');
       }
       return '';
     }).filter(Boolean) as string[];
@@ -515,7 +510,9 @@ export function WatchlistsDashboard() {
     );
   }
 
-  const displayAvatarUrl = useMemo(() => safeImgUrl(avatarUrl), [avatarUrl]);
+  const cleanAvatarUrl = safeImgUrl(avatarUrl);
+  const isAvatarSafe = typeof cleanAvatarUrl === 'string' && SAFE_AVATAR_PATTERN.test(cleanAvatarUrl);
+  const displayAvatarUrl = isAvatarSafe ? cleanAvatarUrl.replace(/[<>"']/g, '') : '';
 
   return (
     <DashboardLayout>
@@ -698,20 +695,10 @@ export function WatchlistsDashboard() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
               {watched.map((item) => {
-                const displayPosterUrl = (() => {
-                  if (!item.poster_url) return '';
-                  try {
-                    const parsed = new URL(item.poster_url);
-                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-                      return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-                    }
-                  } catch {
-                    if (item.poster_url.startsWith('/') && !item.poster_url.startsWith('//')) {
-                      return item.poster_url;
-                    }
-                  }
-                  return '';
-                })();
+                const cleanPoster = safeImgUrl(item.poster_url);
+                const displayPosterUrl = cleanPoster && SAFE_AVATAR_PATTERN.test(cleanPoster)
+                  ? cleanPoster.replace(/[<>"']/g, '')
+                  : '';
 
                 const safeMediaType = item.media_type === 'tv' ? 'tv' : 'movie';
                 const safeTmdbId = String(item.tmdb_id).replace(/[^0-9]/g, '');
@@ -963,17 +950,9 @@ export function WatchlistsDashboard() {
               {folders.map((folder, index) => {
                 const heroItem = folder.items[0];
                 const topPosters = folder.items.slice(0, 3).map(item => {
-                  const url = item.movie?.poster_url;
-                  if (!url) return '';
-                  try {
-                    const parsed = new URL(url);
-                    if (parsed.protocol === 'https:' && (parsed.hostname === 'image.tmdb.org' || parsed.hostname.endsWith('supabase.co'))) {
-                      return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-                    }
-                  } catch {
-                    if (url.startsWith('/') && !url.startsWith('//')) {
-                      return url;
-                    }
+                  const clean = safeImgUrl(item.movie?.poster_url);
+                  if (clean && SAFE_AVATAR_PATTERN.test(clean)) {
+                    return clean.replace(/[<>"']/g, '');
                   }
                   return '';
                 }).filter(Boolean) as string[];
