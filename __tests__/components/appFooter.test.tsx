@@ -34,6 +34,7 @@ describe('AppFooter Component', () => {
     const html = renderToStaticMarkup(<AppFooter />);
 
     expect(html).toContain('TMDB');
+    expect(html).toContain('This product uses the TMDB API but is not endorsed or certified by TMDB.');
     expect(html).toContain('https://github.com/mfscpayload-690/moviemonk-ai');
     expect(html).toContain('Contribute');
     expect(html).toContain('MIT License');
