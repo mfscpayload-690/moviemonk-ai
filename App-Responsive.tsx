@@ -988,7 +988,7 @@ const App: React.FC = () => {
         }
 
         {/* Main Content Area - Full width Featured UI */}
-        <div className="main-content pb-4 sm:pb-6">
+        <div className="main-content">
           <Suspense
             fallback={
               <div className="w-full flex items-center justify-center py-10 text-sm text-brand-text-light/80">
