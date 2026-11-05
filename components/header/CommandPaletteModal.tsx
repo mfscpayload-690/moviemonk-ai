@@ -130,6 +130,18 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       const rawRecents = localStorage.getItem(STORAGE_KEY_RECENT_SEARCHES);
       if (rawRecents) {
         setRecentSearches(JSON.parse(rawRecents));
+      } else {
+        const rawLegacy = localStorage.getItem('moviemonk_search_history_v1');
+        if (rawLegacy) {
+          const parsed = JSON.parse(rawLegacy);
+          if (Array.isArray(parsed)) {
+            const list = parsed
+              .map((item: any) => (typeof item === 'string' ? item : item?.query))
+              .filter(Boolean)
+              .slice(0, 5);
+            setRecentSearches(list);
+          }
+        }
       }
     } catch {
       // Ignore storage errors
@@ -170,10 +182,15 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     abortRef.current = controller;
 
     setIsSuggesting(true);
-    apiGet<SuggestionItem[]>('/api/suggest', { q: trimmed })
+    apiGet<any>('/api/suggest', { q: trimmed })
       .then((data) => {
         if (!controller.signal.aborted) {
-          setSuggestions(Array.isArray(data) ? data.slice(0, 7) : []);
+          const rawList = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.suggestions)
+            ? data.suggestions
+            : [];
+          setSuggestions(rawList.slice(0, 7));
           setIsSuggesting(false);
         }
       })
@@ -203,6 +220,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     setRecentSearches([]);
     try {
       localStorage.removeItem(STORAGE_KEY_RECENT_SEARCHES);
+      localStorage.removeItem('moviemonk_search_history_v1');
+      localStorage.removeItem('moviemonk_autocomplete_cache_v1');
     } catch {
       // Ignore
     }
