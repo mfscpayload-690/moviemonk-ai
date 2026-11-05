@@ -274,6 +274,12 @@ Rejected premiere wordmark variant:
     text-shadow: 0 2px 16px rgba(168, 85, 247, 0.18);
 }
 
+@media (max-width: 767px) {
+    .app-header .brand-signature {
+        display: none !important;
+    }
+}
+
 @media (max-width: 639px) {
     .brand-signature {
         gap: 0.015em;
@@ -281,12 +287,12 @@ Rejected premiere wordmark variant:
 }
 
 :root {
-    --header-height: 104px;
+    --header-height: 64px;
 }
 
 @media (min-width: 640px) {
     :root {
-        --header-height: 64px;
+        --header-height: 68px;
     }
 }
 
@@ -305,12 +311,25 @@ Rejected premiere wordmark variant:
     left: 0;
     right: 0;
     z-index: 50;
-    background: rgba(10, 10, 18, 0.82);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+    background: rgba(10, 10, 18, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    transition: background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                border 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.has-overlay-header .app-header.is-scrolled {
+    background: rgba(10, 10, 18, 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(139, 92, 246, 0.12);
 }
 
 .has-overlay-header .main-content {
@@ -2846,12 +2865,18 @@ a:focus-visible {
 }
 
 .app-header {
-    background: rgba(10, 10, 18, 0.82);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+    transition: background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                border 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-header.is-scrolled {
+    background: rgba(10, 10, 18, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.12);
 }
 
 /* Header Logo Animations */
@@ -3828,16 +3853,17 @@ a:focus-visible {
 
 @media (min-width: 768px) {
     .discovery-page {
-        padding: 1.2rem 0 6rem;
+        padding: 1.25rem 0 6rem;
     }
 
     .discovery-section {
-        padding: 0 1.2rem;
+        padding: 0 1.25rem;
         margin-top: 2.2rem;
     }
 
-    .discovery-hero {
-        margin: 0 1.2rem;
+    .discovery-hero,
+    .discovery-hero-wrapper {
+        margin: 0 1.25rem;
     }
 
     .discovery-carousel {
