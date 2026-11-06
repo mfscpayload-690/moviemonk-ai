@@ -937,7 +937,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                 preloadImage={movie.poster_url || movie.backdrop_url || undefined}
             />
             {/* Hero Section with Poster Card */}
-            <div className="relative w-full min-h-[55vh] md:min-h-[70vh] mb-6 md:mb-8 overflow-hidden">
+            <div className="relative w-full min-h-[60vh] md:min-h-[75vh] mb-6 md:mb-8 overflow-hidden">
                 {/* Backdrop Image Layer */}
                 {movie.backdrop_url && (
                     <img
@@ -951,11 +951,15 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                     />
                 )}
                 {/* Gradient Overlays - Cinematic */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/60 to-transparent z-10"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-bg)]/90 via-[var(--color-bg)]/40 to-transparent z-10"></div>
+                {/* Top header scrim providing rich dark contrast behind floating header on any backdrop */}
+                <div className="absolute top-0 inset-x-0 h-44 sm:h-52 md:h-60 bg-gradient-to-b from-black/95 via-black/50 to-transparent z-10 pointer-events-none" />
+                {/* Bottom gradient blending into background */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/60 to-transparent z-10 pointer-events-none"></div>
+                {/* Left gradient for title text contrast */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-bg)]/90 via-[var(--color-bg)]/40 to-transparent z-10 pointer-events-none"></div>
 
-                {/* Content Layer - Above gradients */}
-                <div className="relative h-full flex items-end p-4 md:p-12 max-w-screen-xl mx-auto z-20">
+                {/* Content Layer - Above gradients with top clearance for floating header */}
+                <div className="relative h-full flex items-end pt-20 sm:pt-24 md:pt-28 pb-4 sm:pb-8 md:pb-12 px-4 md:px-12 max-w-screen-xl mx-auto z-20">
                     {/* Mobile: column, Desktop: row */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-8 w-full sm:w-auto">
                         {/* Poster Card - Shows Above text on mobile now */}
