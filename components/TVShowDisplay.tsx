@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview, WatchOption, EpisodesResponse } from '../types';
 import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon } from './icons';
-import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
+import { formatAiNotesHtml, hasValidAiNotes } from '../lib/aiNotesFormatter';
 import { apiGet } from '../lib/apiClient';
 import RatingDisplay from './RatingDisplay';
 import SeoHead from './SeoHead';
@@ -385,10 +385,10 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
             </div>
 
             {/* Summary */}
-            {movie.summary_medium && (
+            {(movie.summary_medium || movie.summary_short) && (
                 <div className="tv-show-section">
                     <h2>Overview</h2>
-                    <p className="tv-show-summary">{movie.summary_medium}</p>
+                    <p className="tv-show-summary">{movie.summary_medium || movie.summary_short}</p>
                 </div>
             )}
 
@@ -618,7 +618,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
             )}
 
             {/* Trivia/AI Notes */}
-            {movie.ai_notes && (
+            {hasValidAiNotes(movie.ai_notes) && (
                 <div className="tv-show-section">
                     <h2>Trivia & Facts</h2>
                     <div
@@ -630,8 +630,9 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                 </div>
             )}
 
-            <div className="tv-show-section">
-                <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            {((!reviewsLoading && reviews.length > 0) || reviewsLoading) && (
+                <div className="tv-show-section">
+                    <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
                     <h2>User Reviews</h2>
                     <div className="flex items-center gap-2">
                         <span className="text-[11px] text-brand-text-dark px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
@@ -726,6 +727,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                     </div>
                 )}
             </div>
+            )}
 
             {/* Official Site Link */}
             {tvShow.officialSite && (
