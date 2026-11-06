@@ -29,8 +29,49 @@ function preprocess(raw: string): string {
   return value;
 }
 
-export function formatAiNotesHtml(input: string): string {
-  if (!input || !input.trim()) return '<p>No notes available.</p>';
+const FALLBACK_PHRASES = new Set([
+  'no notes available.',
+  'no notes available',
+  'no trivia available.',
+  'no trivia available',
+  'no trivia or notes available.',
+  'no trivia or notes available',
+  'no notes or trivia available.',
+  'no notes or trivia available',
+  'notes unavailable.',
+  'notes unavailable',
+  'trivia unavailable.',
+  'trivia unavailable',
+  'no data available.',
+  'no data available',
+  'n/a',
+  'none',
+  'none available',
+  'not available',
+  'null',
+  'undefined'
+]);
+
+export function hasValidAiNotes(input: string | null | undefined): boolean {
+  if (!input) return false;
+  const cleaned = input
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[#*`_~-]/g, ' ')
+    .trim();
+  if (!cleaned) return false;
+
+  const normalized = cleaned.toLowerCase().replace(/\s+/g, ' ').trim();
+  if (FALLBACK_PHRASES.has(normalized)) return false;
+
+  if (/^(no\s+(notes|trivia|facts|information|data)\s+(are\s+)?available\.?)$/i.test(normalized)) {
+    return false;
+  }
+
+  return true;
+}
+
+export function formatAiNotesHtml(input: string | null | undefined): string {
+  if (!input || !hasValidAiNotes(input)) return '';
 
   const lines = preprocess(input).split('\n');
   const blocks: string[] = [];
