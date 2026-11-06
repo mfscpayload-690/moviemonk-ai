@@ -7,7 +7,7 @@ import type { AIProvider } from '../types';
 import '../styles/tv-show.css';
 import { VirtualizedList } from './VirtualizedList';
 import { useRenderCounter } from '../lib/perfDebug';
-import { formatAiNotesHtml } from '../lib/aiNotesFormatter';
+import { formatAiNotesHtml, hasValidAiNotes } from '../lib/aiNotesFormatter';
 import RatingDisplay from './RatingDisplay';
 import { WatchlistIconPicker, WatchlistIconBadge, WATCHLIST_ICON_DEFAULT } from './WatchlistIconPicker';
 import { useActionFeedback } from '../hooks/useActionFeedback';
@@ -1141,70 +1141,72 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
             {/* Main Content */}
             <div className={`p-4 md:px-8 grid grid-cols-1 ${hasRightColumn ? 'lg:grid-cols-3' : ''} gap-8 relative z-10`}>
                 <div className={`${hasRightColumn ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-8`}>
-                    <Section title="Synopsis">
-                        <div className="relative">
-                            <p className="text-brand-text-dark text-accessible-muted leading-relaxed">
-                                {movie.summary_medium}
-                            </p>
-                        </div>
+                    {(movie.summary_medium || movie.summary_short) && (
+                        <Section title="Synopsis">
+                            <div className="relative">
+                                <p className="text-brand-text-dark text-accessible-muted leading-relaxed">
+                                    {movie.summary_medium || movie.summary_short}
+                                </p>
+                            </div>
 
-                        {!isSpoilerUnavailable && (
-                            <div className="mt-6">
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={async () => {
-                                            if (!fullPlotContent && movie) {
-                                                setIsLoadingFullPlot(true);
-                                                try {
-                                                    const plot = await onFetchFullPlot(movie.title, movie.year, movie.type, selectedProvider);
-                                                    setFullPlotContent(plot);
-                                                    setShowFullPlot(true);
-                                                } catch (error) {
-                                                    setFullPlotContent("Failed to load full plot details. Please try again.");
-                                                    setShowFullPlot(true);
+                            {!isSpoilerUnavailable && (
+                                <div className="mt-6">
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={async () => {
+                                                if (!fullPlotContent && movie) {
+                                                    setIsLoadingFullPlot(true);
+                                                    try {
+                                                        const plot = await onFetchFullPlot(movie.title, movie.year, movie.type, selectedProvider);
+                                                        setFullPlotContent(plot);
+                                                        setShowFullPlot(true);
+                                                    } catch (error) {
+                                                        setFullPlotContent("Failed to load full plot details. Please try again.");
+                                                        setShowFullPlot(true);
+                                                    }
+                                                    setIsLoadingFullPlot(false);
+                                                    return;
                                                 }
-                                                setIsLoadingFullPlot(false);
-                                                return;
-                                            }
-                                            setShowFullPlot(p => !p);
-                                        }}
-                                        disabled={isLoadingFullPlot}
-                                        aria-controls="spoiler-content"
-                                        aria-expanded={showFullPlot}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors touch-target"
-                                    >
-                                        {isLoadingFullPlot ? (
-                                            <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
-                                        ) : showFullPlot ? (
-                                            <EyeSlashIcon className="w-5 h-5" />
-                                        ) : (
-                                            <EyeIcon className="w-5 h-5" />
-                                        )}
-                                        {fullPlotContent ? (showFullPlot ? 'Hide Spoiler Plot' : 'Show Spoiler Plot') : 'Load Full Plot (Spoilers)'}
-                                    </button>
-                                    {fullPlotContent && (
-                                         <div 
-                                             id="spoiler-content" 
-                                             className={`spoiler-reveal-container ${showFullPlot ? 'is-expanded' : ''}`}
-                                         >
-                                             <div className="min-h-0 overflow-hidden w-full">
-                                                 <div className="cinematic-lens-flare" />
-                                                 <div className="projector-text">
-                                                     <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
-                                                     <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
-                                                         {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
-                                                     </p>
+                                                setShowFullPlot(p => !p);
+                                            }}
+                                            disabled={isLoadingFullPlot}
+                                            aria-controls="spoiler-content"
+                                            aria-expanded={showFullPlot}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm bg-brand-primary/15 hover:bg-brand-primary/25 text-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors touch-target"
+                                        >
+                                            {isLoadingFullPlot ? (
+                                                <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                                            ) : showFullPlot ? (
+                                                <EyeSlashIcon className="w-5 h-5" />
+                                            ) : (
+                                                <EyeIcon className="w-5 h-5" />
+                                            )}
+                                            {fullPlotContent ? (showFullPlot ? 'Hide Spoiler Plot' : 'Show Spoiler Plot') : 'Load Full Plot (Spoilers)'}
+                                        </button>
+                                        {fullPlotContent && (
+                                             <div 
+                                                 id="spoiler-content" 
+                                                 className={`spoiler-reveal-container ${showFullPlot ? 'is-expanded' : ''}`}
+                                             >
+                                                 <div className="min-h-0 overflow-hidden w-full">
+                                                     <div className="cinematic-lens-flare" />
+                                                     <div className="projector-text">
+                                                         <p className="text-sm font-bold text-red-400 mb-2">SPOILER WARNING</p>
+                                                         <p className="text-brand-text-dark leading-relaxed whitespace-pre-wrap">
+                                                             {fullPlotContent.replace(/^SPOILER WARNING\s*(—\s*.*?)?(\n+|$)/i, '').trim()}
+                                                         </p>
+                                                     </div>
                                                  </div>
                                              </div>
-                                         </div>
-                                     )}
-                                     {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
-                                         <p className="text-sm text-brand-text-dark italic animate-fade-in">No spoiler plot available yet.</p>
-                                     )}
+                                         )}
+                                         {showFullPlot && !fullPlotContent && !isLoadingFullPlot && (
+                                             <p className="text-sm text-brand-text-dark italic animate-fade-in">No spoiler plot available yet.</p>
+                                         )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </Section>
+                            )}
+                        </Section>
+                    )}
 
                     {isTV && movie.tvShow && movie.tvShow.totalSeasons > 0 && (
                         <Section title="Episodes">
@@ -1370,75 +1372,92 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                         </Section>
                     )}
 
-                    <Section title="Cast & Crew">
-                        {shouldVirtualizeCast ? (
-                            <div className="content-visibility-auto">
-                                <VirtualizedList
-                                    items={safeCast}
-                                    itemHeight={128}
-                                    height={castListHeight}
-                                    renderItem={(item) => renderCastItem(item)}
-                                />
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {displayedCast.map(member => (
-                                    <CastCard
-                                        key={member.id || member.name}
-                                        member={member}
-                                        onClick={() => {
-                                            if (member.id && onOpenPerson) {
-                                                onOpenPerson(member.id, member.name);
-                                            } else {
-                                                onQuickSearch(member.name);
-                                            }
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                        {safeCast.length > 8 && (
-                            <div className="mt-4 text-center">
-                                <button
-                                    onClick={() => setShowAllCast(!showAllCast)}
-                                    className="px-5 py-2.5 text-sm font-semibold text-brand-primary bg-brand-primary/10 rounded-full hover:bg-brand-primary/20 transition-colors touch-target"
-                                >
-                                    {showAllCast ? 'Show Less' : `Show ${safeCast.length - 8} More`}
-                                </button>
-                            </div>
-                        )}
-                        {/* Crew Cards */}
-                        {(movie.crew?.director || movie.crew?.writer || movie.crew?.music) && (() => {
-                            const crewEntries: { names: string[]; role: string }[] = [
-                                { names: (movie.crew?.director || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Director' },
-                                { names: (movie.crew?.writer || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Writer' },
-                                { names: (movie.crew?.music || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Composer' },
-                            ].filter(e => e.names.length > 0 && e.names[0] !== 'Unknown');
+                    {/* Cast & Crew */}
+                    {(() => {
+                        const hasCast = safeCast.length > 0;
+                        const crewEntries: { names: string[]; role: string }[] = (movie.crew?.director || movie.crew?.writer || movie.crew?.music) ? [
+                            { names: (movie.crew?.director || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Director' },
+                            { names: (movie.crew?.writer || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Writer' },
+                            { names: (movie.crew?.music || '').split(',').map((n: string) => n.trim()).filter(Boolean), role: 'Composer' },
+                        ].filter(e => e.names.length > 0 && e.names[0] !== 'Unknown') : [];
+                        const hasCrew = crewEntries.length > 0;
 
-                            if (crewEntries.length === 0) return null;
-                            return (
-                                <div className="mt-6">
-                                    <p className="text-xs font-semibold text-brand-text-dark uppercase tracking-widest mb-3">Behind the Camera</p>
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                        {crewEntries.flatMap(({ names, role }) =>
-                                            names.map(name => (
-                                                <CrewCard
-                                                    key={`${role}-${name}`}
-                                                    name={name}
-                                                    role={role}
-                                                    onClick={() => onQuickSearch(name)}
+                        if (!hasCast && !hasCrew) return null;
+
+                        const sectionTitle = hasCast && hasCrew ? 'Cast & Crew' : hasCast ? 'Cast' : 'Behind the Camera';
+
+                        return (
+                            <Section title={sectionTitle}>
+                                {hasCast && (
+                                    <>
+                                        {shouldVirtualizeCast ? (
+                                            <div className="content-visibility-auto">
+                                                <VirtualizedList
+                                                    items={safeCast}
+                                                    itemHeight={128}
+                                                    height={castListHeight}
+                                                    renderItem={(item) => renderCastItem(item)}
                                                 />
-                                            ))
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                {displayedCast.map(member => (
+                                                    <CastCard
+                                                        key={member.id || member.name}
+                                                        member={member}
+                                                        onClick={() => {
+                                                            if (member.id && onOpenPerson) {
+                                                                onOpenPerson(member.id, member.name);
+                                                            } else {
+                                                                onQuickSearch(member.name);
+                                                            }
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
                                         )}
-                                    </div>
-                                </div>
-                            );
-                        })()}
-                    </Section>
+                                        {safeCast.length > 8 && (
+                                            <div className="mt-4 text-center">
+                                                <button
+                                                    onClick={() => setShowAllCast(!showAllCast)}
+                                                    className="px-5 py-2.5 text-sm font-semibold text-brand-primary bg-brand-primary/10 rounded-full hover:bg-brand-primary/20 transition-colors touch-target"
+                                                >
+                                                    {showAllCast ? 'Show Less' : `Show ${safeCast.length - 8} More`}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
 
-                    <Section title="AI Notes & Trivia">
-                        <div className="ai-notes-rich" dangerouslySetInnerHTML={{ __html: formatAiNotesHtml(movie.ai_notes) }} />
-                    </Section>
+                                {hasCrew && (
+                                    <div className={hasCast ? "mt-6" : ""}>
+                                        {hasCast && (
+                                            <p className="text-xs font-semibold text-brand-text-dark uppercase tracking-widest mb-3">Behind the Camera</p>
+                                        )}
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                            {crewEntries.flatMap(({ names, role }) =>
+                                                names.map(name => (
+                                                    <CrewCard
+                                                        key={`${role}-${name}`}
+                                                        name={name}
+                                                        role={role}
+                                                        onClick={() => onQuickSearch(name)}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </Section>
+                        );
+                    })()}
+
+                    {/* AI Notes & Trivia */}
+                    {hasValidAiNotes(movie.ai_notes) && (
+                        <Section title="AI Notes & Trivia">
+                            <div className="ai-notes-rich" dangerouslySetInnerHTML={{ __html: formatAiNotesHtml(movie.ai_notes) }} />
+                        </Section>
+                    )}
                 </div>
 
                 {hasRightColumn && (
