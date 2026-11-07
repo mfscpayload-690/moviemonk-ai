@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { track } from '@vercel/analytics/react';
-import { RotateCcw } from 'lucide-react';
 import ContentCarousel from './ContentCarousel';
-import GenrePills from './GenrePills';
 import HeroSpotlight from './HeroSpotlight';
-import { useDiscovery } from '../hooks/useDiscovery';
+import { useDiscovery, getPrioritizedGenreList, GenreRail } from '../hooks/useDiscovery';
 import { loadReleaseRadarSnapshot, hasRadarInputs } from '../services/releaseRadarService';
 import {
   recordDiscoveryCardOpened,
@@ -14,7 +12,6 @@ import {
 } from '../services/observability';
 import { loadPreferenceSettings, savePreferenceSettings } from '../lib/userSettings';
 import { DiscoveryItem, WatchlistFolder } from '../types';
-import { buildRevealStyle, getRevealClassName, useScrollReveal } from '../hooks/useScrollReveal';
 
 interface DiscoveryPageProps {
   onOpenTitle: (item: { id: number; mediaType: 'movie' | 'tv' }) => void;
@@ -59,6 +56,10 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    genreRails,
+    loadMoreGenres,
+    loadSpecificGenre,
+    isLoadingMoreGenres,
     cardDensity,
     isStrictPersonalized,
     isLoading,
@@ -68,12 +69,43 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
     selectGenre
   } = useDiscovery();
 
+  const curatedGenreList = useMemo(() => {
+    const prefs = loadPreferenceSettings();
+    if (typeof getPrioritizedGenreList === 'function') {
+      return getPrioritizedGenreList(movieGenres, prefs.genres);
+    }
+    return movieGenres;
+  }, [movieGenres]);
+
+  const effectiveGenreRails = useMemo<GenreRail[]>(() => {
+    if (genreRails && genreRails.length > 0) {
+      return genreRails;
+    }
+    if (selectedGenre) {
+      return [{ genre: selectedGenre, items: selectedGenreItems, isLoading: isLoading || isGenreLoading }];
+    }
+    return [];
+  }, [genreRails, selectedGenre, selectedGenreItems, isLoading, isGenreLoading]);
+
+  const totalCuratedCount = curatedGenreList.length || 8;
+  const loadedGenreCount = effectiveGenreRails.length;
+  const hasMoreGenres = Boolean(loadedGenreCount < totalCuratedCount && movieGenres.length > 0);
+
+  const handleLoadMoreGenres = useCallback(() => {
+    if (loadMoreGenres) {
+      void loadMoreGenres();
+      track('discovery_genre_rails_expanded', {
+        currently_loaded: effectiveGenreRails.length,
+        total: totalCuratedCount
+      });
+    }
+  }, [effectiveGenreRails.length, loadMoreGenres, totalCuratedCount]);
+
   const heroCandidates = heroItems.length ? heroItems : (sections[0]?.items || []).slice(0, 5);
   const [radarItems, setRadarItems] = useState<DiscoveryItem[]>([]);
   const [radarLoading, setRadarLoading] = useState(false);
   const [showDeferredSections, setShowDeferredSections] = useState(!HAS_IDLE_CALLBACK_SUPPORT);
   const [railOrder, setRailOrder] = useState<string[]>(() => loadRailOrder());
-  const { ref: moodRevealRef, isRevealed: isMoodRevealed } = useScrollReveal<HTMLElement>();
   const prioritySections = useMemo(() => sections.slice(0, PRIORITY_SECTION_COUNT), [sections]);
   const deferredSections = useMemo(() => sections.slice(PRIORITY_SECTION_COUNT), [sections]);
 
@@ -268,37 +300,13 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
         </section>
       )}
 
-      <section
-        ref={moodRevealRef}
-        className={getRevealClassName(isMoodRevealed, 'fade', 'discovery-section')}
-        data-reveal-variant="fade"
-        style={buildRevealStyle(0, 420)}
-      >
-        <div
-          className={getRevealClassName(isMoodRevealed, 'rise-up', 'discovery-section-heading genre-heading')}
-          data-reveal-variant="rise-up"
-          style={buildRevealStyle(60, 420)}
-        >
-          <div>
-            <h2 className="discovery-section-title">Browse by mood</h2>
-          </div>
-          <div className="mm-section-toolbar">
-            {selectedGenre && (
-              <p className="discovery-genre-caption">
-                {isGenreLoading ? 'Refreshing titles...' : `Showing ${selectedGenre.name}`}
-              </p>
-            )}
-            <button type="button" className="mm-icon-button" onClick={() => updateRailOrder(discoveryRails.map((rail) => rail.key))} aria-label="Reset discovery rail order">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <GenrePills genres={movieGenres} selectedGenre={selectedGenre} onSelectGenre={selectGenre} />
+      {effectiveGenreRails.map((rail) => (
         <ContentCarousel
-          sectionKey="genre-picks"
-          title={selectedGenre ? `${selectedGenre.name} Picks` : 'Genre Picks'}
-          items={selectedGenreItems}
-          isLoading={isLoading || isGenreLoading}
+          key={`genre-picks-${rail.genre.id}`}
+          sectionKey={`genre-picks-${rail.genre.id}`}
+          title={`${rail.genre.name} Picks`}
+          items={rail.items}
+          isLoading={rail.isLoading}
           onSectionVisible={handleSectionVisible}
           onSectionSkipped={handleSectionSkipped}
           onCardView={handleCardView}
@@ -308,7 +316,28 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
           onToggleWatched={onToggleWatched}
           onQuickSaveToWatchlist={onQuickSaveToWatchlist}
         />
-      </section>
+      ))}
+
+      {hasMoreGenres ? (
+        <div className="discovery-load-more-genres-wrapper">
+          <button
+            type="button"
+            className="discovery-cta discovery-cta-secondary discovery-load-more-cta"
+            onClick={handleLoadMoreGenres}
+            disabled={isLoadingMoreGenres}
+          >
+            {isLoadingMoreGenres
+              ? 'Loading more genres...'
+              : `Explore More Genres (${loadedGenreCount} of ${totalCuratedCount})`}
+          </button>
+        </div>
+      ) : (
+        movieGenres.length > 0 && loadedGenreCount >= totalCuratedCount && (
+          <div className="discovery-all-genres-explored" role="status">
+            <span>All curated genres explored</span>
+          </div>
+        )
+      )}
     </div>
   );
 };
