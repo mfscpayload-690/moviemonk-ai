@@ -2,7 +2,8 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 jest.mock('../../hooks/useDiscovery', () => ({
-  useDiscovery: jest.fn()
+  useDiscovery: jest.fn(),
+  getPrioritizedGenreList: jest.fn((genres) => genres)
 }));
 jest.mock('../../components/icons', () => ({
   ArrowLeftIcon: () => React.createElement('span', null, '<'),
@@ -142,5 +143,70 @@ describe('DiscoveryPage', () => {
     expect(html).toContain('No personalized matches yet');
     expect(html).toContain('Reset strict filters');
     expect(html).toContain('Tune preferences');
+  });
+
+  it('renders multi-rail genre sections and load more button', () => {
+    mockUseDiscovery.mockReturnValue({
+      heroItems: [],
+      sections: [],
+      movieGenres: [
+        { id: 28, name: 'Action' },
+        { id: 10749, name: 'Romance' },
+        { id: 35, name: 'Comedy' },
+        { id: 27, name: 'Horror' }
+      ],
+      selectedGenre: { id: 28, name: 'Action' },
+      selectedGenreItems: [],
+      genreRails: [
+        { genre: { id: 28, name: 'Action' }, items: [], isLoading: false },
+        { genre: { id: 10749, name: 'Romance' }, items: [], isLoading: false }
+      ],
+      loadMoreGenres: jest.fn(),
+      loadSpecificGenre: jest.fn(),
+      isLoadingMoreGenres: false,
+      cardDensity: 'rich',
+      isStrictPersonalized: false,
+      isLoading: false,
+      isGenreLoading: false,
+      error: null,
+      retry: jest.fn(),
+      selectGenre: jest.fn()
+    });
+
+    const html = renderPage();
+    expect(html).toContain('Action Picks');
+    expect(html).toContain('Romance Picks');
+    expect(html).toContain('Explore More Genres (2 of 4)');
+  });
+
+  it('renders all explored indicator when all genres are loaded', () => {
+    mockUseDiscovery.mockReturnValue({
+      heroItems: [],
+      sections: [],
+      movieGenres: [
+        { id: 28, name: 'Action' },
+        { id: 10749, name: 'Romance' }
+      ],
+      selectedGenre: { id: 28, name: 'Action' },
+      selectedGenreItems: [],
+      genreRails: [
+        { genre: { id: 28, name: 'Action' }, items: [], isLoading: false },
+        { genre: { id: 10749, name: 'Romance' }, items: [], isLoading: false }
+      ],
+      loadMoreGenres: jest.fn(),
+      loadSpecificGenre: jest.fn(),
+      isLoadingMoreGenres: false,
+      cardDensity: 'rich',
+      isStrictPersonalized: false,
+      isLoading: false,
+      isGenreLoading: false,
+      error: null,
+      retry: jest.fn(),
+      selectGenre: jest.fn()
+    });
+
+    const html = renderPage();
+    expect(html).toContain('All curated genres explored');
+    expect(html).not.toContain('Explore More Genres');
   });
 });

@@ -17,6 +17,10 @@ import {
   dedupeSectionsByTitle,
   getCachedDiscoverySnapshot,
   getCuratedMovieGenres,
+  getPrioritizedGenreList,
+  getCachedGenreItems,
+  setCachedGenreItems,
+  clearCachedGenreItems,
   getDiscoveryPreferencesHash,
   loadDiscoverySnapshot,
   pickHeroItems,
@@ -55,6 +59,74 @@ describe('useDiscovery helpers', () => {
       { id: 878, name: 'Science Fiction' },
       { id: 99, name: 'Documentary' }
     ]);
+  });
+
+  it('prioritizes Action and Romance first by default when no preferences are set', () => {
+    const curated = [
+      { id: 99, name: 'Documentary' },
+      { id: 10749, name: 'Romance' },
+      { id: 35, name: 'Comedy' },
+      { id: 28, name: 'Action' }
+    ];
+    const prioritized = getPrioritizedGenreList(curated, []);
+    expect(prioritized.map((g) => g.name)).toEqual([
+      'Action',
+      'Romance',
+      'Comedy',
+      'Documentary'
+    ]);
+  });
+
+  it('prioritizes user preferences when specified', () => {
+    const curated = [
+      { id: 28, name: 'Action' },
+      { id: 10749, name: 'Romance' },
+      { id: 27, name: 'Horror' },
+      { id: 35, name: 'Comedy' }
+    ];
+    const prioritized = getPrioritizedGenreList(curated, ['Horror', 'Comedy']);
+    expect(prioritized.map((g) => g.name)).toEqual([
+      'Comedy',
+      'Horror',
+      'Action',
+      'Romance'
+    ]);
+  });
+
+  describe('genre rails persistent cache', () => {
+    beforeEach(() => {
+      clearCachedGenreItems();
+    });
+
+    it('stores and retrieves cached genre items', () => {
+      const mockItems: any[] = [
+        { id: 101, title: 'Die Hard', media_type: 'movie', tmdb_id: '101' }
+      ];
+      setCachedGenreItems(28, mockItems);
+      const retrieved = getCachedGenreItems(28);
+      expect(retrieved).toEqual(mockItems);
+    });
+
+    it('isolates cache by user preference filter hash', () => {
+      const mockItemsEn: any[] = [
+        { id: 101, title: 'Die Hard (English)', media_type: 'movie', tmdb_id: '101' }
+      ];
+      const mockItemsHi: any[] = [
+        { id: 102, title: 'Sholay (Hindi)', media_type: 'movie', tmdb_id: '102' }
+      ];
+      const prefsEn: any = { genres: [], languages: ['English'], favoriteDecades: [], favoriteRegions: [], contentMix: 'balanced' };
+      const prefsHi: any = { genres: [], languages: ['Hindi'], favoriteDecades: [], favoriteRegions: [], contentMix: 'balanced' };
+
+      setCachedGenreItems(28, mockItemsEn, prefsEn);
+      setCachedGenreItems(28, mockItemsHi, prefsHi);
+
+      expect(getCachedGenreItems(28, prefsEn)).toEqual(mockItemsEn);
+      expect(getCachedGenreItems(28, prefsHi)).toEqual(mockItemsHi);
+    });
+
+    it('returns null for uncached genre ID', () => {
+      expect(getCachedGenreItems(999)).toBeNull();
+    });
   });
 
   it('filters hero candidates to backdrop-ready items and limits count', () => {
