@@ -3536,9 +3536,65 @@ a:focus-visible {
     color: #e9dbff;
 }
 
+.discovery-genre-pill.is-loaded {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.discovery-genre-pill-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #a855f7;
+    margin-right: 0.35rem;
+    box-shadow: 0 0 6px rgba(168, 85, 247, 0.7);
+    vertical-align: middle;
+}
+
 .discovery-genre-caption {
     font-size: 0.8rem;
     color: var(--discovery-text-muted);
+}
+
+.discovery-genre-rails-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.discovery-genre-rail-wrapper {
+    scroll-margin-top: 5rem;
+}
+
+.discovery-load-more-genres-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.75rem 0 2.25rem;
+}
+
+.discovery-load-more-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.65rem 1.4rem;
+    font-size: 0.88rem;
+}
+
+.discovery-load-more-cta:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.discovery-all-genres-explored {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 0 2rem;
+    font-size: 0.8rem;
+    color: var(--discovery-text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .discovery-error {
