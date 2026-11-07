@@ -6,6 +6,7 @@ import { apiGet } from '../lib/apiClient';
 import RatingDisplay from './RatingDisplay';
 import SeoHead from './SeoHead';
 import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
+import { SeasonSelector } from './SeasonSelector';
 import '../styles/tv-show.css';
 
 interface TVShowDisplayProps {
@@ -447,17 +448,14 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                         )}
                     </div>
                     <div className="season-controls">
-                        <select
-                            value={selectedSeason}
-                            onChange={(e) => setSelectedSeason(Number(e.target.value))}
-                            className="season-select"
-                        >
-                            {seasonsData.map(season => (
-                                <option key={season.number} value={season.number}>
-                                    Season {season.number} • {season.episodeCount} eps
-                                </option>
-                            ))}
-                        </select>
+                        <SeasonSelector
+                            seasons={seasonsData.map(season => ({
+                                number: season.number,
+                                episodeCount: season.episodeCount
+                            }))}
+                            selectedSeason={selectedSeason}
+                            onSelectSeason={setSelectedSeason}
+                        />
                     </div>
                 </div>
 
