@@ -54,18 +54,26 @@ function safeParse<T>(value: string | null, fallback: T): T {
 }
 
 export function loadProfileSettings(): UserProfileSettings {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return DEFAULT_PROFILE_SETTINGS;
+  }
   return safeParse<UserProfileSettings>(localStorage.getItem(PROFILE_STORAGE_KEY), DEFAULT_PROFILE_SETTINGS);
 }
 
 export function saveProfileSettings(settings: UserProfileSettings): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
   localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(settings));
 }
 
 export function loadPreferenceSettings(): UserPreferenceSettings {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return DEFAULT_PREFERENCE_SETTINGS;
+  }
   return safeParse<UserPreferenceSettings>(localStorage.getItem(PREFERENCES_STORAGE_KEY), DEFAULT_PREFERENCE_SETTINGS);
 }
 
 export function savePreferenceSettings(settings: UserPreferenceSettings): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
   localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(settings));
   applyPreferenceSettingsToDocument(settings);
   if (typeof window !== 'undefined') {
