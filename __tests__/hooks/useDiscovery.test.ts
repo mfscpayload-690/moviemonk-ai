@@ -17,6 +17,10 @@ import {
   dedupeSectionsByTitle,
   getCachedDiscoverySnapshot,
   getCuratedMovieGenres,
+  getPrioritizedGenreList,
+  getCachedGenreItems,
+  setCachedGenreItems,
+  clearCachedGenreItems,
   getDiscoveryPreferencesHash,
   loadDiscoverySnapshot,
   pickHeroItems,
@@ -55,6 +59,57 @@ describe('useDiscovery helpers', () => {
       { id: 878, name: 'Science Fiction' },
       { id: 99, name: 'Documentary' }
     ]);
+  });
+
+  it('prioritizes Action and Romance first by default when no preferences are set', () => {
+    const curated = [
+      { id: 99, name: 'Documentary' },
+      { id: 10749, name: 'Romance' },
+      { id: 35, name: 'Comedy' },
+      { id: 28, name: 'Action' }
+    ];
+    const prioritized = getPrioritizedGenreList(curated, []);
+    expect(prioritized.map((g) => g.name)).toEqual([
+      'Action',
+      'Romance',
+      'Comedy',
+      'Documentary'
+    ]);
+  });
+
+  it('prioritizes user preferences when specified', () => {
+    const curated = [
+      { id: 28, name: 'Action' },
+      { id: 10749, name: 'Romance' },
+      { id: 27, name: 'Horror' },
+      { id: 35, name: 'Comedy' }
+    ];
+    const prioritized = getPrioritizedGenreList(curated, ['Horror', 'Comedy']);
+    expect(prioritized.map((g) => g.name)).toEqual([
+      'Comedy',
+      'Horror',
+      'Action',
+      'Romance'
+    ]);
+  });
+
+  describe('genre rails persistent cache', () => {
+    beforeEach(() => {
+      clearCachedGenreItems();
+    });
+
+    it('stores and retrieves cached genre items', () => {
+      const mockItems: any[] = [
+        { id: 101, title: 'Die Hard', media_type: 'movie', tmdb_id: '101' }
+      ];
+      setCachedGenreItems(28, mockItems);
+      const retrieved = getCachedGenreItems(28);
+      expect(retrieved).toEqual(mockItems);
+    });
+
+    it('returns null for uncached genre ID', () => {
+      expect(getCachedGenreItems(999)).toBeNull();
+    });
   });
 
   it('filters hero candidates to backdrop-ready items and limits count', () => {
