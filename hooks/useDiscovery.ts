@@ -653,7 +653,7 @@ export function clearCachedDiscoverySnapshot(preferences?: UserPreferenceSetting
   }
 }
 
-export const GENRE_RAILS_CACHE_KEY = 'mm_genre_rails_cache_v1';
+export const GENRE_RAILS_CACHE_KEY_PREFIX = 'mm_genre_rails_cache_v2:';
 export const GENRE_RAILS_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export interface CachedGenreRailEntry {
@@ -661,22 +661,29 @@ export interface CachedGenreRailEntry {
   timestamp: number;
 }
 
-const memoryGenreRailsCache = new Map<number, CachedGenreRailEntry>();
+const memoryGenreRailsCache = new Map<string, CachedGenreRailEntry>();
 
-export function getCachedGenreItems(genreId: number): DiscoveryItem[] | null {
+function getGenreRailsStorageKey(prefs?: UserPreferenceSettings): string {
+  const hash = getDiscoveryPreferencesHash(prefs || DEFAULT_PREFERENCE_SETTINGS);
+  return `${GENRE_RAILS_CACHE_KEY_PREFIX}${hash}`;
+}
+
+export function getCachedGenreItems(genreId: number, prefs?: UserPreferenceSettings): DiscoveryItem[] | null {
+  const hash = getDiscoveryPreferencesHash(prefs || DEFAULT_PREFERENCE_SETTINGS);
+  const memKey = `${hash}:${genreId}`;
   const now = Date.now();
-  const mem = memoryGenreRailsCache.get(genreId);
+  const mem = memoryGenreRailsCache.get(memKey);
   if (mem && Array.isArray(mem.items) && now - mem.timestamp < GENRE_RAILS_TTL_MS) {
     return mem.items;
   }
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(GENRE_RAILS_CACHE_KEY);
+    const raw = localStorage.getItem(getGenreRailsStorageKey(prefs));
     if (!raw) return null;
     const parsed: Record<string, CachedGenreRailEntry> = JSON.parse(raw);
     const entry = parsed[String(genreId)];
     if (entry && Array.isArray(entry.items) && now - entry.timestamp < GENRE_RAILS_TTL_MS) {
-      memoryGenreRailsCache.set(genreId, entry);
+      memoryGenreRailsCache.set(memKey, entry);
       return entry.items;
     }
   } catch {
@@ -685,49 +692,59 @@ export function getCachedGenreItems(genreId: number): DiscoveryItem[] | null {
   return null;
 }
 
-export function setCachedGenreItems(genreId: number, items: DiscoveryItem[]): void {
+export function setCachedGenreItems(
+  genreId: number,
+  items: DiscoveryItem[],
+  prefs?: UserPreferenceSettings
+): void {
   if (!items || items.length === 0) return;
+  const hash = getDiscoveryPreferencesHash(prefs || DEFAULT_PREFERENCE_SETTINGS);
+  const memKey = `${hash}:${genreId}`;
   const now = Date.now();
   const entry: CachedGenreRailEntry = { items, timestamp: now };
-  memoryGenreRailsCache.set(genreId, entry);
+  memoryGenreRailsCache.set(memKey, entry);
 
   if (typeof window === 'undefined') return;
   try {
-    const raw = localStorage.getItem(GENRE_RAILS_CACHE_KEY);
+    const key = getGenreRailsStorageKey(prefs);
+    const raw = localStorage.getItem(key);
     const parsed: Record<string, CachedGenreRailEntry> = raw ? JSON.parse(raw) : {};
     const cleaned: Record<string, CachedGenreRailEntry> = {};
-    Object.entries(parsed).forEach(([key, val]) => {
+    Object.entries(parsed).forEach(([k, val]) => {
       if (val && now - val.timestamp < GENRE_RAILS_TTL_MS) {
-        cleaned[key] = val;
+        cleaned[k] = val;
       }
     });
     cleaned[String(genreId)] = entry;
-    localStorage.setItem(GENRE_RAILS_CACHE_KEY, JSON.stringify(cleaned));
+    localStorage.setItem(key, JSON.stringify(cleaned));
   } catch {
     // quota exceeded fallback
   }
 }
 
-export function getAllCachedGenreItems(): Record<number, DiscoveryItem[]> {
+export function getAllCachedGenreItems(prefs?: UserPreferenceSettings): Record<number, DiscoveryItem[]> {
+  const hash = getDiscoveryPreferencesHash(prefs || DEFAULT_PREFERENCE_SETTINGS);
   const now = Date.now();
   const result: Record<number, DiscoveryItem[]> = {};
+  const prefix = `${hash}:`;
 
-  memoryGenreRailsCache.forEach((entry, id) => {
-    if (entry && Array.isArray(entry.items) && now - entry.timestamp < GENRE_RAILS_TTL_MS) {
+  memoryGenreRailsCache.forEach((entry, k) => {
+    if (k.startsWith(prefix) && entry && Array.isArray(entry.items) && now - entry.timestamp < GENRE_RAILS_TTL_MS) {
+      const id = Number(k.slice(prefix.length));
       result[id] = entry.items;
     }
   });
 
   if (typeof window !== 'undefined') {
     try {
-      const raw = localStorage.getItem(GENRE_RAILS_CACHE_KEY);
+      const raw = localStorage.getItem(getGenreRailsStorageKey(prefs));
       if (raw) {
         const parsed: Record<string, CachedGenreRailEntry> = JSON.parse(raw);
         Object.entries(parsed).forEach(([key, val]) => {
           const id = Number(key);
           if (val && Array.isArray(val.items) && now - val.timestamp < GENRE_RAILS_TTL_MS && !result[id]) {
             result[id] = val.items;
-            memoryGenreRailsCache.set(id, val);
+            memoryGenreRailsCache.set(`${hash}:${id}`, val);
           }
         });
       }
@@ -739,13 +756,32 @@ export function getAllCachedGenreItems(): Record<number, DiscoveryItem[]> {
   return result;
 }
 
-export function clearCachedGenreItems(): void {
-  memoryGenreRailsCache.clear();
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.removeItem(GENRE_RAILS_CACHE_KEY);
-    } catch {
-      // ignore
+export function clearCachedGenreItems(prefs?: UserPreferenceSettings): void {
+  if (prefs) {
+    const hash = getDiscoveryPreferencesHash(prefs);
+    const prefix = `${hash}:`;
+    Array.from(memoryGenreRailsCache.keys()).forEach((k) => {
+      if (k.startsWith(prefix)) memoryGenreRailsCache.delete(k);
+    });
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(getGenreRailsStorageKey(prefs));
+      } catch {
+        // ignore
+      }
+    }
+  } else {
+    memoryGenreRailsCache.clear();
+    if (typeof window !== 'undefined') {
+      try {
+        Object.keys(localStorage).forEach((k) => {
+          if (k.startsWith(GENRE_RAILS_CACHE_KEY_PREFIX) || k === 'mm_genre_rails_cache_v1') {
+            localStorage.removeItem(k);
+          }
+        });
+      } catch {
+        // ignore
+      }
     }
   }
 }
@@ -796,32 +832,21 @@ export function useDiscovery() {
     decadeRanges: DecadeRange[]
   ) => {
     const prioritized = getPrioritizedGenreList(snap.movieGenres, preferences.genres);
-    const cachedAll = getAllCachedGenreItems();
+    const cachedAll = getAllCachedGenreItems(preferences);
 
     // Initial 2 target genres
     const top2 = prioritized.slice(0, 2);
     const initialRails: GenreRail[] = [];
 
-    top2.forEach((g, idx) => {
-      if (idx === 0) {
-        const items =
-          snap.selectedGenre && snap.selectedGenre.id === g.id && snap.selectedGenreItems.length > 0
-            ? snap.selectedGenreItems
-            : (cachedAll[g.id] || []);
-        if (items.length > 0) {
-          setCachedGenreItems(g.id, items);
-          genreCacheRef.current.set(g.id, items);
-        }
-        initialRails.push({ genre: g, items, isLoading: items.length === 0 });
-      } else {
-        const cached = cachedAll[g.id];
-        if (cached && cached.length > 0) {
-          genreCacheRef.current.set(g.id, cached);
-          initialRails.push({ genre: g, items: cached, isLoading: false });
-        } else {
-          initialRails.push({ genre: g, items: [], isLoading: true });
-        }
+    top2.forEach((g) => {
+      const isSelected =
+        snap.selectedGenre && snap.selectedGenre.id === g.id && snap.selectedGenreItems.length > 0;
+      const items = isSelected ? snap.selectedGenreItems : (cachedAll[g.id] || []);
+      if (items.length > 0) {
+        setCachedGenreItems(g.id, items, preferences);
+        genreCacheRef.current.set(g.id, items);
       }
+      initialRails.push({ genre: g, items, isLoading: items.length === 0 });
     });
 
     // Also restore any previously loaded genres from localStorage cache
@@ -838,26 +863,31 @@ export function useDiscovery() {
 
     setGenreRails(initialRails);
 
-    // Background-fetch second genre if not already cached
-    if (top2[1] && (!cachedAll[top2[1].id] || cachedAll[top2[1].id].length === 0)) {
-      const secondGenre = top2[1];
-      void (async () => {
-        try {
-          const raw = await fetchByGenre(secondGenre.id, 'movie');
-          const items = applyStrictFilters(raw, languageCodes, decadeRanges);
-          setCachedGenreItems(secondGenre.id, items);
-          genreCacheRef.current.set(secondGenre.id, items);
-          setGenreRails((prev) =>
-            prev.map((r) => (r.genre.id === secondGenre.id ? { ...r, items, isLoading: false } : r))
-          );
-        } catch {
-          setGenreRails((prev) =>
-            prev.map((r) => (r.genre.id === secondGenre.id ? { ...r, isLoading: false } : r))
-          );
-        }
-      })();
-    }
-  }, [preferences.genres]);
+    // Background-fetch every initial rail that has no items yet
+    initialRails
+      .filter((r) => r.isLoading)
+      .forEach(({ genre }) => {
+        if (inFlightGenreRequestsRef.current.has(genre.id)) return;
+        inFlightGenreRequestsRef.current.add(genre.id);
+        void (async () => {
+          try {
+            const raw = await fetchByGenre(genre.id, 'movie');
+            const items = applyStrictFilters(raw, languageCodes, decadeRanges);
+            setCachedGenreItems(genre.id, items, preferences);
+            genreCacheRef.current.set(genre.id, items);
+            setGenreRails((prev) =>
+              prev.map((r) => (r.genre.id === genre.id ? { ...r, items, isLoading: false } : r))
+            );
+          } catch {
+            setGenreRails((prev) =>
+              prev.map((r) => (r.genre.id === genre.id ? { ...r, isLoading: false } : r))
+            );
+          } finally {
+            inFlightGenreRequestsRef.current.delete(genre.id);
+          }
+        })();
+      });
+  }, [preferences]);
 
   const load = useCallback(async (signal?: AbortSignal, forceFresh = false) => {
     const cachedEntry = !forceFresh ? getCachedDiscoverySnapshot(preferences) : null;
@@ -969,7 +999,7 @@ export function useDiscovery() {
     genreRequestRef.current?.abort();
     setSelectedGenre(genre);
 
-    const cached = genreCacheRef.current.get(genre.id) || getCachedGenreItems(genre.id);
+    const cached = genreCacheRef.current.get(genre.id) || getCachedGenreItems(genre.id, preferences);
 
     setGenreRails((prev) => {
       const exists = prev.some((r) => r.genre.id === genre.id);
@@ -1001,7 +1031,7 @@ export function useDiscovery() {
       const items = applyStrictFilters(raw, strictLanguageCodes, strictDecadeRanges);
       if (controller.signal.aborted) return;
       genreCacheRef.current.set(genre.id, items);
-      setCachedGenreItems(genre.id, items);
+      setCachedGenreItems(genre.id, items, preferences);
       setSelectedGenreItems(items);
       setGenreRails((prev) =>
         prev.map((r) => (r.genre.id === genre.id ? { ...r, items, isLoading: false } : r))
@@ -1010,9 +1040,7 @@ export function useDiscovery() {
       if (err?.name !== 'AbortError') {
         emitClientError(err, { context: 'load_specific_genre_rail', genreId: genre.id, genreName: genre.name });
         setError('Failed to load genre titles. Please try again.');
-        setGenreRails((prev) =>
-          prev.map((r) => (r.genre.id === genre.id ? { ...r, isLoading: false } : r))
-        );
+        setGenreRails((prev) => prev.filter((r) => r.genre.id !== genre.id));
       }
     } finally {
       inFlightGenreRequestsRef.current.delete(genre.id);
@@ -1020,7 +1048,7 @@ export function useDiscovery() {
         setIsGenreLoading(false);
       }
     }
-  }, [strictDecadeRanges, strictLanguageCodes]);
+  }, [preferences, strictDecadeRanges, strictLanguageCodes]);
 
   const loadMoreGenres = useCallback(async () => {
     if (isLoadingMoreGenres || !movieGenres.length) return;
@@ -1039,7 +1067,7 @@ export function useDiscovery() {
     try {
       await Promise.all(
         nextGenresToLoad.map(async (genre) => {
-          const cached = genreCacheRef.current.get(genre.id) || getCachedGenreItems(genre.id);
+          const cached = genreCacheRef.current.get(genre.id) || getCachedGenreItems(genre.id, preferences);
           if (cached && cached.length > 0) {
             genreCacheRef.current.set(genre.id, cached);
             setGenreRails((prev) =>
@@ -1051,23 +1079,21 @@ export function useDiscovery() {
           try {
             const raw = await fetchByGenre(genre.id, 'movie');
             const items = applyStrictFilters(raw, strictLanguageCodes, strictDecadeRanges);
-            setCachedGenreItems(genre.id, items);
+            setCachedGenreItems(genre.id, items, preferences);
             genreCacheRef.current.set(genre.id, items);
             setGenreRails((prev) =>
               prev.map((r) => (r.genre.id === genre.id ? { ...r, items, isLoading: false } : r))
             );
           } catch (err: any) {
             emitClientError(err, { context: 'load_more_genre_rail', genreId: genre.id, genreName: genre.name });
-            setGenreRails((prev) =>
-              prev.map((r) => (r.genre.id === genre.id ? { ...r, isLoading: false } : r))
-            );
+            setGenreRails((prev) => prev.filter((r) => r.genre.id !== genre.id));
           }
         })
       );
     } finally {
       setIsLoadingMoreGenres(false);
     }
-  }, [genreRails, isLoadingMoreGenres, movieGenres, preferences.genres, strictDecadeRanges, strictLanguageCodes]);
+  }, [genreRails, isLoadingMoreGenres, movieGenres, preferences, strictDecadeRanges, strictLanguageCodes]);
 
   const selectGenre = loadSpecificGenre;
 
