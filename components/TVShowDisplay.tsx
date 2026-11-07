@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MovieData, TVShowEpisode, TVShowSeason, TmdbReview, WatchOption, EpisodesResponse } from '../types';
-import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon } from './icons';
+import { PlayIcon, CalendarIcon, ClockIcon, StarIcon, TvIcon, LinkIcon, WatchedIcon, ChevronDownIcon } from './icons';
 import { formatAiNotesHtml, hasValidAiNotes } from '../lib/aiNotesFormatter';
 import { apiGet } from '../lib/apiClient';
 import RatingDisplay from './RatingDisplay';
@@ -87,6 +87,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
     const [episodesMap, setEpisodesMap] = useState<Record<number, TVShowEpisode[]>>({});
     const [episodesLoading, setEpisodesLoading] = useState<boolean>(false);
     const [episodesSource, setEpisodesSource] = useState<Record<number, string>>({});
+    const [showAllEpisodes, setShowAllEpisodes] = useState(false);
 
     if (!movie.tvShow) {
         return <div className="error">No TV show data available</div>;
@@ -244,6 +245,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
     useEffect(() => {
         if (movie.tmdb_id) {
             void loadEpisodes(selectedSeason);
+            setShowAllEpisodes(false);
         }
     }, [movie.tmdb_id, selectedSeason, loadEpisodes]);
 
@@ -505,89 +507,103 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                             ))}
                         </div>
                     ) : episodesForSeason.length > 0 ? (
-                        episodesForSeason.map((episode) => (
-                            <div
-                                key={episode.id}
-                                className={`episode-card-enhanced ${expandedEpisode === episode.id ? 'expanded' : ''}`}
-                                onClick={() => setExpandedEpisode(expandedEpisode === episode.id ? null : episode.id)}
-                            >
-                                <div className="episode-card-inner">
-                                    {episode.image && (
-                                        <div className="episode-thumbnail-container">
-                                            <img
-                                                src={episode.image}
-                                                alt={episode.name}
-                                                className="episode-thumbnail-enhanced"
-                                            />
-                                            <div className="episode-play-overlay">
-                                                <PlayIcon className="play-icon" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="episode-content">
-                                        <div className="episode-top">
-                                            <div className="episode-number-badge">
-                                                E{String(episode.episode).padStart(2, '0')}
-                                            </div>
-                                            {episode.rating && (
-                                                <div className="episode-rating-badge">
-                                                    <StarIcon className="icon-tiny" />
-                                                    <span>{episode.rating.toFixed(1)}</span>
+                        <>
+                            {(showAllEpisodes ? episodesForSeason : episodesForSeason.slice(0, 10)).map((episode) => (
+                                <div
+                                    key={episode.id}
+                                    className={`episode-card-enhanced ${expandedEpisode === episode.id ? 'expanded' : ''}`}
+                                    onClick={() => setExpandedEpisode(expandedEpisode === episode.id ? null : episode.id)}
+                                >
+                                    <div className="episode-card-inner">
+                                        {episode.image && (
+                                            <div className="episode-thumbnail-container">
+                                                <img
+                                                    src={episode.image}
+                                                    alt={episode.name}
+                                                    className="episode-thumbnail-enhanced"
+                                                />
+                                                <div className="episode-play-overlay">
+                                                    <PlayIcon className="play-icon" />
                                                 </div>
-                                            )}
-                                        </div>
-
-                                        <h3 className="episode-title-enhanced">{episode.name}</h3>
-
-                                        <div className="episode-meta-enhanced">
-                                            <div className="episode-meta-item">
-                                                <CalendarIcon className="icon-tiny" />
-                                                <span>{new Date(episode.airdate).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}</span>
-                                            </div>
-
-                                            {episode.runtime && (
-                                                <div className="episode-meta-item">
-                                                    <ClockIcon className="icon-tiny" />
-                                                    <span>{episode.runtime}m</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {expandedEpisode === episode.id && episode.summary && (
-                                            <div className="episode-summary-enhanced">
-                                                <p>{stripHtmlTags(episode.summary)}</p>
                                             </div>
                                         )}
+
+                                        <div className="episode-content">
+                                            <div className="episode-top">
+                                                <div className="episode-number-badge">
+                                                    E{String(episode.episode).padStart(2, '0')}
+                                                </div>
+                                                {episode.rating && (
+                                                    <div className="episode-rating-badge">
+                                                        <StarIcon className="icon-tiny" />
+                                                        <span>{episode.rating.toFixed(1)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <h3 className="episode-title-enhanced">{episode.name}</h3>
+
+                                            <div className="episode-meta-enhanced">
+                                                <div className="episode-meta-item">
+                                                    <CalendarIcon className="icon-tiny" />
+                                                    <span>{new Date(episode.airdate).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    })}</span>
+                                                </div>
+
+                                                {episode.runtime && (
+                                                    <div className="episode-meta-item">
+                                                        <ClockIcon className="icon-tiny" />
+                                                        <span>{episode.runtime}m</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {expandedEpisode === episode.id && episode.summary && (
+                                                <div className="episode-summary-enhanced">
+                                                    <p>{stripHtmlTags(episode.summary)}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="episode-expand-indicator">
+                                        <span className="expand-text">
+                                            {expandedEpisode === episode.id ? 'Show less' : 'Show more'}
+                                        </span>
+                                        <svg
+                                            className={`expand-arrow ${expandedEpisode === episode.id ? 'rotated' : ''}`}
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 16 16"
+                                            fill="none"
+                                        >
+                                            <path
+                                                d="M4 6L8 10L12 6"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
                                     </div>
                                 </div>
-
-                                <div className="episode-expand-indicator">
-                                    <span className="expand-text">
-                                        {expandedEpisode === episode.id ? 'Show less' : 'Show more'}
-                                    </span>
-                                    <svg
-                                        className={`expand-arrow ${expandedEpisode === episode.id ? 'rotated' : ''}`}
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 16 16"
-                                        fill="none"
+                            ))}
+                            {episodesForSeason.length > 10 && (
+                                <div className="pt-2 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAllEpisodes(!showAllEpisodes)}
+                                        className="px-5 py-2.5 text-sm font-semibold text-brand-primary bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/20 rounded-full transition-all inline-flex items-center gap-2 cursor-pointer touch-target"
                                     >
-                                        <path
-                                            d="M4 6L8 10L12 6"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
+                                        <span>{showAllEpisodes ? 'Show Less' : `View More (${episodesForSeason.length - 10} remaining)`}</span>
+                                        <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${showAllEpisodes ? 'rotate-180' : ''}`} />
+                                    </button>
                                 </div>
-                            </div>
-                        ))
+                            )}
+                        </>
                     ) : (
                         <div className="no-episodes">
                             <TvIcon className="no-episodes-icon" />
