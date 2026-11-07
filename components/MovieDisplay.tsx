@@ -1146,16 +1146,18 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
             {/* Main Content */}
             <div className={`p-4 md:px-8 grid grid-cols-1 ${hasRightColumn ? 'lg:grid-cols-3' : ''} gap-8 relative z-10`}>
                 <div className={`${hasRightColumn ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-8`}>
-                    {(movie.summary_medium || movie.summary_short) && (
+                    {(movie.summary_medium || movie.summary_short || !isSpoilerUnavailable) && (
                         <Section title="Synopsis">
-                            <div className="relative">
-                                <p className="text-brand-text-dark text-accessible-muted leading-relaxed">
-                                    {movie.summary_medium || movie.summary_short}
-                                </p>
-                            </div>
+                            {(movie.summary_medium || movie.summary_short) && (
+                                <div className="relative">
+                                    <p className="text-brand-text-dark text-accessible-muted leading-relaxed">
+                                        {movie.summary_medium || movie.summary_short}
+                                    </p>
+                                </div>
+                            )}
 
                             {!isSpoilerUnavailable && (
-                                <div className="mt-6">
+                                <div className={movie.summary_medium || movie.summary_short ? "mt-6" : ""}>
                                     <div className="space-y-3">
                                         <button
                                             onClick={async () => {
