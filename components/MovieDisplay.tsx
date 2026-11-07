@@ -289,9 +289,12 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
         }
     }, [movie?.tmdb_id, movie?.tvShow, episodesMap]);
 
+    const [showAllEpisodes, setShowAllEpisodes] = useState(false);
+
     useEffect(() => {
         if (movie?.tvShow) {
             void loadEpisodes(selectedSeason);
+            setShowAllEpisodes(false);
         }
     }, [movie?.tvShow, selectedSeason, loadEpisodes]);
 
@@ -1249,7 +1252,7 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                     </div>
                                 ) : episodesMap[selectedSeason] && episodesMap[selectedSeason].length > 0 ? (
                                     <div className="space-y-3">
-                                        {episodesMap[selectedSeason].map((episode) => {
+                                        {(showAllEpisodes ? episodesMap[selectedSeason] : episodesMap[selectedSeason].slice(0, 10)).map((episode) => {
                                             const isExpanded = expandedEpisode === String(episode.id);
                                             return (
                                                 <div key={episode.id} className="group relative flex flex-col sm:flex-row gap-4 p-3 sm:p-4 rounded-xl border border-white/10 bg-brand-surface/40 hover:bg-brand-surface/80 hover:border-brand-primary/30 transition-all duration-300">
@@ -1313,6 +1316,18 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                                                 </div>
                                             );
                                         })}
+                                        {episodesMap[selectedSeason].length > 10 && (
+                                            <div className="pt-2 text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAllEpisodes(!showAllEpisodes)}
+                                                    className="px-5 py-2.5 text-sm font-semibold text-brand-primary bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/20 rounded-full transition-all inline-flex items-center gap-2 cursor-pointer touch-target"
+                                                >
+                                                    <span>{showAllEpisodes ? 'Show Less' : `View More (${episodesMap[selectedSeason].length - 10} remaining)`}</span>
+                                                    <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${showAllEpisodes ? 'rotate-180' : ''}`} />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="p-8 text-center border border-white/10 rounded-xl bg-white/5">
