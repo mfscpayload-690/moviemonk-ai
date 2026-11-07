@@ -107,6 +107,23 @@ describe('useDiscovery helpers', () => {
       expect(retrieved).toEqual(mockItems);
     });
 
+    it('isolates cache by user preference filter hash', () => {
+      const mockItemsEn: any[] = [
+        { id: 101, title: 'Die Hard (English)', media_type: 'movie', tmdb_id: '101' }
+      ];
+      const mockItemsHi: any[] = [
+        { id: 102, title: 'Sholay (Hindi)', media_type: 'movie', tmdb_id: '102' }
+      ];
+      const prefsEn: any = { genres: [], languages: ['English'], favoriteDecades: [], favoriteRegions: [], contentMix: 'balanced' };
+      const prefsHi: any = { genres: [], languages: ['Hindi'], favoriteDecades: [], favoriteRegions: [], contentMix: 'balanced' };
+
+      setCachedGenreItems(28, mockItemsEn, prefsEn);
+      setCachedGenreItems(28, mockItemsHi, prefsHi);
+
+      expect(getCachedGenreItems(28, prefsEn)).toEqual(mockItemsEn);
+      expect(getCachedGenreItems(28, prefsHi)).toEqual(mockItemsHi);
+    });
+
     it('returns null for uncached genre ID', () => {
       expect(getCachedGenreItems(999)).toBeNull();
     });
