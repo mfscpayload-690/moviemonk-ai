@@ -26,12 +26,19 @@ export type DiscoverySection = {
   items: DiscoveryItem[];
 };
 
+export type GenreRail = {
+  genre: DiscoveryGenre;
+  items: DiscoveryItem[];
+  isLoading: boolean;
+};
+
 export type DiscoverySnapshot = {
   heroItems: DiscoveryItem[];
   sections: DiscoverySection[];
   movieGenres: DiscoveryGenre[];
   selectedGenre: DiscoveryGenre | null;
   selectedGenreItems: DiscoveryItem[];
+  genreRails?: GenreRail[];
 };
 
 const CURATED_GENRE_NAMES: string[] = [
@@ -50,6 +57,33 @@ export function getCuratedMovieGenres(genres: DiscoveryGenre[]): DiscoveryGenre[
   return genres
     .filter((genre) => order.has(genre.name))
     .sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0));
+}
+
+export function getPrioritizedGenreList(
+  curatedGenres: DiscoveryGenre[],
+  preferredGenreNames: string[] = []
+): DiscoveryGenre[] {
+  if (!curatedGenres.length) return [];
+  const normalizedPreferred = preferredGenreNames.map((n) => n.trim().toLowerCase());
+  const preferredMatches: DiscoveryGenre[] = [];
+  const nonPreferred: DiscoveryGenre[] = [];
+
+  // Default ordering: Action, Romance, Comedy, Drama, Horror, Science Fiction, Animation, Documentary
+  const defaultOrder = ['Action', 'Romance', 'Comedy', 'Drama', 'Horror', 'Science Fiction', 'Animation', 'Documentary'];
+  const orderMap = new Map(defaultOrder.map((name, idx) => [name, idx]));
+  const sortedCurated = [...curatedGenres].sort(
+    (a, b) => (orderMap.get(a.name) ?? 99) - (orderMap.get(b.name) ?? 99)
+  );
+
+  sortedCurated.forEach((g) => {
+    if (normalizedPreferred.includes(g.name.toLowerCase())) {
+      preferredMatches.push(g);
+    } else {
+      nonPreferred.push(g);
+    }
+  });
+
+  return [...preferredMatches, ...nonPreferred];
 }
 
 export function pickHeroItems(items: DiscoveryItem[], limit = 5): DiscoveryItem[] {
@@ -619,15 +653,115 @@ export function clearCachedDiscoverySnapshot(preferences?: UserPreferenceSetting
   }
 }
 
+export const GENRE_RAILS_CACHE_KEY = 'mm_genre_rails_cache_v1';
+export const GENRE_RAILS_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export interface CachedGenreRailEntry {
+  items: DiscoveryItem[];
+  timestamp: number;
+}
+
+const memoryGenreRailsCache = new Map<number, CachedGenreRailEntry>();
+
+export function getCachedGenreItems(genreId: number): DiscoveryItem[] | null {
+  const now = Date.now();
+  const mem = memoryGenreRailsCache.get(genreId);
+  if (mem && Array.isArray(mem.items) && now - mem.timestamp < GENRE_RAILS_TTL_MS) {
+    return mem.items;
+  }
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(GENRE_RAILS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed: Record<string, CachedGenreRailEntry> = JSON.parse(raw);
+    const entry = parsed[String(genreId)];
+    if (entry && Array.isArray(entry.items) && now - entry.timestamp < GENRE_RAILS_TTL_MS) {
+      memoryGenreRailsCache.set(genreId, entry);
+      return entry.items;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function setCachedGenreItems(genreId: number, items: DiscoveryItem[]): void {
+  if (!items || items.length === 0) return;
+  const now = Date.now();
+  const entry: CachedGenreRailEntry = { items, timestamp: now };
+  memoryGenreRailsCache.set(genreId, entry);
+
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(GENRE_RAILS_CACHE_KEY);
+    const parsed: Record<string, CachedGenreRailEntry> = raw ? JSON.parse(raw) : {};
+    const cleaned: Record<string, CachedGenreRailEntry> = {};
+    Object.entries(parsed).forEach(([key, val]) => {
+      if (val && now - val.timestamp < GENRE_RAILS_TTL_MS) {
+        cleaned[key] = val;
+      }
+    });
+    cleaned[String(genreId)] = entry;
+    localStorage.setItem(GENRE_RAILS_CACHE_KEY, JSON.stringify(cleaned));
+  } catch {
+    // quota exceeded fallback
+  }
+}
+
+export function getAllCachedGenreItems(): Record<number, DiscoveryItem[]> {
+  const now = Date.now();
+  const result: Record<number, DiscoveryItem[]> = {};
+
+  memoryGenreRailsCache.forEach((entry, id) => {
+    if (entry && Array.isArray(entry.items) && now - entry.timestamp < GENRE_RAILS_TTL_MS) {
+      result[id] = entry.items;
+    }
+  });
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(GENRE_RAILS_CACHE_KEY);
+      if (raw) {
+        const parsed: Record<string, CachedGenreRailEntry> = JSON.parse(raw);
+        Object.entries(parsed).forEach(([key, val]) => {
+          const id = Number(key);
+          if (val && Array.isArray(val.items) && now - val.timestamp < GENRE_RAILS_TTL_MS && !result[id]) {
+            result[id] = val.items;
+            memoryGenreRailsCache.set(id, val);
+          }
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return result;
+}
+
+export function clearCachedGenreItems(): void {
+  memoryGenreRailsCache.clear();
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(GENRE_RAILS_CACHE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+}
+
 export function useDiscovery() {
   const genreRequestRef = useRef<AbortController | null>(null);
   const genreCacheRef = useRef<Map<number, DiscoveryItem[]>>(new Map());
+  const inFlightGenreRequestsRef = useRef<Set<number>>(new Set());
   const hasLoadedOnceRef = useRef(false);
   const [heroItems, setHeroItems] = useState<DiscoveryItem[]>([]);
   const [sections, setSections] = useState<DiscoverySection[]>([]);
   const [movieGenres, setMovieGenres] = useState<DiscoveryGenre[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<DiscoveryGenre | null>(null);
   const [selectedGenreItems, setSelectedGenreItems] = useState<DiscoveryItem[]>([]);
+  const [genreRails, setGenreRails] = useState<GenreRail[]>([]);
+  const [isLoadingMoreGenres, setIsLoadingMoreGenres] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferenceSettings>(loadPreferenceSettings());
   const [isLoading, setIsLoading] = useState(true);
   const [isGenreLoading, setIsGenreLoading] = useState(false);
@@ -656,8 +790,85 @@ export function useDiscovery() {
     };
   }, []);
 
+  const applySnapshotToRails = useCallback((
+    snap: DiscoverySnapshot,
+    languageCodes: string[],
+    decadeRanges: DecadeRange[]
+  ) => {
+    const prioritized = getPrioritizedGenreList(snap.movieGenres, preferences.genres);
+    const cachedAll = getAllCachedGenreItems();
+
+    // Initial 2 target genres
+    const top2 = prioritized.slice(0, 2);
+    const initialRails: GenreRail[] = [];
+
+    top2.forEach((g, idx) => {
+      if (idx === 0) {
+        const items =
+          snap.selectedGenre && snap.selectedGenre.id === g.id && snap.selectedGenreItems.length > 0
+            ? snap.selectedGenreItems
+            : (cachedAll[g.id] || []);
+        if (items.length > 0) {
+          setCachedGenreItems(g.id, items);
+          genreCacheRef.current.set(g.id, items);
+        }
+        initialRails.push({ genre: g, items, isLoading: items.length === 0 });
+      } else {
+        const cached = cachedAll[g.id];
+        if (cached && cached.length > 0) {
+          genreCacheRef.current.set(g.id, cached);
+          initialRails.push({ genre: g, items: cached, isLoading: false });
+        } else {
+          initialRails.push({ genre: g, items: [], isLoading: true });
+        }
+      }
+    });
+
+    // Also restore any previously loaded genres from localStorage cache
+    Object.entries(cachedAll).forEach(([idStr, items]) => {
+      const id = Number(idStr);
+      if (!top2.some((g) => g.id === id)) {
+        const matchedGenre = snap.movieGenres.find((g) => g.id === id);
+        if (matchedGenre && items.length > 0) {
+          genreCacheRef.current.set(id, items);
+          initialRails.push({ genre: matchedGenre, items, isLoading: false });
+        }
+      }
+    });
+
+    setGenreRails(initialRails);
+
+    // Background-fetch second genre if not already cached
+    if (top2[1] && (!cachedAll[top2[1].id] || cachedAll[top2[1].id].length === 0)) {
+      const secondGenre = top2[1];
+      void (async () => {
+        try {
+          const raw = await fetchByGenre(secondGenre.id, 'movie');
+          const items = applyStrictFilters(raw, languageCodes, decadeRanges);
+          setCachedGenreItems(secondGenre.id, items);
+          genreCacheRef.current.set(secondGenre.id, items);
+          setGenreRails((prev) =>
+            prev.map((r) => (r.genre.id === secondGenre.id ? { ...r, items, isLoading: false } : r))
+          );
+        } catch {
+          setGenreRails((prev) =>
+            prev.map((r) => (r.genre.id === secondGenre.id ? { ...r, isLoading: false } : r))
+          );
+        }
+      })();
+    }
+  }, [preferences.genres]);
+
   const load = useCallback(async (signal?: AbortSignal, forceFresh = false) => {
     const cachedEntry = !forceFresh ? getCachedDiscoverySnapshot(preferences) : null;
+
+    const languageCodes = [...new Set([
+      ...pickLanguageCodes(preferences.languages),
+      ...pickRegionLanguageCodes(preferences.favoriteRegions)
+    ])];
+    const decadeRanges = parseDecadeRanges(preferences.favoriteDecades);
+    setStrictLanguageCodes(languageCodes);
+    setStrictDecadeRanges(decadeRanges);
 
     if (cachedEntry) {
       setHeroItems(cachedEntry.snapshot.heroItems);
@@ -668,6 +879,7 @@ export function useDiscovery() {
       if (cachedEntry.snapshot.selectedGenre) {
         genreCacheRef.current.set(cachedEntry.snapshot.selectedGenre.id, cachedEntry.snapshot.selectedGenreItems);
       }
+      applySnapshotToRails(cachedEntry.snapshot, languageCodes, decadeRanges);
       hasLoadedOnceRef.current = true;
       setIsLoading(false);
 
@@ -678,14 +890,6 @@ export function useDiscovery() {
       setIsLoading(true);
     }
     setError(null);
-
-    const languageCodes = [...new Set([
-      ...pickLanguageCodes(preferences.languages),
-      ...pickRegionLanguageCodes(preferences.favoriteRegions)
-    ])];
-    const decadeRanges = parseDecadeRanges(preferences.favoriteDecades);
-    setStrictLanguageCodes(languageCodes);
-    setStrictDecadeRanges(decadeRanges);
 
     try {
       const snapshot = await loadDiscoverySnapshot(signal, preferences);
@@ -698,6 +902,7 @@ export function useDiscovery() {
       if (snapshot.selectedGenre) {
         genreCacheRef.current.set(snapshot.selectedGenre.id, snapshot.selectedGenreItems);
       }
+      applySnapshotToRails(snapshot, languageCodes, decadeRanges);
       setCachedDiscoverySnapshot(snapshot, preferences);
     } catch (err: any) {
       if (err?.name === 'AbortError') return;
@@ -709,6 +914,7 @@ export function useDiscovery() {
         setMovieGenres([]);
         setSelectedGenre(null);
         setSelectedGenreItems([]);
+        setGenreRails([]);
       }
     } finally {
       if (!signal?.aborted) {
@@ -716,7 +922,7 @@ export function useDiscovery() {
         setIsLoading(false);
       }
     }
-  }, [preferences]);
+  }, [applySnapshotToRails, preferences]);
 
   useEffect(() => {
     const local = loadPreferenceSettings();
@@ -758,42 +964,112 @@ export function useDiscovery() {
     return () => controller.abort();
   }, [load, reloadToken]);
 
-  const selectGenre = useCallback(async (genre: DiscoveryGenre) => {
+  const loadSpecificGenre = useCallback(async (genre: DiscoveryGenre) => {
     if (!genre) return;
     genreRequestRef.current?.abort();
     setSelectedGenre(genre);
 
-    // Instant return if genre items were previously loaded in this session
-    const cachedGenreItems = genreCacheRef.current.get(genre.id);
-    if (cachedGenreItems && cachedGenreItems.length > 0) {
-      setSelectedGenreItems(cachedGenreItems);
+    const cached = genreCacheRef.current.get(genre.id) || getCachedGenreItems(genre.id);
+
+    setGenreRails((prev) => {
+      const exists = prev.some((r) => r.genre.id === genre.id);
+      if (exists) {
+        if (cached && cached.length > 0) {
+          return prev.map((r) => (r.genre.id === genre.id ? { ...r, items: cached, isLoading: false } : r));
+        }
+        return prev;
+      }
+      return [...prev, { genre, items: cached || [], isLoading: !cached || cached.length === 0 }];
+    });
+
+    if (cached && cached.length > 0) {
+      genreCacheRef.current.set(genre.id, cached);
+      setSelectedGenreItems(cached);
       setIsGenreLoading(false);
       return;
     }
 
+    if (inFlightGenreRequestsRef.current.has(genre.id)) return;
+    inFlightGenreRequestsRef.current.add(genre.id);
+
     const controller = new AbortController();
     genreRequestRef.current = controller;
     setIsGenreLoading(true);
+
     try {
-      const items = applyStrictFilters(
-        await fetchByGenre(genre.id, 'movie', { signal: controller.signal }),
-        strictLanguageCodes,
-        strictDecadeRanges
-      );
+      const raw = await fetchByGenre(genre.id, 'movie', { signal: controller.signal });
+      const items = applyStrictFilters(raw, strictLanguageCodes, strictDecadeRanges);
       if (controller.signal.aborted) return;
       genreCacheRef.current.set(genre.id, items);
+      setCachedGenreItems(genre.id, items);
       setSelectedGenreItems(items);
+      setGenreRails((prev) =>
+        prev.map((r) => (r.genre.id === genre.id ? { ...r, items, isLoading: false } : r))
+      );
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
-        emitClientError(err, { context: 'select_genre_discovery', genreId: genre.id, genreName: genre.name });
+        emitClientError(err, { context: 'load_specific_genre_rail', genreId: genre.id, genreName: genre.name });
         setError('Failed to load genre titles. Please try again.');
+        setGenreRails((prev) =>
+          prev.map((r) => (r.genre.id === genre.id ? { ...r, isLoading: false } : r))
+        );
       }
     } finally {
+      inFlightGenreRequestsRef.current.delete(genre.id);
       if (!controller.signal.aborted) {
         setIsGenreLoading(false);
       }
     }
   }, [strictDecadeRanges, strictLanguageCodes]);
+
+  const loadMoreGenres = useCallback(async () => {
+    if (isLoadingMoreGenres || !movieGenres.length) return;
+    const prioritized = getPrioritizedGenreList(movieGenres, preferences.genres);
+    const currentLoadedIds = new Set(genreRails.map((r) => r.genre.id));
+    const nextGenresToLoad = prioritized.filter((g) => !currentLoadedIds.has(g.id)).slice(0, 2);
+    if (nextGenresToLoad.length === 0) return;
+
+    // Immediately add skeleton placeholders
+    setGenreRails((prev) => [
+      ...prev,
+      ...nextGenresToLoad.map((g) => ({ genre: g, items: [], isLoading: true }))
+    ]);
+    setIsLoadingMoreGenres(true);
+
+    try {
+      await Promise.all(
+        nextGenresToLoad.map(async (genre) => {
+          const cached = genreCacheRef.current.get(genre.id) || getCachedGenreItems(genre.id);
+          if (cached && cached.length > 0) {
+            genreCacheRef.current.set(genre.id, cached);
+            setGenreRails((prev) =>
+              prev.map((r) => (r.genre.id === genre.id ? { ...r, items: cached, isLoading: false } : r))
+            );
+            return;
+          }
+
+          try {
+            const raw = await fetchByGenre(genre.id, 'movie');
+            const items = applyStrictFilters(raw, strictLanguageCodes, strictDecadeRanges);
+            setCachedGenreItems(genre.id, items);
+            genreCacheRef.current.set(genre.id, items);
+            setGenreRails((prev) =>
+              prev.map((r) => (r.genre.id === genre.id ? { ...r, items, isLoading: false } : r))
+            );
+          } catch (err: any) {
+            emitClientError(err, { context: 'load_more_genre_rail', genreId: genre.id, genreName: genre.name });
+            setGenreRails((prev) =>
+              prev.map((r) => (r.genre.id === genre.id ? { ...r, isLoading: false } : r))
+            );
+          }
+        })
+      );
+    } finally {
+      setIsLoadingMoreGenres(false);
+    }
+  }, [genreRails, isLoadingMoreGenres, movieGenres, preferences.genres, strictDecadeRanges, strictLanguageCodes]);
+
+  const selectGenre = loadSpecificGenre;
 
   const retry = useCallback(() => {
     setReloadToken((value) => value + 1);
@@ -805,6 +1081,10 @@ export function useDiscovery() {
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    genreRails,
+    loadMoreGenres,
+    loadSpecificGenre,
+    isLoadingMoreGenres,
     cardDensity: preferences.cardDensity,
     isStrictPersonalized: hasStrictPreferenceFilters(preferences),
     isLoading,
@@ -818,6 +1098,10 @@ export function useDiscovery() {
     movieGenres,
     selectedGenre,
     selectedGenreItems,
+    genreRails,
+    loadMoreGenres,
+    loadSpecificGenre,
+    isLoadingMoreGenres,
     preferences,
     isLoading,
     isGenreLoading,
