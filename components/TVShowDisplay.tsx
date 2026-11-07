@@ -79,6 +79,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
     const [expandedEpisode, setExpandedEpisode] = useState<number | null>(null);
     const [reviews, setReviews] = useState<TmdbReview[]>([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [reviewsError, setReviewsError] = useState(false);
     const [expandedReview, setExpandedReview] = useState<string | null>(null);
     const [reviewsSourceLabel, setReviewsSourceLabel] = useState<string>('TMDB');
 
@@ -163,6 +164,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
         setReviews([]);
         setExpandedReview(null);
         setReviewsLoading(true);
+        setReviewsError(false);
         setReviewsSourceLabel('TMDB');
 
         try {
@@ -183,8 +185,10 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
 
             setReviews(merged);
             setReviewsSourceLabel(sourceLabel);
+            setReviewsError(false);
         } catch {
             setReviews([]);
+            setReviewsError(true);
         } finally {
             setReviewsLoading(false);
         }
@@ -628,7 +632,7 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                 </div>
             )}
 
-            {((!reviewsLoading && reviews.length > 0) || reviewsLoading) && (
+            {((!reviewsLoading && reviews.length > 0) || reviewsLoading || reviewsError) && (
                 <div className="tv-show-section">
                     <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
                     <h2>User Reviews</h2>
@@ -660,10 +664,10 @@ const TVShowDisplay: React.FC<TVShowDisplayProps> = ({ movie, isWatched = false,
                             </div>
                         ))}
                     </div>
-                ) : reviews.length === 0 ? (
+                ) : reviewsError ? (
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-                        <p className="text-white font-semibold text-sm">No reviews available yet</p>
-                        <p className="text-xs text-brand-text-dark mt-1">This series has limited public reviews right now.</p>
+                        <p className="text-white font-semibold text-sm">Failed to load reviews</p>
+                        <p className="text-xs text-brand-text-dark mt-1">There was a problem loading public reviews right now.</p>
                         <button
                             type="button"
                             onClick={() => void loadReviews()}
