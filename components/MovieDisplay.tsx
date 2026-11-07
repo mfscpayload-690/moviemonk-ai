@@ -15,6 +15,7 @@ import SeoHead from './SeoHead';
 import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
 import { loadPreferenceSettings } from '../lib/userSettings';
 import { apiGet } from '../lib/apiClient';
+import { SeasonSelector } from './SeasonSelector';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -1217,20 +1218,11 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-brand-surface/50 border border-white/10 p-4 rounded-xl">
                                     <div className="flex-1">
-                                        <label htmlFor="season-select" className="sr-only">Select Season</label>
-                                        <div className="relative inline-block w-full sm:w-auto">
-                                            <select
-                                                id="season-select"
-                                                value={selectedSeason}
-                                                onChange={(e) => setSelectedSeason(Number(e.target.value))}
-                                                className="w-full sm:w-auto appearance-none bg-brand-surface border border-brand-primary/40 text-white font-semibold py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent cursor-pointer hover:bg-brand-surface/80 transition-colors"
-                                            >
-                                                {Array.from({ length: movie.tvShow.totalSeasons || 1 }, (_, i) => i + 1).map(s => (
-                                                    <option key={s} value={s}>Season {s}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-dark pointer-events-none" />
-                                        </div>
+                                        <SeasonSelector
+                                            seasons={movie.tvShow.totalSeasons || 1}
+                                            selectedSeason={selectedSeason}
+                                            onSelectSeason={setSelectedSeason}
+                                        />
                                     </div>
                                     {episodesSource && (
                                         <div className="text-xs font-medium text-brand-text-dark/70 flex items-center justify-end sm:justify-start gap-1">
