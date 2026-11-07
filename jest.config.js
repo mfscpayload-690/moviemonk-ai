@@ -9,6 +9,7 @@ module.exports = {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }]
   },
   moduleNameMapper: {
+    '\\.(css|less|scss)$': '<rootDir>/__tests__/__mocks__/styleMock.js',
     '^.*/lib/config$': '<rootDir>/__tests__/__mocks__/config.ts',
     '\\./config$': '<rootDir>/__tests__/__mocks__/config.ts',
     '^../lib/(.*)$': '<rootDir>/lib/$1',
