@@ -7,6 +7,7 @@ similarity + person-intent detection to disambiguate queries.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from app.services import tmdb
@@ -49,13 +50,22 @@ async def resolve(
             "candidates": [...],
         }
     """
-    query_norm = normalise_title(query)
+    # Extract year if query ends with (YYYY) or YYYY for cleaner TMDB search
+    clean_query = query.strip()
+    year_param: str | None = None
+    year_match = re.search(r"\s*\((\d{4})\)\s*$", clean_query) or re.search(r"\s+(\d{4})\s*$", clean_query)
+    if year_match:
+        year_param = year_match.group(1)
+        clean_query = clean_query[:year_match.start()].strip()
+
+    search_term = clean_query if clean_query else query
+    query_norm = normalise_title(search_term)
 
     # Parallel search across movie, tv, person
     import asyncio
-    movie_task = tmdb.search_movie(query)
-    tv_task = tmdb.search_tv(query)
-    person_task = tmdb.search_person(query)
+    movie_task = tmdb.search_movie(search_term, year=year_param)
+    tv_task = tmdb.search_tv(search_term, year=year_param)
+    person_task = tmdb.search_person(search_term)
 
     res_list: list[Any] = await asyncio.gather(
         movie_task, tv_task, person_task, return_exceptions=True,
