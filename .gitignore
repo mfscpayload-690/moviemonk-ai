@@ -76,3 +76,6 @@ mobile/ios/build
 # Agent skills
 *.skill
 .agents/skills/*
+
+# Sentry
+.sentryclirc
