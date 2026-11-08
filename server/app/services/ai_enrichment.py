@@ -71,7 +71,7 @@ async def generate_creative_fields(
     genres: list[str] | None = None,
     overview: str = "",
     media_type: str = "movie",
-    timeout_seconds: float = 9.0,
+    timeout_seconds: float = 20.0,
 ) -> dict[str, Any]:
     empty = {
         "summary_short": "",
