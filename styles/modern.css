@@ -3570,31 +3570,105 @@ a:focus-visible {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 1.75rem 0 2.25rem;
+    padding: 2.25rem 0 3.25rem;
 }
 
-.discovery-load-more-cta {
+.discovery-cinematic-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.65rem;
     cursor: pointer;
-    padding: 0.65rem 1.4rem;
-    font-size: 0.88rem;
+    border-radius: 9999px;
+    padding: 0.8rem 1.85rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #f5f3ff;
+    background: linear-gradient(135deg, rgba(32, 28, 52, 0.82) 0%, rgba(18, 16, 30, 0.92) 100%);
+    border: 1px solid rgba(167, 139, 250, 0.32);
+    box-shadow: 
+        0 4px 20px -2px rgba(124, 58, 237, 0.22),
+        inset 0 1px 1px rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: 
+        transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.22s ease-out,
+        box-shadow 0.22s ease-out,
+        background 0.22s ease-out;
+    position: relative;
+    user-select: none;
 }
 
-.discovery-load-more-cta:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+.discovery-cinematic-pill:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(192, 132, 252, 0.7);
+    background: linear-gradient(135deg, rgba(46, 38, 76, 0.88) 0%, rgba(26, 22, 44, 0.96) 100%);
+    box-shadow: 
+        0 8px 30px -2px rgba(168, 85, 247, 0.42),
+        0 0 16px rgba(219, 39, 119, 0.22),
+        inset 0 1px 2px rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+}
+
+.discovery-cinematic-pill:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 
+        0 2px 14px -1px rgba(124, 58, 237, 0.28),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.discovery-cinematic-pill:disabled {
+    opacity: 0.75;
+    cursor: wait;
+}
+
+.discovery-cinematic-pill-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    color: #c084fc;
+    transition: transform 0.25s ease-out, color 0.25s ease-out;
+    filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.55));
+    flex-shrink: 0;
+}
+
+.discovery-cinematic-pill:hover:not(:disabled) .discovery-cinematic-pill-icon {
+    transform: scale(1.15) rotate(12deg);
+    color: #e9d5ff;
+}
+
+.discovery-cinematic-pill-icon.is-spinning {
+    animation: discoverySpinSlow 2.4s linear infinite;
+}
+
+@keyframes discoverySpinSlow {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .discovery-all-genres-explored {
     display: flex;
+    align-items: center;
     justify-content: center;
-    padding: 1.5rem 0 2rem;
-    font-size: 0.8rem;
-    color: var(--discovery-text-muted);
-    letter-spacing: 0.05em;
+    gap: 0.75rem;
+    padding: 2.25rem 0 3rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(226, 218, 245, 0.75);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.discovery-explored-star {
+    color: #a855f7;
+    font-size: 0.75rem;
+    opacity: 0.85;
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.7);
 }
 
 .discovery-error {
