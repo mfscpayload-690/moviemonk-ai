@@ -176,7 +176,7 @@ describe('DiscoveryPage', () => {
     const html = renderPage();
     expect(html).toContain('Action Picks');
     expect(html).toContain('Romance Picks');
-    expect(html).toContain('Explore More Genres (2 of 4)');
+    expect(html).toContain('Discover More Genres');
   });
 
   it('renders all explored indicator when all genres are loaded', () => {
@@ -206,7 +206,7 @@ describe('DiscoveryPage', () => {
     });
 
     const html = renderPage();
-    expect(html).toContain('All curated genres explored');
-    expect(html).not.toContain('Explore More Genres');
+    expect(html).toContain('All genres unlocked');
+    expect(html).not.toContain('Discover More Genres');
   });
 });
