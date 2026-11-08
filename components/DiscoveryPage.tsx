@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { track } from '@vercel/analytics/react';
+import { Sparkles } from 'lucide-react';
 import ContentCarousel from './ContentCarousel';
 import HeroSpotlight from './HeroSpotlight';
 import { useDiscovery, getPrioritizedGenreList, GenreRail } from '../hooks/useDiscovery';
@@ -322,19 +323,29 @@ const DiscoveryPage: React.FC<DiscoveryPageProps> = ({ onOpenTitle, onRunQuery, 
         <div className="discovery-load-more-genres-wrapper">
           <button
             type="button"
-            className="discovery-cta discovery-cta-secondary discovery-load-more-cta"
+            className="discovery-cinematic-pill"
             onClick={handleLoadMoreGenres}
             disabled={isLoadingMoreGenres}
           >
-            {isLoadingMoreGenres
-              ? 'Loading more genres...'
-              : `Explore More Genres (${loadedGenreCount} of ${totalCuratedCount})`}
+            {isLoadingMoreGenres ? (
+              <>
+                <Sparkles className="discovery-cinematic-pill-icon is-spinning" />
+                <span>Curating more genres...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="discovery-cinematic-pill-icon" />
+                <span>Discover More Genres</span>
+              </>
+            )}
           </button>
         </div>
       ) : (
         movieGenres.length > 0 && loadedGenreCount >= totalCuratedCount && (
           <div className="discovery-all-genres-explored" role="status">
-            <span>All curated genres explored</span>
+            <span className="discovery-explored-star" aria-hidden="true">✦</span>
+            <span>All genres unlocked</span>
+            <span className="discovery-explored-star" aria-hidden="true">✦</span>
           </div>
         )
       )}
