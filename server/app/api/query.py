@@ -43,7 +43,16 @@ async def handle_query(req: QueryRequest):
 
     try:
         if req.id:
-            resolved = {"type": req.type or "movie", "id": req.id}
+            try:
+                int_id = int(str(req.id).strip())
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=400, detail="Invalid id: must be an integer")
+
+            type_map = {"movie": "movie", "tv": "tv", "show": "tv", "person": "person"}
+            norm_type = type_map.get((req.type or "movie").lower())
+            if not norm_type:
+                raise HTTPException(status_code=400, detail="Invalid type: must be movie, tv, or person")
+            resolved = {"type": norm_type, "id": int_id}
         else:
             resolved = await resolve(query)
             if not resolved or not resolved.get("id"):
@@ -53,7 +62,7 @@ async def handle_query(req: QueryRequest):
         data: Any = {}
 
         if resolved.get("type") == "person":
-            person_data = await tmdb.get_person(int(resolved["id"]))
+            person_data = await tmdb.get_person(int(str(resolved["id"])))
             if not person_data:
                 raise HTTPException(status_code=404, detail="Person not found")
             
@@ -72,7 +81,7 @@ async def handle_query(req: QueryRequest):
         else:
             # Movie or TV
             media_type = str(resolved.get("type") or "movie")
-            movie_data = await tmdb.get_details(media_type, int(resolved["id"]))
+            movie_data = await tmdb.get_details(media_type, int(str(resolved["id"])))
             if not movie_data:
                 raise HTTPException(status_code=404, detail="Title not found")
                 
@@ -88,7 +97,9 @@ async def handle_query(req: QueryRequest):
                     title=movie_data.get("title") or movie_data.get("name") or "",
                     year=year,
                     genres=genres,
-                    overview=movie_data.get("overview", "")
+                    overview=movie_data.get("overview", ""),
+                    media_type=media_type,
+                    timeout_seconds=20.0,
                 )
                 summary["summary_short"] = enriched.get("summary_short", "")
                 summary["summary_long"] = enriched.get("summary_long_spoilers", "")
