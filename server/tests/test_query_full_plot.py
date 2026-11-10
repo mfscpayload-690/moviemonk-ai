@@ -55,6 +55,56 @@ class QueryFullPlotTests(unittest.TestCase):
         )
         mock_details.assert_called_once_with("movie", 27205)
 
+    @patch("app.api.query.tmdb.get_details")
+    @patch("app.api.query.ai_enrichment.generate_creative_fields")
+    def test_query_normalizes_show_type_to_tv(
+        self, mock_enrich: AsyncMock, mock_details: AsyncMock
+    ) -> None:
+        """Query with type='show' normalizes to 'tv' for TMDB lookup."""
+        mock_details.return_value = {
+            "id": 1399,
+            "name": "Game of Thrones",
+            "overview": "Winter is coming...",
+        }
+        mock_enrich.return_value = {
+            "summary_short": "Dragons and kingdoms",
+            "summary_long_spoilers": "SPOILER: Bran becomes king.",
+        }
+
+        payload = {
+            "q": "Game of Thrones",
+            "id": 1399,
+            "type": "show",
+            "mode": "full_plot",
+        }
+
+        response = self.client.post("/api/query", json=payload)
+        self.assertEqual(response.status_code, 200)
+        mock_details.assert_called_once_with("tv", 1399)
+
+    def test_query_rejects_non_numeric_id(self) -> None:
+        """Query with non-numeric id returns 400 Bad Request."""
+        payload = {
+            "q": "Test",
+            "id": "not-a-number",
+            "type": "movie",
+            "mode": "full_plot",
+        }
+        response = self.client.post("/api/query", json=payload)
+        self.assertEqual(response.status_code, 400)
+
+    def test_query_rejects_invalid_type(self) -> None:
+        """Query with invalid type returns 400 Bad Request."""
+        payload = {
+            "q": "Test",
+            "id": 12345,
+            "type": "invalid_kind",
+            "mode": "full_plot",
+        }
+        response = self.client.post("/api/query", json=payload)
+        self.assertEqual(response.status_code, 400)
+
+
 class EntityResolverTests(unittest.IsolatedAsyncioTestCase):
     @patch("app.services.entity_resolver.tmdb.search_movie")
     @patch("app.services.entity_resolver.tmdb.search_tv")
@@ -81,3 +131,29 @@ class EntityResolverTests(unittest.IsolatedAsyncioTestCase):
         res = await resolve("Inception (2010)")
         self.assertEqual(res["id"], 27205)
         mock_movie.assert_called_once_with("Inception", year="2010")
+
+    @patch("app.services.entity_resolver.tmdb.search_movie")
+    @patch("app.services.entity_resolver.tmdb.search_tv")
+    @patch("app.services.entity_resolver.tmdb.search_person")
+    async def test_entity_resolver_preserves_title_numbers(
+        self, mock_person: AsyncMock, mock_tv: AsyncMock, mock_movie: AsyncMock
+    ) -> None:
+        """Entity resolver does NOT strip bare numbers from titles like 'Blade Runner 2049'."""
+        from app.services.entity_resolver import resolve
+
+        mock_movie.return_value = {
+            "results": [
+                {
+                    "id": 335984,
+                    "title": "Blade Runner 2049",
+                    "popularity": 95.0,
+                    "vote_average": 8.0,
+                }
+            ]
+        }
+        mock_tv.return_value = {"results": []}
+        mock_person.return_value = {"results": []}
+
+        res = await resolve("Blade Runner 2049")
+        self.assertEqual(res["id"], 335984)
+        mock_movie.assert_called_once_with("Blade Runner 2049", year=None)
