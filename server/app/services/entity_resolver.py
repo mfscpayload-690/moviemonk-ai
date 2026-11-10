@@ -7,6 +7,7 @@ similarity + person-intent detection to disambiguate queries.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from app.services import tmdb
@@ -49,13 +50,25 @@ async def resolve(
             "candidates": [...],
         }
     """
-    query_norm = normalise_title(query)
+    # Extract year only when explicitly in parentheses to avoid corrupting titles like 'Blade Runner 2049' or '2012'
+    clean_query = query.strip()
+    year_param: str | None = None
+    year_match = re.search(r"\s*\((\d{4})\)\s*$", clean_query)
+    if year_match:
+        candidate_year = year_match.group(1)
+        candidate_title = clean_query[:year_match.start()].strip()
+        if candidate_title:
+            clean_query = candidate_title
+            year_param = candidate_year
+
+    search_term = clean_query if clean_query else query
+    query_norm = normalise_title(search_term)
 
     # Parallel search across movie, tv, person
     import asyncio
-    movie_task = tmdb.search_movie(query)
-    tv_task = tmdb.search_tv(query)
-    person_task = tmdb.search_person(query)
+    movie_task = tmdb.search_movie(search_term, year=year_param)
+    tv_task = tmdb.search_tv(search_term, year=year_param)
+    person_task = tmdb.search_person(search_term)
 
     res_list: list[Any] = await asyncio.gather(
         movie_task, tv_task, person_task, return_exceptions=True,
@@ -63,6 +76,21 @@ async def resolve(
     movie_res: Any = res_list[0]
     tv_res: Any = res_list[1]
     person_res: Any = res_list[2]
+
+    # If filtered search by year returned no results, retry without the year filter
+    if year_param:
+        movie_results = movie_res.get("results") if isinstance(movie_res, dict) else []
+        tv_results = tv_res.get("results") if isinstance(tv_res, dict) else []
+        if not movie_results and not tv_results:
+            fallback_res = await asyncio.gather(
+                tmdb.search_movie(search_term),
+                tmdb.search_tv(search_term),
+                return_exceptions=True,
+            )
+            if isinstance(fallback_res[0], dict) and fallback_res[0].get("results"):
+                movie_res = fallback_res[0]
+            if isinstance(fallback_res[1], dict) and fallback_res[1].get("results"):
+                tv_res = fallback_res[1]
 
     candidates: list[dict[str, Any]] = []
 

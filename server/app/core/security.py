@@ -16,7 +16,7 @@ try:
     import jwt
     from jwt.exceptions import PyJWTError as JWTError
 except ImportError:
-    from jose import JWTError, jwt  # type: ignore[no-redef]
+    from jose import JWTError, jwt  # type: ignore[import-untyped,no-redef]
 
 from app.config import get_settings
 

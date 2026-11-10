@@ -17,8 +17,10 @@ logger = logging.getLogger("moviemonk.query")
 router = APIRouter()
 
 class QueryRequest(BaseModel):
-    q: str
+    q: str = ""
     mode: str = "detailed"
+    id: int | str | None = None
+    type: str | None = None
 
 @router.post(
     "/query",
@@ -26,24 +28,41 @@ class QueryRequest(BaseModel):
 )
 async def handle_query(req: QueryRequest):
     query = req.q.strip()
-    if not query:
-        raise HTTPException(status_code=400, detail="Missing query")
+    if not query and not req.id:
+        raise HTTPException(status_code=400, detail="Missing query or id")
 
-    cache_key = build_cache_key("query_endpoint", {"q": query.lower(), "mode": req.mode})
+    cache_key = build_cache_key("query_endpoint", {
+        "q": query.lower(),
+        "id": str(req.id) if req.id else "",
+        "type": req.type or "",
+        "mode": req.mode
+    })
     cached = await get_cache(cache_key)
     if cached:
         return {"ok": True, "cached": True, **cached}
 
     try:
-        resolved = await resolve(query)
-        if not resolved or not resolved.get("id"):
-            raise HTTPException(status_code=404, detail="Entity not found")
+        if req.id:
+            try:
+                int_id = int(str(req.id).strip())
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=400, detail="Invalid id: must be an integer")
+
+            type_map = {"movie": "movie", "tv": "tv", "show": "tv", "person": "person"}
+            norm_type = type_map.get((req.type or "movie").lower())
+            if not norm_type:
+                raise HTTPException(status_code=400, detail="Invalid type: must be movie, tv, or person")
+            resolved = {"type": norm_type, "id": int_id}
+        else:
+            resolved = await resolve(query)
+            if not resolved or not resolved.get("id"):
+                raise HTTPException(status_code=404, detail="Entity not found")
 
         summary = {"summary_short": "", "summary_long": ""}
         data: Any = {}
 
         if resolved.get("type") == "person":
-            person_data = await tmdb.get_person(resolved["id"])
+            person_data = await tmdb.get_person(int(str(resolved["id"])))
             if not person_data:
                 raise HTTPException(status_code=404, detail="Person not found")
             
@@ -61,8 +80,8 @@ async def handle_query(req: QueryRequest):
                 summary["summary_long"] = bio
         else:
             # Movie or TV
-            media_type = resolved.get("type") or "movie"
-            movie_data = await tmdb.get_details(media_type, resolved["id"])
+            media_type = str(resolved.get("type") or "movie")
+            movie_data = await tmdb.get_details(media_type, int(str(resolved["id"])))
             if not movie_data:
                 raise HTTPException(status_code=404, detail="Title not found")
                 
@@ -78,7 +97,9 @@ async def handle_query(req: QueryRequest):
                     title=movie_data.get("title") or movie_data.get("name") or "",
                     year=year,
                     genres=genres,
-                    overview=movie_data.get("overview", "")
+                    overview=movie_data.get("overview", ""),
+                    media_type=media_type,
+                    timeout_seconds=20.0,
                 )
                 summary["summary_short"] = enriched.get("summary_short", "")
                 summary["summary_long"] = enriched.get("summary_long_spoilers", "")

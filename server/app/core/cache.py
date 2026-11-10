@@ -28,11 +28,18 @@ async def init_redis(redis_url: str | None) -> None:
         return
 
     try:
+        from urllib.parse import urlparse
+        extra_opts = {}
+        if urlparse(redis_url).scheme != "unix":
+            extra_opts["socket_keepalive"] = True
+
         _redis_pool = aioredis.from_url(
             redis_url,
             decode_responses=True,
             socket_connect_timeout=5,
+            health_check_interval=30,
             retry_on_timeout=True,
+            **extra_opts,
         )
         # Verify connectivity
         await _redis_pool.ping()
@@ -63,8 +70,11 @@ async def get_cache(key: str) -> Any | None:
             return json.loads(raw)
         except (json.JSONDecodeError, TypeError):
             return raw
+    except (ConnectionResetError, aioredis.RedisError) as exc:
+        logger.warning("Transient Redis cache GET error for key=%s: %s", key, exc)
+        return None
     except Exception:
-        logger.exception("Cache GET error for key=%s", key)
+        logger.warning("Cache GET error for key=%s", key, exc_info=True)
         return None
 
 
@@ -75,8 +85,10 @@ async def set_cache(key: str, value: Any, ttl_seconds: int) -> None:
     try:
         payload = value if isinstance(value, str) else json.dumps(value)
         await _redis_pool.set(key, payload, ex=ttl_seconds)
+    except (ConnectionResetError, aioredis.RedisError) as exc:
+        logger.warning("Transient Redis cache SET error for key=%s: %s", key, exc)
     except Exception:
-        logger.exception("Cache SET error for key=%s", key)
+        logger.warning("Cache SET error for key=%s", key, exc_info=True)
 
 
 def build_cache_key(prefix: str, parts: dict[str, Any]) -> str:
