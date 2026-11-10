@@ -28,13 +28,18 @@ async def init_redis(redis_url: str | None) -> None:
         return
 
     try:
+        from urllib.parse import urlparse
+        extra_opts = {}
+        if urlparse(redis_url).scheme != "unix":
+            extra_opts["socket_keepalive"] = True
+
         _redis_pool = aioredis.from_url(
             redis_url,
             decode_responses=True,
             socket_connect_timeout=5,
-            socket_keepalive=True,
             health_check_interval=30,
             retry_on_timeout=True,
+            **extra_opts,
         )
         # Verify connectivity
         await _redis_pool.ping()
