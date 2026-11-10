@@ -90,14 +90,16 @@ def sentry_before_send(event: Event, hint: Hint) -> Event | None:
             tags["request_id"] = req_id
 
     # 4. Filter transient non-fatal Redis cache connection drops
-    if "exception" in event and isinstance(event["exception"], dict):
-        exc_values = event["exception"].get("values", [])
-        for exc in exc_values:
+    exc_info: Any = event.get("exception")
+    if isinstance(exc_info, dict):
+        for exc in exc_info.get("values") or []:
+            if not isinstance(exc, dict):
+                continue
             if exc.get("type") in ("ConnectionResetError", "ConnectionError"):
                 val_str = str(exc.get("value", "")).lower()
                 if "connection lost" in val_str or "reset by peer" in val_str:
-                    frames = exc.get("stacktrace", {}).get("frames", [])
-                    if any("redis" in str(f.get("filename", "")).lower() for f in frames):
+                    frames = (exc.get("stacktrace") or {}).get("frames") or []
+                    if any(isinstance(f, dict) and "redis" in str(f.get("filename", "")).lower() for f in frames):
                         return None
 
     return event
