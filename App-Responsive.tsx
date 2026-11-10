@@ -1064,10 +1064,11 @@ const App: React.FC = () => {
                   selectedProvider={selectedProvider}
                   onFetchFullPlot={async (title: string, year: string, type: string) => {
                     const cleanTitle = title.trim();
+                    const normalizedType = type === 'show' ? 'tv' : (type || (movieData?.tvShow ? 'tv' : 'movie'));
                     const res = await apiPost<any>('/api/query', {
                       q: cleanTitle,
                       id: movieData?.tmdb_id,
-                      type: type || (movieData?.tvShow ? 'tv' : 'movie'),
+                      type: normalizedType,
                       mode: 'full_plot',
                     });
                     return res?.summary?.summary_long || "Plot details unavailable";
