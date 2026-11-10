@@ -25,6 +25,9 @@ class GroqProxyFailoverTests(unittest.TestCase):
     @patch("httpx.AsyncClient.post")
     def test_groq_proxy_failover_on_401(self, mock_post: AsyncMock, mock_settings: Any) -> None:
         """When the first key returns 401 expired, failover to the second key succeeds."""
+        import app.api.groq_proxy as gp
+        gp._request_count = 0
+
         mock_settings.return_value.groq_keys = ["expired-key-1", "valid-key-2"]
 
         resp_401 = httpx.Response(
@@ -41,7 +44,7 @@ class GroqProxyFailoverTests(unittest.TestCase):
         mock_post.side_effect = [resp_401, resp_200]
 
         payload = {
-            "model": "llama-3.3-70b-versatile",
+            "model": "openai/gpt-oss-20b",
             "messages": [{"role": "user", "content": "recommend a movie"}],
         }
 
@@ -50,3 +53,7 @@ class GroqProxyFailoverTests(unittest.TestCase):
         data = response.json()
         self.assertIn("choices", data)
         self.assertEqual(mock_post.call_count, 2)
+        call1_headers = mock_post.call_args_list[0].kwargs.get("headers", {})
+        call2_headers = mock_post.call_args_list[1].kwargs.get("headers", {})
+        self.assertEqual(call1_headers.get("Authorization"), "Bearer expired-key-1")
+        self.assertEqual(call2_headers.get("Authorization"), "Bearer valid-key-2")
