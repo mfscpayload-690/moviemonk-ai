@@ -38,3 +38,46 @@ class CacheResilienceTests(unittest.IsolatedAsyncioTestCase):
             # Must not raise
             await set_cache("test_key", {"data": 123}, ttl_seconds=60)
 
+
+class SentryBeforeSendFilterTests(unittest.TestCase):
+    def test_sentry_before_send_filters_redis_connection_reset(self) -> None:
+        """Transient Redis ConnectionResetError is filtered from Sentry."""
+        from app.core.observability import sentry_before_send
+
+        event = {
+            "exception": {
+                "values": [
+                    {
+                        "type": "ConnectionResetError",
+                        "value": "Connection lost",
+                        "stacktrace": {
+                            "frames": [
+                                {"filename": "redis/asyncio/connection.py", "function": "_send"}
+                            ]
+                        },
+                    }
+                ]
+            }
+        }
+        filtered = sentry_before_send(event, {})  # type: ignore[arg-type]
+        self.assertIsNone(filtered)
+
+    def test_sentry_before_send_handles_null_stacktrace_safely(self) -> None:
+        """Events with null stacktrace or malformed values do not raise exceptions."""
+        from app.core.observability import sentry_before_send
+
+        event = {
+            "exception": {
+                "values": [
+                    {
+                        "type": "RuntimeError",
+                        "value": "Something broke",
+                        "stacktrace": None,
+                    },
+                    "not-a-dict",
+                ]
+            }
+        }
+        result = sentry_before_send(event, {})  # type: ignore[arg-type]
+        self.assertIsNotNone(result)
+
