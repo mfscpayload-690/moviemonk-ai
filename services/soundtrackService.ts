@@ -11,7 +11,19 @@ export function normalizeText(str = ''): string {
     .trim();
 }
 
-export const SPAM_ALBUM_KEYWORDS = [
+/**
+ * Checks whether text contains a whole phrase/token sequence rather than a partial substring
+ * (e.g., prevents "Up" from matching "Super 8").
+ */
+export function containsPhrase(haystack: string, phrase: string): boolean {
+  if (!haystack || !phrase) return false;
+  // Boundary check with word start/end or space boundaries
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(^|\\s)${escaped}(\\s|$)`, 'i');
+  return regex.test(haystack);
+}
+
+export const RAW_SPAM_ALBUM_KEYWORDS = [
   'karaoke',
   'tribute',
   'ringtone',
@@ -23,6 +35,9 @@ export const SPAM_ALBUM_KEYWORDS = [
   'piano version',
   'instrumental cover',
 ];
+
+// Pre-normalized spam keywords to ensure punctuation (e.g. 8-bit -> 8 bit) matches normalized album text
+export const SPAM_ALBUM_KEYWORDS = RAW_SPAM_ALBUM_KEYWORDS.map((kw) => normalizeText(kw));
 
 interface FetchTitleSoundtrackOptions {
   title: string;
@@ -67,6 +82,90 @@ export function clearSoundtrackCache(): void {
 }
 
 /**
+ * Helper to validate candidate tracks against title, spam, year, and deduplication.
+ */
+function validateTracks(
+  items: any[],
+  normTitle: string,
+  normOriginalTitle: string,
+  normComposer: string,
+  parsedYear: number | null,
+  seenTracks: Set<string>,
+  rawTitle: string
+): SoundtrackTrack[] {
+  const verified: SoundtrackTrack[] = [];
+
+  for (const item of items) {
+    if (!item.trackName || !item.collectionName) continue;
+
+    const normCollection = normalizeText(item.collectionName);
+    const normArtist = normalizeText(item.artistName || '');
+    const normTrack = normalizeText(item.trackName);
+
+    // Rule 1: Album name or track title must match title or originalTitle phrase
+    const titleInAlbum =
+      containsPhrase(normCollection, normTitle) ||
+      (normOriginalTitle && containsPhrase(normCollection, normOriginalTitle));
+
+    const titleInTrack =
+      containsPhrase(normTrack, normTitle) ||
+      (normOriginalTitle && containsPhrase(normTrack, normOriginalTitle));
+
+    const matchesTitle = titleInAlbum || titleInTrack;
+
+    // Reject tracks that don't match the title, even if artist matches composer
+    if (!matchesTitle) continue;
+
+    // Rule 2: Exclude karaoke, tribute, ringtone, and cover spam albums
+    const isSpamAlbum = SPAM_ALBUM_KEYWORDS.some((kw) =>
+      normCollection.includes(kw)
+    );
+    if (isSpamAlbum) continue;
+
+    // Rule 3: Release year proximity check (-1 to +2 years from release)
+    if (parsedYear && item.releaseDate) {
+      const trackYear = parseInt(String(item.releaseDate).slice(0, 4), 10);
+      if (!isNaN(trackYear) && (trackYear < parsedYear - 1 || trackYear > parsedYear + 2)) {
+        continue;
+      }
+    }
+
+    // Rule 4: Deduplicate identical track names
+    if (seenTracks.has(normTrack)) continue;
+    seenTracks.add(normTrack);
+
+    // Format duration (m:ss)
+    const totalSeconds = Math.floor((item.trackTimeMillis || 0) / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = String(totalSeconds % 60).padStart(2, '0');
+
+    // High-res cover art (300x300)
+    const coverArt = item.artworkUrl100
+      ? item.artworkUrl100.replace('100x100bb', '300x300bb')
+      : null;
+
+    // Deep link search queries
+    const songSearchQuery = encodeURIComponent(
+      `${item.trackName} ${item.artistName} ${rawTitle}`.trim()
+    );
+
+    verified.push({
+      id: item.trackId,
+      title: item.trackName,
+      artist: item.artistName || 'Unknown Artist',
+      album: item.collectionName,
+      duration: totalSeconds > 0 ? `${mins}:${secs}` : null,
+      coverArt,
+      previewUrl: item.previewUrl || null,
+      spotifyUrl: `https://open.spotify.com/search/${songSearchQuery}`,
+      youtubeUrl: `https://www.youtube.com/results?search_query=${songSearchQuery}`,
+    });
+  }
+
+  return verified;
+}
+
+/**
  * Fetches and strictly validates official soundtrack tracks for a title from Apple iTunes Search API.
  */
 export async function fetchTitleSoundtrack({
@@ -91,16 +190,17 @@ export async function fetchTitleSoundtrack({
   }
 
   const region = getSoundtrackRegion(countryCode);
-  const cacheKey = `${normalizeText(title)}_${normalizeText(originalTitle || '')}_${releaseYear || ''}_${region}`;
-
-  if (soundtrackMemoryCache.has(cacheKey)) {
-    return soundtrackMemoryCache.get(cacheKey)!;
-  }
-
   const normTitle = normalizeText(title);
   const normOriginalTitle = originalTitle ? normalizeText(originalTitle) : '';
   const normComposer = composer ? normalizeText(composer) : '';
   const parsedYear = releaseYear ? parseInt(String(releaseYear), 10) : null;
+
+  // Cache key includes composer to avoid collisions when composer changes
+  const cacheKey = `${normTitle}_${normOriginalTitle}_${parsedYear || ''}_${normComposer}_${region}`;
+
+  if (soundtrackMemoryCache.has(cacheKey)) {
+    return soundtrackMemoryCache.get(cacheKey)!;
+  }
 
   const queryItunes = async (searchTerm: string): Promise<any[]> => {
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(
@@ -108,88 +208,49 @@ export async function fetchTitleSoundtrack({
     )}&media=music&entity=song&country=${region}&limit=30`;
 
     const res = await fetch(url, { signal });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      // Throw on HTTP error so we do not cache broken/rate-limited responses as empty results
+      throw new Error(`iTunes API HTTP error: ${res.status}`);
+    }
     const data = await res.json();
     return Array.isArray(data?.results) ? data.results : [];
   };
 
   try {
+    const seenTracks = new Set<string>();
+
     // Step 1: Primary search: Title + Composer + soundtrack
     const primaryTerm = `${title} ${composer || ''} soundtrack`.trim();
-    let rawResults = await queryItunes(primaryTerm);
+    const primaryRaw = await queryItunes(primaryTerm);
 
-    // Step 2: Fallback search if primary yields fewer than 2 results
-    if (rawResults.length < 2) {
+    const verifiedTracks = validateTracks(
+      primaryRaw,
+      normTitle,
+      normOriginalTitle,
+      normComposer,
+      parsedYear,
+      seenTracks,
+      title
+    );
+
+    // Step 2: Fallback search if validated primary results yield fewer than 2 tracks
+    if (verifiedTracks.length < 2) {
       const secondaryTerm = `${
         originalTitle || title
       } original motion picture soundtrack`.trim();
-      const secondaryResults = await queryItunes(secondaryTerm);
-      rawResults = [...rawResults, ...secondaryResults];
-    }
+      const secondaryRaw = await queryItunes(secondaryTerm);
 
-    const seenTracks = new Set<string>();
-    const verifiedTracks: SoundtrackTrack[] = [];
-
-    for (const item of rawResults) {
-      if (!item.trackName || !item.collectionName) continue;
-
-      const normCollection = normalizeText(item.collectionName);
-      const normArtist = normalizeText(item.artistName || '');
-      const normTrack = normalizeText(item.trackName);
-
-      // Rule 1: Album name must match title/originalTitle OR artist matches composer
-      const matchesTitle =
-        normCollection.includes(normTitle) ||
-        (normOriginalTitle && normCollection.includes(normOriginalTitle));
-      const matchesComposer =
-        normComposer && (normArtist.includes(normComposer) || normCollection.includes(normComposer));
-
-      if (!matchesTitle && !matchesComposer) continue;
-
-      // Rule 2: Exclude karaoke, tribute, ringtone, and cover spam albums
-      const isSpamAlbum = SPAM_ALBUM_KEYWORDS.some((kw) =>
-        normCollection.includes(kw)
-      );
-      if (isSpamAlbum) continue;
-
-      // Rule 3: Release year proximity check (-1 to +2 years from release)
-      if (parsedYear && item.releaseDate) {
-        const trackYear = parseInt(String(item.releaseDate).slice(0, 4), 10);
-        if (!isNaN(trackYear) && (trackYear < parsedYear - 1 || trackYear > parsedYear + 2)) {
-          continue;
-        }
-      }
-
-      // Rule 4: Deduplicate identical track names
-      if (seenTracks.has(normTrack)) continue;
-      seenTracks.add(normTrack);
-
-      // Format duration (m:ss)
-      const totalSeconds = Math.floor((item.trackTimeMillis || 0) / 1000);
-      const mins = Math.floor(totalSeconds / 60);
-      const secs = String(totalSeconds % 60).padStart(2, '0');
-
-      // High-res cover art (300x300)
-      const coverArt = item.artworkUrl100
-        ? item.artworkUrl100.replace('100x100bb', '300x300bb')
-        : null;
-
-      // Deep link search queries
-      const songSearchQuery = encodeURIComponent(
-        `${item.trackName} ${item.artistName} ${title}`.trim()
+      const secondaryVerified = validateTracks(
+        secondaryRaw,
+        normTitle,
+        normOriginalTitle,
+        normComposer,
+        parsedYear,
+        seenTracks,
+        title
       );
 
-      verifiedTracks.push({
-        id: item.trackId,
-        title: item.trackName,
-        artist: item.artistName || 'Unknown Artist',
-        album: item.collectionName,
-        duration: totalSeconds > 0 ? `${mins}:${secs}` : null,
-        coverArt,
-        previewUrl: item.previewUrl || null,
-        spotifyUrl: `https://open.spotify.com/search/${songSearchQuery}`,
-        youtubeUrl: `https://www.youtube.com/results?search_query=${songSearchQuery}`,
-      });
+      verifiedTracks.push(...secondaryVerified);
     }
 
     const result: SoundtrackData = {
@@ -197,7 +258,7 @@ export async function fetchTitleSoundtrack({
       fallbackLinks,
     };
 
-    // Keep cache bounded
+    // Cache valid results
     if (soundtrackMemoryCache.size >= MAX_CACHE_SIZE) {
       const oldestKey = soundtrackMemoryCache.keys().next().value;
       if (oldestKey) soundtrackMemoryCache.delete(oldestKey);

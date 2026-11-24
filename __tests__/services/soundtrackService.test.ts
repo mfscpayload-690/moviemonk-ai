@@ -1,6 +1,7 @@
 import {
   fetchTitleSoundtrack,
   normalizeText,
+  containsPhrase,
   getSoundtrackRegion,
   clearSoundtrackCache,
 } from '../../services/soundtrackService';
@@ -34,6 +35,14 @@ describe('soundtrackService', () => {
     });
   });
 
+  describe('containsPhrase', () => {
+    it('matches complete phrases but rejects partial word substrings', () => {
+      expect(containsPhrase('up original motion picture soundtrack', 'up')).toBe(true);
+      expect(containsPhrase('super 8 soundtrack', 'up')).toBe(false);
+      expect(containsPhrase('grown ups soundtrack', 'up')).toBe(false);
+    });
+  });
+
   describe('getSoundtrackRegion', () => {
     it('returns valid 2-letter uppercase country code when provided', () => {
       expect(getSoundtrackRegion('in')).toBe('IN');
@@ -54,7 +63,7 @@ describe('soundtrackService', () => {
       expect(result.fallbackLinks.youtubeUrl).toContain('youtube.com');
     });
 
-    it('filters out spam albums (karaoke, tribute, etc.)', async () => {
+    it('filters out spam albums including punctuation variants like 8-bit', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -68,6 +77,13 @@ describe('soundtrackService', () => {
             },
             {
               trackId: 102,
+              trackName: 'Cornfield Chase 8-Bit',
+              artistName: 'Hans Zimmer',
+              collectionName: 'Interstellar 8-Bit Soundtrack',
+              releaseDate: '2014-11-07',
+            },
+            {
+              trackId: 103,
               trackName: 'Cornfield Chase',
               artistName: 'Hans Zimmer',
               collectionName: 'Interstellar (Original Motion Picture Soundtrack)',
@@ -87,10 +103,36 @@ describe('soundtrackService', () => {
       });
 
       expect(result.tracks).toHaveLength(1);
-      expect(result.tracks[0].id).toBe(102);
+      expect(result.tracks[0].id).toBe(103);
       expect(result.tracks[0].album).toBe('Interstellar (Original Motion Picture Soundtrack)');
       expect(result.tracks[0].coverArt).toBe('https://example.com/cover/300x300bb.jpg');
       expect(result.tracks[0].duration).toBe('2:06');
+    });
+
+    it('rejects unrelated tracks even if composer matches', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          results: [
+            {
+              trackId: 501,
+              trackName: 'Discombobulate',
+              artistName: 'Hans Zimmer',
+              collectionName: 'Sherlock Holmes (Original Motion Picture Soundtrack)',
+              releaseDate: '2010-01-12',
+            },
+          ],
+        }),
+      } as any);
+
+      const result = await fetchTitleSoundtrack({
+        title: 'Inception',
+        releaseYear: '2010',
+        composer: 'Hans Zimmer',
+      });
+
+      // Sherlock Holmes has Hans Zimmer, but does NOT match title "Inception" -> must be rejected
+      expect(result.tracks).toHaveLength(0);
     });
 
     it('filters out tracks with incompatible release years', async () => {
@@ -161,7 +203,7 @@ describe('soundtrackService', () => {
       expect(result.tracks[0].id).toBe(301);
     });
 
-    it('caches subsequent calls for the same title/year', async () => {
+    it('caches subsequent calls with composer discrimination', async () => {
       const mockFetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -185,15 +227,19 @@ describe('soundtrackService', () => {
       });
       global.fetch = mockFetch as any;
 
-      await fetchTitleSoundtrack({ title: 'Inception', releaseYear: 2010 });
-      await fetchTitleSoundtrack({ title: 'Inception', releaseYear: 2010 });
+      await fetchTitleSoundtrack({ title: 'Inception', releaseYear: 2010, composer: 'Hans Zimmer' });
+      await fetchTitleSoundtrack({ title: 'Inception', releaseYear: 2010, composer: 'Hans Zimmer' });
 
-      // Primary fetch made 1 call (yielded >= 2 candidates), second call served from cache
+      // Primary fetch made 1 call, second call served from cache
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
-    it('handles network failures gracefully without crashing', async () => {
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    it('does not cache failed HTTP responses as empty results', async () => {
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      });
+      global.fetch = mockFetch as any;
 
       const result = await fetchTitleSoundtrack({
         title: 'The Dark Knight',
@@ -201,7 +247,14 @@ describe('soundtrackService', () => {
       });
 
       expect(result.tracks).toEqual([]);
-      expect(result.fallbackLinks.spotifyUrl).toContain('The%20Dark%20Knight');
+
+      // Second call should still try fetching because error wasn't cached
+      await fetchTitleSoundtrack({
+        title: 'The Dark Knight',
+        releaseYear: 2008,
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 });

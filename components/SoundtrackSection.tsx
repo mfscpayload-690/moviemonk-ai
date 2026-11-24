@@ -88,24 +88,36 @@ export const SoundtrackSection: React.FC<SoundtrackSectionProps> = ({ movie }) =
     // Toggle off if currently playing this exact track
     if (playingTrackId === track.id) {
       audio.pause();
+      audio.oncanplay = null;
+      audio.onended = null;
+      audio.onerror = null;
       setPlayingTrackId(null);
       setIsAudioLoading(false);
       return;
     }
 
-    // Switch or start new track
+    // Switch or start new track: cancel any pending handlers
     audio.pause();
+    audio.oncanplay = null;
+    audio.onended = null;
+    audio.onerror = null;
+
     setIsAudioLoading(true);
     setPlayingTrackId(track.id);
     audio.src = track.previewUrl;
 
+    const targetTrackId = track.id;
+
     const onCanPlay = () => {
-      setIsAudioLoading(false);
-      audio.play().catch((err) => {
-        console.warn('[MovieMonk AI] Playback error:', err);
-        setPlayingTrackId(null);
+      // Ensure the user hasn't cancelled or switched tracks in the meantime
+      if (audioRef.current && targetTrackId === track.id) {
         setIsAudioLoading(false);
-      });
+        audio.play().catch((err) => {
+          console.warn('[MovieMonk AI] Playback error:', err);
+          setPlayingTrackId(null);
+          setIsAudioLoading(false);
+        });
+      }
     };
 
     const onEnded = () => {
