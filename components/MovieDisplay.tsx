@@ -16,6 +16,7 @@ import { buildMovieJsonLd, stripHtmlTags, toMetaDescription } from '../lib/seo';
 import { loadPreferenceSettings } from '../lib/userSettings';
 import { apiGet } from '../lib/apiClient';
 import { SeasonSelector } from './SeasonSelector';
+import SoundtrackSection from './SoundtrackSection';
 
 interface MovieDisplayProps {
     movie: MovieData | null;
@@ -1464,6 +1465,9 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
                             </Section>
                         );
                     })()}
+
+                    {/* Soundtrack & Music */}
+                    <SoundtrackSection movie={movie} />
 
                     {/* AI Notes & Trivia */}
                     {hasValidAiNotes(movie.ai_notes) && (

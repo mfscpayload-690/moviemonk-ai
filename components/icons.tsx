@@ -364,3 +364,27 @@ export const MetacriticIcon: React.FC<{ className?: string }> = ({ className }) 
         </text>
     </svg>
 );
+
+export const SpotifyIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className={className} {...baseIconProps}>
+        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.498 17.306a.75.75 0 0 1-1.03.248c-2.822-1.724-6.374-2.114-10.559-1.157a.75.75 0 0 1-.336-1.462c4.582-1.05 8.52-.61 11.677 1.341.354.216.464.678.248 1.03zm1.467-3.26a.938.938 0 0 1-1.288.31c-3.23-1.986-8.155-2.56-11.976-1.4a.938.938 0 1 1-.546-1.794c4.372-1.328 9.794-.687 13.5 1.596.425.26.56.82.31 1.288zm.126-3.41c-3.874-2.3-10.264-2.512-13.978-1.384a1.125 1.125 0 1 1-.652-2.154c4.266-1.295 11.317-1.05 15.77 1.593a1.125 1.125 0 0 1-1.14 1.945z" />
+    </svg>
+);
+
+export const YouTubeIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className={className} {...baseIconProps}>
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+);
+
+export const MusicIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className} {...baseIconProps}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a.75.75 0 0 0 .632-.733V6.75m0 0L9 9m0 0v8.25a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66A.75.75 0 0 0 9 14.996V9z" />
+    </svg>
+);
+
+export const PauseIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} {...baseIconProps}>
+        <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75.75v12a.75.75 0 0 1-1.5 0V6a.75.75 0 0 1 .75-.75zm10.5 0a.75.75 0 0 1 .75.75v12a.75.75 0 0 1-1.5 0V6a.75.75 0 0 1 .75-.75z" clipRule="evenodd" />
+    </svg>
+);
