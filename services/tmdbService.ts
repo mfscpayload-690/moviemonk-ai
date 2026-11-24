@@ -439,6 +439,7 @@ async function fetchWatchProviders(mediaType: 'movie'|'tv', id: number): Promise
  */
 async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
   title: string;
+  original_title?: string;
   year: string;
   language?: string;
   type: MovieData['type'];
@@ -452,6 +453,7 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
     const data = await tmdbFetch(`/${mediaType}/${id}`);
     
     const title = mediaType === 'movie' ? data.title : data.name;
+    const original_title = mediaType === 'movie' ? (data.original_title || undefined) : (data.original_name || undefined);
     const releaseDate = mediaType === 'movie' ? data.release_date : data.first_air_date;
     const year = releaseDate ? new Date(releaseDate).getFullYear().toString() : '';
     const spokenLanguage = Array.isArray(data?.spoken_languages) && data.spoken_languages.length > 0
@@ -485,6 +487,7 @@ async function fetchDetails(mediaType: 'movie'|'tv', id: number): Promise<{
     
     return {
       title,
+      original_title,
       year,
       language,
       type: mediaType === 'tv' ? 'show' : 'movie',
@@ -778,6 +781,7 @@ export async function getFromTMDB(parsed: ParsedQuery): Promise<MovieData | null
     // Build MovieData from TMDB facts (no AI hallucinations!)
     const movieData: MovieData = {
       title: details.title,
+      original_title: details.original_title,
       year: details.year,
       language: details.language,
       type: details.type,
