@@ -211,6 +211,7 @@ export interface TVShowData {
 export interface MovieData {
   tmdb_id?: string;
   title: string;
+  original_title?: string;
   year: string;
   language?: string;
   type: 'movie' | 'show' | 'song' | 'franchise';
@@ -251,6 +252,26 @@ export interface TechnicalSpecs {
   aspect_ratio?: string;
   audio_format?: string;
   color?: string;
+}
+
+export interface SoundtrackTrack {
+  id: number;
+  title: string;
+  artist: string;
+  album: string;
+  duration: string | null;
+  coverArt: string | null;
+  previewUrl: string | null;
+  spotifyUrl: string;
+  youtubeUrl: string;
+}
+
+export interface SoundtrackData {
+  tracks: SoundtrackTrack[];
+  fallbackLinks: {
+    spotifyUrl: string;
+    youtubeUrl: string;
+  };
 }
 
 export interface WatchlistItem {
