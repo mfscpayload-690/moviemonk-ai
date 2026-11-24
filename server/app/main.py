@@ -49,9 +49,9 @@ def init_sentry() -> None:
             environment=settings.SENTRY_ENVIRONMENT,
             traces_sampler=sentry_traces_sampler,
             before_send=sentry_before_send,  # type: ignore[arg-type]
-            send_default_pii=False,
+            send_default_pii=False,  # type: ignore[call-arg]
             integrations=[
-                FastApiIntegration(transaction_style="endpoint"),
+                FastApiIntegration(transaction_style="endpoint"),  # type: ignore[call-arg]
                 AsyncioIntegration(),
                 HttpxIntegration(),
                 logging_integration,
