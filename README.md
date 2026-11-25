@@ -18,6 +18,7 @@ MovieMonk is a high-performance, AI-orchestrated entertainment discovery engine.
 ## 🚀 Key Capabilities
 
 - **Intent-Aware Discovery**: Intelligent landing experience featuring trending spotlight, genre-based filtering, and swipe-optimized carousels.
+- **Title Soundtracks & Music Discovery**: High-fidelity official soundtrack integration powered by Apple iTunes Search API, complete with 30-second inline audio previews, interactive List and Detailed card view modes, and direct deep links to Spotify and YouTube.
 - **Semantic Search & Disambiguation**: Advanced search ranking that understands person-focused queries and resolves ambiguous names via confidence-based shortlists.
 - **AI-Enriched Context**: Layered AI summaries and qualitative explanations generated via Groq (LLM) and Perplexity (Web Search) to augment factual TMDB metadata.
 - **Deep Entity Linking**: Seamless navigation between rich title details (synopsis, cast, crew, watch options) and editorial-style person profiles (biography, filmography).
