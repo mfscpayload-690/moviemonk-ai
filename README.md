@@ -11,6 +11,7 @@ MovieMonk is a high-performance, AI-orchestrated entertainment discovery engine.
 [![Supabase](https://img.shields.io/badge/Database-Supabase-blueviolet)](https://supabase.com)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)](https://fastapi.tiangolo.com)
 [![Groq LPU](https://img.shields.io/badge/Inference-Groq--LPU-orange)](https://groq.com/)
+[![iTunes Search API](https://img.shields.io/badge/Music-iTunes%20API-FA243C?logo=apple-music&logoColor=white)](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/index.html)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 ---
