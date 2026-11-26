@@ -601,3 +601,62 @@
     transform: none;
   }
 }
+
+
+/* ==========================================================================
+   MOBILE-ONLY OVERRIDES  (max-width: 767px / max-width: 639px)
+   !! DO NOT EDIT DESKTOP RULES ABOVE !!
+   Every rule here is strictly scoped to mobile viewports.
+   Desktop (>= 768px) is completely unaffected.
+   ========================================================================== */
+
+@media (max-width: 767px) {
+
+  /* ------------------------------------------------------------------
+     1. Search dropdown — cut heavy blur that fires on every keystroke
+  ------------------------------------------------------------------ */
+  .search-dropdown-menu {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* ------------------------------------------------------------------
+     2. Search input — reduce blur on the always-visible input field
+  ------------------------------------------------------------------ */
+  .search-input {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  /* ------------------------------------------------------------------
+     3. Mode pill button — slightly reduced height; still comfortably
+        above the 44px touch target minimum (2.4rem = ~38px + padding)
+  ------------------------------------------------------------------ */
+  .mode-pill-btn {
+    height: 2.4rem;
+  }
+
+}
+
+@media (max-width: 639px) {
+
+  /* ------------------------------------------------------------------
+     4. Search dropdown padding — tighter chrome on small screens
+  ------------------------------------------------------------------ */
+  .search-dropdown-menu {
+    padding: 0.75rem;
+  }
+
+  /* ------------------------------------------------------------------
+     5. Suggestion rows — tighter layout on 375px screens
+  ------------------------------------------------------------------ */
+  .suggest-row {
+    gap: 0.65rem;
+  }
+
+  .suggest-poster-wrap.is-title {
+    width: 52px;
+    height: 32px;
+  }
+
+}
