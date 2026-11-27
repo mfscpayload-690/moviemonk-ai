@@ -629,11 +629,12 @@
   }
 
   /* ------------------------------------------------------------------
-     3. Mode pill button — slightly reduced height; still comfortably
-        above the 44px touch target minimum (2.4rem = ~38px + padding)
+     3. Mode pill button — min-height 2.75rem = 44px at 16px root,
+        meets touch target minimum; height auto lets content breathe.
   ------------------------------------------------------------------ */
   .mode-pill-btn {
-    height: 2.4rem;
+    min-height: 2.75rem;
+    height: auto;
   }
 
 }
