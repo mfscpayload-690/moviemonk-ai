@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import ReactDOM from 'react-dom';
 import { track } from '@vercel/analytics/react';
 import { MovieData, CastMember, WatchOption, GroundingSource, WebSource, WatchlistFolder, TmdbReview, TVShowEpisode, EpisodesResponse } from '../types';
-import { EyeIcon, EyeSlashIcon, Logo, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, ImdbIcon, MetacriticIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, CalendarIcon, ClockIcon } from './icons';
+import { EyeIcon, EyeSlashIcon, SearchIcon, LinkIcon, PlayIcon, FilmIcon, TvIcon, TicketIcon, TagIcon, DollarIcon, RottenTomatoesIcon, ImdbIcon, MetacriticIcon, StarIcon, ImageIcon, XMarkIcon, NetflixIcon, PrimeVideoIcon, HuluIcon, MaxIcon, DisneyPlusIcon, AppleTvIcon, ArrowLeftIcon, ArrowRightIcon, WatchedIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, CalendarIcon, ClockIcon } from './icons';
 import type { AIProvider } from '../types';
 import '../styles/tv-show.css';
 import { VirtualizedList } from './VirtualizedList';
@@ -34,6 +34,7 @@ interface MovieDisplayProps {
     onToggleRelatedWatched?: (entry: { tmdb_id: string; media_type: 'movie' | 'tv'; title: string; poster_url?: string | null; year?: string | null; }) => void;
     isRelatedWatched?: (tmdbId: string, mediaType: 'movie' | 'tv') => boolean;
     onQuickSaveToWatchlist?: (entry: { id: number; media_type: 'movie' | 'tv'; title: string; year?: string; poster_url?: string | null; }) => void;
+    onGoHome?: () => void;
 }
 
 const LANGUAGE_NAME_BY_CODE: Record<string, string> = {
@@ -222,19 +223,6 @@ const LoadingSkeleton = () => (
     </div>
 );
 
-const DISCOVER_TITLES = [
-    'Interstellar',
-    'Oppenheimer',
-    'The Dark Knight',
-    'Inception',
-    'Dune',
-    'Breaking Bad',
-    'Stranger Things',
-    'The Last of Us'
-];
-
-const COLOR_PRESETS = ['#7c3aed', '#db2777', '#22c55e', '#f59e0b', '#0ea5e9', '#ef4444', '#a855f7'];
-
 const MovieDisplay: React.FC<MovieDisplayProps> = ({
     movie,
     isLoading,
@@ -250,7 +238,8 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     onToggleWatched,
     onToggleRelatedWatched,
     isRelatedWatched,
-    onQuickSaveToWatchlist
+    onQuickSaveToWatchlist,
+    onGoHome
 }) => {
     useRenderCounter('MovieDisplay');
     const { triggerFeedback, isFeedbackActive } = useActionFeedback();
@@ -730,33 +719,32 @@ const MovieDisplay: React.FC<MovieDisplayProps> = ({
     if (isLoading && !movie) {
         return <LoadingSkeleton />;
     }
-
     if (!movie) {
         return (
-            <div className="min-h-full flex items-center justify-center p-6 pt-24 animate-fade-in relative">
-                <div className="absolute inset-0 bg-gradient-radial from-violet-900/20 to-transparent pointer-events-none" />
-                <div className="max-w-6xl mx-auto w-full relative z-10">
-                    <div className="text-center mb-12">
-                        <Logo className="mx-auto h-20 w-20 md:h-24 md:w-24 animate-fade-in text-primary drop-shadow-glow" />
-                        <h1 className="mt-6 text-4xl md:text-7xl font-extrabold tracking-tighter text-gradient-primary animate-slide-up">MovieMonk</h1>
-                        <p className="mt-4 text-lg md:text-2xl text-muted max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.15s' }}>Your AI-powered cinematic companion. Discover, explore, and analyze.</p>
+            <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 animate-fade-in">
+                <div className="flex flex-col items-center gap-5 max-w-md text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                        <FilmIcon className="w-8 h-8 text-muted" />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 pb-20">
-                        {DISCOVER_TITLES.map((title, idx) => (
-                            <button
-                                key={title}
-                                onClick={() => onQuickSearch(title)}
-                                className="glass-panel group relative p-4 md:p-6 flex flex-col items-start justify-between hover:border-violet-500/50 transition-all duration-300 min-h-[130px] md:min-h-[160px] rounded-xl text-left"
-                                style={{ animationDelay: `${0.1 + idx * 0.05}s` }}
-                            >
-                                <span className="absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-br from-violet-600 to-pink-600 transition-opacity rounded-xl" />
-                                <span className="text-[10px] md:text-xs font-medium text-violet-400 uppercase tracking-widest">Featured</span>
-                                <h3 className="mt-1 md:mt-2 text-lg md:text-xl font-bold text-white group-hover:text-primary transition-colors leading-tight">{title}</h3>
-                                <span className="mt-auto inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-muted group-hover:text-white transition-colors">
-                                    <PlayIcon className="w-3.5 h-3.5 md:w-4 md:h-4" /> Explore
-                                </span>
-                            </button>
-                        ))}
+                    <div>
+                        <h1 className="text-xl font-bold text-brand-text-light mb-2">Title not found</h1>
+                        <p className="text-sm text-muted leading-relaxed">
+                            We couldn&apos;t find anything at this URL. The title may not exist or the link may be outdated.
+                        </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <button
+                            onClick={() => onGoHome?.()}
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary/50"
+                        >
+                            <ArrowLeftIcon className="w-4 h-4" /> Go Home
+                        </button>
+                        <button
+                            onClick={() => onQuickSearch('')} 
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-brand-text-light text-sm font-semibold hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/20"
+                        >
+                            <SearchIcon className="w-4 h-4" /> Search instead
+                        </button>
                     </div>
                 </div>
             </div>

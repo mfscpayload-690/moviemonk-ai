@@ -7124,3 +7124,141 @@ a:focus-visible {
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 }
+
+
+/* ==========================================================================
+   MOBILE-ONLY OVERRIDES  (max-width: 767px)
+   !! DO NOT EDIT DESKTOP RULES ABOVE !!
+   Every rule here is strictly scoped to mobile viewports.
+   Desktop (>= 768px) is completely unaffected.
+   ========================================================================== */
+
+@media (max-width: 767px) {
+
+  /* ------------------------------------------------------------------
+     1. GPU-composite the hero slide track so slide transitions stay
+        on the compositor thread and never trigger layout.
+  ------------------------------------------------------------------ */
+  .discovery-hero-track {
+    will-change: transform;
+  }
+
+  /* ------------------------------------------------------------------
+     2. Hero Spotlight — let the hero size to its content (no clipping)
+        but cap it so the viewport still shows 2 section rows below.
+        The hero slide has min-height: clamp(22rem, 58vw, 31rem) on
+        desktop. On 375px: 58vw = ~217px which is too short, so we
+        override with a fixed min-height that fits the copy block, and
+        cap with max-height so Release Radar + one more row peek below.
+        375px viewport: header ~64px, hero ~300px, leaves ~448px for rows.
+  ------------------------------------------------------------------ */
+  .discovery-hero-wrapper {
+    max-height: 52vh;
+    overflow: hidden;
+  }
+
+  .discovery-hero-slide {
+    min-height: 0;
+    aspect-ratio: unset;
+    height: 52vh;
+  }
+
+  .discovery-hero-kicker {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+  }
+
+  .discovery-hero-title {
+    font-size: clamp(1.3rem, 5.5vw, 1.65rem);
+    line-height: 1.15;
+  }
+
+  .discovery-hero-overview {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .discovery-hero-copy {
+    /* Bottom padding creates a clear gap between the last action button
+       and the dot indicators sitting at bottom: 0.75rem */
+    padding: 1rem 1rem 2.75rem;
+  }
+
+  .discovery-hero-actions {
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  /* Centre dots horizontally at the bottom of the hero card — same
+     treatment the tablet breakpoint already uses */
+  .discovery-hero-dots-global {
+    left: 50%;
+    right: auto;
+    bottom: 0.75rem;
+    transform: translateX(-50%);
+    width: max-content;
+  }
+
+  /* ------------------------------------------------------------------
+     3. CTA buttons — keep ≥ 44px touch target, reduce visual bulk
+        2.75rem = 44px at 16px root (border-box safe)
+  ------------------------------------------------------------------ */
+  .discovery-cta {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.9rem;
+    font-size: 0.82rem;
+  }
+
+  /* ------------------------------------------------------------------
+     4. App header backdrop-filter — halve blur radius to cut GPU cost
+        ~60% on scroll. Visual opacity is preserved via background.
+  ------------------------------------------------------------------ */
+  .has-overlay-header .app-header {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .has-overlay-header .app-header.is-scrolled {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* ------------------------------------------------------------------
+     5. Action toast — remove blur entirely; bump bg opacity instead.
+        Toast is small and transient; zero compositor cost.
+  ------------------------------------------------------------------ */
+  .mm-action-toast {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(8, 8, 12, 0.97);
+  }
+
+  /* ------------------------------------------------------------------
+     6. Dialog backdrop — lighter blur (modal is rare / user-triggered)
+  ------------------------------------------------------------------ */
+  .mm-dialog-backdrop {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  /* ------------------------------------------------------------------
+     7. Gallery lightbox — lighter blur, no perceptible quality loss
+  ------------------------------------------------------------------ */
+  .gallery-lightbox {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .gallery-lightbox-nav,
+  .gallery-lightbox-counter {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.72);
+  }
+
+}
