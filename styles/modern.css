@@ -7144,10 +7144,23 @@ a:focus-visible {
   }
 
   /* ------------------------------------------------------------------
-     2. Hero Spotlight — cap height + scale down copy
+     2. Hero Spotlight — let the hero size to its content (no clipping)
+        but cap it so the viewport still shows 2 section rows below.
+        The hero slide has min-height: clamp(22rem, 58vw, 31rem) on
+        desktop. On 375px: 58vw = ~217px which is too short, so we
+        override with a fixed min-height that fits the copy block, and
+        cap with max-height so Release Radar + one more row peek below.
+        375px viewport: header ~64px, hero ~300px, leaves ~448px for rows.
   ------------------------------------------------------------------ */
   .discovery-hero-wrapper {
-    max-height: 72vh;
+    max-height: 52vh;
+    overflow: hidden;
+  }
+
+  .discovery-hero-slide {
+    min-height: 0;
+    aspect-ratio: unset;
+    height: 52vh;
   }
 
   .discovery-hero-kicker {
@@ -7165,20 +7178,30 @@ a:focus-visible {
     line-height: 1.45;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
   .discovery-hero-copy {
-    padding: 1rem 1rem 1.25rem;
+    /* Bottom padding creates a clear gap between the last action button
+       and the dot indicators sitting at bottom: 0.75rem */
+    padding: 1rem 1rem 2.75rem;
   }
 
   .discovery-hero-actions {
     gap: 0.5rem;
+    margin-bottom: 0;
   }
 
+  /* Centre dots horizontally at the bottom of the hero card — same
+     treatment the tablet breakpoint already uses */
   .discovery-hero-dots-global {
-    padding-bottom: 0.6rem;
+    left: 50%;
+    right: auto;
+    bottom: 0.75rem;
+    transform: translateX(-50%);
+    width: max-content;
   }
 
   /* ------------------------------------------------------------------
