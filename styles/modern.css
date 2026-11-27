@@ -7183,9 +7183,10 @@ a:focus-visible {
 
   /* ------------------------------------------------------------------
      3. CTA buttons — keep ≥ 44px touch target, reduce visual bulk
+        2.75rem = 44px at 16px root (border-box safe)
   ------------------------------------------------------------------ */
   .discovery-cta {
-    min-height: 2.6rem;
+    min-height: 2.75rem;
     padding: 0.55rem 0.9rem;
     font-size: 0.82rem;
   }
