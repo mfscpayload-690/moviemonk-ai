@@ -980,7 +980,7 @@ const App: React.FC = () => {
 
         {/* Error Banner */}
         {
-          error && (
+          error && !(currentView === 'movie' && !movieData) && !(currentView === 'person' && !personData) && (
             <div className="flex-shrink-0 px-3 md:px-6 py-2">
               <ErrorBanner message={error} onClose={() => setError(null)} />
             </div>
@@ -1074,6 +1074,7 @@ const App: React.FC = () => {
                     return res?.summary?.summary_long || "Plot details unavailable";
                   }}
                   onQuickSearch={handleQuickSearch}
+                  onGoHome={handleGoHome}
                   onOpenPerson={(personId, name) => {
                     void openPersonById(personId, name, { manageLoading: true });
                   }}
